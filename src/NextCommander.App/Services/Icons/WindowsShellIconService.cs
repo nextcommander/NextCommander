@@ -48,6 +48,12 @@ public sealed class WindowsShellIconService : IFileIconService, IDisposable
             string path;
             bool useAttributes;
             var local = entry.Path.IsLocal;
+            if (entry.IsDirectory && local && Platform.KnownFolders.KindOf(entry.Path.Path) is { } userFolder)
+            {
+                // user folder of the system (Documents, Downloads ...): the icon Windows gives it
+                item.SystemIcon = SystemFolderIcons.Icon(userFolder);
+                continue;
+            }
             if (entry.IsDirectory && local && IconSettings.SpecialFolderIcons && (entry.Attributes & (Core.Vfs.EntryAttributes.ReadOnly | Core.Vfs.EntryAttributes.System)) != 0
                 && File.Exists(Path.Combine(entry.Path.Path, "desktop.ini")))
             {

@@ -23,7 +23,20 @@
                   <Border Background="{Binding TabBrush}" Margin="-10,-3" Padding="10,3" CornerRadius="2">
                   <StackPanel Orientation="Horizontal" Spacing="4">
                     <Panel IsVisible="{Binding ShowTabIcon}" Width="12" Height="12" VerticalAlignment="Center">
-                      <PathIcon Classes="tabicon" Data="{StaticResource MiFolderOpen}" IsVisible="{Binding !IsLocked}" Foreground="{DynamicResource FmFolderBrush}" />
+                      <PathIcon Classes="tabicon" Data="{StaticResource MiFolderOpen}" Foreground="{DynamicResource FmFolderBrush}">
+                        <PathIcon.IsVisible>
+                          <MultiBinding Converter="{x:Static BoolConverters.And}">
+                            <Binding Path="!IsLocked" />
+                            <Binding Path="!IsKnownFolder" />
+                          </MultiBinding>
+                        </PathIcon.IsVisible>
+                      </PathIcon>
+                      <!-- user folders of the system (documents, downloads, desktop ...) show the icon the system gives them -->
+                      <Panel IsVisible="{Binding !IsLocked}">
+                        <Image Width="12" Height="12" Source="{Binding TabIcon}" IsVisible="{Binding TabIcon, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                        <PathIcon Classes="tabicon" Data="{Binding TabGlyph}" Foreground="{DynamicResource FmFolderBrush}"
+                                  IsVisible="{Binding TabGlyph, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                      </Panel>
                       <PathIcon Classes="tabicon" Data="{StaticResource MiLock}" IsVisible="{Binding IsLocked}" Foreground="DarkOrange" />
                     </Panel>
                     <TextBlock Classes="noloc" Text="{Binding Title}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />

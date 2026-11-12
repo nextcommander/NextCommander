@@ -1679,7 +1679,7 @@
   "Settings.Tabs.OpenNewTabsNextTo.Description": "关闭时，新标签添加到末尾。",
   "Settings.Tabs.SaveTheFileTypeFilter": "保存每个标签的文件类型筛选",
   "Settings.Tabs.ShowIconsOnTabs": "在标签上显示图标",
-  "Settings.Tabs.ShowIconsOnTabs.Description": "文件夹图标；锁定的标签显示锁。",
+  "Settings.Tabs.ShowIconsOnTabs.Description": "文件夹图标；锁定的标签显示锁。系统文件夹（文档、下载、桌面、主文件夹）始终显示其自身图标。",
   "Settings.Tabs.ShowLockedTabsWith": "用 * 标示锁定的标签",
   "Settings.Tabs.ShowTabHeaderAlsoWhen": "只有一个标签时也显示标签头",
   "Settings.Tabs.ShowTheDriveLetterIn": "在标签标题中显示驱动器号",

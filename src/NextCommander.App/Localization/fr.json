@@ -1679,7 +1679,7 @@
   "Settings.Tabs.OpenNewTabsNextTo.Description": "Si désactivé, ils sont ajoutés à la fin.",
   "Settings.Tabs.SaveTheFileTypeFilter": "Enregistrer le filtre de types de fichiers de chaque onglet",
   "Settings.Tabs.ShowIconsOnTabs": "Afficher des icônes sur les onglets",
-  "Settings.Tabs.ShowIconsOnTabs.Description": "Icône de dossier ; un cadenas sur les onglets verrouillés.",
+  "Settings.Tabs.ShowIconsOnTabs.Description": "Icône de dossier ; un cadenas sur les onglets verrouillés. Les dossiers système (documents, téléchargements, bureau, dossier personnel) affichent toujours leur propre icône.",
   "Settings.Tabs.ShowLockedTabsWith": "Afficher les onglets verrouillés avec *",
   "Settings.Tabs.ShowTabHeaderAlsoWhen": "Afficher la barre d'onglets même avec un seul onglet",
   "Settings.Tabs.ShowTheDriveLetterIn": "Afficher la lettre du lecteur dans le titre de l'onglet",

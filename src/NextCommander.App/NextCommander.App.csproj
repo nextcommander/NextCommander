@@ -22,6 +22,7 @@
     <PackageReference Include="Avalonia.AvaloniaEdit" />
     <PackageReference Include="Avalonia.HtmlRenderer" />
     <PackageReference Include="Markdig" />
+    <PackageReference Include="Svg.Skia" />
     <PackageReference Include="LibVLCSharp" />
     <PackageReference Include="LibVLCSharp.Avalonia" />
     <PackageReference Include="CommunityToolkit.Mvvm" />

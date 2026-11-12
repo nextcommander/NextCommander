@@ -32,6 +32,11 @@ public sealed partial class TreeNodeViewModel : ObservableObject
 
     public bool IsPlaceholder { get; }
 
+    /// <summary>The icon the system gives a user folder (documents, downloads ...); null for other folders.</summary>
+    public Avalonia.Media.Imaging.Bitmap? SystemIcon => !IsPlaceholder && Path.IsLocal ? Services.Icons.SystemFolderIcons.ForPath(Path.Path) : null;
+
+    public bool HasSystemIcon => SystemIcon is not null;
+
     public ObservableCollection<TreeNodeViewModel> Children { get; } = [];
 
     public static TreeNodeViewModel CreateRoot(VfsPath path, Func<VfsPath, Task<IReadOnlyList<VfsEntry>>> listDirectories)
