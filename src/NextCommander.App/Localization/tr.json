@@ -1679,7 +1679,7 @@
   "Settings.Tabs.OpenNewTabsNextTo.Description": "Kapalıyken en sona eklenir.",
   "Settings.Tabs.SaveTheFileTypeFilter": "Her sekmenin dosya türü filtresini kaydet",
   "Settings.Tabs.ShowIconsOnTabs": "Sekmelerde simge göster",
-  "Settings.Tabs.ShowIconsOnTabs.Description": "Klasör simgesi; kilitli sekmelerde kilit.",
+  "Settings.Tabs.ShowIconsOnTabs.Description": "Klasör simgesi; kilitli sekmelerde kilit. Sistem klasörleri (belgeler, indirilenler, masaüstü, ev klasörü) her zaman kendi simgesini gösterir.",
   "Settings.Tabs.ShowLockedTabsWith": "Kilitli sekmeleri * ile göster",
   "Settings.Tabs.ShowTabHeaderAlsoWhen": "Tek sekme olsa da sekme başlığını göster",
   "Settings.Tabs.ShowTheDriveLetterIn": "Sekme başlığında sürücü harfini göster",

@@ -40,6 +40,10 @@ public sealed class DriveIconConverter : IValueConverter
 
     public static Bitmap? IconFor(string? root)
     {
+        if (!string.IsNullOrEmpty(root) && !root.Contains("://", StringComparison.Ordinal) && SystemFolderIcons.ForPath(root) is { } folderIcon)
+        {
+            return folderIcon; // a user folder (home, documents, downloads ...): the icon the system gives it, on every system
+        }
         if (string.IsNullOrEmpty(root) || !IconSettings.SystemDriveIcons || !OperatingSystem.IsWindows() || root.Contains("://", StringComparison.Ordinal))
         {
             return null;

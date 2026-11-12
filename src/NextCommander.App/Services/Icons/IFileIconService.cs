@@ -8,11 +8,25 @@ public interface IFileIconService
     void Request(IReadOnlyList<FileItemViewModel> items);
 }
 
-/// <summary>No OS icons: the built-in type icons are used.</summary>
+/// <summary>
+/// The built-in type icons, except for the user folders of the system (home, documents, downloads ...), which get the
+/// icon the operating system gives them (Linux icon theme, macOS Finder).
+/// </summary>
 public sealed class BuiltInIconService : IFileIconService
 {
     public void Request(IReadOnlyList<FileItemViewModel> items)
     {
+        if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
+        {
+            return;
+        }
+        foreach (var item in items)
+        {
+            if (item.Entry is { IsDirectory: true } entry && entry.Path.IsLocal && SystemFolderIcons.ForPath(entry.Path.Path) is { } icon)
+            {
+                item.SystemIcon = icon;
+            }
+        }
     }
 }
 
