@@ -17,7 +17,9 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$version = ([xml](Get-Content "$root/Directory.Build.props")).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+# major.minor.build: the build number comes from the git commit count (NcVersion target in Directory.Build.props)
+$version = (dotnet msbuild "$root/src/NextCommander.App" -nologo -t:NcVersion -getProperty:Version | Out-String).Trim()
+if ($LASTEXITCODE -ne 0 -or $version -notmatch '^\d+\.\d+\.\d+$') { throw "Could not read the version: $version" }
 $out = Join-Path $root "artifacts/publish/$Rid"
 $dist = Join-Path $root 'dist'
 $name = "NextCommander-$version-$Rid"

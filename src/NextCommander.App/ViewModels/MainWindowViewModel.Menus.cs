@@ -281,8 +281,7 @@ public sealed partial class MainWindowViewModel
     private async Task AboutAsync()
     {
         var assembly = typeof(MainWindowViewModel).Assembly;
-        var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0]
-            ?? assembly.GetName().Version?.ToString() ?? "?";
+        var version = NextCommander.Core.Tools.UpdateChecker.DisplayVersion(assembly);
         var avalonia = typeof(Avalonia.Application).Assembly.GetName().Version;
         await _dialogs.ShowMessageAsync("About",
             $"NextCommander {version}\nDual-pane file manager\n\n.NET {Environment.Version} · Avalonia {avalonia}\n{System.Runtime.InteropServices.RuntimeInformation.OSDescription}\n\nSettings folder: {_store.Directory}");
