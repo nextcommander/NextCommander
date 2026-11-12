@@ -1778,7 +1778,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         sb.AppendLine($"Computer: {Environment.MachineName}, user: {Environment.UserName}");
         sb.AppendLine($"CPU cores: {Environment.ProcessorCount}, memory: {NextCommander.Core.Formatting.SizeFormatter.Human(memory)}");
         sb.AppendLine($"Uptime: {TimeSpan.FromMilliseconds(Environment.TickCount64):d\\.hh\\:mm} (days.hours:minutes)");
-        sb.AppendLine($".NET: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}, NextCommander {typeof(MainWindowViewModel).Assembly.GetName().Version}");
+        sb.AppendLine($".NET: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}, NextCommander {UpdateChecker.DisplayVersion(typeof(MainWindowViewModel).Assembly)}");
         sb.AppendLine($"Settings folder: {_store.Directory}");
         sb.AppendLine();
         foreach (var drive in DriveInfo.GetDrives())
