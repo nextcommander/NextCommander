@@ -76,7 +76,7 @@ Since 7 November 2026 colors come only from theme files (default: system colors,
 - [x] Save on exit: folders and tabs, panel views, command line history (separately; "Save settings" writes all of them).
 - [-] NTFS daylight saving correction (ignore a 1-hour difference): .NET returns time stamps in UTC, there is no offset to correct.
 - [x] Calculate the folder size when selecting with Space (as a setting).
-- [x] Subfolder size before copying/deleting: always calculated (a counting pass runs first for the progress), no separate option needed. Use Everything for the folder size (Windows, es.exe; should be tried in a real environment).
+- [x] Subfolder size before copying/deleting: always calculated (a counting pass runs first for the progress), no separate option needed. Use Everything for the folder size (Windows, es.exe; not tried, the application's own file index is used instead).
 - [x] File descriptions: character set when writing (automatic / ANSI / DOS / UTF-8 / UTF-16), copy / move / rename descriptions together with the files. The type is detected automatically when reading.
 
 ### Pages added later
@@ -150,6 +150,7 @@ Since 7 November 2026 colors come only from theme files (default: system colors,
 - [x] plocate tried in a real environment (WSL Ubuntu 24.04, plocate 1.1.19): indexed search results match a folder scan. With several masks (`*.bin *.txt`) nothing was returned because plocate combines patterns with AND; each pattern is now a separate query.
 - [x] The application's own file index (Settings > Operation > File index): fast search, duplicate files and folder size without Everything / plocate / Spotlight; search in ~1 million files takes 20–80 ms.
 - [x] MSIX package: if the Windows SDK is not installed, `makeappx` is taken from the SDK BuildTools package on NuGet; the package is produced (unsigned; installing needs a certificate).
-- [ ] Media playback with VLC, DMG packaging, Everything and mdfind (Spotlight) should be tried in a real environment.
+- [ ] Media playback with VLC, DMG packaging and mdfind (Spotlight) should be tried in a real environment.
+- [ ] System icons of the user folders (documents, downloads ...): tried on Windows; the Linux icon theme lookup (SVG drawn with Svg.Skia) and the macOS NSWorkspace icon should be tried on those systems.
 - [x] "Show admin shares": in the network view (drive box `\`) the SMB shares of the machines are listed (Windows); when on, admin shares such as C$, ADMIN$ too.
 - [x] SMB shares on Linux / macOS: the machine's "SMB" entry in the network view opens the shares with the built-in client.

@@ -17,6 +17,7 @@
     <PackageVersion Include="SharpCompress" Version="0.50.8" />
     <PackageVersion Include="Blake3" Version="3.0.2" />
     <PackageVersion Include="Markdig" Version="1.6.0" />
+    <PackageVersion Include="Svg.Skia" Version="3.0.6" />
     <PackageVersion Include="LibVLCSharp" Version="3.10.2" />
     <PackageVersion Include="LibVLCSharp.Avalonia" Version="3.10.2" />
     <PackageVersion Include="Avalonia.HtmlRenderer" Version="11.3.0" />

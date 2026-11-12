@@ -2,10 +2,80 @@ using System.Runtime.InteropServices;
 
 namespace NextCommander.Platform;
 
-/// <summary>The user's well-known folders (home, documents, downloads, desktop) on every system.</summary>
+/// <summary>A folder of the user that the operating system gives its own icon.</summary>
+public enum UserFolder
+{
+    Home,
+    Desktop,
+    Documents,
+    Downloads,
+    Pictures,
+    Music,
+    Videos,
+}
+
+/// <summary>The user's well-known folders (home, documents, downloads, desktop, pictures, music, videos) on every system.</summary>
 public static class KnownFolders
 {
     public static string Home => Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+    public static string Pictures => Special(Environment.SpecialFolder.MyPictures, "XDG_PICTURES_DIR", "Pictures");
+
+    public static string Music => Special(Environment.SpecialFolder.MyMusic, "XDG_MUSIC_DIR", "Music");
+
+    /// <summary>macOS: ~/Movies.</summary>
+    public static string Videos => OperatingSystem.IsMacOS()
+        ? Path.Combine(Home, "Movies")
+        : Special(Environment.SpecialFolder.MyVideos, "XDG_VIDEOS_DIR", "Videos");
+
+    /// <summary>The path of a user folder; empty when the system has none.</summary>
+    public static string PathOf(UserFolder folder) => folder switch
+    {
+        UserFolder.Home => Home,
+        UserFolder.Desktop => Desktop,
+        UserFolder.Documents => Documents,
+        UserFolder.Downloads => Downloads,
+        UserFolder.Pictures => Pictures,
+        UserFolder.Music => Music,
+        UserFolder.Videos => Videos,
+        _ => string.Empty,
+    };
+
+    private static readonly Lazy<(string Path, UserFolder Folder)[]> s_all = new(() =>
+    {
+        var list = new List<(string, UserFolder)>();
+        // the specific folders first: on some systems documents is the home folder itself
+        foreach (var folder in new[] { UserFolder.Documents, UserFolder.Downloads, UserFolder.Desktop, UserFolder.Pictures, UserFolder.Music, UserFolder.Videos, UserFolder.Home })
+        {
+            if (PathOf(folder) is { Length: > 0 } path)
+            {
+                list.Add((Path.TrimEndingDirectorySeparator(path), folder));
+            }
+        }
+        return [.. list];
+    });
+
+    /// <summary>The user folder at a local path (home, documents, downloads ...); null for any other folder.</summary>
+    public static UserFolder? KindOf(string? path)
+    {
+        if (string.IsNullOrEmpty(path))
+        {
+            return null;
+        }
+        var trimmed = Path.TrimEndingDirectorySeparator(path);
+        var comparison = OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        foreach (var (known, folder) in s_all.Value)
+        {
+            if (string.Equals(known, trimmed, comparison))
+            {
+                return folder;
+            }
+        }
+        return null;
+    }
+
+    private static string Special(Environment.SpecialFolder special, string xdgKey, string fallback) =>
+        Environment.GetFolderPath(special) is { Length: > 0 } path ? path : Xdg(xdgKey) ?? Path.Combine(Home, fallback);
 
     public static string Documents => Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) is { Length: > 0 } documents
         ? documents : Xdg("XDG_DOCUMENTS_DIR") ?? Path.Combine(Home, "Documents");

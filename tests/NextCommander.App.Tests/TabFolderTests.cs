@@ -42,4 +42,38 @@ public sealed class TabFolderTests : IDisposable
         Assert.Equal(folders, side.Tabs.Select(t => t.CurrentPath).ToList());
         Assert.All(side.Tabs, t => Assert.NotNull(t.SelectedDrive));
     }
+
+    [AvaloniaFact]
+    public async Task A_system_folder_shows_its_own_icon_on_the_tab()
+    {
+        var (_, vm) = await _fx.OpenAsync();
+        var side = vm.RightSide;
+        var downloads = NextCommander.Platform.KnownFolders.Downloads;
+        if (!Directory.Exists(downloads))
+        {
+            return; // no downloads folder on this machine
+        }
+        await side.OpenTabAsync(VfsPath.Local(downloads + Path.DirectorySeparatorChar));
+        await SettleAsync();
+        var tab = side.ActiveTab!;
+        Assert.Equal(NextCommander.Platform.UserFolder.Downloads, tab.KnownFolderKind);
+        Assert.True(tab.ShowTabIcon);
+        // the icon the operating system gives the folder (Windows shell icon), else the built-in glyph
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.NotNull(tab.TabIcon);
+            Assert.Null(tab.TabGlyph);
+        }
+        else
+        {
+            Assert.True(tab.TabIcon is not null || tab.TabGlyph is not null);
+        }
+
+        await tab.NavigateAsync(VfsPath.Local(_fx.L("sub")));
+        await SettleAsync();
+        Assert.False(tab.IsKnownFolder);
+        Assert.Null(tab.TabIcon);
+        Assert.Null(tab.TabGlyph);
+        Assert.Null(NextCommander.Platform.KnownFolders.KindOf("/some/other/Downloads"));
+    }
 }

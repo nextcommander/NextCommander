@@ -13,8 +13,16 @@
     <TreeView.ItemTemplate>
       <TreeDataTemplate DataType="vm:TreeNodeViewModel" ItemsSource="{Binding Children}">
         <StackPanel Orientation="Horizontal" Spacing="4">
-          <PathIcon Width="14" Height="14" Data="{StaticResource FmFolderIcon}" Foreground="{DynamicResource FmFolderBrush}"
-                    IsVisible="{Binding !IsPlaceholder}" />
+          <PathIcon Width="14" Height="14" Data="{StaticResource FmFolderIcon}" Foreground="{DynamicResource FmFolderBrush}">
+            <PathIcon.IsVisible>
+              <MultiBinding Converter="{x:Static BoolConverters.And}">
+                <Binding Path="!IsPlaceholder" />
+                <Binding Path="!HasSystemIcon" />
+              </MultiBinding>
+            </PathIcon.IsVisible>
+          </PathIcon>
+          <!-- user folders of the system (documents, downloads ...): the icon the system gives them -->
+          <Image Width="14" Height="14" Source="{Binding SystemIcon}" IsVisible="{Binding HasSystemIcon}" />
           <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
         </StackPanel>
       </TreeDataTemplate>

@@ -58,7 +58,7 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
     private bool _suspended;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Title))]
+    [NotifyPropertyChangedFor(nameof(Title), nameof(KnownFolderKind), nameof(IsKnownFolder), nameof(ShowTabIcon), nameof(TabIcon), nameof(TabGlyph))]
     private VfsPath? _currentPath;
 
     [ObservableProperty]
@@ -241,8 +241,22 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>Folder tabs: icon on the tab (a lock for locked tabs).</summary>
-    public bool ShowTabIcon => _settings.ShowTabIcons;
+    /// <summary>
+    /// Folder tabs: icon on the tab (a lock for locked tabs). A user folder of the system (home, documents, downloads,
+    /// desktop, pictures, music, videos) always shows the icon the operating system gives it, even when icons on tabs are off.
+    /// </summary>
+    public bool ShowTabIcon => _settings.ShowTabIcons || IsKnownFolder;
+
+    /// <summary>The user folder of the system shown in the panel; null for any other folder.</summary>
+    public UserFolder? KnownFolderKind => CurrentPath is { IsLocal: true } path ? KnownFolders.KindOf(path.Path) : null;
+
+    public bool IsKnownFolder => KnownFolderKind is not null;
+
+    /// <summary>The operating system's icon of the user folder shown in the panel; null when it has none.</summary>
+    public Avalonia.Media.Imaging.Bitmap? TabIcon => KnownFolderKind is { } kind ? SystemFolderIcons.Icon(kind) : null;
+
+    /// <summary>The built-in glyph of the user folder when the system gives no icon.</summary>
+    public Geometry? TabGlyph => KnownFolderKind is { } kind && TabIcon is null ? IconPacks.Glyph(SystemFolderIcons.GlyphKey(kind)) : null;
 
     public bool IsLocked => _panelSettings.LockMode != TabLockMode.None;
 
@@ -610,7 +624,7 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         UpdateFreeSpace();
         UpdateStatus();
         OnPropertyChanged(nameof(ColumnLayout));
-        foreach (var name in new[] { nameof(Title), nameof(ShowTabIcon), nameof(InvertedSelection), nameof(FlatDriveButtons), nameof(ShowDriveLabels), nameof(ShowDriveButtons), nameof(FolderShortcutItems), nameof(HasFolderShortcuts), nameof(ShowDriveCombo), nameof(ShowPathLine), nameof(ShowBreadcrumbs),
+        foreach (var name in new[] { nameof(Title), nameof(ShowTabIcon), nameof(TabGlyph), nameof(InvertedSelection), nameof(FlatDriveButtons), nameof(ShowDriveLabels), nameof(ShowDriveButtons), nameof(FolderShortcutItems), nameof(HasFolderShortcuts), nameof(ShowDriveCombo), nameof(ShowPathLine), nameof(ShowBreadcrumbs),
                      nameof(ShowPathButtons), nameof(ShowColumnHeaders), nameof(ShowStatusBar) })
         {
             OnPropertyChanged(name);
