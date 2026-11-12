@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\NextCommander.Core\NextCommander.Core.csproj" />
+  </ItemGroup>
+</Project>

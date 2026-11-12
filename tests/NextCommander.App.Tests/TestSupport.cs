@@ -1,0 +1,420 @@
+using Avalonia.Controls;
+using Avalonia.Headless;
+using Avalonia.Input;
+using Avalonia.Threading;
+using NextCommander.App.Services;
+using NextCommander.App.ViewModels;
+using NextCommander.App.Views;
+using NextCommander.Core.Commands;
+using NextCommander.Core.Config;
+using NextCommander.Core.Operations;
+using NextCommander.Core.Vfs;
+using NextCommander.Platform;
+using NextCommander.Vfs.Local;
+
+namespace NextCommander.App.Tests;
+
+/// <summary>Temp folder tree + a real MainWindow driven headlessly.</summary>
+internal sealed class UiFixture : IDisposable
+{
+    public UiFixture()
+    {
+        Root = Path.Combine(Path.GetTempPath(), "fm-ui-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(Path.Combine(Root, "left", "sub"));
+        Directory.CreateDirectory(Path.Combine(Root, "right"));
+        File.WriteAllText(Path.Combine(Root, "left", "a.txt"), "A");
+        File.WriteAllText(Path.Combine(Root, "left", "b.log"), "BB");
+        File.WriteAllText(Path.Combine(Root, "left", "file10.txt"), "10");
+        File.WriteAllText(Path.Combine(Root, "left", "file2.txt"), "2");
+        File.WriteAllText(Path.Combine(Root, "left", "sub", "inner.txt"), "I");
+    }
+
+    public string Root { get; }
+
+    public FakeDialogs Dialogs { get; } = new();
+
+    public NextCommander.Vfs.Archive.ArchiveFileSystemProvider Archives { get; } = new();
+
+    public string L(params string[] parts) => Path.Combine([Root, "left", .. parts]);
+
+    public string R(params string[] parts) => Path.Combine([Root, "right", .. parts]);
+
+    public async Task<(MainWindow Window, MainWindowViewModel Vm)> OpenAsync(params IFileSystemProvider[] extraProviders)
+    {
+        var settings = new AppSettings();
+        settings.Left.Path = L();
+        settings.Right.Path = R();
+        var registry = new ProviderRegistry([new LocalFileSystemProvider(), Archives, .. extraProviders]);
+        Archives.Registry = registry;
+        Archives.PasswordPrompt = (name, retry) => Dialogs.PromptPasswordAsync("Password", name);
+        var vm = new MainWindowViewModel(registry, PlatformServiceFactory.Create(), settings,
+            new SettingsStore(Path.Combine(Root, "settings")), Dialogs, new JobQueue(), new CommandRegistry());
+        var window = new MainWindow { DataContext = vm, Width = 1100, Height = 600 };
+        _windows.Add(window);
+        window.Show();
+        await vm.InitializeAsync();
+        Dispatcher.UIThread.RunJobs();
+        return (window, vm);
+    }
+
+    public static void Press(Window w, Key key, RawInputModifiers mods = RawInputModifiers.None)
+    {
+        w.KeyPress(key, mods, PhysicalKey.None, null);
+        w.KeyRelease(key, mods, PhysicalKey.None, null);
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    public static async Task SettleAsync(int rounds = 20)
+    {
+        for (var i = 0; i < rounds; i++)
+        {
+            await Task.Delay(25);
+            Dispatcher.UIThread.RunJobs();
+        }
+    }
+
+    public static async Task WaitUntilAsync(Func<bool> condition, int timeoutMs = 5000)
+    {
+        var start = Environment.TickCount64;
+        while (!condition() && Environment.TickCount64 - start < timeoutMs)
+        {
+            await SettleAsync(2);
+        }
+    }
+
+    private readonly List<Window> _windows = [];
+
+    /// <summary>Closes the window when the test ends.</summary>
+    public T Track<T>(T window)
+        where T : Window
+    {
+        _windows.Add(window);
+        return window;
+    }
+
+    public void Dispose()
+    {
+        // Headless tests share one UI thread: leftover windows would keep watching and rendering.
+        Dispatcher.UIThread.Invoke(() =>
+        {
+            foreach (var window in _windows)
+            {
+                window.Close();
+            }
+        });
+        Archives.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        try
+        {
+            Directory.Delete(Root, recursive: true);
+        }
+        catch (IOException)
+        {
+        }
+    }
+}
+
+internal sealed class FakeDialogs : IDialogService
+{
+    public string? NextPrompt { get; set; }
+
+    public string? LastCopyTarget { get; private set; }
+
+    /// <summary>Target typed into the next copy dialog (null = keep the suggestion).</summary>
+    public string? NextCopyTarget { get; set; }
+
+    public IReadOnlyList<string> LastSuggestions { get; private set; } = [];
+
+    public List<string> Messages { get; } = [];
+
+    public Task ShowMessageAsync(string title, string message)
+    {
+        Messages.Add(message);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Answer of <see cref="ConfirmAsync"/> (default yes).</summary>
+    public bool ConfirmAnswer { get; set; } = true;
+
+    public int Confirmations { get; private set; }
+
+    public Task<bool> ConfirmAsync(string title, string message, string okText = "OK")
+    {
+        Confirmations++;
+        return Task.FromResult(ConfirmAnswer);
+    }
+
+    public bool? LastSelectBaseName { get; private set; }
+
+    public Task<string?> PromptAsync(string title, string message, string initialText, bool selectBaseName = false)
+    {
+        LastSelectBaseName = selectBaseName;
+        var result = NextPrompt;
+        NextPrompt = null;
+        return Task.FromResult(result);
+    }
+
+    /// <summary>The extras given to the last copy dialog.</summary>
+    public Views.Dialogs.CopyDialogOptions? LastCopyOptions { get; private set; }
+
+    /// <summary>Changes the answer of the next copy dialog (the advanced options).</summary>
+    public Func<CopyDialogResult, CopyDialogResult>? NextCopyAnswer { get; set; }
+
+    public int CopyQueueShown { get; private set; }
+
+    public void ShowCopyQueue(JobQueue jobs, Func<Task> addSelection) => CopyQueueShown++;
+
+    public Task<CopyDialogResult?> ShowCopyDialogAsync(bool move, string description, string target, bool verifyDefault, IReadOnlyList<string> suggestions,
+        Views.Dialogs.CopyDialogOptions? options = null)
+    {
+        LastCopyOptions = options;
+        LastCopyTarget = target;
+        LastSuggestions = suggestions;
+        var chosen = NextCopyTarget ?? target;
+        NextCopyTarget = null;
+        var answer = new CopyDialogResult(chosen, ConflictPolicy.Overwrite, false, null, false);
+        if (NextCopyAnswer is { } change)
+        {
+            answer = change(answer);
+            NextCopyAnswer = null;
+        }
+        return Task.FromResult<CopyDialogResult?>(answer);
+    }
+
+    /// <summary>Answer of the next save file dialog (null: cancelled).</summary>
+    public string? NextSaveFile { get; set; }
+
+    /// <summary>Answer of the next open file dialog (null: cancelled).</summary>
+    public string? NextOpenFile { get; set; }
+
+    public Task<string?> PickSaveFileAsync(string title, string suggestedName)
+    {
+        var answer = NextSaveFile;
+        NextSaveFile = null;
+        return Task.FromResult(answer);
+    }
+
+    public Task<string?> PickOpenFileAsync(string title)
+    {
+        var answer = NextOpenFile;
+        NextOpenFile = null;
+        return Task.FromResult(answer);
+    }
+
+    public Task<ConflictResponse> AskConflictAsync(ConflictRequest request) => Task.FromResult(new ConflictResponse(ConflictAction.Skip));
+
+    public Task<ErrorAction> AskErrorAsync(JobError error) => Task.FromResult(ErrorAction.Cancel);
+
+    public Task TrackJobAsync(FileJob job, Task running) => running;
+
+    public ListerRequest? LastLister { get; private set; }
+
+    public VfsEntry? LastEdited { get; private set; }
+
+    public FindFilesRequest? LastFind { get; private set; }
+
+    public void ShowLister(ListerRequest request) => LastLister = request;
+
+    public JobQueue? LastTransferManager { get; private set; }
+
+    public void ShowTransferManager(JobQueue jobs) => LastTransferManager = jobs;
+
+    /// <summary>Runs inside the fake settings dialog: change settings and call the callback.</summary>
+    public Action<AppSettings, Action, IReadOnlyList<(string Text, Func<Task> Action)>>? SettingsEditor { get; set; }
+
+    public string? LastSettingsSearch { get; private set; }
+
+    public Task ShowSettingsAsync(AppSettings settings, Action changed, IReadOnlyList<(string Text, Func<Task> Action)> extraActions, string? search = null)
+    {
+        LastSettingsSearch = search;
+        SettingsEditor?.Invoke(settings, changed, extraActions);
+        return Task.CompletedTask;
+    }
+
+    public (VfsEntry Entry, Func<Task<NextCommander.App.Views.Dialogs.SpaceInfo>>? Measure)? LastProperties { get; private set; }
+
+    public Task ShowPropertiesAsync(VfsEntry entry, Func<Task<NextCommander.App.Views.Dialogs.SpaceInfo>>? measure)
+    {
+        LastProperties = (entry, measure);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Answer of the next comment dialog (null = cancel).</summary>
+    public string? NextComment { get; set; }
+
+    public Task<string?> EditCommentAsync(string name, string? current) => Task.FromResult(NextComment);
+
+    public Action<List<NextCommander.Core.Columns.ColumnSet>>? ColumnSetEditor { get; set; }
+
+    public Task EditColumnSetsAsync(List<NextCommander.Core.Columns.ColumnSet> sets, IReadOnlyList<NextCommander.Core.Columns.ColumnField> fields)
+    {
+        ColumnSetEditor?.Invoke(sets);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Logins handed out in order (null = cancel).</summary>
+    public Queue<(string Password, bool Save)?> Logins { get; } = new();
+
+    public bool TrustFingerprints { get; set; } = true;
+
+    public RemoteConnection? NextConnection { get; set; }
+
+    public (string? Current, string? New)? NextMasterPassword { get; set; }
+
+    public Task<(string Password, bool Save)?> PromptLoginAsync(RemoteConnection connection, bool retry) =>
+        Task.FromResult(Logins.Count > 0 ? Logins.Dequeue() : null);
+
+    public Task<bool> ConfirmFingerprintAsync(string host, string fingerprint, string description, bool changed) => Task.FromResult(TrustFingerprints);
+
+    public Task<RemoteConnection?> ShowConnectionManagerAsync(List<RemoteConnection> connections, Func<RemoteConnection, Task> forgetPassword) =>
+        Task.FromResult(NextConnection);
+
+    public Task<(string? Current, string? New)?> ShowMasterPasswordDialogAsync(bool hasMaster) => Task.FromResult(NextMasterPassword);
+
+    public IReadOnlyList<VfsEntry>? LastMultiRename { get; private set; }
+
+    public (VfsPath Left, VfsPath Right)? LastSync { get; private set; }
+
+    public (VfsEntry Left, VfsEntry Right)? LastCompare { get; private set; }
+
+    public AttributeChange? NextAttributes { get; set; }
+
+    public (NextCommander.Core.Tools.ChecksumKind Kind, string? SingleFileName)? NextChecksum { get; set; }
+
+    public void ShowMultiRename(IReadOnlyList<VfsEntry> entries, ToolContext context, Func<Task> refresh) => LastMultiRename = entries;
+
+    public void ShowSyncDirs(VfsPath left, VfsPath right, ToolContext context) => LastSync = (left, right);
+
+    public void ShowCompare(VfsEntry left, VfsEntry right, ToolContext context) => LastCompare = (left, right);
+
+    public Task<AttributeChange?> ShowAttributesDialogAsync(IReadOnlyList<VfsEntry> entries) => Task.FromResult(NextAttributes);
+
+    public Task<(NextCommander.Core.Tools.ChecksumKind Kind, string? SingleFileName)?> ShowChecksumDialogAsync(string baseName, NextCommander.Core.Tools.ChecksumKind kind) =>
+        Task.FromResult(NextChecksum);
+
+    /// <summary>Answer of the next pack dialog (null = cancel).</summary>
+    public PackDialogResult? NextPack { get; set; }
+
+    public string? LastPackTarget { get; private set; }
+
+    public Task<PackDialogResult?> ShowPackDialogAsync(string description, string target, NextCommander.Vfs.Archive.PackFormat format)
+    {
+        LastPackTarget = target;
+        return Task.FromResult(NextPack);
+    }
+
+    /// <summary>Passwords handed out in order (null = cancel).</summary>
+    public Queue<string?> Passwords { get; } = new();
+
+    public Task<string?> PromptPasswordAsync(string title, string message) =>
+        Task.FromResult(Passwords.Count > 0 ? Passwords.Dequeue() : null);
+
+    public void ShowEditor(VfsEntry entry, ToolContext context) => LastEdited = entry;
+
+    public void ShowFindFiles(FindFilesRequest request) => LastFind = request;
+
+    /// <summary>What Network > New connection "enters" (null: cancelled).</summary>
+    public RemoteConnection? NextNewConnection { get; set; }
+
+    public RemoteProtocol? LastNewConnection { get; private set; }
+
+    public Task<RemoteConnection?> ShowNewConnectionAsync(RemoteProtocol protocol)
+    {
+        LastNewConnection = protocol;
+        return Task.FromResult(NextNewConnection);
+    }
+
+    public DuplicatesRequest? LastDuplicates { get; private set; }
+
+    public void ShowDuplicates(DuplicatesRequest request) => LastDuplicates = request;
+
+
+
+    /// <summary>Chooses from quick lists (history, tab list, command browser); null = cancel.</summary>
+    public Func<IReadOnlyList<QuickListItem>, QuickListResult?>? QuickListHandler { get; set; }
+
+    public IReadOnlyList<QuickListItem> LastQuickList { get; private set; } = [];
+
+    public string? NextHotkey { get; set; }
+
+    public ButtonDefinition? NextButton { get; set; }
+
+    public VfsPath? NextTreePath { get; set; }
+
+    public Task<QuickListResult?> ShowQuickListAsync(string title, IReadOnlyList<QuickListItem> items, IReadOnlyList<string>? actions = null)
+    {
+        LastQuickList = items;
+        return Task.FromResult(QuickListHandler?.Invoke(items));
+    }
+
+    public Task<string?> CaptureHotkeyAsync(string commandName) => Task.FromResult(NextHotkey);
+
+    public Task<ButtonDefinition?> EditButtonAsync(ButtonDefinition? existing) => Task.FromResult(NextButton);
+
+    public Task EditHotlistAsync(List<HotlistEntry> hotlist) => Task.CompletedTask;
+
+    /// <summary>Answer of the button bar editor (null = cancel); the buttons it was given.</summary>
+    public NextCommander.App.Views.Dialogs.ButtonBarEdit? NextButtonBar { get; set; }
+
+    public IReadOnlyList<ButtonDefinition>? LastButtonBar { get; private set; }
+
+    public Task<NextCommander.App.Views.Dialogs.ButtonBarEdit?> EditButtonBarAsync(string title, IReadOnlyList<ButtonDefinition> buttons, int iconSize, bool vertical,
+        Func<ButtonDefinition, int, Avalonia.Controls.Control?> icon)
+    {
+        LastButtonBar = buttons;
+        return Task.FromResult(NextButtonBar);
+    }
+
+    public Task<VfsPath?> ShowTreeAsync(PanelViewModel panel) => Task.FromResult(NextTreePath);
+}
+
+/// <summary>In-memory provider "mem://": large listings and a directory that always fails with access denied.</summary>
+internal sealed class MemoryProvider : IFileSystemProvider
+{
+    private readonly Dictionary<string, List<VfsEntry>> _dirs = new(StringComparer.Ordinal);
+
+    public string Scheme => "mem";
+
+    public ProviderCapabilities Capabilities => ProviderCapabilities.Read;
+
+    public VfsPath Add(string dir, string name, bool isDirectory = false, long size = 0)
+    {
+        var parent = VfsPath.Create("mem", "host", dir);
+        var path = parent.Combine(name);
+        if (!_dirs.TryGetValue(parent.Path, out var list))
+        {
+            _dirs[parent.Path] = list = [];
+        }
+        list.Add(new VfsEntry { Name = name, Path = path, IsDirectory = isDirectory, Size = size, LastWriteTime = new DateTime(2024, 1, 1) });
+        if (isDirectory && !_dirs.ContainsKey(path.Path))
+        {
+            _dirs[path.Path] = [];
+        }
+        return path;
+    }
+
+    public Task<IReadOnlyList<VfsEntry>> ListAsync(VfsPath directory, CancellationToken cancellationToken)
+    {
+        if (directory.Path.EndsWith("/denied", StringComparison.Ordinal))
+        {
+            throw new UnauthorizedAccessException("Access is denied.");
+        }
+        return _dirs.TryGetValue(directory.Path, out var list)
+            ? Task.FromResult<IReadOnlyList<VfsEntry>>(list)
+            : throw new DirectoryNotFoundException(directory.Path);
+    }
+
+    public Task<VfsEntry?> GetEntryAsync(VfsPath path, CancellationToken cancellationToken) =>
+        Task.FromResult(path.Parent is { } p && _dirs.TryGetValue(p.Path, out var list) ? list.FirstOrDefault(e => e.Path == path) : null);
+
+    public Task<Stream> OpenReadAsync(VfsPath path, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+    public Task<Stream> OpenWriteAsync(VfsPath path, bool overwrite, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+    public Task CreateDirectoryAsync(VfsPath path, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+    public Task DeleteAsync(VfsPath path, bool recursive, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+    public Task MoveAsync(VfsPath source, VfsPath destination, bool overwrite, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+    public Task SetTimesAsync(VfsPath path, DateTime? creationTime, DateTime? lastWriteTime, CancellationToken cancellationToken) => throw new NotSupportedException();
+}

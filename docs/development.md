@@ -1,0 +1,264 @@
+# Development
+
+[Back to the README](../README.md)
+
+NextCommander is written in C# on .NET 10 with Avalonia 11.3 (Fluent theme). The UI texts in the code are
+English; translations are applied at run time. The repository folder and the GitHub repository still carry the
+former name `FileManager`.
+
+Project notes for contributors (commands, structure, rules, known pitfalls): [CLAUDE.md](../CLAUDE.md).
+Other project documents:
+
+- [docs/history-and-decisions.md](history-and-decisions.md): history, decisions, lessons.
+- [docs/remaining-work.md](remaining-work.md): what is not done yet.
+- [docs/screenshots/](screenshots/): screenshots of the application.
+
+## Requirements
+
+- .NET SDK 10.0.100 or a later feature band (`global.json`, `rollForward: latestFeature`).
+- Packages come from nuget.org only (`nuget.config` with `<clear />`); versions are central in
+  `Directory.Packages.props`.
+- Nothing machine-specific is used: everything needed to build is in the repository.
+- Optional:
+  - Python 3: the `build/*.py` scripts and the `tests/servers` test servers.
+  - 7-Zip (writing 7z), VLC (media playback in Lister), Everything / plocate / mdfind (indexed search).
+    None is needed to build; without them the feature is turned off.
+
+## Commands
+
+```sh
+dotnet build                                   # warnings are errors (TreatWarningsAsErrors)
+dotnet test                                    # Core and App tests; App tests are headless Avalonia
+dotnet run --project src/NextCommander.App
+```
+
+| Command | Purpose |
+|---|---|
+| `./build/publish.ps1 -Rid win-x64` | zip, portable zip, `.msix` and the setup program (`-setup.exe`, Inno Setup) under `dist/` |
+| `./build/publish.ps1 -Rid linux-x64` | `.tar.gz` (with `.desktop` file and icons); an AppImage if `appimagetool` is present |
+| `./build/publish.ps1 -Rid osx-arm64` | zip containing `NextCommander.app`; on macOS also a `.dmg` |
+| `./build/windows/new-msix-certificate.ps1 -Trust` | MSIX signing certificate (`CN=NextCommander`, user store) and trusting it on this machine (UAC) |
+| `./tests/servers/run-integration-tests.ps1` | remote tests against local FTP / SFTP / WebDAV / S3 / SMB servers (+ Azurite if Node.js is installed); needs Python |
+| `python build/make_icons.py` | application icons (Assets) and MSIX logos from the design files in `build/icons` |
+| `python build/make_menu_icons.py src/NextCommander.App/Styles/MenuIcons.axaml` | menu glyphs |
+| `python build/extract_strings.py missing.json` | UI texts of the code missing from en.json, with suggested keys (and literals still holding Turkish letters) |
+
+Environment variables used by tests and tools:
+
+| Variable | Effect |
+|---|---|
+| `FM_SCREENSHOT_DIR=<folder>` | Tests that take screenshots write PNGs there. |
+| `FM_L10N_REPORT=<file>` | `LocalizationSurveyTests` lists texts left untranslated in Turkish mode. |
+| `FM_TEST_FTP`, `FM_TEST_SFTP`, `FM_TEST_WEBDAV`, `FM_TEST_S3`, `FM_TEST_SMB`, `FM_TEST_AZURE` | Enable the remote integration tests (`scheme://user:pass@host:port/dir`; WebDAV `dav://`, S3 `s3://key:secret@host:port/bucket`, SMB `smb://...:4445/TEST`, Azure `azblob://account:key@host:port/container`). Otherwise they are skipped. |
+| `FM_7Z` | Path of the 7-Zip program. |
+| `FM_LIBVLC` | Path of LibVLC (VLC is not bundled). |
+| `MSIX_CERT`, `MSIX_PUBLISHER` | A `.pfx` and publisher for signing the MSIX instead of the local certificate. |
+| `MACOS_SIGN_IDENTITY`, `MACOS_NOTARY_PROFILE` | macOS signing and notarization. |
+
+GitHub Actions (`.github/workflows/ci.yml`) builds and tests on the three platforms and uploads the packages.
+
+## Project structure
+
+| Project | Contents |
+|---|---|
+| `NextCommander.Core` | The UI-less core: VFS (`VfsPath` with the `archive://`, `sftp://`, `ftp://` … schemes, `IFileSystemProvider`, `ProviderRegistry`), operations (`CopyMoveJob`, `JobQueue`, `HttpDownloadJob`, `SpeedLimiter`), file mask matcher, command registry, search and indexes (`LocalFileIndex`, Everything / plocate / Spotlight), tools (checksums / BLAKE3, split / combine, encoding, Mark-of-the-web, update check, `DiskUsage`, `TreemapLayout`), text, columns, plugins (loader, `IPackerPlugin`, `IViewerPlugin`), localization (`Localizer`, base language `en`), config (`AppSettings`, `SettingsStore`, `ColorTheme`, `IconPack`). |
+| `NextCommander.Vfs.Local` | Local file system provider (watching, links, volume detection). |
+| `NextCommander.Vfs.Archive` | Archives: browsing like folders, changing zips in place, `PackJob`, test jobs, `SevenZipCli`. |
+| `NextCommander.Vfs.Remote` | SFTP (SSH.NET), FTP/FTPS (FluentFTP), SMB (SMBLibrary, LGPL); WebDAV, S3 and Azure Blob without packages (HttpClient, `S3Signer` AWS SigV4, `AzureSigner` Shared Key, `AwsProfiles`); `RemoteProviderBase` (pool, login, certificate approval). `Cloud/`: Google Drive, OneDrive, Dropbox (`CloudProviderBase`, `CloudSession` token refresh, `OAuthClient` PKCE with the `localhost:53682` callback), tested against `FakeCloud`. |
+| `NextCommander.Columns` | Image (MetadataExtractor) and audio / video (TagLib#) column providers. |
+| `NextCommander.Platform` | Windows / Linux / macOS services: drives, recycle bin, opening with the default application, terminal, taskbar progress, network drive dialogs, `SecretStore`, the Explorer context menu, running elevated. |
+| `NextCommander.App` | The Avalonia UI (MVVM). |
+| `tests/NextCommander.Core.Tests` | xUnit unit tests. |
+| `tests/NextCommander.App.Tests` | Avalonia.Headless UI tests. |
+| `tests/SamplePlugin` | An example plugin. |
+| `tests/servers` | FTP, SFTP, WebDAV (wsgidav), S3 (moto) and SMB (impacket, port 4445) test servers; Azurite for Azure is installed into `node_modules`. |
+
+Inside `NextCommander.App`:
+
+- `MainWindow`, `PanelSideView` → `FilePanelView` → `PathBarView`; `ViewModels/*` (`MainWindowViewModel` and
+  `.Menus.cs`).
+- Tool windows: Lister, editor, find files, multi-rename, synchronize, compare, `DuplicatesWindow`,
+  `DiskUsageWindow` with `Controls/TreemapControl`.
+- `Services/Icons/`: `BrandIcons.cs` (connection type icons), `Flags.cs` (vector flags of the language list),
+  `IconPacks.cs`, `FileKinds.cs`, `DriveIconConverter.cs`.
+- `Services/MenuIcons.cs` (command → icon), `Services/ColorThemes.cs`, `Services/UiLocalization.cs`,
+  `Services/TerminalSession.cs` + `Views/TerminalView.cs` (built-in terminal: `Services/Terminal/PseudoTerminal`
+  on ConPTY / pty + `VtScreen`; fallback line console `TerminalConsole`), `Services/MediaSupport.cs`,
+  `Services/Elevation.cs` (retrying an operation with administrator rights), `Services/HotkeyMap.cs`.
+- `Localization/*.json` (copied to `Languages/` in the output), `Themes/*.json`, `IconPacks/*.json`.
+- `Styles/NextCommanderStyles.axaml`: shared styles (`Button[IsDefault=True]` draws default buttons in the
+  accent color; `Button.dialog` / `StackPanel.buttonrow` for OK / Cancel rows).
+
+## Rules of the code base
+
+- **Commands:** every action is a `nc_*` command in the `CommandRegistry` (user commands: `uc_*`). Menus, button
+  bars, shortcuts (`Services/HotkeyMap.cs`) and the command line call the same commands. A new menu item needs a
+  command registration, a `CommandParameter` in XAML, a `MenuIcons` mapping and an en.json / tr.json key.
+- **Menus** keep a fixed order (details in [CLAUDE.md](../CLAUDE.md)).
+- **Settings** live in `AppSettings`. Every setting in the Configuration window is a `SettingItem`; the window
+  works on a copy and writes back only these items on Apply / OK. Lists edited as JSON (`JsonList<T>`) are
+  validated (`ParseJsonList`, `ValidateEntry`).
+- **No option that does nothing:** features without an implementation go to
+  [remaining-work.md](remaining-work.md).
+
+## Localization
+
+- The base language is English: UI texts are written in English in the code.
+- Language files map keys to texts. Keys have the form `Form.Item.Option`: `Menu.nc_X`, `Command.nc_X`,
+  `Settings.<Page>.<Setting>[.Description]`, `Settings.<Page>.Group.<Group>`, `<Window>.<Text>`, `Common.*`
+  (details in `build/l10n_keys.py`).
+- At run time the English text in the code is linked to its key through en.json, and the key to the translation
+  (`Localizer.Join`). The same English text has one key. `{0}` patterns cover interpolated texts.
+- No call is needed in the code; a TextBlock hook translates. File and folder names are not translated: the
+  classes `cell`, `crumb`, `tab`, `noloc` and anything inside `TreeViewItem` / `DataGridCell` are excluded.
+- New text: add the key to `en.json` (English) and `tr.json` (Turkish). `python build/extract_strings.py missing.json`
+  suggests keys; a test checks that both files have the same keys.
+- Language files are read from `Languages/` next to the program and `languages/` in the settings folder (the
+  latter wins). The "System" setting picks the OS language when a file exists for it, otherwise English.
+
+## Themes and icon packs
+
+- Color themes are JSON files (`Themes/` in the program, `themes/` in the settings folder) with `Name`, `Base`
+  (Light / Dark) and `Colors` (theme key → color). `ColorThemes.Keys` maps theme keys to Fluent palette colors or
+  `Fm*` resources. "Follow the system" uses the system colors in light mode and `dark.json` in dark mode, and
+  switches live. `nc_SetColorScheme <name>` selects a theme (`system` = follow the system).
+- Icon packs are JSON files (`IconPacks/` / `iconpacks/`) with `Name`, `Style`, `Color`, `Badges`, `Colors` and
+  `Glyphs` (SVG path data on a 16×16 grid, keyed by resource names such as `FmFolderIcon`, `MiCopy`). The
+  built-in glyphs are generated into `Styles/MenuIcons.axaml` by `build/make_menu_icons.py`.
+- User guides: [themes](guide/themes.md), [icon packs](guide/icon-packs.md), [languages](guide/languages.md).
+
+## Plugins
+
+- Location: `<settings folder>/plugins/<name>/plugin.json` or the `plugins` folder next to the program.
+- `plugin.json`: `Name`, `Assembly` (the main assembly, relative to the folder), optional `Description`,
+  `Version`.
+- Through the `NextCommander.Core` interfaces a plugin can add file systems (`IFileSystemProvider`), columns
+  (`IColumnProvider`), archive formats for Alt+F5 (`IPackerPlugin`) and Lister views (`IViewerPlugin`: HTML,
+  text or its own control).
+- Each plugin is loaded in its own load context and cannot load assemblies outside its folder.
+- *Configuration > Plugins...* lists the loaded plugins and errors; the `DisabledPlugins` setting turns one off.
+- Example: `tests/SamplePlugin` (a column and a `hello://` file system).
+
+## Settings file
+
+- `settings.json` in the settings folder (`%APPDATA%\NextCommander`, `~/.config/NextCommander` or
+  `$XDG_CONFIG_HOME`, `~/Library/Application Support/NextCommander`); a `portable.json` next to the executable
+  switches to the executable's folder. See `SettingsStore`.
+- A corrupt file is kept as `settings.json.corrupt` and the program starts with defaults.
+- Shortcuts can be overridden in `Hotkeys`, e.g. `"Ctrl+F5": "nc_Copy"`; an empty value removes the default.
+- `Associations`: mask → program (with `%P%N` parameters), a `nc_` command, `lister`, `editor` or `system`.
+  `EditorAssociations` does the same for F4 (`{"Mask": "*.docx", "Program": "system"}`); `UseInternalEditor: false`
+  turns the internal editor off.
+- `QuickSearchTrigger` (`CtrlAltLetter` / `LetterOnly`) and `QuickSearchMode` (`Prefix` / `Anywhere` / `Fuzzy`).
+- Logs go to `logs/` in the settings folder; a startup crash is written to `logs/crash.log` (on macOS also
+  `~/Library/Logs/NextCommander/crash.log`).
+
+## Command line and parameters
+
+- Program arguments: `NextCommander <folder|file>`, `--lister <file>`, `--edit <file>`. With the single-window
+  setting on (default), a second start passes its arguments to the running window (mutex + named pipe) and exits.
+  `--elevated <request.json> <result.json>` is the internal helper started with administrator rights.
+- Internal commands on the command line: `cd path` (`cd path\:` puts the cursor on the item), `md a\b`,
+  `nc_*` commands with parameters (`nc_PanelsSplitPercent 30`, `nc_NewConnection sftp`,
+  `nc_OpenConnection <name>`, `nc_SetColorScheme dark`), `LOADLIST file`, `LOADSEARCH name`, `OPENTABS file`,
+  `SAVETABS`, environment variable substrings `%v:~2,3%`.
+- Button and user command (`uc_name`) parameters: `%P %T %N %M %O %E %S %R %L %F %UL %WL %B %B+1 %C1 %C2 %Q %Z
+  %$DATE+1D% %$CLIPBOARD% %|ENV|`, substrings `%N:~0,3`; a leading `?` asks for the parameters; a `*` before the
+  program runs it as administrator.
+- Hotlist entries: `Group/Name` makes submenus; `%NC_PATH%` makes relative paths.
+
+## Technical notes
+
+- **Saved passwords:** `secrets.json`, AES-256-GCM. With a master password the key is derived with PBKDF2
+  (600,000 rounds); otherwise it is protected with DPAPI on Windows and with a user-only file elsewhere.
+- **Host keys / certificates** (SFTP, FTPS, WebDAV, S3, Azure over HTTPS) are confirmed by fingerprint on first
+  use and saved in the settings.
+- **Connection pool:** at most 3 connections per server; listing does not wait for running copies.
+- **WebDAV times:** kept with PROPPATCH (Nextcloud / ownCloud `lastmodified`, writable `getlastmodified`, IIS
+  `Win32LastModifiedTime`); the method that works is found on the first file and remembered per server.
+- **S3 / Azure times:** stored in `x-amz-meta-mtime` / `mtime` metadata (as rclone does); read for folders with at
+  most 300 files. Files over 64 MB are uploaded in parts. Renames are copy + delete.
+- **Cloud drives:** OAuth 2.0 with PKCE; the refresh token goes to the encrypted secret store when "Remember the
+  sign-in" is on. Uploads of large files use upload sessions.
+- **Network view** (`network:///`): ARP neighbors, mDNS / Bonjour, and a short probe of ports 22, 21, 445, 80, 443
+  on the local subnets (at most /24); cached for a minute.
+- **Linux drives:** read with `lsblk`; unmounted partitions are mounted with `udisksctl`.
+- **Copy verification:** the source is hashed with BLAKE3 while copying, then only the target is read.
+- **Zip safety:** entries escaping with `../` or absolute paths are anchored at the target (no zip slip). Packing
+  writes a `.part` file first.
+- **File index:** stored in `<settings folder>/index/files.idx`. Measured on about 1 million files / 155 thousand
+  folders: first scan about 3 minutes, search 20–80 ms, folder size about 30 ms, about 120 MB of memory, a 44 MB
+  file. On Linux, if the inotify watch limit is exceeded, it refreshes every 10 minutes.
+- **Native dependencies:** BLAKE3 has a native library (embedded in the single-file publish). LibVLC is not
+  bundled; the system's VLC is used (or `FM_LIBVLC`).
+- **Elevation:** an operation refused for missing rights is written to a request file, and the program starts
+  itself again through UAC (Windows), `pkexec` / polkit (Linux) or the macOS authorization dialog, performs only
+  that operation without a window, and writes back the result.
+
+## Packaging
+
+The outputs of `build/publish.ps1` are single-file, self-contained .NET applications; no .NET installation is
+needed on the target. The portable zip contains `portable.json`: settings, passwords and logs stay in the
+program's folder.
+
+### Windows (MSIX)
+
+`makeappx` / `signtool` come from an installed Windows SDK, or else from the `Microsoft.Windows.SDK.BuildTools`
+NuGet package (downloaded once under `artifacts/tools`; no installation or administrator rights needed).
+`build/windows/new-msix-certificate.ps1` creates a self-signed `CN=NextCommander` code signing certificate in the
+user store (no password, no .pfx), and `publish.ps1` signs the package with it. `-Trust` adds the certificate to
+the machine's Trusted People store (administrator rights once); after that the `.msix` installs with a double
+click or `Add-AppxPackage`. On another machine `dist/NextCommander-msix.cer` must be trusted too. Alternatively
+set `MSIX_CERT` (.pfx) / `MSIX_PUBLISHER`.
+
+### Windows (setup program)
+
+`build/windows/NextCommander.iss` is an Inno Setup 6 script; `publish.ps1` compiles it with the `ISCC.exe` of an
+installed Inno Setup 6, or else from the `Tools.InnoSetup` NuGet package (downloaded once under `artifacts/tools`).
+The setup installs per user by default (`{autopf}` = `%LOCALAPPDATA%\Programs`, no administrator rights; "all
+users" can be chosen), in English or Turkish, with a Start menu entry and the optional tasks desktop icon and
+"Open in NextCommander" (folders, folder background, drives; `HKA\Software\Classes`). A running NextCommander is
+closed through the Restart Manager before its files are replaced. Uninstalling keeps the settings folder. The
+setup is signed with the same certificate as the MSIX when there is one. Silent use:
+`NextCommander-<ver>-win-x64-setup.exe /VERYSILENT /CURRENTUSER [/DIR=...] [/TASKS=desktopicon,explorermenu]`.
+
+### macOS
+
+If the macOS package was built on Windows or Linux, only the program is signed (ad hoc), and macOS refuses to
+open a downloaded copy as "damaged". On the Mac:
+
+```sh
+xattr -cr /Applications/NextCommander.app
+codesign --force --deep -s - /Applications/NextCommander.app
+```
+
+A package built on a Mac is signed as a whole (`codesign -s -`). A copy not signed with an Apple Developer
+identity and notarized still needs *Privacy & Security > Open Anyway*. With `MACOS_SIGN_IDENTITY` and
+`MACOS_NOTARY_PROFILE` the app and the `.dmg` are signed and notarized.
+
+### Linux
+
+The `.tar.gz` contains a `.desktop` file and the `icons/hicolor/<size>/apps/nextcommander.png` and
+`hicolor/scalable/apps/nextcommander.svg` icon theme (`usr/share/icons` in the AppImage).
+
+### Application icon
+
+The design files are in `build/icons`: `nextcommander.ico` (Windows, 16–256 px), `nextcommander.icns` (macOS,
+16–1024 px, including Retina), `png/<size>.png` (16–1024 px) and `nextcommander.svg` (scalable Linux icon).
+`python build/make_icons.py` puts them into `src/NextCommander.App/Assets` (exe icon, window icon, macOS bundle)
+and produces the MSIX logos. When the icon changes, update `build/icons` and run the script again.
+
+## Roadmap
+
+All phases of the original plan are done:
+
+0. Skeleton
+1. Core dual panel
+2. Tabs, history, hotlist, quick search / filter, button bar, branch view, thumbnails
+3. Lister, Quick View, editor, find files
+4. Archives
+5. Multi-rename, directory synchronization, content comparison, checksums
+6. FTP / SFTP, plugins, custom columns
+7. Polish and distribution (including the English UI)
+
+What is left is tracked in [remaining-work.md](remaining-work.md).

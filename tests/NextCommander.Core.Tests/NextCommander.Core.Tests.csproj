@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <NoWarn>$(NoWarn);CA1707;CA2201;CA1861</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\NextCommander.Core\NextCommander.Core.csproj" />
+    <ProjectReference Include="..\..\src\NextCommander.Vfs.Local\NextCommander.Vfs.Local.csproj" />
+    <ProjectReference Include="..\..\src\NextCommander.Vfs.Archive\NextCommander.Vfs.Archive.csproj" />
+    <ProjectReference Include="..\..\src\NextCommander.Vfs.Remote\NextCommander.Vfs.Remote.csproj" />
+    <ProjectReference Include="..\..\src\NextCommander.Platform\NextCommander.Platform.csproj" />
+    <ProjectReference Include="..\..\src\NextCommander.Columns\NextCommander.Columns.csproj" />
+    <ProjectReference Include="..\SamplePlugin\SamplePlugin.csproj" />
+  </ItemGroup>
+</Project>

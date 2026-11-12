@@ -1,0 +1,57 @@
+// Ubuntu theme (the Yaru light look: Ubuntu orange accent, light grey window, white list, orange folders, marked files in aubergine).
+// Key = an area of the window, value = "#RRGGBB" or "#AARRGGBB". Areas left out use the light defaults.
+// For a theme of your own, copy this file under another name into the "themes" folder of the settings folder and change it.
+{
+  "Name": "Ubuntu",
+  "Base": "Light",   // Light or Dark
+  "Colors": {
+    "Accent": "#E95420",                         // Accent color: selected items, focus frame, check boxes
+    "Window.Background": "#FAFAFA",              // Background of windows and dialog boxes
+    "Window.Text": "#3D3D3D",                    // General text color
+    "Window.ErrorText": "#C7162B",               // Error messages
+    "Controls.Background": "#FFFFFF",            // Background of drop-down menus, input boxes and buttons
+    "Controls.HoverBackground": "#F0F0F0",       // Background of controls under the mouse
+    "Controls.Border": "#D3D3D3",                // Borders of controls
+    "Controls.SecondaryText": "#808080",         // Secondary texts and icons
+    "Controls.DisabledBackground": "#F2F2F2",    // Background of disabled controls
+    "Controls.DisabledText": "#ABABAB",          // Text of disabled controls
+    "Lists.HoverBackground": "#F0F0F0",          // Row under the mouse in lists (settings, dialog boxes)
+    "Lists.SelectedBackground": "#FBDDD2",       // Selected row in lists
+    "MenuBar.Background": "#EBEBEB",             // Background of the main menu bar (the title bar)
+    "MenuBar.Text": "#3D3D3D",                   // Text of the main menu bar
+    "Menu.Background": "#FFFFFF",                // Background of drop-down and context menus
+    "Menu.Border": "#D3D3D3",                    // Frame of drop-down and context menus
+    "Menu.Text": "#3D3D3D",                      // Text of menu items
+    "Menu.HoverBackground": "#FAFAFA",           // Menu item under the mouse (and an open submenu); the active tab's color
+    "Menu.HoverText": "#3D3D3D",                 // Text of the menu item under the mouse
+    "Menu.GestureText": "#808080",               // Shortcut keys shown in menus
+    "Menu.DisabledText": "#ABABAB",              // Disabled menu items
+    "ButtonBar.Background": "#EBEBEB",           // Background of the button bar
+    "Drives.Icon": "#5E5E5E",                    // Icons on the drive buttons
+    "Tabs.Background": "#E3E3E3",                // Folder tab strip
+    "Tabs.ActiveBackground": "#FAFAFA",          // Active tab
+    "Tabs.PassiveLine": "#80E95420",             // Faint underline of the selected tab in the inactive panel
+    "Panel.HeaderBackground": "#F2F2F2",         // Panel header (free space line) and thumbnail boxes
+    "Panel.ActiveAccent": "#E95420",             // Marker color of the active panel
+    "Panel.ActivePathBackground": "#FBDDD2",     // Path line of the active panel
+    "Panel.StatusBackground": "#F2F2F2",         // Status line of the panel
+    "FileList.Background": "#FFFFFF",            // Background of the file list
+    "FileList.AlternateBackground": "#F7F7F7",   // Alternate rows of the file list
+    "FileList.Text": "#3D3D3D",                  // Text of the file list
+    "FileList.MarkedText": "#77216F",            // Marked (selected) files: Ubuntu aubergine
+    "FileList.HiddenText": "#9A9A9A",            // Hidden and system files
+    "FileList.FolderIcon": "#F29445",            // Folder icon (Yaru orange)
+    "FileList.FileIcon": "#7A7A7A",              // File icon
+    "FileList.CursorBackground": "#E95420",      // Cursor bar (active panel)
+    "FileList.CursorText": "#FFFFFF",            // Text on the cursor bar
+    "FileList.InactiveCursorBackground": "#9A9A9A", // Cursor bar (inactive panel)
+    "FileList.HoverBackground": "#FDEEE8",       // Row under the mouse
+    "FileList.HeaderBackground": "#FAFAFA",      // Column headers
+    "FileList.HeaderHoverBackground": "#EBEBEB", // Column header under the mouse
+    "FileList.HeaderText": "#5E5E5E",            // Text of the column headers
+    "FileList.GridLines": "#E6E6E6",             // Grid lines
+    "FunctionKeys.Border": "#D3D3D3",            // Line between the function keys (F3 ... F8)
+    "Lister.Background": "#FFFFFF",              // Background of Lister (F3) and the editor
+    "Lister.Text": "#3D3D3D"                     // Text of Lister (F3) and the editor
+  }
+}

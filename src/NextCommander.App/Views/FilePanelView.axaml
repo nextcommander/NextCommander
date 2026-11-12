@@ -1,0 +1,218 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:icons="using:NextCommander.App.Services.Icons"
+             xmlns:vm="using:NextCommander.App.ViewModels"
+             xmlns:p="using:NextCommander.Platform"
+             xmlns:views="using:NextCommander.App.Views"
+             xmlns:controls="using:NextCommander.App.Controls"
+             x:Class="NextCommander.App.Views.FilePanelView"
+             x:DataType="vm:PanelViewModel">
+  <Border Classes="panelframe" Classes.active="{Binding IsActive}">
+    <DockPanel>
+      <!-- Layout: drive buttons / drive box + free space + \ .. / tabs / path line -->
+      <!-- Drive buttons; the folder shortcuts (Configuration > Layout) sit at the right end, icons only, after a separator -->
+      <DockPanel DockPanel.Dock="Top" IsVisible="{Binding ShowDriveButtons}" Background="{DynamicResource FmToolBarBrush}">
+        <ItemsControl x:Name="ShortcutButtons" DockPanel.Dock="Right" ItemsSource="{Binding FolderShortcutItems}" Classes.raised="{Binding !FlatDriveButtons}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="p:DriveItem">
+              <Button Classes="drivebtn shortcut" Tag="{Binding}" Focusable="False">
+                <ToolTip.Tip>
+                  <StackPanel>
+                    <TextBlock Text="{Binding ShortName}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding RootPath}" Classes="noloc" />
+                  </StackPanel>
+                </ToolTip.Tip>
+                <Panel>
+                  <PathIcon Classes="driveicon" Data="{Binding Kind, Converter={x:Static icons:DriveIconConverter.Glyph}}" IsVisible="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Missing}}" />
+                  <Image Classes="driveimage" Source="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Instance}}" />
+                </Panel>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Border DockPanel.Dock="Right" Classes="drivebarsep" IsVisible="{Binding HasFolderShortcuts}" />
+        <ItemsControl x:Name="DriveButtons" ItemsSource="{Binding DriveBarItems}" Classes.raised="{Binding !FlatDriveButtons}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="p:DriveItem">
+              <Button Classes="drivebtn" Classes.special="{Binding IsSpecial}" Tag="{Binding}" Focusable="False" ToolTip.Tip="{Binding ToolTipText}">
+                <StackPanel Orientation="Horizontal" Spacing="3">
+                  <Panel>
+                    <PathIcon Classes="driveicon" Data="{Binding Kind, Converter={x:Static icons:DriveIconConverter.Glyph}}" IsVisible="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Missing}}" />
+                    <Image Classes="driveimage" Source="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Instance}}" />
+                  </Panel>
+                  <TextBlock Text="{Binding ShortName}" Classes="noloc" VerticalAlignment="Center" IsVisible="{Binding !IsSpecial}" />
+                </StackPanel>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </DockPanel>
+      <DockPanel DockPanel.Dock="Top" Background="{DynamicResource FmPanelHeaderBrush}" IsVisible="{Binding ShowDriveCombo}">
+        <Button x:Name="ParentButton" DockPanel.Dock="Right" Classes="pathbtn" Content=".." Focusable="False" ToolTip.Tip="Parent folder (Backspace)" />
+        <Button x:Name="RootButton" DockPanel.Dock="Right" Classes="pathbtn" Content="\" Focusable="False" ToolTip.Tip="Root folder (Ctrl+\)" />
+        <ComboBox x:Name="DriveCombo" DockPanel.Dock="Left" ItemsSource="{Binding DriveChoices}" SelectedItem="{Binding SelectedDrive, Mode=OneWay}" Classes.labels="{Binding ShowDriveLabels}"
+                  MinWidth="64" MaxWidth="220" Margin="2,1" FontSize="12" Focusable="False">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="p:DriveItem">
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <Panel>
+                  <PathIcon Classes="driveicon" Data="{Binding Kind, Converter={x:Static icons:DriveIconConverter.Glyph}}" IsVisible="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Missing}}" />
+                  <Image Width="16" Height="16" Source="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Instance}}" />
+                </Panel>
+                <TextBlock Text="{Binding ShortName}" Classes="noloc" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding LabelText}" Classes="drivelabel noloc" VerticalAlignment="Center" />
+              </StackPanel>
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+          <!-- The open list: two columns (letter / label) with Computer, Documents and Network below the drives -->
+          <ComboBox.Styles>
+            <Style Selector="ComboBoxItem">
+              <Setter Property="ContentTemplate">
+                <DataTemplate x:DataType="p:DriveItem">
+                  <Grid ColumnDefinitions="22,28,*" MinWidth="240">
+                    <Panel VerticalAlignment="Center">
+                      <PathIcon Classes="driveicon" Data="{Binding Kind, Converter={x:Static icons:DriveIconConverter.Glyph}}" IsVisible="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Missing}}" />
+                      <Image Width="16" Height="16" Source="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Instance}}" />
+                    </Panel>
+                    <TextBlock Grid.Column="1" Text="{Binding ShortName}" Classes="noloc" VerticalAlignment="Center" FontWeight="SemiBold" />
+                    <TextBlock Grid.Column="2" Text="{Binding Label}" Classes="noloc" VerticalAlignment="Center" IsVisible="{Binding !IsSpecial}" Opacity="0.75" />
+                    <TextBlock Grid.Column="2" Text="{Binding Label}" VerticalAlignment="Center" IsVisible="{Binding IsSpecial}" />
+                  </Grid>
+                </DataTemplate>
+              </Setter>
+            </Style>
+          </ComboBox.Styles>
+        </ComboBox>
+        <TextBlock Text="{Binding FreeSpaceText}" VerticalAlignment="Center"
+                   Margin="6,0" FontSize="12" Opacity="0.8" TextTrimming="CharacterEllipsis" />
+      </DockPanel>
+
+      <!-- The side's tab strip is placed here (PanelSideView) -->
+      <Border x:Name="TabSlot" DockPanel.Dock="Top" />
+
+      <!-- Path line (click empty space or Alt+D to type a path) -->
+      <views:PathBarView x:Name="PathBar" DockPanel.Dock="Top" IsVisible="{Binding ShowPathLine}" />
+
+      <!-- Status line -->
+      <Border DockPanel.Dock="Bottom" Background="{DynamicResource FmStatusBrush}" IsVisible="{Binding ShowStatusBar}">
+        <TextBlock Text="{Binding StatusText}" Margin="6,3" FontSize="12" TextTrimming="CharacterEllipsis" />
+      </Border>
+
+      <!-- Quick search / quick filter -->
+      <Border x:Name="QuickBox" DockPanel.Dock="Bottom" IsVisible="False" Background="{DynamicResource FmPanelHeaderBrush}" Padding="4,2">
+        <DockPanel>
+          <TextBlock x:Name="QuickLabel" DockPanel.Dock="Left" VerticalAlignment="Center" Margin="2,0,6,0" FontSize="12" Text="Search:" />
+          <TextBlock x:Name="QuickHint" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="6,0,2,0" FontSize="11" Opacity="0.6"
+                     Text="↑↓ next  Enter open  Ctrl+S filter  Esc close" />
+          <TextBox x:Name="QuickText" FontSize="12" MinHeight="22" Padding="4,1" />
+        </DockPanel>
+      </Border>
+
+      <Grid x:Name="Body" ColumnDefinitions="Auto,Auto,*">
+        <!-- Directory tree pane (Ctrl+F8) -->
+        <views:DirectoryTreeView x:Name="TreePane" Grid.Column="0" Width="220" IsVisible="False" />
+        <GridSplitter x:Name="TreeSplitter" Grid.Column="1" Width="4" ResizeDirection="Columns" IsVisible="False" Background="Transparent" />
+
+        <Panel x:Name="ContentHost" Grid.Column="2">
+          <!-- Full view -->
+          <DataGrid x:Name="Grid" Classes="files" Classes.inactive="{Binding !IsActive}" Classes.noheaders="{Binding !ShowColumnHeaders}" Classes.invsel="{Binding InvertedSelection}" IsVisible="{Binding IsFull}"
+                    DragDrop.AllowDrop="True"
+                    ItemsSource="{Binding Items}" SelectedItem="{Binding CursorItem, Mode=TwoWay}">
+            <DataGrid.Columns>
+              <DataGridTemplateColumn Header="Name" Width="*" MinWidth="120" SortMemberPath="Name" Tag="Name">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate x:DataType="vm:FileItemViewModel">
+                    <DockPanel>
+                      <Panel DockPanel.Dock="Left" Classes="fileicon" Background="Transparent" Width="{DynamicResource FmIconSize}" Height="{DynamicResource FmIconSize}"
+                             Margin="{DynamicResource FmIconMargin}" IsVisible="{Binding ShowIcon}">
+                        <Path Width="{DynamicResource FmIconSize}" Height="{DynamicResource FmIconSize}" Stretch="Uniform" Data="{Binding Icon}"
+                              Fill="{Binding IconBrush}" Stroke="{Binding IconStroke}" StrokeThickness="1"
+                              IsVisible="{Binding !HasSystemIcon}" />
+                        <Image Width="{DynamicResource FmIconSize}" Height="{DynamicResource FmIconSize}" Source="{Binding SystemIcon}" IsVisible="{Binding HasSystemIcon}" />
+                        <PathIcon Width="8" Height="8" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                                  Data="{StaticResource FmLinkIcon}" Foreground="{DynamicResource FmActiveAccentBrush}"
+                                  IsVisible="{Binding IsLink}" />
+                        <TextBlock Classes="hiddenmark noloc" Text="!" IsVisible="{Binding ShowHiddenMark}" />
+                      </Panel>
+                      <TextBlock Classes="cell" Classes.colored="{Binding HasRuleColor}" Classes.marked="{Binding IsMarked}"
+                                 Classes.hidden="{Binding IsDimmed}" Text="{Binding ShownName}" />
+                    </DockPanel>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="Extension" Width="88" SortMemberPath="Extension" Tag="Extension">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate x:DataType="vm:FileItemViewModel">
+                    <TextBlock Classes="cell" Classes.colored="{Binding HasRuleColor}" Classes.marked="{Binding IsMarked}"
+                               Classes.hidden="{Binding IsDimmed}" Text="{Binding Extension}" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="Size" Width="108" SortMemberPath="SizeValue" Tag="Size">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate x:DataType="vm:FileItemViewModel">
+                    <TextBlock Classes="cell right" Classes.colored="{Binding HasRuleColor}" Classes.marked="{Binding IsMarked}"
+                               Classes.hidden="{Binding IsDimmed}" Text="{Binding SizeText}" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="Date" Width="128" SortMemberPath="DateText" Tag="Date">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate x:DataType="vm:FileItemViewModel">
+                    <TextBlock Classes="cell" Classes.colored="{Binding HasRuleColor}" Classes.marked="{Binding IsMarked}"
+                               Classes.hidden="{Binding IsDimmed}" Text="{Binding DateText}" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="Attribute" Width="84" SortMemberPath="AttrText" Tag="Attributes">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate x:DataType="vm:FileItemViewModel">
+                    <TextBlock Classes="cell" Classes.colored="{Binding HasRuleColor}" Classes.marked="{Binding IsMarked}"
+                               Classes.hidden="{Binding IsDimmed}"
+                               FontFamily="Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, monospace" FontSize="12"
+                               Text="{Binding AttrText}" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+            </DataGrid.Columns>
+          </DataGrid>
+
+          <!-- Brief view: names in columns (custom drawn, virtualized) -->
+          <DockPanel IsVisible="{Binding IsBrief}">
+            <ScrollBar DockPanel.Dock="Bottom" Orientation="Horizontal" Minimum="0" SmallChange="1" LargeChange="3" ViewportSize="2"
+                       Maximum="{Binding #Brief.MaxFirstColumn}" Value="{Binding #Brief.FirstColumn, Mode=TwoWay}"
+                       AllowAutoHide="False" />
+            <controls:BriefListControl x:Name="Brief" DragDrop.AllowDrop="True" Margin="0,2,0,0"
+                                       Items="{Binding Items}" CursorItem="{Binding CursorItem, Mode=TwoWay}"
+                                       IsActivePanel="{Binding IsActive}" />
+          </DockPanel>
+
+          <!-- Thumbnails view -->
+          <DockPanel IsVisible="{Binding IsThumbnails}">
+            <ScrollBar DockPanel.Dock="Right" Orientation="Vertical" Minimum="0" SmallChange="1" LargeChange="3" ViewportSize="3"
+                       Maximum="{Binding #Thumbs.MaxFirstRow}" Value="{Binding #Thumbs.FirstRow, Mode=TwoWay}"
+                       AllowAutoHide="False" />
+            <controls:ThumbnailListControl x:Name="Thumbs" DragDrop.AllowDrop="True"
+                                           Items="{Binding Items}" CursorItem="{Binding CursorItem, Mode=TwoWay}"
+                                           IsActivePanel="{Binding IsActive}" />
+          </DockPanel>
+
+          <!-- Rubber band overlay -->
+          <Canvas IsHitTestVisible="False">
+            <Border x:Name="Band" Classes="rubberband" IsVisible="False" />
+          </Canvas>
+        </Panel>
+      </Grid>
+    </DockPanel>
+  </Border>
+</UserControl>

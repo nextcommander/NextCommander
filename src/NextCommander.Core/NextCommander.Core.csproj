@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>NextCommander.Core</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Blake3" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="NextCommander.Core.Tests" />
+  </ItemGroup>
+</Project>

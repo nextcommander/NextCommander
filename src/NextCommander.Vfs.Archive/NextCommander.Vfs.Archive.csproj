@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>NextCommander.Vfs.Archive</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="SharpCompress" />
+    <PackageReference Include="SharpZipLib" />
+    <PackageReference Include="Serilog" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NextCommander.Core\NextCommander.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="NextCommander.Core.Tests" />
+  </ItemGroup>
+</Project>

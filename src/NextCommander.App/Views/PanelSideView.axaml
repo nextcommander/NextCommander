@@ -1,0 +1,50 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:NextCommander.App.ViewModels"
+             xmlns:views="using:NextCommander.App.Views"
+             x:Class="NextCommander.App.Views.PanelSideView"
+             x:DataType="vm:TabSideViewModel">
+  <DockPanel x:Name="Root">
+    <!-- Tab strip (hidden with a single tab unless "always show tabs") -->
+    <Border x:Name="TabStripHost" DockPanel.Dock="Top" IsVisible="{Binding ShowTabStrip}" Background="{DynamicResource FmTabStripBrush}">
+      <DockPanel>
+        <Button x:Name="NewTabButton" DockPanel.Dock="Right" Classes="tabadd" Content="+" ToolTip.Tip="New tab (Ctrl+T)" Focusable="False" />
+        <ScrollViewer x:Name="TabScroll" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+          <ItemsControl x:Name="TabStrip" ItemsSource="{Binding Tabs}" Classes.samewidth="{Binding TabsSameWidth}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:PanelViewModel">
+                <Button Classes="tab" Classes.current="{Binding IsCurrentTab}" Classes.focused="{Binding IsActive}"
+                        Tag="{Binding}" Focusable="False" ToolTip.Tip="{Binding PathText}">
+                  <Border Background="{Binding TabBrush}" Margin="-10,-3" Padding="10,3" CornerRadius="2">
+                  <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Panel IsVisible="{Binding ShowTabIcon}" Width="12" Height="12" VerticalAlignment="Center">
+                      <PathIcon Classes="tabicon" Data="{StaticResource MiFolderOpen}" IsVisible="{Binding !IsLocked}" Foreground="{DynamicResource FmFolderBrush}" />
+                      <PathIcon Classes="tabicon" Data="{StaticResource MiLock}" IsVisible="{Binding IsLocked}" Foreground="DarkOrange" />
+                    </Panel>
+                    <TextBlock Classes="noloc" Text="{Binding Title}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                    <!-- the current tab gets a close button (when it is not the only tab) -->
+                    <Button Classes="tabclose" Content="×" Focusable="False" ToolTip.Tip="Close the tab (Ctrl+W)" Tag="{Binding}">
+                      <Button.IsVisible>
+                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                          <Binding Path="IsCurrentTab" />
+                          <Binding Path="$parent[ItemsControl].((vm:TabSideViewModel)DataContext).CanCloseTabs" />
+                        </MultiBinding>
+                      </Button.IsVisible>
+                    </Button>
+                  </StackPanel>
+                  </Border>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+    <views:FilePanelView x:Name="FilePanel" DataContext="{Binding ActiveTab}" />
+  </DockPanel>
+</UserControl>

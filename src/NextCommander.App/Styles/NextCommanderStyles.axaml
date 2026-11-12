@@ -1,0 +1,429 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:NextCommander.App.ViewModels">
+
+  <!-- Window chrome (VS Code style in dark mode) -->
+  <Style Selector="Menu#MainMenu">
+    <Setter Property="Background" Value="{DynamicResource FmMenuBarBrush}" />
+  </Style>
+  <Style Selector="Menu#MainMenu > MenuItem">
+    <Setter Property="Foreground" Value="{DynamicResource FmMenuBarForegroundBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,2" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <!-- a top menu under the mouse or open looks like the selected folder tab: the tab's background and the accent line -->
+  <Style Selector="Menu#MainMenu > MenuItem /template/ Border#PART_LayoutRoot">
+    <Setter Property="CornerRadius" Value="0" />
+  </Style>
+  <Style Selector="Menu#MainMenu > MenuItem:pointerover, Menu#MainMenu > MenuItem:open, Menu#MainMenu > MenuItem:selected">
+    <Setter Property="BorderBrush" Value="{DynamicResource FmActiveAccentBrush}" />
+  </Style>
+  <Style Selector="Menu#MainMenu > MenuItem:pointerover /template/ Border#PART_LayoutRoot, Menu#MainMenu > MenuItem:open /template/ Border#PART_LayoutRoot, Menu#MainMenu > MenuItem:selected /template/ Border#PART_LayoutRoot">
+    <Setter Property="Background" Value="{DynamicResource FmTabActiveBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FmActiveAccentBrush}" />
+  </Style>
+  <!-- the items of the drop-down and context menus the same way: the tab's background (Menu.HoverBackground) and an accent line on the left -->
+  <Style Selector="Menu#MainMenu MenuItem MenuItem, ContextMenu MenuItem">
+    <Setter Property="BorderThickness" Value="2,0,0,0" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector="Menu#MainMenu MenuItem MenuItem:pointerover, Menu#MainMenu MenuItem MenuItem:selected, Menu#MainMenu MenuItem MenuItem:open, ContextMenu MenuItem:pointerover, ContextMenu MenuItem:selected, ContextMenu MenuItem:open">
+    <Setter Property="BorderBrush" Value="{DynamicResource FmActiveAccentBrush}" />
+  </Style>
+  <Style Selector="Menu#MainMenu MenuItem MenuItem:disabled, ContextMenu MenuItem:disabled">
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector="Menu#MainMenu > MenuItem:pointerover /template/ ContentPresenter#PART_HeaderPresenter, Menu#MainMenu > MenuItem:open /template/ ContentPresenter#PART_HeaderPresenter, Menu#MainMenu > MenuItem:selected /template/ ContentPresenter#PART_HeaderPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource FmMenuBarForegroundBrush}" />
+  </Style>
+
+  <!-- Compact file list rows -->
+  <Style Selector="DataGrid.files">
+    <Setter Property="RowHeight" Value="{DynamicResource FmRowHeight}" />
+    <Setter Property="GridLinesVisibility" Value="None" />
+    <Setter Property="HeadersVisibility" Value="Column" />
+    <Setter Property="SelectionMode" Value="Single" />
+    <Setter Property="IsReadOnly" Value="True" />
+    <Setter Property="CanUserReorderColumns" Value="True" />
+    <Setter Property="CanUserResizeColumns" Value="True" />
+    <Setter Property="CanUserSortColumns" Value="True" />
+    <Setter Property="FontSize" Value="{DynamicResource FmPanelFontSize}" />
+    <Setter Property="FontFamily" Value="{DynamicResource FmPanelFontFamily}" />
+    <!-- Transparent unless Color > background is set (default in the theme dictionaries) -->
+    <Setter Property="Background" Value="{DynamicResource FmListBackgroundBrush}" />
+  </Style>
+  <!-- Configuration > Color (resources exist only when the user set a color); "alt" = every second row -->
+  <Style Selector="DataGrid.files DataGridRow">
+    <Setter Property="Background" Value="{DynamicResource FmListBackgroundBrush}" />
+  </Style>
+  <Style Selector="DataGrid.files DataGridRow.alt">
+    <Setter Property="Background" Value="{DynamicResource FmListBackground2Brush}" />
+  </Style>
+  <!-- Icons > icon size in the main menu -->
+  <Style Selector="MenuItem /template/ :is(Control)#PART_IconPresenter">
+    <Setter Property="Width" Value="{DynamicResource FmMenuIconSize}" />
+    <Setter Property="Height" Value="{DynamicResource FmMenuIconSize}" />
+  </Style>
+  <!-- Icons > 3D frame around menu icons, checked items as pressed buttons -->
+  <Style Selector="Border.menuicon.framed">
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+  </Style>
+  <Style Selector="MenuItem.pressedcheck:checked Border.menuicon">
+    <Setter Property="Background" Value="{DynamicResource FmActivePathBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FmActiveAccentBrush}" />
+  </Style>
+  <Style Selector="MenuItem.pressedcheck /template/ ContentControl#PART_ToggleIconPresenter">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <!-- Icons > "!" on hidden/system files -->
+  <Style Selector="TextBlock.hiddenmark">
+    <Setter Property="Foreground" Value="{DynamicResource FmMarkedBrush}" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="HorizontalAlignment" Value="Right" />
+    <Setter Property="VerticalAlignment" Value="Bottom" />
+    <Setter Property="Margin" Value="0,0,-3,-3" />
+  </Style>
+  <Style Selector="DataGrid.files.noheaders">
+    <Setter Property="HeadersVisibility" Value="None" />
+  </Style>
+  <Style Selector="DataGrid.files DataGridCell">
+    <Setter Property="MinHeight" Value="18" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="DataGrid.files DataGridRow">
+    <Setter Property="MinHeight" Value="18" />
+  </Style>
+  <!-- Row cursor only: no per-cell focus rectangle -->
+  <Style Selector="DataGrid.files DataGridCell /template/ Rectangle#CurrentPositionVisual">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="DataGrid.files DataGridCell /template/ Rectangle#FocusVisual">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="DataGrid.files DataGridCell:focus /template/ Grid#FocusVisual">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="DataGrid.files DataGridColumnHeader">
+    <Setter Property="MinHeight" Value="24" />
+    <Setter Property="Padding" Value="6,0" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+  <!-- Inactive panel: dim the cursor bar so only the active panel's cursor stands out -->
+  <Style Selector="DataGrid.files.inactive DataGridRow:selected">
+    <Setter Property="Opacity" Value="0.55" />
+  </Style>
+
+  <!-- File list cell text -->
+  <Style Selector="TextBlock.cell">
+    <Setter Property="Foreground" Value="{DynamicResource FmListTextBrush}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Margin" Value="4,0" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <Style Selector="TextBlock.cell.right">
+    <Setter Property="HorizontalAlignment" Value="Right" />
+    <Setter Property="TextAlignment" Value="Right" />
+  </Style>
+  <!-- Colors by file type: declared before hidden/marked so those win -->
+  <Style Selector="TextBlock.cell.colored" x:DataType="vm:FileItemViewModel">
+    <Setter Property="Foreground" Value="{Binding RuleBrush}" />
+  </Style>
+  <Style Selector="TextBlock.cell.hidden">
+    <Setter Property="Foreground" Value="{DynamicResource FmHiddenBrush}" />
+  </Style>
+  <Style Selector="DataGrid.files DataGridRow:selected TextBlock.cell">
+    <Setter Property="Foreground" Value="{DynamicResource FmCursorTextBrush}" />
+  </Style>
+  <Style Selector="TextBlock.cell.marked">
+    <Setter Property="Foreground" Value="{DynamicResource FmMarkedBrush}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+
+  <!-- Color > inverted selection: marked rows get the mark color as background -->
+  <Style Selector="DataGrid.files.invsel TextBlock.cell.marked">
+    <Setter Property="Background" Value="{DynamicResource FmMarkedBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource SystemControlBackgroundAltHighBrush}" />
+  </Style>
+
+  <!-- Icons -->
+  <Style Selector="PathIcon.fileicon">
+    <Setter Property="Width" Value="14" />
+    <Setter Property="Height" Value="14" />
+    <Setter Property="Margin" Value="6,0,2,0" />
+    <Setter Property="Foreground" Value="{DynamicResource FmFileBrush}" />
+  </Style>
+  <Style Selector="PathIcon.fileicon.dir">
+    <Setter Property="Foreground" Value="{DynamicResource FmFolderBrush}" />
+  </Style>
+
+  <!-- Panel chrome -->
+  <Style Selector="Border.panelframe">
+    <Setter Property="BorderThickness" Value="0,2,0,0" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector="Border.panelframe.active">
+    <Setter Property="BorderBrush" Value="{DynamicResource FmActiveAccentBrush}" />
+  </Style>
+  <!-- Header rows: drive buttons, path line -->
+  <Style Selector="Button.drivebtn">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="7,3" />
+    <Setter Property="Margin" Value="1,2" />
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+  <!-- folder shortcuts at the right end of the drive bar (Configuration > Layout), after a separator -->
+  <Style Selector="Button.drivebtn.shortcut">
+    <Setter Property="Padding" Value="5,3" />
+  </Style>
+  <Style Selector="Border.drivebarsep">
+    <Setter Property="Width" Value="1" />
+    <Setter Property="Margin" Value="6,5" />
+    <Setter Property="Background" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+  </Style>
+  <Style Selector="Image.driveimage">
+    <Setter Property="Width" Value="20" />
+    <Setter Property="Height" Value="20" />
+  </Style>
+  <!-- Display > Show volume labels for drives -->
+  <Style Selector="ComboBox TextBlock.drivelabel">
+    <Setter Property="IsVisible" Value="False" />
+    <Setter Property="Opacity" Value="0.7" />
+  </Style>
+  <Style Selector="ComboBox.labels TextBlock.drivelabel">
+    <Setter Property="IsVisible" Value="True" />
+  </Style>
+  <!-- Layout > Flat icons off: raised drive buttons -->
+  <Style Selector="ItemsControl.raised Button.drivebtn">
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+    <Setter Property="Background" Value="{DynamicResource FmPanelHeaderBrush}" />
+  </Style>
+  <Style Selector="Button.drivebtn PathIcon.driveicon">
+    <Setter Property="Width" Value="18" />
+    <Setter Property="Height" Value="18" />
+  </Style>
+  <Style Selector="PathIcon.driveicon">
+    <Setter Property="Width" Value="14" />
+    <Setter Property="Height" Value="14" />
+    <Setter Property="Foreground" Value="{DynamicResource FmDriveIconBrush}" />
+  </Style>
+  <Style Selector="Border.pathline">
+    <Setter Property="Background" Value="{DynamicResource FmPanelHeaderBrush}" />
+  </Style>
+  <Style Selector="Border.pathline.active">
+    <Setter Property="Background" Value="{DynamicResource FmActivePathBrush}" />
+  </Style>
+  <!-- Tabs of the internal terminal -->
+  <Style Selector="Button.terminaltab">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0,0,0,2" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="0" />
+  </Style>
+  <Style Selector="Button.terminaltab.active">
+    <Setter Property="BorderBrush" Value="{DynamicResource FmActiveAccentBrush}" />
+    <Setter Property="Background" Value="{DynamicResource FmTabActiveBrush}" />
+  </Style>
+  <!-- Buttons inside the command line (history drop-down, terminal) -->
+  <Style Selector="Button.cmdline">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="5,0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="VerticalAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.pathbtn">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="5,0" />
+    <Setter Property="MinHeight" Value="20" />
+    <Setter Property="MinWidth" Value="18" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="VerticalAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.pathmask">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Margin" Value="0,0,6,0" />
+  </Style>
+
+  <Style Selector="TextBox.pathbox">
+    <Setter Property="MinHeight" Value="24" />
+    <Setter Property="Padding" Value="6,2" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Background" Value="{DynamicResource FmPanelHeaderBrush}" />
+  </Style>
+
+  <!-- Breadcrumb path bar -->
+  <Style Selector="Button.crumb, Button.crumbsep">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0,1" />
+    <Setter Property="Margin" Value="0" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MinHeight" Value="20" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="CornerRadius" Value="2" />
+  </Style>
+  <Style Selector="Button.crumbsep">
+    <Setter Property="Padding" Value="0,1" />
+  </Style>
+  <Style Selector="Button.crumb.droptarget">
+    <Setter Property="Background" Value="{DynamicResource FmActiveAccentBrush}" />
+  </Style>
+
+  <!-- Rubber band -->
+  <Style Selector="Border.rubberband">
+    <Setter Property="Background" Value="#332F6FDB" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FmActiveAccentBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
+  <!-- Tab strip -->
+  <Style Selector="Button.tab">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0,0,0,2" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="10,3" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="MaxWidth" Value="200" />
+  </Style>
+  <!-- the selected tab: a faint line in the inactive panel (theme key Tabs.PassiveLine), the accent in the active one -->
+  <Style Selector="Button.tab.current">
+    <Setter Property="Background" Value="{DynamicResource FmTabActiveBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FmTabPassiveLineBrush}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.tab.current.focused">
+    <Setter Property="BorderBrush" Value="{DynamicResource FmActiveAccentBrush}" />
+  </Style>
+  <!-- Folder tabs: same width, multiline (WrapPanel wraps only when the scroll viewer limits the width), icons -->
+  <Style Selector="ItemsControl.samewidth Button.tab">
+    <Setter Property="Width" Value="140" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+  </Style>
+  <Style Selector="PathIcon.tabicon">
+    <Setter Property="Width" Value="12" />
+    <Setter Property="Height" Value="12" />
+  </Style>
+  <!-- the × of the current tab: small, without a frame, a background on hover -->
+  <Style Selector="Button.tabclose">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="3,0" />
+    <Setter Property="Margin" Value="2,0,-6,0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="CornerRadius" Value="2" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.tabclose:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
+  </Style>
+  <Style Selector="Button.tabadd">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Padding" Value="8,1" />
+    <Setter Property="FontSize" Value="14" />
+  </Style>
+
+  <!-- Button bar -->
+  <Style Selector="Button.barbutton">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="5,3" />
+    <Setter Property="Margin" Value="1" />
+    <Setter Property="MinWidth" Value="28" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+  <Style Selector="Border.barseparator">
+    <Setter Property="Width" Value="1" />
+    <Setter Property="Margin" Value="4,4" />
+    <Setter Property="Background" Value="{DynamicResource FmHiddenBrush}" />
+  </Style>
+
+  <!-- Function key bar: on the window's color, only a thin line between the keys (theme key FunctionKeys.Border) -->
+  <Style Selector="Button.fkey">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="Margin" Value="0,1" />
+    <Setter Property="Padding" Value="4,3" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FmFunctionKeyBorderBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,1,0" />
+  </Style>
+  <Style Selector="Button.fkey.last">
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+
+  <!--
+    Common button design of every window:
+    - the default button (Enter: OK, Search, Compare, Rename, Connect ...) is drawn in the accent color;
+    - "dialog" buttons (OK / Cancel / Apply / Close rows) share a minimum width and centre their text;
+    - "buttonrow" panels hold such rows with the same spacing.
+  -->
+  <Style Selector="Button[IsDefault=True]">
+    <Setter Property="Foreground" Value="{DynamicResource AccentButtonForeground}" />
+    <Setter Property="Background" Value="{DynamicResource AccentButtonBackground}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentButtonBorderBrush}" />
+    <Setter Property="MinWidth" Value="88" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button[IsDefault=True]:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentButtonBackgroundPointerOver}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentButtonBorderBrushPointerOver}" />
+    <Setter Property="Foreground" Value="{DynamicResource AccentButtonForegroundPointerOver}" />
+  </Style>
+  <Style Selector="Button[IsDefault=True]:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentButtonBackgroundPressed}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentButtonBorderBrushPressed}" />
+    <Setter Property="Foreground" Value="{DynamicResource AccentButtonForegroundPressed}" />
+  </Style>
+  <Style Selector="Button[IsDefault=True]:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentButtonBackgroundDisabled}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentButtonBorderBrushDisabled}" />
+    <Setter Property="Foreground" Value="{DynamicResource AccentButtonForegroundDisabled}" />
+  </Style>
+  <Style Selector="Button.dialog">
+    <Setter Property="MinWidth" Value="88" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="StackPanel.buttonrow">
+    <Setter Property="Orientation" Value="Horizontal" />
+    <Setter Property="Spacing" Value="8" />
+    <Setter Property="HorizontalAlignment" Value="Right" />
+  </Style>
+
+  <!-- Configuration: a JSON list whose text was not taken (also while it has the focus) -->
+  <Style Selector="TextBox.jsoninvalid /template/ Border#PART_BorderElement">
+    <Setter Property="BorderBrush" Value="IndianRed" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+  <Style Selector="TextBox.jsoninvalid:focus /template/ Border#PART_BorderElement">
+    <Setter Property="BorderBrush" Value="IndianRed" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+  <Style Selector="TextBox.jsoninvalid:pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="BorderBrush" Value="IndianRed" />
+  </Style>
+  <Style Selector="Button.fkey:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FmFunctionKeyBorderBrush}" />
+  </Style>
+  <Style Selector="Button.tool">
+    <Setter Property="Padding" Value="8,3" />
+    <Setter Property="Margin" Value="1,0" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+</Styles>

@@ -1,0 +1,57 @@
+// macOS theme (the light look of Finder / macOS Sonoma: system blue, white list, alternating rows, blue folders).
+// Key = an area of the window, value = "#RRGGBB" or "#AARRGGBB". Areas left out use the light defaults.
+// For a theme of your own, copy this file under another name into the "themes" folder of the settings folder and change it.
+{
+  "Name": "macOS",
+  "Base": "Light",   // Light or Dark
+  "Colors": {
+    "Accent": "#007AFF",                         // Accent color: selected items, focus frame, check boxes
+    "Window.Background": "#ECECEC",              // Background of windows and dialog boxes
+    "Window.Text": "#1D1D1F",                    // General text color
+    "Window.ErrorText": "#D70015",               // Error messages
+    "Controls.Background": "#FFFFFF",            // Background of drop-down menus, input boxes and buttons
+    "Controls.HoverBackground": "#F2F2F2",       // Background of controls under the mouse
+    "Controls.Border": "#C8C8CC",                // Borders of controls
+    "Controls.SecondaryText": "#86868B",         // Secondary texts and icons
+    "Controls.DisabledBackground": "#F2F2F2",    // Background of disabled controls
+    "Controls.DisabledText": "#B0B0B5",          // Text of disabled controls
+    "Lists.HoverBackground": "#E8E8ED",          // Row under the mouse in lists (settings, dialog boxes)
+    "Lists.SelectedBackground": "#D5E6FB",       // Selected row in lists
+    "MenuBar.Background": "#F6F6F6",             // Background of the main menu bar
+    "MenuBar.Text": "#1D1D1F",                   // Text of the main menu bar
+    "Menu.Background": "#FFFFFF",                // Background of drop-down and context menus
+    "Menu.Border": "#C8C8CC",                    // Frame of drop-down and context menus
+    "Menu.Text": "#1D1D1F",                      // Text of menu items
+    "Menu.HoverBackground": "#F6F6F6",           // Menu item under the mouse (and an open submenu); the active tab's color
+    "Menu.HoverText": "#1D1D1F",                 // Text of the menu item under the mouse
+    "Menu.GestureText": "#86868B",               // Shortcut keys shown in menus
+    "Menu.DisabledText": "#B0B0B5",              // Disabled menu items
+    "ButtonBar.Background": "#E8E6E8",           // Background of the button bar (the window toolbar)
+    "Drives.Icon": "#6E6E73",                    // Icons on the drive buttons
+    "Tabs.Background": "#E0DFE0",                // Folder tab strip
+    "Tabs.ActiveBackground": "#F6F6F6",          // Active tab
+    "Tabs.PassiveLine": "#80007AFF",             // Faint underline of the selected tab in the inactive panel
+    "Panel.HeaderBackground": "#F2F1F2",         // Panel header (free space line) and thumbnail boxes
+    "Panel.ActiveAccent": "#007AFF",             // Marker color of the active panel
+    "Panel.ActivePathBackground": "#D5E6FB",     // Path line of the active panel
+    "Panel.StatusBackground": "#F2F1F2",         // Status line of the panel
+    "FileList.Background": "#FFFFFF",            // Background of the file list
+    "FileList.AlternateBackground": "#F4F5F5",   // Alternate rows of the file list
+    "FileList.Text": "#1D1D1F",                  // Text of the file list
+    "FileList.MarkedText": "#E0352B",            // Marked (selected) files
+    "FileList.HiddenText": "#A1A1A6",            // Hidden and system files
+    "FileList.FolderIcon": "#1E9BF0",            // Folder icon
+    "FileList.FileIcon": "#8E8E93",              // File icon
+    "FileList.CursorBackground": "#0064E1",      // Cursor bar (active panel)
+    "FileList.CursorText": "#FFFFFF",            // Text on the cursor bar
+    "FileList.InactiveCursorBackground": "#8E8E93", // Cursor bar (inactive panel)
+    "FileList.HoverBackground": "#EDF3FC",       // Row under the mouse
+    "FileList.HeaderBackground": "#FFFFFF",      // Column headers
+    "FileList.HeaderHoverBackground": "#F2F2F2", // Column header under the mouse
+    "FileList.HeaderText": "#6E6E73",            // Text of the column headers
+    "FileList.GridLines": "#E5E5E5",             // Grid lines
+    "FunctionKeys.Border": "#D1D1D6",            // Line between the function keys (F3 ... F8)
+    "Lister.Background": "#FFFFFF",              // Background of Lister (F3) and the editor
+    "Lister.Text": "#1D1D1F"                     // Text of Lister (F3) and the editor
+  }
+}

@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>NextCommander</AssemblyName>
+    <RootNamespace>NextCommander.App</RootNamespace>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\NextCommander.ico</ApplicationIcon>
+    <Product>NextCommander</Product>
+    <Description>Çift panelli, çapraz platform dosya yöneticisi</Description>
+    <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Controls.ColorPicker" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" />
+    <PackageReference Include="Avalonia.Diagnostics" Condition="'$(Configuration)' == 'Debug'" />
+    <PackageReference Include="Avalonia.AvaloniaEdit" />
+    <PackageReference Include="Avalonia.HtmlRenderer" />
+    <PackageReference Include="Markdig" />
+    <PackageReference Include="LibVLCSharp" />
+    <PackageReference Include="LibVLCSharp.Avalonia" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Sinks.File" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NextCommander.Core\NextCommander.Core.csproj" />
+    <ProjectReference Include="..\NextCommander.Vfs.Local\NextCommander.Vfs.Local.csproj" />
+    <ProjectReference Include="..\NextCommander.Vfs.Archive\NextCommander.Vfs.Archive.csproj" />
+    <ProjectReference Include="..\NextCommander.Vfs.Remote\NextCommander.Vfs.Remote.csproj" />
+    <ProjectReference Include="..\NextCommander.Columns\NextCommander.Columns.csproj" />
+    <ProjectReference Include="..\NextCommander.Platform\NextCommander.Platform.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\NextCommander.png" />
+    <EmbeddedResource Include="Localization\*.json" LogicalName="NextCommander.App.Localization.%(Filename).json" />
+    <!-- Language and color theme files next to the program: users can add or edit them (see README) -->
+    <None Include="Localization\*.json" Link="Languages\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Themes\*.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="IconPacks\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="NextCommander.App.Tests" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/NextCommander.App/NextCommander.App.csproj" />
+    <Project Path="src/NextCommander.Columns/NextCommander.Columns.csproj" />
+    <Project Path="src/NextCommander.Core/NextCommander.Core.csproj" />
+    <Project Path="src/NextCommander.Platform/NextCommander.Platform.csproj" />
+    <Project Path="src/NextCommander.Vfs.Archive/NextCommander.Vfs.Archive.csproj" />
+    <Project Path="src/NextCommander.Vfs.Local/NextCommander.Vfs.Local.csproj" />
+    <Project Path="src/NextCommander.Vfs.Remote/NextCommander.Vfs.Remote.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/NextCommander.App.Tests/NextCommander.App.Tests.csproj" />
+    <Project Path="tests/NextCommander.Core.Tests/NextCommander.Core.Tests.csproj" />
+    <Project Path="tests/SamplePlugin/SamplePlugin.csproj" />
+  </Folder>
+</Solution>

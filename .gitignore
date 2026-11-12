@@ -1,0 +1,16 @@
+bin/
+obj/
+artifacts/
+publish/
+.vs/
+.idea/
+*.user
+*.suo
+TestResults/
+*.DotSettings.user
+dist/
+# local test servers (tests/servers)
+.venv/
+tests/servers/host_key
+tests/servers/node_modules/
+__pycache__/

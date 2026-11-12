@@ -1,0 +1,17 @@
+// Colored icon pack (the default): filled, colorful icons.
+// For a pack of your own, copy this file under another name into the "iconpacks" folder of the settings folder and change it.
+//   Style:  Colored (filled in color), Monochrome (one color), Outline (thin outline over a light fill)
+//   Color:  Monochrome: the one color ("#RRGGBB"; empty: the icon color of the color theme)
+//   Badges: the small marks at the corner of menu icons (plus, cross, arrow)
+//   Colors: the colors of the menu and button bar icons (Blue, Green, Red, Yellow, Purple, Teal, Orange, Gray) and of the file
+//           types (File.Folder, File.Parent, File.File, File.Archive, File.Image, File.Audio, File.Video, File.Code,
+//           File.Document, File.Pdf, File.Executable, File.Error)
+//   Glyphs: icon shapes, SVG path data on a 16x16 grid; keys FmFolderIcon, FmFileIcon, FmArchiveIcon, MiCopy, MiDrive,
+//           MiTrash ... (the names in Styles/MenuIcons.axaml and App.axaml)
+{
+  "Name": "Colored",
+  "Style": "Colored",
+  "Badges": true,
+  "Colors": {},
+  "Glyphs": {}
+}

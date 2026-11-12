@@ -1,0 +1,34 @@
+// Fluent icon pack: the colors of Windows 11 (Fluent), a thin outline over a light fill, folders and files with rounded corners.
+// See the comments in "colored.json" for the format.
+{
+  "Name": "Fluent",
+  "Style": "Outline",
+  "Badges": true,
+  "Colors": {
+    "Blue": "#0F6CBD",
+    "Green": "#107C10",
+    "Red": "#C50F1F",
+    "Yellow": "#C19C00",
+    "Purple": "#8764B8",
+    "Teal": "#038387",
+    "Orange": "#CA5010",
+    "Gray": "#616161",
+    "File.Folder": "#D9A21B",
+    "File.Parent": "#D9A21B",
+    "File.File": "#616161",
+    "File.Archive": "#8764B8",
+    "File.Image": "#038387",
+    "File.Audio": "#CA5010",
+    "File.Video": "#C50F1F",
+    "File.Code": "#0F6CBD",
+    "File.Document": "#0F6CBD",
+    "File.Pdf": "#C50F1F",
+    "File.Executable": "#107C10",
+    "File.Error": "#C50F1F"
+  },
+  "Glyphs": {
+    "FmFolderIcon": "M1.5,4.5 C1.5,3.4 2.4,2.5 3.5,2.5 L5.9,2.5 C6.4,2.5 6.9,2.7 7.3,3.1 L8.2,4 L12.5,4 C13.6,4 14.5,4.9 14.5,6 L14.5,11.5 C14.5,12.6 13.6,13.5 12.5,13.5 L3.5,13.5 C2.4,13.5 1.5,12.6 1.5,11.5 Z",
+    "FmFileIcon": "M4.5,1.5 L9,1.5 L13,5.5 L13,12.5 C13,13.6 12.1,14.5 11,14.5 L4.5,14.5 C3.4,14.5 2.5,13.6 2.5,12.5 L2.5,3.5 C2.5,2.4 3.4,1.5 4.5,1.5 Z M9,1.5 L9,4.5 C9,5.05 9.45,5.5 10,5.5 L13,5.5",
+    "MiDrive": "M3,4.5 L13,4.5 C14.1,4.5 15,5.4 15,6.5 L15,9.5 C15,10.6 14.1,11.5 13,11.5 L3,11.5 C1.9,11.5 1,10.6 1,9.5 L1,6.5 C1,5.4 1.9,4.5 3,4.5 Z M11.5,7.4 A0.6,0.6 0 1 0 11.5,8.6 A0.6,0.6 0 1 0 11.5,7.4 Z"
+  }
+}

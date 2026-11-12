@@ -1,0 +1,35 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:NextCommander.App.ViewModels"
+             x:Class="NextCommander.App.Views.PathBarView"
+             x:DataType="vm:PanelViewModel"
+             DragDrop.AllowDrop="True">
+  <!-- Path line: "▾ c:\Users\x\*.*   * ▾". Segments are clickable, empty space edits the path. -->
+  <Border Classes="pathline" Classes.active="{Binding IsActive}">
+    <DockPanel>
+      <Button x:Name="SubfoldersButton" DockPanel.Dock="Left" Classes="pathbtn" Content="▾" Focusable="False" ToolTip.Tip="Subfolders" />
+      <Button x:Name="HistoryButton" DockPanel.Dock="Right" Classes="pathbtn" Content="▾" Focusable="False" ToolTip.Tip="Folder history (Alt+↓)"
+              IsVisible="{Binding ShowPathButtons}" />
+      <Button x:Name="HotlistButton" DockPanel.Dock="Right" Classes="pathbtn" Content="*" Focusable="False" ToolTip.Tip="Hotlist (Ctrl+D)"
+              IsVisible="{Binding ShowPathButtons}" />
+      <Panel x:Name="Root" MinHeight="20" Background="Transparent">
+        <!-- Hidden while the path is edited -->
+        <Panel x:Name="CrumbArea">
+          <!-- Plain path (breadcrumbs off) -->
+          <StackPanel Orientation="Horizontal" IsVisible="{Binding !ShowBreadcrumbs}" VerticalAlignment="Center" Margin="2,0">
+            <TextBlock Classes="pathmask noloc" Text="{Binding PlainPathText}" Margin="0" />
+            <TextBlock Classes="pathmask" Text="{Binding FilterMaskText}" />
+          </StackPanel>
+          <ScrollViewer x:Name="CrumbScroll" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" IsVisible="{Binding ShowBreadcrumbs}">
+            <StackPanel Orientation="Horizontal">
+              <!-- Segment buttons are built in code (PathBarView.RebuildCrumbs) -->
+              <StackPanel x:Name="Crumbs" Orientation="Horizontal" />
+              <TextBlock Classes="pathmask" Text="{Binding FilterMaskText}" VerticalAlignment="Center" />
+            </StackPanel>
+          </ScrollViewer>
+        </Panel>
+        <TextBox x:Name="PathBox" Classes="pathbox" Text="{Binding PathText}" IsVisible="False" />
+      </Panel>
+    </DockPanel>
+  </Border>
+</UserControl>

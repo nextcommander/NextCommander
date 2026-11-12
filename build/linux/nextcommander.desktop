@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=NextCommander
+Comment=Çift panelli dosya yöneticisi
+Exec=NextCommander %F
+Icon=nextcommander
+Terminal=false
+Categories=Utility;NextCommander;
+MimeType=inode/directory;

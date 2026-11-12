@@ -1,0 +1,8 @@
+// Monochrome icon pack: every icon in the icon color of the color theme (suits light and dark themes).
+// See the comments in "colored.json" for the format.
+{
+  "Name": "Monochrome",
+  "Style": "Monochrome",
+  "Color": "",
+  "Badges": true
+}

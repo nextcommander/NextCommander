@@ -1,0 +1,155 @@
+# Remaining work
+
+## Options not in the Configuration window yet
+
+The items below do not exist yet. They were not added to the window, so that no checkbox does nothing.
+
+### Layout — done
+- [x] Flat icons — for the drive buttons.
+- [x] Open the breadcrumb automatically on mouse hover.
+- [x] Command line only when it has the focus.
+- [x] Choice between two separate drive button bars or one shared bar.
+
+### Display — done
+- [x] Show the parent folder `[..]` in drive roots too.
+- [x] Append `\` to folder names.
+- [x] Choice of sort method: natural, alphabetical (considering accents), strict character code order.
+- [x] Sorting of folders: always by name / like files (also by date).
+- [x] Tree: always load the whole folder tree; Enter in the tree opens the folder in the other panel.
+- [x] Help texts: turning off tooltips, volume label in the drive list, showing a file name that does not fit and the description (descript.ion) in a tooltip.
+- [-] Old 8.3 names — out of scope: specific to old Windows file systems, no cross-platform counterpart.
+
+### Icons — done
+- [x] Icon mode: all associated + EXE/LNK / associated only / standard only / no icons.
+- [x] Not loading EXE/LNK icons on network drives and removable disks.
+- [x] Custom folder icons (desktop.ini); Explorer's default icons in the "all associated" icon mode.
+- [x] Overlay icons (Windows shell overlays).
+- [x] `!` mark on hidden/system files; setting to show hidden files dimmed.
+- [x] Icon size (16 / 24 / 32 / 48) and horizontal/vertical extra spacing.
+- [x] Main menu icon size, icon frame, showing checked items as pressed buttons.
+- [x] Take drive icons from the system.
+- [-] Special icons of virtual folders (Network etc.) — out of scope: the application has no Windows shell virtual folders.
+- [-] Choice of a default icon library (.icl/.dll) — out of scope: built-in icons are vector glyphs (`build/make_menu_icons.py`).
+
+### Font — done
+- [x] Dialog scaling (does not scale the main window). "Adapt to large fonts" is always on in Avalonia.
+- [x] Main window font and dialog font.
+
+### Color
+Since 7 November 2026 colors come only from theme files (default: system colors, dark theme `Themes/dark.json`).
+- [x] Text, background, second background (alternating rows), mark, cursor, cursor text, Lister background and text: the `FileList.*`, `Lister.*` keys in the theme file.
+- [x] Inverse selection.
+- [-] Editing colors one by one in the settings window, inverse cursor, system accent color for the cursor, color sample: replaced by theme files (user request).
+
+### Tabstops/Data Formats
+- [x] Show the extension right after the name (the extension column is hidden) or in a separate column.
+- [x] Column widths (tab stops) and "name column fills the window width".
+- [x] Date, time, thousands and decimal separators.
+- [x] Show the century (20xx), 12-hour AM/PM, folder count in the footer.
+- [x] Size unit of header/footer (bytes / kbytes / dynamic).
+
+### Folder Tabs
+- [x] Tabs on multiple lines; all tabs the same width; title length limit.
+- [x] Ask before closing all; double-click closes a tab.
+- [x] Ctrl+Up opens the new tab in front; Ctrl+Tab switches to the last used tab.
+- [x] Show the tab list with Ctrl+Tab (list mode): while Ctrl is held, Tab/Shift+Tab move through it, releasing Ctrl switches, Esc cancels.
+- [x] Open new tabs next to the current tab or at the end.
+- [x] Show locked tabs with `*` (closable); drive letter in the tab title; icons on tabs.
+- [x] Clicking a tab activates the target panel (as a setting).
+- [x] Save the shown file types (filter) separately for each tab (as a setting).
+
+### Custom columns, View mode, Auto switch mode
+- [x] "View modes" page in Settings (column sets as JSON; the list editor is in the Show menu).
+- [x] List background and tab color depending on the view mode; commands on entering/leaving a mode.
+- [x] View mode background in the brief and thumbnail views too.
+
+### Operation
+- [x] Move to the system tray when minimized.
+- [x] Always go to the root when changing drives (when off, returns to the last used folder on that drive).
+- [x] Open with a single click.
+- [x] Select only the name (not the extension) when renaming — as a setting.
+- [x] Autocomplete paths (path line, copy / move target, command line); append the suggested name automatically.
+- [x] Number of lines kept visible below (and above) the cursor (in the detailed view).
+- [x] Mouse selection mode: selection with the right button (NC style, context menu by holding for 0.6 s).
+- [x] Selection by clicking the icon; apply the selection mode only on touch screens.
+- [x] Selection with Num+: files only / folders too.
+- [x] Save on exit: folders and tabs, panel views, command line history (separately; "Save settings" writes all of them).
+- [-] NTFS daylight saving correction (ignore a 1-hour difference): .NET returns time stamps in UTC, there is no offset to correct.
+- [x] Calculate the folder size when selecting with Space (as a setting).
+- [x] Subfolder size before copying/deleting: always calculated (a counting pass runs first for the progress), no separate option needed. Use Everything for the folder size (Windows, es.exe; should be tried in a real environment).
+- [x] File descriptions: character set when writing (automatic / ANSI / DOS / UTF-8 / UTF-16), copy / move / rename descriptions together with the files. The type is detected automatically when reading.
+
+### Pages added later
+- [x] Refresh: auto refresh on/off, network and removable drives, excluded folders, refresh when the window gets the focus.
+- [x] Log file: copy/move, delete, pack, rename; errors only.
+- [x] Log file: FTP / SFTP / WebDAV / S3 operations and unpacking from archives as separate options.
+- [x] Ignore list: name, mask or full path; `nc_SwitchIgnoreList`.
+- [x] History: length of folder and command line history.
+- [x] Zip packer: default compression level.
+- [x] Zip packer: names in UTF-8 or the OEM code page; encryption AES-256 / AES-128 / ZipCrypto.
+- [x] Misc.: ask before closing (Alt+F4 and closing the window).
+
+### Further options (10 November 2026)
+- [x] 7-Zip: compression level, method, solid archive, CPU threads, encrypt names, extra parameters.
+- [x] Packer: set the archive date to the newest file's date (local targets).
+- [x] Copy/Delete: default answer for existing files (Overwrite, Skip, ...); drag and drop without the Copy dialog.
+- [x] FTP: passive mode as the default of new connections; number of retries.
+- [x] Thumbnails: disk cache on/off, clear the cache.
+- [x] Refresh: no refresh while in the background.
+- [x] Log file: rotation daily or by size, number of old files kept.
+- [x] Configuration window: changed-from-default marks, Reset page, dependent options greyed out, search in translated texts.
+- [x] Copy date/time of directories: always done (no option needed).
+- [x] 7-Zip: dictionary size and word size; memory usage estimate.
+- [x] Zip: own folder for temporary files; open partial ZIP files (listed and read from the local headers); keep damaged files (bad CRC); 8.3 short names (Windows).
+- [x] Copy/Delete: copy buffer, big file mode (write-through, own buffer), compatibility mode for drives (small blocks), copy / move / delete with Windows Explorer.
+- [x] Refresh: put files that appear at the end of the list; do not remember these drives on exit.
+- [-] Refresh: "update the header / footer only": the list refresh always updates both.
+- [x] FTP: transfer type (binary / ASCII / by mask), FTP log file, PORT range and external address, break off a stalled transfer (retried).
+- [-] FTP: MODE Z compression (FluentFTP has none).
+- [x] Thumbnails: fields under thumbnails, fields by type, thumbnails from Explorer (Windows), IrfanView / XnView nconvert, text file thumbnails; remove the thumbnails of deleted files.
+- [x] Log file: skipped files; file system plugin operations.
+- [x] History: history thinning as a setting, folder history kept between sessions, frequently used folders (kept / shown, saved on exit).
+- [-] History: last visited folder in the middle of the list, own storage place for frequently used folders.
+- [x] Ignore list: kept in its own file; add the names selected in the panel (with or without path).
+- [x] Misc.: confirmations for non-empty folders, overwriting read-only / hidden / system files, dropping on the F8 button; a sound when an operation ends.
+- [x] Fix: Windows properties dialog and network drive dialogs were never reached (the platform classes did not name the interface).
+- [-] Edit/View: external viewer for F3 (Associations and Lister plugins cover it); ARJ / LHA / UC2 / ACE packers (obsolete formats).
+
+### Change button bar
+- [x] Preview, add / delete / separator / move, icon size, command, parameters, start folder, icon file, name, tooltip.
+- [x] "Run minimized" / "Run maximized" (the program's window state; Windows).
+- [x] Choosing among the icons in an icon file (exe, dll, icl; stored as `file,index`; Windows).
+- [-] "XP style": Avalonia buttons always take the theme's look.
+
+## Connections
+- [x] WebDAV (dav://, davs://) and S3-compatible storage (s3://), in the same connection manager as FTP / SFTP.
+- [x] Keeping file times on WebDAV and S3: WebDAV PROPPATCH (Nextcloud/ownCloud `lastmodified`, writable `getlastmodified`, IIS `Win32LastModifiedTime`; the one that works is found per server), S3 and Azure `mtime` metadata (same as rclone). The time zone shift on FTP was fixed too.
+- [x] S3: virtual-hosted addresses (bucket.host), session token and AWS profiles (~/.aws/credentials, ~/.aws/config).
+- [x] Azure Blob Storage (azblob://; account key or SAS).
+- [x] SMB/CIFS on every platform with the built-in client (smb://; SMBLibrary, LGPL).
+- [x] Google Drive, OneDrive, Dropbox (gdrive://, onedrive://, dropbox://): OAuth sign-in in the browser (PKCE, localhost:53682). The user registers the application ID with each service (steps in the connection dialog and the README). Tested against a fake API; should be tried with real accounts.
+- [x] Google Drive: shared drives and "Shared with me"; OneDrive: SharePoint sites and document libraries (optional). Tested with the fake API.
+- [x] Proxy for web requests (Configuration > Operation > Proxy: system / none / manual with user, password and bypass list): WebDAV, S3, Azure, cloud drives and their sign-in, URL downloads, update check.
+- [x] FTP, SFTP and SMB through the manual proxy (HTTP CONNECT or SOCKS5): FluentFTP and SSH.NET proxy clients, SMB through a local forwarding port. Tested with fake proxies; to be tried with a real proxy.
+- [ ] Pack dialog: multiple disk (split) archives and self-extracting archives (7-Zip `-v` / `-sfx`).
+- [x] The Net menu reorganized by connection type (New connection, Saved connections, Connect by address, Network); product icons for connection types.
+
+## Internal terminal
+- [x] Terminal at the bottom of the window via the button at the end of the command line / Ctrl+` (cmd.exe or $SHELL, redirected input/output). Commands are typed after the prompt, inside the output area.
+- [x] Real terminal emulation (Windows ConPTY / Linux, macOS pty; VT100 / xterm screen): colors, programs that draw the screen themselves, Ctrl+C signal. When turned off in the settings, the line console is used. The app was tried on Linux (Ubuntu 26.10) and macOS (M5); on macOS job control (Ctrl+Z) may not work because the shell has no controlling terminal.
+- [x] Multiple terminal tabs; choice among the installed shells (cmd, PowerShell, pwsh, Git Bash, WSL, $SHELL).
+- [x] Keep the terminal height and the open tabs in the settings.
+
+## Tools
+- [x] Duplicate files window (Commands > Duplicate files...): search by choosing folders, groups, marking by rule, deleting to the recycle bin / permanently, moving to a folder.
+- [x] Folder sizes window (like WinDirStat): tree, extension statistics, treemap; deleting.
+
+## Other
+- [x] New application icon (dark package) verified on Windows (exe, window, taskbar; the old icon came from Windows' icon cache).
+- [ ] Master password lock with Windows Hello / Touch ID (needs a separate Windows-specific build target of the application).
+- [x] plocate tried in a real environment (WSL Ubuntu 24.04, plocate 1.1.19): indexed search results match a folder scan. With several masks (`*.bin *.txt`) nothing was returned because plocate combines patterns with AND; each pattern is now a separate query.
+- [x] The application's own file index (Settings > Operation > File index): fast search, duplicate files and folder size without Everything / plocate / Spotlight; search in ~1 million files takes 20–80 ms.
+- [x] MSIX package: if the Windows SDK is not installed, `makeappx` is taken from the SDK BuildTools package on NuGet; the package is produced (unsigned; installing needs a certificate).
+- [ ] Media playback with VLC, DMG packaging, Everything and mdfind (Spotlight) should be tried in a real environment.
+- [x] "Show admin shares": in the network view (drive box `\`) the SMB shares of the machines are listed (Windows); when on, admin shares such as C$, ADMIN$ too.
+- [x] SMB shares on Linux / macOS: the machine's "SMB" entry in the network view opens the shares with the built-in client.

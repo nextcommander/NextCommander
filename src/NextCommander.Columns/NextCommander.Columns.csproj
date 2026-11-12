@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>NextCommander.Columns</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MetadataExtractor" />
+    <PackageReference Include="TagLibSharp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NextCommander.Core\NextCommander.Core.csproj" />
+  </ItemGroup>
+</Project>

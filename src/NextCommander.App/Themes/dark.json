@@ -1,0 +1,57 @@
+// Dark theme (the colors of Visual Studio Code "Dark+").
+// Key = an area of the window, value = "#RRGGBB" or "#AARRGGBB". Areas left out use the dark defaults.
+// For a theme of your own, copy this file under another name into the "themes" folder of the settings folder and change it.
+{
+  "Name": "Dark",
+  "Base": "Dark",   // Light or Dark
+  "Colors": {
+    "Accent": "#007ACC",                         // Accent color: selected items, focus frame, check boxes
+    "Window.Background": "#1E1E1E",              // Background of windows and dialog boxes
+    "Window.Text": "#CCCCCC",                    // General text color
+    "Window.ErrorText": "#F48771",               // Error messages
+    "Controls.Background": "#252526",            // Background of drop-down menus, input boxes and buttons
+    "Controls.HoverBackground": "#2D2D2D",       // Background of controls under the mouse
+    "Controls.Border": "#454545",                // Borders of controls
+    "Controls.SecondaryText": "#858585",         // Secondary texts and icons
+    "Controls.DisabledBackground": "#3C3C3C",    // Background of disabled controls
+    "Controls.DisabledText": "#6E6E6E",          // Text of disabled controls
+    "Lists.HoverBackground": "#2A2D2E",          // Row under the mouse in lists (settings, dialog boxes)
+    "Lists.SelectedBackground": "#37373D",       // Selected row in lists
+    "MenuBar.Background": "#3C3C3C",             // Background of the main menu bar
+    "MenuBar.Text": "#CCCCCC",                   // Text of the main menu bar
+    "Menu.Background": "#252526",                // Background of drop-down and context menus
+    "Menu.Border": "#454545",                    // Frame of drop-down and context menus
+    "Menu.Text": "#CCCCCC",                      // Text of menu items
+    "Menu.HoverBackground": "#1E1E1E",           // Menu item under the mouse (and an open submenu); the active tab's color
+    "Menu.HoverText": "#CCCCCC",                 // Text of the menu item under the mouse
+    "Menu.GestureText": "#858585",               // Shortcut keys shown in menus
+    "Menu.DisabledText": "#6E6E6E",              // Disabled menu items
+    "ButtonBar.Background": "#333333",           // Background of the button bar
+    "Drives.Icon": "#9DA5B4",                    // Icons on the drive buttons
+    "Tabs.Background": "#252526",                // Folder tab strip
+    "Tabs.ActiveBackground": "#1E1E1E",          // Active tab
+    "Tabs.PassiveLine": "#8C007ACC",             // Faint underline of the selected tab in the inactive panel
+    "Panel.HeaderBackground": "#252526",         // Panel header (free space line) and thumbnail boxes
+    "Panel.ActiveAccent": "#007ACC",             // Marker color of the active panel
+    "Panel.ActivePathBackground": "#04395E",     // Path line of the active panel
+    "Panel.StatusBackground": "#252526",         // Status line of the panel
+    "FileList.Background": "#1E1E1E",            // Background of the file list
+    "FileList.AlternateBackground": "#1E1E1E",   // Alternate rows of the file list
+    "FileList.Text": "#FFFFFF",                  // Text of the file list
+    "FileList.MarkedText": "#F48771",            // Marked (selected) files
+    "FileList.HiddenText": "#858585",            // Hidden and system files
+    "FileList.FolderIcon": "#DCB67A",            // Folder icon
+    "FileList.FileIcon": "#C5C5C5",              // File icon
+    "FileList.CursorBackground": "#094771",      // Cursor bar (active panel)
+    "FileList.CursorText": "#FFFFFF",            // Text on the cursor bar
+    "FileList.InactiveCursorBackground": "#37373D", // Cursor bar (inactive panel)
+    "FileList.HoverBackground": "#2A2D2E",       // Row under the mouse
+    "FileList.HeaderBackground": "#252526",      // Column headers
+    "FileList.HeaderHoverBackground": "#2A2D2E", // Column header under the mouse
+    "FileList.HeaderText": "#BBBBBB",            // Text of the column headers
+    "FileList.GridLines": "#3C3C3C",             // Grid lines
+    "FunctionKeys.Border": "#3C3C3C",           // Line between the function keys (F3 ... F8)
+    "Lister.Background": "#1E1E1E",              // Background of Lister (F3) and the editor
+    "Lister.Text": "#D4D4D4"                     // Text of Lister (F3) and the editor
+  }
+}

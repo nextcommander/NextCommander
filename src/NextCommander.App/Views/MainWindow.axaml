@@ -1,0 +1,421 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:icons="using:NextCommander.App.Services.Icons"
+        xmlns:vm="using:NextCommander.App.ViewModels"
+        xmlns:views="using:NextCommander.App.Views"
+        xmlns:p="using:NextCommander.Platform"
+        x:Class="NextCommander.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="NextCommander"
+        Icon="/Assets/NextCommander.png"
+        Width="1280" Height="800" MinWidth="640" MinHeight="400"
+        WindowStartupLocation="CenterScreen"
+        ToolTip.ServiceEnabled="{Binding ShowToolTips}">
+  <DockPanel>
+    <Menu x:Name="MainMenu" DockPanel.Dock="Top">
+      <Menu.ItemsPanel>
+        <ItemsPanelTemplate>
+          <DockPanel LastChildFill="False" />
+        </ItemsPanelTemplate>
+      </Menu.ItemsPanel>
+      <MenuItem Header="_Files">
+        <MenuItem Header="Change attributes..." Command="{Binding RunCommandCommand}" CommandParameter="nc_SetAttrib" />
+        <MenuItem Header="Archive" Tag="nc_PackFiles">
+          <MenuItem Header="Pack..." InputGesture="Alt+F5" Command="{Binding RunCommandCommand}" CommandParameter="nc_PackFiles" />
+          <MenuItem Header="Unpack files..." InputGesture="Alt+F9" Command="{Binding RunCommandCommand}" CommandParameter="nc_UnpackFiles" />
+          <MenuItem Header="Test archives" InputGesture="Alt+Shift+F9" Command="{Binding RunCommandCommand}" CommandParameter="nc_TestArchive" />
+        </MenuItem>
+        <MenuItem Header="Compare by content..." Command="{Binding RunCommandCommand}" CommandParameter="nc_CompareFilesByContent" />
+        <MenuItem Header="Associations" Tag="nc_AssociateWith">
+          <MenuItem Header="Associate..." Command="{Binding RunCommandCommand}" CommandParameter="nc_AssociateWith" />
+          <MenuItem Header="Internal associations..." Command="{Binding RunCommandCommand}" CommandParameter="nc_InternalAssociate" />
+        </MenuItem>
+        <MenuItem Header="Properties..." InputGesture="Alt+Enter" Command="{Binding RunCommandCommand}" CommandParameter="nc_Properties" />
+        <MenuItem Header="Calculate occupied space..." InputGesture="Ctrl+L" Command="{Binding RunCommandCommand}" CommandParameter="nc_GetFileSpace" />
+        <MenuItem Header="Multi-Rename Tool..." InputGesture="Ctrl+M" Command="{Binding RunCommandCommand}" CommandParameter="nc_MultiRenameFiles" />
+        <MenuItem Header="Edit comment..." InputGesture="Ctrl+Z" Command="{Binding RunCommandCommand}" CommandParameter="nc_EditComment" />
+        <MenuItem Header="Print" Tag="nc_PrintFile">
+          <MenuItem Header="File list..." Command="{Binding RunCommandCommand}" CommandParameter="nc_PrintFileList" />
+          <MenuItem Header="Selected files" Command="{Binding RunCommandCommand}" CommandParameter="nc_PrintFile" />
+        </MenuItem>
+        <Separator />
+        <MenuItem Header="Split / combine" Tag="nc_SplitFile">
+          <MenuItem Header="Split file..." Command="{Binding RunCommandCommand}" CommandParameter="nc_SplitFile" />
+          <MenuItem Header="Combine files..." Command="{Binding RunCommandCommand}" CommandParameter="nc_CombineFiles" />
+        </MenuItem>
+        <MenuItem Header="Encode / decode" Tag="nc_UUEncode">
+          <MenuItem Header="Encode (MIME, UUE, XXE)..." Command="{Binding RunCommandCommand}" CommandParameter="nc_UUEncode" />
+          <MenuItem Header="Decode (MIME, UUE, XXE)..." Command="{Binding RunCommandCommand}" CommandParameter="nc_UUDecode" />
+        </MenuItem>
+        <MenuItem Header="Checksum" Tag="nc_CRCcreate">
+          <MenuItem Header="Create checksums (MD5/SHA)..." Command="{Binding RunCommandCommand}" CommandParameter="nc_CRCcreate" />
+          <MenuItem Header="Verify checksums" Command="{Binding RunCommandCommand}" CommandParameter="nc_CRCcheck" />
+        </MenuItem>
+        <Separator />
+        <MenuItem Header="Exit" InputGesture="Alt+F4" Command="{Binding RunCommandCommand}" CommandParameter="nc_Exit" />
+      </MenuItem>
+      <!-- At the user's request: the everyday file commands in their own menu after Files (also on the F keys) -->
+      <MenuItem Header="_Edit">
+        <MenuItem Header="View" InputGesture="F3" Command="{Binding RunCommandCommand}" CommandParameter="nc_List" />
+        <MenuItem Header="Edit" InputGesture="F4" Command="{Binding RunCommandCommand}" CommandParameter="nc_Edit" />
+        <MenuItem Header="New file" InputGesture="Shift+F4" Command="{Binding RunCommandCommand}" CommandParameter="nc_EditNewFile" />
+        <MenuItem Header="Open with..." InputGesture="Shift+Enter" Command="{Binding RunCommandCommand}" CommandParameter="nc_OpenWith" />
+        <MenuItem Header="Open as archive" InputGesture="Ctrl+PageDown" Command="{Binding RunCommandCommand}" CommandParameter="nc_OpenArchive" />
+        <Separator />
+        <MenuItem Header="Copy" InputGesture="F5" Command="{Binding RunCommandCommand}" CommandParameter="nc_Copy" />
+        <MenuItem Header="Move / rename" InputGesture="F6" Command="{Binding RunCommandCommand}" CommandParameter="nc_RenMov" />
+        <MenuItem Header="Rename in place" InputGesture="Shift+F6" Command="{Binding RunCommandCommand}" CommandParameter="nc_RenameOnly" />
+        <MenuItem Header="New folder" InputGesture="F7" Command="{Binding RunCommandCommand}" CommandParameter="nc_MkDir" />
+        <MenuItem Header="New folder in target panel" InputGesture="Shift+F7" Command="{Binding RunCommandCommand}" CommandParameter="nc_MkDirInTarget" />
+        <MenuItem Header="Delete" InputGesture="F8" Command="{Binding RunCommandCommand}" CommandParameter="nc_Delete" />
+        <MenuItem Header="Delete permanently" InputGesture="Shift+Delete" Command="{Binding RunCommandCommand}" CommandParameter="nc_DeletePermanent" />
+        <Separator />
+        <MenuItem Header="Copy to clipboard" InputGesture="Ctrl+C" Command="{Binding RunCommandCommand}" CommandParameter="nc_CopyToClipboard" />
+        <MenuItem Header="Cut to clipboard" InputGesture="Ctrl+X" Command="{Binding RunCommandCommand}" CommandParameter="nc_CutToClipboard" />
+        <MenuItem Header="Paste from clipboard" InputGesture="Ctrl+V" Command="{Binding RunCommandCommand}" CommandParameter="nc_PasteFromClipboard" />
+        <Separator />
+        <MenuItem Header="Show list file in panel..." Command="{Binding RunCommandCommand}" CommandParameter="LOADLIST" />
+      </MenuItem>
+      <MenuItem Header="_Mark">
+        <MenuItem Header="Select group..." InputGesture="Add" Command="{Binding RunCommandCommand}" CommandParameter="nc_SpreadSelection" />
+        <MenuItem Header="Unselect group..." InputGesture="Subtract" Command="{Binding RunCommandCommand}" CommandParameter="nc_ShrinkSelection" />
+        <MenuItem Header="Select all" InputGesture="Ctrl+Add" Command="{Binding RunCommandCommand}" CommandParameter="nc_SelectAll" />
+        <MenuItem Header="Unselect all" InputGesture="Ctrl+Subtract" Command="{Binding RunCommandCommand}" CommandParameter="nc_ClearAll" />
+        <MenuItem Header="Invert selection" InputGesture="Multiply" Command="{Binding RunCommandCommand}" CommandParameter="nc_ExchangeSelection" />
+        <MenuItem Header="Select all with the same extension" InputGesture="Alt+Add" Command="{Binding RunCommandCommand}" CommandParameter="nc_SelectCurrentExtension" />
+        <Separator />
+        <MenuItem Header="Save selection" Command="{Binding RunCommandCommand}" CommandParameter="nc_SaveSelection" />
+        <MenuItem Header="Restore selection" InputGesture="Divide" Command="{Binding RunCommandCommand}" CommandParameter="nc_RestoreSelection" />
+        <MenuItem Header="Save selection to file..." Command="{Binding RunCommandCommand}" CommandParameter="nc_SaveSelectionToFile" />
+        <MenuItem Header="Load selection from file..." Command="{Binding RunCommandCommand}" CommandParameter="nc_LoadSelectionFromFile" />
+        <MenuItem Header="Load selection from clipboard names" Command="{Binding RunCommandCommand}" CommandParameter="nc_LoadSelectionFromClip" />
+        <Separator />
+        <MenuItem Header="Copy selected names to clipboard" InputGesture="Ctrl+Alt+C" Command="{Binding RunCommandCommand}" CommandParameter="nc_CopyNamesToClip" />
+        <MenuItem Header="Copy names with paths to the clipboard" InputGesture="Ctrl+Shift+C" Command="{Binding RunCommandCommand}" CommandParameter="nc_CopyFullNamesToClip" />
+        <MenuItem Header="Copy to clipboard with all details" InputGesture="Ctrl+Alt+D" Command="{Binding RunCommandCommand}" CommandParameter="nc_CopyDetailsToClip" />
+        <MenuItem Header="Copy to the clipboard with path and details" Command="{Binding RunCommandCommand}" CommandParameter="nc_CopyFullDetailsToClip" />
+        <MenuItem Header="Copy folder path to the clipboard" InputGesture="Ctrl+Shift+P" Command="{Binding RunCommandCommand}" CommandParameter="nc_CopySrcPathToClip" />
+        <Separator />
+        <MenuItem Header="Compare folders" InputGesture="Shift+F2" Command="{Binding RunCommandCommand}" CommandParameter="nc_CompareDirs" />
+        <MenuItem Header="Mark newer, hide identical" Command="{Binding RunCommandCommand}" CommandParameter="nc_CompareDirsHideSame" />
+      </MenuItem>
+      <MenuItem Header="_Commands">
+        <MenuItem Header="Folder tree..." InputGesture="Alt+F10" Command="{Binding RunCommandCommand}" CommandParameter="nc_DirTree" />
+        <MenuItem Header="Find files..." InputGesture="Alt+F7" Command="{Binding RunCommandCommand}" CommandParameter="nc_SearchFor" />
+        <MenuItem Header="Find files in separate process..." InputGesture="Alt+Shift+F7" Command="{Binding RunCommandCommand}" CommandParameter="nc_SearchStandalone" />
+        <MenuItem Header="Volume label..." Command="{Binding RunCommandCommand}" CommandParameter="nc_VolumeLabel" />
+        <MenuItem Header="System information..." Command="{Binding RunCommandCommand}" CommandParameter="nc_SysInfo" />
+        <MenuItem Header="Synchronize directories..." Command="{Binding RunCommandCommand}" CommandParameter="nc_SyncDirs" />
+        <MenuItem Header="Hotlist" InputGesture="Ctrl+D" Command="{Binding RunCommandCommand}" CommandParameter="nc_DirectoryHotlist" />
+        <MenuItem Header="Back" InputGesture="Alt+Left" Command="{Binding RunCommandCommand}" CommandParameter="nc_GoBack" />
+        <Separator />
+        <MenuItem Header="Open command prompt window" InputGesture="Ctrl+Alt+T" Command="{Binding RunCommandCommand}" CommandParameter="nc_ExecuteTerminal" />
+        <MenuItem Header="Internal terminal" InputGesture="Ctrl+OemTilde" Command="{Binding RunCommandCommand}" CommandParameter="nc_ToggleTerminal" />
+        <Separator />
+        <MenuItem Header="Branch View (with subfolders)" InputGesture="Ctrl+B" Command="{Binding RunCommandCommand}" CommandParameter="nc_DirBranch" />
+        <MenuItem Header="Open Desktop folder" Command="{Binding RunCommandCommand}" CommandParameter="nc_OpenDesktop" />
+        <MenuItem Header="Background transfer manager..." Command="{Binding RunCommandCommand}" CommandParameter="nc_BackgroundTransfers" />
+        <Separator />
+        <MenuItem Header="Source &lt;-&gt; Target" InputGesture="Ctrl+U" Command="{Binding RunCommandCommand}" CommandParameter="nc_Exchange" />
+        <MenuItem Header="Target = Source" Command="{Binding RunCommandCommand}" CommandParameter="nc_MatchSrc" />
+        <Separator />
+        <MenuItem Header="Calculate folder sizes" InputGesture="Alt+Shift+Enter" Command="{Binding RunCommandCommand}" CommandParameter="nc_CountDirContent" />
+        <MenuItem Header="Show in system file manager" InputGesture="Ctrl+Shift+E" Command="{Binding RunCommandCommand}" CommandParameter="nc_RevealInExplorer" />
+        <MenuItem Header="Duplicate files..." Command="{Binding RunCommandCommand}" CommandParameter="nc_FindDuplicates" />
+        <MenuItem Header="Folder sizes..." Command="{Binding RunCommandCommand}" CommandParameter="nc_DiskUsage" />
+      </MenuItem>
+      <MenuItem Header="_Net">
+        <MenuItem Header="Connection manager..." InputGesture="Ctrl+F" Command="{Binding RunCommandCommand}" CommandParameter="nc_FtpConnect" />
+        <MenuItem Header="New connection">
+          <MenuItem Header="SFTP (SSH)..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NewConnection sftp" />
+          <MenuItem Header="FTP / FTPS..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NewConnection ftp" />
+          <MenuItem Header="WebDAV..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NewConnection davs" />
+          <MenuItem Header="SMB (Windows share)..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NewConnection smb" />
+          <Separator />
+          <MenuItem Header="Amazon S3 / compatible..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NewConnection s3" />
+          <MenuItem Header="Azure Blob Storage..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NewConnection azblob" />
+          <Separator />
+          <MenuItem Header="Google Drive..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NewConnection gdrive" />
+          <MenuItem Header="OneDrive..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NewConnection onedrive" />
+          <MenuItem Header="Dropbox..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NewConnection dropbox" />
+        </MenuItem>
+        <MenuItem x:Name="SavedConnectionsMenu" Header="Saved connections">
+          <MenuItem Header="(none)" IsEnabled="False" />
+        </MenuItem>
+        <MenuItem Header="Connect by address..." InputGesture="Ctrl+N" Command="{Binding RunCommandCommand}" CommandParameter="nc_FtpNewConnection" />
+        <MenuItem Header="Disconnect" InputGesture="Ctrl+Shift+F" Command="{Binding RunCommandCommand}" CommandParameter="nc_FtpDisconnect" />
+        <Separator />
+        <MenuItem Header="Network (machines of the local network)" Command="{Binding RunCommandCommand}" CommandParameter="nc_OpenNetwork" />
+        <MenuItem Header="Map network drive..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NetConnect" />
+        <MenuItem Header="Disconnect network drives..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NetDisconnect" />
+        <MenuItem Header="Share current directory..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NetShareDir" />
+        <MenuItem Header="Unshare directory..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NetUnshareDir" />
+        <MenuItem Header="Show admin shares" ToggleType="CheckBox" IsChecked="{Binding ShowAdminShares, Mode=OneWay}"
+                  Command="{Binding RunCommandCommand}" CommandParameter="nc_SwitchAdminShares" />
+        <Separator />
+        <MenuItem Header="Download from URL..." Command="{Binding RunCommandCommand}" CommandParameter="nc_DownloadUrl" />
+        <MenuItem Header="Download the addresses of a list..." Command="{Binding RunCommandCommand}" CommandParameter="nc_FtpDownloadList" />
+        <MenuItem Header="Show hidden files on FTP" ToggleType="CheckBox" IsChecked="{Binding FtpShowHidden, Mode=OneWay}"
+                  Command="{Binding RunCommandCommand}" CommandParameter="nc_FtpHiddenFiles" />
+        <Separator />
+        <MenuItem Header="Master password..." Command="{Binding RunCommandCommand}" CommandParameter="nc_MasterPassword" />
+      </MenuItem>
+      <MenuItem Header="_Show">
+        <MenuItem Header="Display" Tag="nc_SrcLong">
+          <MenuItem Header="Brief" InputGesture="Ctrl+F1" Command="{Binding RunCommandCommand}" CommandParameter="nc_SrcShort" />
+          <MenuItem Header="Full" InputGesture="Ctrl+F2" Command="{Binding RunCommandCommand}" CommandParameter="nc_SrcLong" />
+          <MenuItem Header="Comments" InputGesture="Ctrl+Shift+F2" Command="{Binding RunCommandCommand}" CommandParameter="nc_SrcComments" />
+          <MenuItem Header="Thumbnails view" InputGesture="Ctrl+Shift+F1" Command="{Binding RunCommandCommand}" CommandParameter="nc_SrcThumbs" />
+          <Separator />
+          <MenuItem x:Name="ColumnSetsMenu" Header="Custom columns mode" InputGesture="Shift+F1" Tag="nc_SrcCustomViewMenu">
+            <MenuItem Header="Standard columns" />
+          </MenuItem>
+          <MenuItem Header="Custom view modes" Tag="nc_EditColumnSets">
+            <MenuItem Header="Automatic (by folder)" Command="{Binding RunCommandCommand}" CommandParameter="nc_SrcAutoColumns" />
+            <MenuItem Header="Edit view modes..." Command="{Binding RunCommandCommand}" CommandParameter="nc_EditColumnSets" />
+          </MenuItem>
+          <MenuItem Header="Choose column set..." Command="{Binding RunCommandCommand}" CommandParameter="nc_SrcCustomViewMenu" />
+        </MenuItem>
+        <MenuItem Header="Tree" Tag="nc_ShowTreePane">
+          <MenuItem Header="Show / hide tree panel" InputGesture="Ctrl+F8" Command="{Binding RunCommandCommand}" CommandParameter="nc_ShowTreePane" />
+          <MenuItem Header="Folder tree window..." InputGesture="Alt+F10" Command="{Binding RunCommandCommand}" CommandParameter="nc_DirTree" />
+        </MenuItem>
+        <MenuItem Header="Quick view panel" InputGesture="Ctrl+Q" Command="{Binding RunCommandCommand}" CommandParameter="nc_QuickView" />
+        <MenuItem Header="Panels" Tag="nc_VerticalPanels">
+          <MenuItem Header="Vertical arrangement" ToggleType="CheckBox" IsChecked="{Binding VerticalPanels, Mode=OneWay}"
+                    Command="{Binding RunCommandCommand}" CommandParameter="nc_VerticalPanels" />
+          <MenuItem Header="Active panel full width" Command="{Binding RunCommandCommand}" CommandParameter="nc_100Percent" />
+          <MenuItem Header="Panels 50% / 50%" Command="{Binding RunCommandCommand}" CommandParameter="nc_PanelsSplitPercent 50" />
+        </MenuItem>
+        <Separator />
+        <MenuItem Header="File filter" Tag="nc_SrcUserSpec">
+          <MenuItem Header="All files" InputGesture="Ctrl+F10" Command="{Binding RunCommandCommand}" CommandParameter="nc_SrcAllFiles" />
+          <MenuItem Header="Programs" InputGesture="Ctrl+F11" Command="{Binding RunCommandCommand}" CommandParameter="nc_SrcExecs" />
+          <MenuItem Header="*.*" Command="{Binding RunCommandCommand}" CommandParameter="nc_SrcLastFilter" />
+          <MenuItem Header="Custom..." InputGesture="Ctrl+F12" Command="{Binding RunCommandCommand}" CommandParameter="nc_SrcUserSpec" />
+          <MenuItem Header="Only selected files" Command="{Binding RunCommandCommand}" CommandParameter="nc_SrcOnlySelected" />
+        </MenuItem>
+        <MenuItem Header="Sort" Tag="nc_SrcByName">
+          <MenuItem Header="Name" InputGesture="Ctrl+F3" Command="{Binding RunCommandCommand}" CommandParameter="nc_SrcByName" />
+          <MenuItem Header="Extension" InputGesture="Ctrl+F4" Command="{Binding RunCommandCommand}" CommandParameter="nc_SrcByExt" />
+          <MenuItem Header="Time" InputGesture="Ctrl+F5" Command="{Binding RunCommandCommand}" CommandParameter="nc_SrcByDateTime" />
+          <MenuItem Header="Size" InputGesture="Ctrl+F6" Command="{Binding RunCommandCommand}" CommandParameter="nc_SrcBySize" />
+          <MenuItem Header="Unsorted" InputGesture="Ctrl+F7" Command="{Binding RunCommandCommand}" CommandParameter="nc_SrcUnsorted" />
+          <Separator />
+          <MenuItem Header="Reversed order" Command="{Binding RunCommandCommand}" CommandParameter="nc_SrcNegOrder" />
+        </MenuItem>
+        <MenuItem Header="What is shown" Tag="nc_SwitchHidSys">
+          <MenuItem Header="Hidden and system files" InputGesture="Ctrl+H" Command="{Binding RunCommandCommand}" CommandParameter="nc_SwitchHidSys" />
+          <MenuItem Header="Hidden files only" Command="{Binding RunCommandCommand}" CommandParameter="nc_SwitchHidden" />
+          <MenuItem Header="System files only" Command="{Binding RunCommandCommand}" CommandParameter="nc_SwitchSystem" />
+          <Separator />
+          <MenuItem Header="File type colors" Command="{Binding RunCommandCommand}" CommandParameter="nc_SwitchColors" />
+          <MenuItem Header="Size format: bytes / k-M-G" Command="{Binding RunCommandCommand}" CommandParameter="nc_SwitchSizeDisplay" />
+          <MenuItem Header="Calculate folder sizes automatically" Command="{Binding RunCommandCommand}" CommandParameter="nc_SwitchAutoDirSizes" />
+          <Separator />
+          <MenuItem Header="Button bar" Command="{Binding RunCommandCommand}" CommandParameter="nc_SwitchButtonBar" />
+          <MenuItem Header="Vertical button bar" Command="{Binding RunCommandCommand}" CommandParameter="nc_SwitchVertButtonBar" />
+        </MenuItem>
+        <Separator />
+        <MenuItem Header="Navigation">
+          <MenuItem Header="Folder history..." InputGesture="Alt+Down" Command="{Binding RunCommandCommand}" CommandParameter="nc_DirectoryHistory" />
+          <MenuItem Header="Most frequently used folders..." InputGesture="Alt+Shift+Down" Command="{Binding RunCommandCommand}" CommandParameter="nc_FrequentDirectories" />
+          <MenuItem Header="Add this folder to the Hotlist..." Command="{Binding RunCommandCommand}" CommandParameter="nc_AddToHotlist" />
+          <Separator />
+          <MenuItem Header="Quick search (Ctrl+Alt+letter)" Command="{Binding RunCommandCommand}" CommandParameter="nc_ShowQuickSearch" />
+          <MenuItem Header="Quick filter" InputGesture="Ctrl+S" Command="{Binding RunCommandCommand}" CommandParameter="nc_ShowQuickFilter" />
+          <MenuItem Header="Clear quick filter" InputGesture="Ctrl+Y" Command="{Binding RunCommandCommand}" CommandParameter="nc_ClearQuickFilter" />
+          <Separator />
+          <MenuItem Header="Branch View of selected folders" InputGesture="Ctrl+Shift+B" Command="{Binding RunCommandCommand}" CommandParameter="nc_DirBranchSel" />
+          <MenuItem Header="Synchronous directory changing" Command="{Binding RunCommandCommand}" CommandParameter="nc_SyncChangeDir" />
+          <Separator />
+          <MenuItem Header="Forward" InputGesture="Alt+Right" Command="{Binding RunCommandCommand}" CommandParameter="nc_GoForward" />
+          <MenuItem Header="Parent folder" InputGesture="Ctrl+PageUp" Command="{Binding RunCommandCommand}" CommandParameter="nc_GoToParent" />
+          <MenuItem Header="Root folder" InputGesture="Ctrl+Back" Command="{Binding RunCommandCommand}" CommandParameter="nc_GoToRoot" />
+          <MenuItem Header="Edit path" InputGesture="Alt+D" Command="{Binding RunCommandCommand}" CommandParameter="nc_EditPath" />
+        </MenuItem>
+        <MenuItem Header="Tabs">
+          <MenuItem Header="New folder tab" InputGesture="Ctrl+T" Command="{Binding RunCommandCommand}" CommandParameter="nc_OpenNewTab" />
+          <MenuItem Header="Open folder under cursor in new tab" InputGesture="Ctrl+Up" Command="{Binding RunCommandCommand}" CommandParameter="nc_OpenDirInNewTab" />
+          <MenuItem Header="... open in new tab in other panel" InputGesture="Ctrl+Shift+Up" Command="{Binding RunCommandCommand}" CommandParameter="nc_OpenDirInNewTabOther" />
+          <MenuItem Header="Close tab" InputGesture="Ctrl+W" Command="{Binding RunCommandCommand}" CommandParameter="nc_CloseCurrentTab" />
+          <MenuItem Header="Close other tabs" InputGesture="Ctrl+Shift+W" Command="{Binding RunCommandCommand}" CommandParameter="nc_CloseAllTabs" />
+          <MenuItem Header="Close duplicate tabs" Command="{Binding RunCommandCommand}" CommandParameter="nc_CloseDuplicateTabs" />
+          <MenuItem Header="Reopen last closed" InputGesture="Ctrl+Shift+T" Command="{Binding RunCommandCommand}" CommandParameter="nc_RestoreLastClosedTab" />
+          <MenuItem Header="Closed tabs..." Command="{Binding RunCommandCommand}" CommandParameter="nc_ShowClosedTabs" />
+          <MenuItem Header="Tab list..." InputGesture="Ctrl+Shift+A" Command="{Binding RunCommandCommand}" CommandParameter="nc_ShowTabList" />
+          <Separator />
+          <MenuItem Header="Lock / unlock" Command="{Binding RunCommandCommand}" CommandParameter="nc_LockTab" />
+          <MenuItem Header="Locked (resets on return)" Command="{Binding RunCommandCommand}" CommandParameter="nc_LockTabResettable" />
+          <MenuItem Header="Rename..." Command="{Binding RunCommandCommand}" CommandParameter="nc_RenameTab" />
+          <Separator />
+          <MenuItem Header="Save tabs..." Command="{Binding RunCommandCommand}" CommandParameter="nc_SaveTabs" />
+          <MenuItem Header="Load tabs..." Command="{Binding RunCommandCommand}" CommandParameter="nc_LoadTabs" />
+        </MenuItem>
+        <Separator />
+        <MenuItem Header="Reread source" InputGesture="Ctrl+R" Command="{Binding RunCommandCommand}" CommandParameter="nc_RereadSource" />
+      </MenuItem>
+      <MenuItem Header="C_onfiguration">
+        <MenuItem Header="Options..." InputGesture="Ctrl+Alt+S" Command="{Binding RunCommandCommand}" CommandParameter="nc_Config" />
+        <MenuItem Header="Plugins..." Command="{Binding RunCommandCommand}" CommandParameter="nc_Plugins" />
+        <MenuItem Header="Button bar..." Command="{Binding RunCommandCommand}" CommandParameter="nc_ButtonConfig" />
+        <MenuItem Header="Button bar 2 (vertical)..." Command="{Binding RunCommandCommand}" CommandParameter="nc_VertButtonConfig" />
+        <MenuItem Header="Dark &lt;-&gt; Normal" ToggleType="CheckBox" IsChecked="{Binding IsDarkTheme, Mode=OneWay}" InputGesture="Ctrl+Shift+D"
+                  Command="{Binding RunCommandCommand}" CommandParameter="nc_SwitchDarkNormal" />
+        <MenuItem Header="Save position" Command="{Binding RunCommandCommand}" CommandParameter="nc_SavePosition" />
+        <MenuItem Header="Save settings" Command="{Binding RunCommandCommand}" CommandParameter="nc_SaveSettings" />
+        <MenuItem Header="Export settings..." Command="{Binding RunCommandCommand}" CommandParameter="nc_ExportSettings" />
+        <MenuItem Header="Import settings..." Command="{Binding RunCommandCommand}" CommandParameter="nc_ImportSettings" />
+        <Separator />
+        <MenuItem Header="Commands and shortcuts..." InputGesture="Ctrl+Shift+F12" Command="{Binding RunCommandCommand}" CommandParameter="nc_CommandBrowser" />
+        <MenuItem Header="Add button to button bar..." Command="{Binding RunCommandCommand}" CommandParameter="nc_AddButton" />
+        <MenuItem Header="Add user command (uc_)..." Command="{Binding RunCommandCommand}" CommandParameter="nc_AddUserCommand" />
+        <MenuItem Header="Edit Hotlist..." Command="{Binding RunCommandCommand}" CommandParameter="nc_ConfigDirHotlist" />
+        <MenuItem Header="Edit column sets..." Command="{Binding RunCommandCommand}" CommandParameter="nc_EditColumnSets" />
+        <MenuItem x:Name="ColorThemeMenu" Header="Color theme" Tag="nc_SetColorScheme">
+          <MenuItem Header="System colors" Command="{Binding RunCommandCommand}" CommandParameter="nc_SetColorScheme" />
+        </MenuItem>
+      </MenuItem>
+      <MenuItem x:Name="StartMenuRoot" Header="_Start">
+        <MenuItem Header="Change start menu..." Command="{Binding RunCommandCommand}" CommandParameter="nc_ConfigStartMenu" />
+        <Separator />
+      </MenuItem>
+      <MenuItem Header="_Help" DockPanel.Dock="Right">
+        <MenuItem Header="Keyboard shortcuts" Command="{Binding RunCommandCommand}" CommandParameter="nc_Keyboard" />
+        <MenuItem Header="Check for updates..." Command="{Binding RunCommandCommand}" CommandParameter="nc_CheckForUpdates" />
+        <Separator />
+        <MenuItem Header="About..." Command="{Binding RunCommandCommand}" CommandParameter="nc_About" />
+      </MenuItem>
+    </Menu>
+
+    <!-- Button bar -->
+    <Border x:Name="TopBarHost" DockPanel.Dock="Top" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource FmPanelHeaderBrush}" Background="{DynamicResource FmToolBarBrush}" Padding="2,1" />
+
+    <!-- Layout > one drive button bar (instead of one per panel): drives of the active panel -->
+    <DockPanel x:Name="SharedDriveBarHost" DockPanel.Dock="Top" IsVisible="{Binding ShowSharedDriveBar}" Background="{DynamicResource FmToolBarBrush}">
+      <ItemsControl x:Name="SharedShortcutBar" DockPanel.Dock="Right" ItemsSource="{Binding Left.FolderShortcutItems}" Classes.raised="{Binding !FlatDriveButtons}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="p:DriveItem">
+            <Button Classes="drivebtn shortcut" Tag="{Binding}" Focusable="False">
+              <ToolTip.Tip>
+                <StackPanel>
+                  <TextBlock Text="{Binding ShortName}" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding RootPath}" Classes="noloc" />
+                </StackPanel>
+              </ToolTip.Tip>
+              <Panel>
+                <PathIcon Classes="driveicon" Data="{Binding Kind, Converter={x:Static icons:DriveIconConverter.Glyph}}" IsVisible="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Missing}}" />
+                <Image Classes="driveimage" Source="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Instance}}" />
+              </Panel>
+            </Button>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Border DockPanel.Dock="Right" Classes="drivebarsep" IsVisible="{Binding Left.HasFolderShortcuts}" />
+      <ItemsControl x:Name="SharedDriveBar" ItemsSource="{Binding Left.DriveBarItems}" Classes.raised="{Binding !FlatDriveButtons}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="p:DriveItem">
+            <Button Classes="drivebtn" Classes.special="{Binding IsSpecial}" Tag="{Binding}" Focusable="False" ToolTip.Tip="{Binding ToolTipText}">
+              <StackPanel Orientation="Horizontal" Spacing="3">
+                <Panel>
+                  <PathIcon Classes="driveicon" Data="{Binding Kind, Converter={x:Static icons:DriveIconConverter.Glyph}}" IsVisible="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Missing}}" />
+                  <Image Classes="driveimage" Source="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Instance}}" />
+                </Panel>
+                <TextBlock Text="{Binding ShortName}" Classes="noloc" VerticalAlignment="Center" IsVisible="{Binding !IsSpecial}" />
+              </StackPanel>
+            </Button>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </DockPanel>
+
+    <!-- Function key bar -->
+    <Grid x:Name="FunctionKeys" DockPanel.Dock="Bottom" ColumnDefinitions="*,*,*,*,*,*,*" Margin="2,0,2,2" IsVisible="{Binding ShowFunctionKeys}">
+      <Button Grid.Column="0" Classes="fkey" Content="F3 View" Command="{Binding RunCommandCommand}" CommandParameter="nc_List" Focusable="False" />
+      <Button Grid.Column="1" Classes="fkey" Content="F4 Edit" Command="{Binding RunCommandCommand}" CommandParameter="nc_Edit" Focusable="False" />
+      <Button Grid.Column="2" Classes="fkey" Content="F5 Copy" Command="{Binding RunCommandCommand}" CommandParameter="nc_Copy" Focusable="False" />
+      <Button Grid.Column="3" Classes="fkey" Content="F6 Move" Command="{Binding RunCommandCommand}" CommandParameter="nc_RenMov" Focusable="False" />
+      <Button Grid.Column="4" Classes="fkey" Content="F7 New folder" Command="{Binding RunCommandCommand}" CommandParameter="nc_MkDir" Focusable="False" />
+      <Button x:Name="DeleteKey" Grid.Column="5" Classes="fkey" Content="F8 Delete" Command="{Binding RunCommandCommand}" CommandParameter="nc_Delete" Focusable="False"
+              DragDrop.AllowDrop="True" />
+      <Button Grid.Column="6" Classes="fkey last" Content="Alt+F4 Exit" Command="{Binding RunCommandCommand}" CommandParameter="nc_Exit" Focusable="False" />
+    </Grid>
+
+    <!-- Command line -->
+    <Grid x:Name="CommandLineRow" DockPanel.Dock="Bottom" ColumnDefinitions="Auto,*,Auto,Auto" Margin="4,2" IsVisible="{Binding ShowCommandLine}">
+      <TextBlock Text="{Binding CommandLinePrompt}" VerticalAlignment="Center" FontSize="12" Margin="0,0,6,0"
+                 MaxWidth="480" TextTrimming="LeadingCharacterEllipsis" />
+      <!-- A combo box: the text plus a drop-down of the last 20 command lines; the terminal button opens the internal terminal -->
+      <TextBox x:Name="CommandLine" Grid.Column="1" AutomationProperties.Name="Command line" Text="{Binding CommandLineText}" FontSize="12" MinHeight="24" Padding="6,2">
+        <TextBox.InnerRightContent>
+          <StackPanel Orientation="Horizontal">
+            <Button x:Name="CommandHistoryButton" Classes="cmdline" Focusable="False" ToolTip.Tip="Recent commands (Alt+F8)" AutomationProperties.Name="Recent commands">
+              <PathIcon Width="10" Height="10" Data="M2,5 L8,11 L14,5 Z" />
+            </Button>
+            <Button x:Name="TerminalButton" Classes="cmdline" Focusable="False" ToolTip.Tip="Internal terminal (Ctrl+`)" AutomationProperties.Name="Internal terminal">
+              <PathIcon Width="14" Height="14" Data="{StaticResource FmBarTerminal}" />
+            </Button>
+          </StackPanel>
+        </TextBox.InnerRightContent>
+      </TextBox>
+      <Popup x:Name="CommandHistoryPopup" Grid.Column="1" PlacementTarget="{Binding #CommandLine}" Placement="TopEdgeAlignedLeft" IsLightDismissEnabled="True">
+        <Border BorderThickness="1" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}" Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                MinWidth="{Binding #CommandLine.Bounds.Width}">
+          <ListBox x:Name="CommandHistoryList" Classes="noloc" MaxHeight="360" FontSize="12" />
+        </Border>
+      </Popup>
+      <TextBlock Grid.Column="2" Text="{Binding ModeText}" VerticalAlignment="Center" FontSize="12" Margin="8,0,0,0"
+                 Foreground="{DynamicResource FmActiveAccentBrush}" />
+      <TextBlock Grid.Column="3" Text="{Binding BackgroundJobsText}" VerticalAlignment="Center" FontSize="12" Margin="8,0,0,0" Opacity="0.8" />
+    </Grid>
+
+    <!-- Internal terminal (nc_ToggleTerminal, the button at the end of the command line) -->
+    <Border x:Name="TerminalHost" DockPanel.Dock="Bottom" IsVisible="False" BorderThickness="0,1,0,0"
+            BorderBrush="{DynamicResource FmActiveAccentBrush}" />
+
+    <!-- The two sides (tabs + panel) and between them a column as wide as the splitter and the vertical button bar: the
+         panels share the rest (50 % / 50 % is equal width), the splitter resizes only the two sides. -->
+    <Grid x:Name="PanelsGrid" ColumnDefinitions="*,Auto,*">
+      <views:PanelSideView x:Name="LeftSideView" Grid.Column="0" DataContext="{Binding LeftSide}" />
+      <GridSplitter x:Name="Splitter" Grid.Column="1" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" Width="4"
+                    HorizontalAlignment="Left" Background="Transparent" />
+      <Border x:Name="VerticalBarHost" Grid.Column="1" IsVisible="False" Padding="1,0" Margin="4,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Stretch" />
+      <views:PanelSideView x:Name="RightSideView" Grid.Column="2" DataContext="{Binding RightSide}" />
+      <Border x:Name="QuickViewHost" Grid.Column="2" IsVisible="False" ZIndex="10" BorderThickness="1"
+              BorderBrush="{DynamicResource FmActiveAccentBrush}" Background="{DynamicResource SystemControlBackgroundAltHighBrush}" />
+      <!-- Folder sizes (Commands > Folder sizes): in place of the other panel, like Quick View -->
+      <Border x:Name="DiskUsageHost" Grid.Column="2" IsVisible="False" ZIndex="10" BorderThickness="1"
+              BorderBrush="{DynamicResource FmActiveAccentBrush}" Background="{DynamicResource SystemControlBackgroundAltHighBrush}" />
+      <!-- Ctrl+Tab list mode (Configuration > Folder tabs): shown while Ctrl is held -->
+      <Border x:Name="TabSwitcherHost" Grid.Column="0" Grid.ColumnSpan="3" ZIndex="20" HorizontalAlignment="Center" VerticalAlignment="Center"
+              MinWidth="320" MaxWidth="640" MaxHeight="480" Padding="4" BorderThickness="1" CornerRadius="4"
+              BorderBrush="{DynamicResource FmActiveAccentBrush}" Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+              IsVisible="{Binding TabSwitcher, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="Tabs" FontWeight="SemiBold" Margin="6,2,6,4" />
+          <ListBox x:Name="TabSwitcherList" ItemsSource="{Binding TabSwitcher.Tabs, FallbackValue={x:Null}}"
+                   SelectedIndex="{Binding TabSwitcher.SelectedIndex, FallbackValue=-1}" Focusable="False">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:PanelViewModel">
+                <StackPanel Margin="2,1">
+                  <TextBlock Classes="noloc" Text="{Binding Title}" FontWeight="SemiBold" />
+                  <TextBlock Classes="noloc" Text="{Binding PathText}" Opacity="0.7" FontSize="11" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+    </Grid>
+  </DockPanel>
+</Window>

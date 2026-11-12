@@ -1,0 +1,105 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="NextCommander.App.App"
+             RequestedThemeVariant="Light">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="FmMarkedBrush" Color="#D32F2F" />
+          <SolidColorBrush x:Key="FmHiddenBrush" Color="#8A8A8A" />
+          <SolidColorBrush x:Key="FmFolderBrush" Color="#E0A526" />
+          <SolidColorBrush x:Key="FmFileBrush" Color="#7A8794" />
+          <SolidColorBrush x:Key="FmPanelHeaderBrush" Color="#E9EDF2" />
+          <SolidColorBrush x:Key="FmActiveAccentBrush" Color="#2F6FDB" />
+          <SolidColorBrush x:Key="FmStatusBrush" Color="#F3F5F8" />
+          <SolidColorBrush x:Key="FmMenuBarBrush" Color="Transparent" />
+          <SolidColorBrush x:Key="FmToolBarBrush" Color="Transparent" />
+          <SolidColorBrush x:Key="FmTabStripBrush" Color="#F3F5F8" />
+          <SolidColorBrush x:Key="FmTabActiveBrush" Color="#E9EDF2" />
+          <!-- menu items under the mouse: the active tab's color (theme key Menu.HoverBackground) -->
+          <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPointerOver" Color="#E9EDF2" />
+          <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPressed" Color="#E9EDF2" />
+          <SolidColorBrush x:Key="FmActivePathBrush" Color="#CCE4F7" />
+          <SolidColorBrush x:Key="FmMenuBarForegroundBrush" Color="#1B1B1B" />
+          <SolidColorBrush x:Key="FmListBackgroundBrush" Color="Transparent" />
+          <SolidColorBrush x:Key="FmDriveIconBrush" Color="#6B7785" />
+          <SolidColorBrush x:Key="FmListTextBrush" Color="#1B1B1B" />
+          <SolidColorBrush x:Key="FmCursorTextBrush" Color="#000000" />
+          <SolidColorBrush x:Key="FmListBackground2Brush" Color="Transparent" />
+          <SolidColorBrush x:Key="FmTabPassiveLineBrush" Color="#732F6FDB" />
+          <SolidColorBrush x:Key="FmFunctionKeyBorderBrush" Color="#33000000" />
+        </ResourceDictionary>
+        <!-- Dark: only the defaults under a dark theme file (Themes/dark.json sets the real colors) -->
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="FmMarkedBrush" Color="#FF8A80" />
+          <SolidColorBrush x:Key="FmHiddenBrush" Color="#8A8A8A" />
+          <SolidColorBrush x:Key="FmFolderBrush" Color="#E0B050" />
+          <SolidColorBrush x:Key="FmFileBrush" Color="#B0B8C0" />
+          <SolidColorBrush x:Key="FmPanelHeaderBrush" Color="#2B2B2B" />
+          <SolidColorBrush x:Key="FmActiveAccentBrush" Color="#4C9AFF" />
+          <SolidColorBrush x:Key="FmStatusBrush" Color="#2B2B2B" />
+          <SolidColorBrush x:Key="FmMenuBarBrush" Color="Transparent" />
+          <SolidColorBrush x:Key="FmToolBarBrush" Color="Transparent" />
+          <SolidColorBrush x:Key="FmTabStripBrush" Color="#2B2B2B" />
+          <SolidColorBrush x:Key="FmTabActiveBrush" Color="#1F1F1F" />
+          <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPointerOver" Color="#1F1F1F" />
+          <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPressed" Color="#1F1F1F" />
+          <SolidColorBrush x:Key="FmActivePathBrush" Color="#1F3F66" />
+          <SolidColorBrush x:Key="FmMenuBarForegroundBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="FmListBackgroundBrush" Color="Transparent" />
+          <SolidColorBrush x:Key="FmDriveIconBrush" Color="#9DA5B4" />
+          <SolidColorBrush x:Key="FmListTextBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="FmCursorTextBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="FmListBackground2Brush" Color="Transparent" />
+          <SolidColorBrush x:Key="FmTabPassiveLineBrush" Color="#8C4C9AFF" />
+          <SolidColorBrush x:Key="FmFunctionKeyBorderBrush" Color="#33FFFFFF" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://NextCommander/Styles/MenuIcons.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+
+      <x:Double x:Key="FmPanelFontSize">13</x:Double>
+      <x:Double x:Key="FmIconSize">16</x:Double>
+      <Thickness x:Key="FmIconMargin">6,0,2,0</Thickness>
+      <x:Double x:Key="FmRowHeight">20</x:Double>
+      <x:Double x:Key="FmMenuIconSize">16</x:Double>
+      <FontFamily x:Key="FmPanelFontFamily">$Default</FontFamily>
+      <StreamGeometry x:Key="FmFolderIcon">M2,4 C2,3.45 2.45,3 3,3 L6.6,3 L8.1,4.5 L13,4.5 C13.55,4.5 14,4.95 14,5.5 L14,12 C14,12.55 13.55,13 13,13 L3,13 C2.45,13 2,12.55 2,12 Z</StreamGeometry>
+      <StreamGeometry x:Key="FmFileIcon">M4,1.5 L9.5,1.5 L13,5 L13,14 C13,14.28 12.78,14.5 12.5,14.5 L4,14.5 C3.72,14.5 3.5,14.28 3.5,14 L3.5,2 C3.5,1.72 3.72,1.5 4,1.5 Z M9.5,1.5 L9.5,5 L13,5</StreamGeometry>
+      <StreamGeometry x:Key="FmUpIcon">M8,2 L13,7.5 L9.6,7.5 L9.6,14 L6.4,14 L6.4,7.5 L3,7.5 Z</StreamGeometry>
+      <StreamGeometry x:Key="FmArchiveIcon">F0 M3,1.5 L13,1.5 L13,14.5 L3,14.5 Z M7,1.5 L9,1.5 L9,3 L7,3 Z M7,4 L9,4 L9,5.5 L7,5.5 Z M7,6.5 L9,6.5 L9,8 L7,8 Z M6.5,9 L9.5,9 L9.5,12 L6.5,12 Z</StreamGeometry>
+      <StreamGeometry x:Key="FmImageIcon">F0 M1.5,3 L14.5,3 L14.5,13 L1.5,13 Z M3,11.5 L6.2,7.2 L8.4,10 L10,8.3 L13,11.5 Z M10.5,4.5 L12.5,4.5 L12.5,6.5 L10.5,6.5 Z</StreamGeometry>
+      <StreamGeometry x:Key="FmAudioIcon">M6,3.2 L13.5,1.5 L13.5,11 C13.5,12.2 12.4,13.2 11.2,13.2 C10,13.2 9.2,12.4 9.2,11.4 C9.2,10.3 10.3,9.4 11.5,9.4 C11.7,9.4 11.9,9.4 12,9.5 L12,4.4 L7.5,5.4 L7.5,12.5 C7.5,13.7 6.4,14.6 5.2,14.6 C4,14.6 3.2,13.8 3.2,12.8 C3.2,11.7 4.3,10.8 5.5,10.8 C5.7,10.8 5.9,10.8 6,10.9 Z</StreamGeometry>
+      <StreamGeometry x:Key="FmVideoIcon">F0 M1.5,3 L14.5,3 L14.5,13 L1.5,13 Z M6.3,5.3 L11,8 L6.3,10.7 Z</StreamGeometry>
+      <StreamGeometry x:Key="FmCodeIcon">M5.5,3.5 L6.7,4.7 L3.4,8 L6.7,11.3 L5.5,12.5 L1,8 Z M10.5,3.5 L15,8 L10.5,12.5 L9.3,11.3 L12.6,8 L9.3,4.7 Z</StreamGeometry>
+      <StreamGeometry x:Key="FmDocumentIcon">F0 M3.5,1.5 L12.5,1.5 L12.5,14.5 L3.5,14.5 Z M5.5,4.5 L10.5,4.5 L10.5,5.5 L5.5,5.5 Z M5.5,7 L10.5,7 L10.5,8 L5.5,8 Z M5.5,9.5 L10.5,9.5 L10.5,10.5 L5.5,10.5 Z M5.5,12 L8.5,12 L8.5,13 L5.5,13 Z</StreamGeometry>
+      <StreamGeometry x:Key="FmExecutableIcon">F0 M1.5,2.5 L14.5,2.5 L14.5,13.5 L1.5,13.5 Z M2.8,5.2 L13.2,5.2 L13.2,12.2 L2.8,12.2 Z M4,7 L6.5,8.7 L4,10.4 Z M7.5,10 L10.5,10 L10.5,11 L7.5,11 Z</StreamGeometry>
+      <StreamGeometry x:Key="FmErrorIcon">F0 M8,1.5 L15,14 L1,14 Z M7.3,5.5 L8.7,5.5 L8.5,10 L7.5,10 Z M7.3,11 L8.7,11 L8.7,12.4 L7.3,12.4 Z</StreamGeometry>
+      <!-- Button bar icons (16x16) -->
+      <StreamGeometry x:Key="FmBarRefresh">M13.6,5.2 A6,6 0 1 0 14,8 L12.4,8 A4.4,4.4 0 1 1 11.9,5.9 L9.6,5.9 L9.6,4.3 L14,4.3 L14,1 L13.6,1.2 Z</StreamGeometry>
+      <StreamGeometry x:Key="FmBarBrief">F0 M1.5,2 L7,2 L7,3.6 L1.5,3.6 Z M9,2 L14.5,2 L14.5,3.6 L9,3.6 Z M1.5,5.5 L7,5.5 L7,7.1 L1.5,7.1 Z M9,5.5 L14.5,5.5 L14.5,7.1 L9,7.1 Z M1.5,9 L7,9 L7,10.6 L1.5,10.6 Z M9,9 L14.5,9 L14.5,10.6 L9,10.6 Z M1.5,12.5 L7,12.5 L7,14.1 L1.5,14.1 Z</StreamGeometry>
+      <StreamGeometry x:Key="FmBarFull">F0 M1.5,2 L14.5,2 L14.5,3.6 L1.5,3.6 Z M1.5,5.5 L14.5,5.5 L14.5,7.1 L1.5,7.1 Z M1.5,9 L14.5,9 L14.5,10.6 L1.5,10.6 Z M1.5,12.5 L14.5,12.5 L14.5,14.1 L1.5,14.1 Z</StreamGeometry>
+      <StreamGeometry x:Key="FmBarThumbs">F0 M1.5,1.5 L7,1.5 L7,7 L1.5,7 Z M9,1.5 L14.5,1.5 L14.5,7 L9,7 Z M1.5,9 L7,9 L7,14.5 L1.5,14.5 Z M9,9 L14.5,9 L14.5,14.5 L9,14.5 Z</StreamGeometry>
+      <StreamGeometry x:Key="FmBarBranch">F0 M2,1.5 L6,1.5 L6,4.5 L4.8,4.5 L4.8,7.3 L9,7.3 L9,6 L14,6 L14,9.5 L9,9.5 L9,8.7 L4.8,8.7 L4.8,12 L9,12 L9,10.8 L14,10.8 L14,14.3 L9,14.3 L9,13.4 L3.4,13.4 L3.4,4.5 L2,4.5 Z</StreamGeometry>
+      <StreamGeometry x:Key="FmBarTab">F0 M1,4 L1,14 L15,14 L15,6 L8,6 L7,4 Z M2.4,7.4 L13.6,7.4 L13.6,12.6 L2.4,12.6 Z M10,1.5 L15,1.5 L15,4.5 L10.8,4.5 Z</StreamGeometry>
+      <StreamGeometry x:Key="FmBarStar">M8,1 L10.1,5.6 L15,6.1 L11.3,9.4 L12.4,14.3 L8,11.8 L3.6,14.3 L4.7,9.4 L1,6.1 L5.9,5.6 Z</StreamGeometry>
+      <StreamGeometry x:Key="FmBarHistory">F0 M8,1.5 A6.5,6.5 0 1 1 1.5,8 L3.1,8 A4.9,4.9 0 1 0 8,3.1 Z M7.2,4.5 L8.8,4.5 L8.8,7.6 L11,9.4 L10,10.6 L7.2,8.3 Z M1,4.5 L4.5,4.5 L1,8 Z</StreamGeometry>
+      <StreamGeometry x:Key="FmBarFilter">M1.5,2 L14.5,2 L9.5,8 L9.5,13.5 L6.5,15 L6.5,8 Z</StreamGeometry>
+      <StreamGeometry x:Key="FmBarHidden">F0 M8,3.5 C11.5,3.5 14,6 15,8 C14,10 11.5,12.5 8,12.5 C4.5,12.5 2,10 1,8 C2,6 4.5,3.5 8,3.5 Z M8,5.5 A2.5,2.5 0 1 0 8.01,5.5 Z M2,13 L13,2 L14,3 L3,14 Z</StreamGeometry>
+      <StreamGeometry x:Key="FmBarTerminal">F0 M1,2 L15,2 L15,14 L1,14 Z M2.4,4.6 L13.6,4.6 L13.6,12.6 L2.4,12.6 Z M3.6,6 L6.8,8.2 L3.6,10.4 L3.6,9 L4.8,8.2 L3.6,7.4 Z M7.6,9.8 L11.6,9.8 L11.6,11 L7.6,11 Z</StreamGeometry>
+      <StreamGeometry x:Key="FmBarCommands">F0 M1.5,2 L14.5,2 L14.5,14 L1.5,14 Z M3,5 L5,5 L5,6.4 L3,6.4 Z M6.2,5 L13,5 L13,6.4 L6.2,6.4 Z M3,8 L5,8 L5,9.4 L3,9.4 Z M6.2,8 L13,8 L13,9.4 L6.2,9.4 Z M3,11 L5,11 L5,12.4 L3,12.4 Z M6.2,11 L13,11 L13,12.4 L6.2,12.4 Z</StreamGeometry>
+      <StreamGeometry x:Key="FmLinkIcon">M6.5,9.5 L9.5,6.5 M7,4.6 L8.6,3 C9.8,1.8 11.7,1.8 12.9,3 C14.1,4.2 14.1,6.1 12.9,7.3 L11.4,8.8 M9,11.4 L7.4,13 C6.2,14.2 4.3,14.2 3.1,13 C1.9,11.8 1.9,9.9 3.1,8.7 L4.6,7.2</StreamGeometry>
+    </ResourceDictionary>
+  </Application.Resources>
+
+  <Application.Styles>
+    <!-- System colors (Fluent); color theme files (Services/ColorThemes.cs) set palettes and the Fm* colors -->
+    <FluentTheme DensityStyle="Compact" />
+    <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+    <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
+    <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
+    <StyleInclude Source="avares://NextCommander/Styles/NextCommanderStyles.axaml" />
+  </Application.Styles>
+</Application>

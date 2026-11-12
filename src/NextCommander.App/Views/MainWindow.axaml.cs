@@ -1,0 +1,1110 @@
+using System.ComponentModel;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Primitives.PopupPositioning;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using NextCommander.App.Controls;
+using Avalonia.Threading;
+using NextCommander.App.ViewModels;
+using NextCommander.App.Views.Lister;
+using NextCommander.Core.Config;
+
+namespace NextCommander.App.Views;
+
+public partial class MainWindow : Window
+{
+    private readonly ButtonBarControl _topBar = new(vertical: false);
+    private readonly ButtonBarControl _verticalBar = new(vertical: true);
+    private MainWindowViewModel? _vm;
+    private bool _suppressTextInput;
+    private int _historyIndex = -1;
+    private ListerView? _quickView;
+    private readonly DispatcherTimer _titleTimer;
+
+    /// <summary>"%42 — NextCommander" while jobs run.</summary>
+    public void UpdateTitle()
+    {
+        var progress = _vm?.Settings.ProgressInTitle == true ? _vm.JobsProgress : null;
+        Title = progress is { } p ? $"%{p * 100:0} — NextCommander" : "NextCommander";
+    }
+    private DispatcherTimer? _quickViewTimer;
+
+    public MainWindow()
+    {
+        InitializeComponent();
+        Services.MenuIcons.Apply(MainMenu.Items);
+        // Taskbar button progress while jobs run (Windows).
+        var taskbarTimer = new Avalonia.Threading.DispatcherTimer(TimeSpan.FromMilliseconds(500), Avalonia.Threading.DispatcherPriority.Background, (_, _) =>
+        {
+            if (DataContext is MainWindowViewModel model && TryGetPlatformHandle() is { } handle)
+            {
+                model.UpdateTaskbar(handle.Handle);
+            }
+        });
+        Opened += (_, _) =>
+        {
+            taskbarTimer.Start();
+            if (DataContext is MainWindowViewModel model)
+            {
+                model.WindowHandle = TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
+            }
+        };
+        ColumnSetsMenu.SubmenuOpened += (_, _) => FillColumnSetsMenu();
+        ColorThemeMenu.SubmenuOpened += (_, _) => FillColorThemeMenu();
+        SavedConnectionsMenu.SubmenuOpened += (_, _) => FillSavedConnectionsMenu();
+        Activated += (_, _) => _ = _vm?.OnWindowActivatedAsync();
+        foreach (var bar in new Control[] { SharedDriveBar, SharedShortcutBar })
+        bar.AddHandler(Button.ClickEvent, (_, e) =>
+        {
+            if (e.Source is Button { Tag: NextCommander.Platform.DriveItem drive } && _vm is not null)
+            {
+                _ = _vm.ActivePanel.ChangeDriveAsync(drive);
+                ActiveView.FocusList();
+            }
+        });
+        ActualThemeVariantChanged += (_, _) => (DataContext as MainWindowViewModel)?.NotifyThemeChanged();
+        StartMenuRoot.SubmenuOpened += (_, _) => FillStartMenu();
+        Closed += (_, _) => taskbarTimer.Stop();
+        TopBarHost.Child = _topBar;
+        VerticalBarHost.Child = _verticalBar;
+        VerticalBarHost.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == BoundsProperty || e.Property == IsVisibleProperty)
+            {
+                UpdateVerticalBarSpace();
+            }
+        };
+        // the bar's buttons start level with the file list of the right panel (below its drive bar, tabs and path)
+        RightSideView.LayoutUpdated += (_, _) => UpdateVerticalBarTop();
+        AddHandler(KeyDownEvent, OnWindowKeyDown, RoutingStrategies.Tunnel);
+        AddHandler(TextInputEvent, OnWindowTextInput, RoutingStrategies.Tunnel);
+        AddHandler(KeyUpEvent, OnWindowKeyUp, RoutingStrategies.Tunnel);
+        TabSwitcherList.Tapped += (_, _) => CommitTabSwitcher();
+        // files dragged from a panel onto F8 are deleted (Configuration > Misc.)
+        DeleteKey.AddHandler(DragDrop.DragOverEvent, (_, e) =>
+            e.DragEffects = _vm?.Settings.DropOnDeleteButton == true && FilePanelView.DraggedEntries is not null ? DragDropEffects.Move : DragDropEffects.None);
+        DeleteKey.AddHandler(DragDrop.DropEvent, async (_, e) =>
+        {
+            if (_vm is not null && FilePanelView.DraggedEntries is { } dragged)
+            {
+                e.DragEffects = DragDropEffects.Copy; // never let the source delete anything on its own
+                e.Handled = true;
+                await _vm.DeleteDroppedAsync(dragged.Entries, dragged.Source);
+            }
+        });
+        Deactivated += (_, _) =>
+        {
+            _vm?.CancelTabSwitcher();
+            _vm?.OnWindowDeactivated();
+        };
+        CommandLine.AddHandler(KeyDownEvent, OnCommandLineKeyDown, RoutingStrategies.Tunnel);
+        CommandLineCompletion = Services.PathAutoComplete.Attach(CommandLine, files: true, lastWordOnly: true,
+            baseFolder: () => _vm?.ActivePanel.CurrentPath is { IsLocal: true } here ? here.Path : null,
+            settings: () => _vm?.Settings);
+        CommandHistoryButton.Click += (_, _) => ShowCommandHistory();
+        TerminalButton.Click += (_, _) => ToggleTerminal();
+        CommandHistoryList.Tapped += (_, _) => TakeCommandFromHistory();
+        CommandHistoryList.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                TakeCommandFromHistory();
+            }
+            else if (e.Key == Key.Escape)
+            {
+                e.Handled = true;
+                CommandHistoryPopup.IsOpen = false;
+                FocusCommandLine();
+            }
+        };
+
+        foreach (var (sideView, left) in new[] { (LeftSideView, true), (RightSideView, false) })
+        {
+            sideView.Activated += (_, _) =>
+            {
+                if (_vm is not null)
+                {
+                    _vm.ActivateSide(left ? _vm.LeftSide : _vm.RightSide);
+                }
+            };
+            sideView.CommandRequested += (_, c) => _ = _vm?.ExecuteAsync(c);
+            var panel = sideView.Panel;
+            panel.CommandRequested += (_, c) => _ = _vm?.ExecuteAsync(c);
+            panel.DropRequested += (_, r) => _ = _vm?.DropAsync(r);
+            panel.TreeCommandRequested += (_, t) => _ = _vm?.TreeCommandAsync(t.Command, t.Path);
+        }
+        ActualThemeVariantChanged += (_, _) => _vm?.OnThemeChanged();
+        // Progress of long jobs in the title (visible in the task bar / dock too).
+        _titleTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(500), DispatcherPriority.Background, (_, _) => UpdateTitle());
+        _titleTimer.Start();
+    }
+
+    public FilePanelView LeftPanel => LeftSideView.Panel;
+
+    public FilePanelView RightPanel => RightSideView.Panel;
+
+    /// <summary>Ctrl+Q quick view (created on first use).</summary>
+    public ListerView? QuickView => _quickView;
+
+    private FilePanelView ActiveView => _vm is not null && ReferenceEquals(_vm.ActiveSide, _vm.RightSide) ? RightPanel : LeftPanel;
+
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        if (_vm is not null)
+        {
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+        }
+        _vm = DataContext as MainWindowViewModel;
+        if (_vm is null)
+        {
+            return;
+        }
+        _vm.PropertyChanged += OnVmPropertyChanged;
+        _vm.ExitRequested += (_, _) => _ = ConfirmExitAsync(); // Configuration > Misc.: may ask first
+        _vm.SavePositionRequested += (_, _) => StoreWindowState();
+        Services.UiFonts.ApplyMain(this, _vm.Settings);
+        if (!_vm.ShowMenuIcons)
+        {
+            Services.MenuIcons.Clear(MainMenu.Items);
+        }
+        _vm.CommandLineFocusRequested += (_, _) => FocusCommandLine();
+        _vm.CommandLineHistoryRequested += (_, _) => ShowCommandHistory();
+        _vm.TerminalToggleRequested += (_, _) => ToggleTerminal();
+        _vm.EditPathRequested += (_, _) => ActiveView.BeginEditPath();
+        _vm.QuickSearchRequested += (_, filter) => ActiveView.BeginQuickSearch(null, filter);
+        _vm.ButtonBarFocusRequested += (_, _) => _topBar.FocusFirst();
+        _vm.HotlistMenuRequested += (_, _) => ShowHotlistMenu();
+        _vm.ButtonBarsChanged += (_, _) => UpdateButtonBars();
+        _vm.TreeChanged += (_, path) =>
+        {
+            LeftPanel.InvalidateTree(path);
+            RightPanel.InvalidateTree(path);
+        };
+        _vm.Clipboard = Clipboard;
+        _vm.FileClipboard.Storage = StorageProvider;
+
+        var w = _vm.Settings.Window;
+        Width = w.Width;
+        Height = w.Height;
+        if (w.Maximized)
+        {
+            WindowState = WindowState.Maximized;
+        }
+        UpdateButtonBars();
+        UpdatePanelLayout();
+        LeftPanel.IsTreeVisible = RightPanel.IsTreeVisible = _vm.ShowTreePane;
+    }
+
+    protected override void OnOpened(EventArgs e)
+    {
+        base.OnOpened(e);
+        ActiveView.FocusList();
+    }
+
+    private TrayIcon? _trayIcon;
+
+    /// <summary>Configuration > Operation: minimized, the window lives in the notification area.</summary>
+    protected override void OnPropertyChanged(Avalonia.AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == WindowStateProperty && WindowState == WindowState.Minimized && _vm?.Settings.MinimizeToTray == true)
+        {
+            ShowInTray();
+        }
+    }
+
+    public bool IsInTray => _trayIcon is not null;
+
+    private void ShowInTray()
+    {
+        if (_trayIcon is not null || Avalonia.Application.Current is not { } app)
+        {
+            return;
+        }
+        _trayIcon = new TrayIcon { Icon = Icon, ToolTipText = "NextCommander", IsVisible = true };
+        _trayIcon.Clicked += (_, _) => RestoreFromTray();
+        var menu = new NativeMenu();
+        var restore = new NativeMenuItem("Show");
+        restore.Click += (_, _) => RestoreFromTray();
+        var exit = new NativeMenuItem("Exit");
+        exit.Click += (_, _) =>
+        {
+            RestoreFromTray();
+            Close();
+        };
+        menu.Items.Add(restore);
+        menu.Items.Add(exit);
+        _trayIcon.Menu = menu;
+        TrayIcon.SetIcons(app, [_trayIcon]);
+        Hide();
+    }
+
+    public void RestoreFromTray()
+    {
+        if (_trayIcon is null)
+        {
+            return;
+        }
+        _trayIcon.IsVisible = false;
+        if (Avalonia.Application.Current is { } app)
+        {
+            TrayIcon.SetIcons(app, []);
+        }
+        _trayIcon.Dispose();
+        _trayIcon = null;
+        Show();
+        WindowState = WindowState.Normal;
+        Activate();
+    }
+
+    private bool _exitConfirmed;
+
+    protected override void OnClosing(WindowClosingEventArgs e)
+    {
+        if (_vm is { Settings.ConfirmExit: true } && !_exitConfirmed && !e.IsProgrammatic)
+        {
+            e.Cancel = true;
+            _ = ConfirmExitAsync();
+            base.OnClosing(e);
+            return;
+        }
+        if (_vm is not null)
+        {
+            StoreWindowState();
+            _vm.SaveSettings();
+        }
+        base.OnClosing(e);
+    }
+
+    private async Task ConfirmExitAsync()
+    {
+        if (_vm is not null && await _vm.ConfirmExitAsync())
+        {
+            _exitConfirmed = true;
+            Close();
+        }
+    }
+
+    /// <summary>Window size and panel split into the settings (closing, Configuration > Save position).</summary>
+    private void StoreWindowState()
+    {
+        if (_vm is not null)
+        {
+            var w = _vm.Settings.Window;
+            w.Maximized = WindowState == WindowState.Maximized;
+            if (WindowState == WindowState.Normal)
+            {
+                w.Width = Width;
+                w.Height = Height;
+            }
+            var total = LeftSideView.Bounds.Width + RightSideView.Bounds.Width;
+            if (!_vm.IsSinglePanel && total > 0 && !_vm.VerticalPanels)
+            {
+                _vm.Settings.LeftPanelPercent = Math.Round(LeftSideView.Bounds.Width * 100 / total, 1);
+            }
+        }
+    }
+
+    /// <summary>Show > Custom columns mode: standard, automatic and every column set (the active one checked).</summary>
+    private void FillColumnSetsMenu()
+    {
+        if (_vm is null)
+        {
+            return;
+        }
+        var panel = _vm.ActivePanel;
+        var items = ColumnSetsMenu.Items;
+        items.Clear();
+        MenuItem Item(string header, Action action, bool isChecked = false)
+        {
+            var item = new MenuItem { Header = header, ToggleType = MenuItemToggleType.Radio, IsChecked = isChecked };
+            item.Click += (_, _) => action();
+            return item;
+        }
+        items.Add(Item("Standard columns", () => panel.ChooseColumnSet(string.Empty), panel.ActiveColumnSet is null));
+        items.Add(Item("Automatic (by folder)", () => panel.ChooseColumnSet(null)));
+        items.Add(new Separator());
+        foreach (var set in _vm.Settings.ColumnSets)
+        {
+            var name = set.Name;
+            items.Add(Item(name, () => panel.ChooseColumnSet(name), ReferenceEquals(set, panel.ActiveColumnSet)));
+        }
+        items.Add(new Separator());
+        var edit = new MenuItem { Header = "Edit column sets...", Icon = Services.MenuIcons.Create("nc_EditColumnSets") };
+        edit.Click += (_, _) => _ = _vm.ExecuteAsync("nc_EditColumnSets");
+        items.Add(edit);
+    }
+
+    /// <summary>Network > Saved connections: the connection manager's list with the icons of their types.</summary>
+    private void FillSavedConnectionsMenu()
+    {
+        if (_vm is null)
+        {
+            return;
+        }
+        var items = SavedConnectionsMenu.Items;
+        items.Clear();
+        foreach (var connection in _vm.SavedConnections.OrderBy(c => c.Name, StringComparer.CurrentCultureIgnoreCase))
+        {
+            var item = new MenuItem
+            {
+                Header = connection.Name,
+                Icon = Services.Icons.BrandIcons.Create(connection.Protocol),
+                Classes = { "noloc" },
+            };
+            var name = connection.Name;
+            item.Click += (_, _) => _ = _vm.ExecuteAsync("nc_OpenConnection \"" + name + "\"");
+            items.Add(item);
+        }
+        if (items.Count == 0)
+        {
+            items.Add(new MenuItem { Header = "(none)", IsEnabled = false });
+        }
+    }
+
+    /// <summary>Configuration > Other > Color theme: system colors and the theme files.</summary>
+    private void FillColorThemeMenu()
+    {
+        if (_vm is null)
+        {
+            return;
+        }
+        var items = ColorThemeMenu.Items;
+        items.Clear();
+        var current = _vm.Settings.ColorThemeFile;
+        MenuItem Item(string header, string parameter, bool isChecked, bool noloc)
+        {
+            var item = new MenuItem { Header = header, ToggleType = MenuItemToggleType.Radio, IsChecked = isChecked };
+            if (noloc)
+            {
+                item.Classes.Add("noloc");
+            }
+            item.Click += (_, _) => _ = _vm.ExecuteAsync(("nc_SetColorScheme " + parameter).Trim());
+            return item;
+        }
+        items.Add(Item("Follow the system (light / dark)", ColorTheme.SystemThemeId, string.Equals(current, ColorTheme.SystemThemeId, StringComparison.OrdinalIgnoreCase), noloc: false));
+        items.Add(Item("System colors (light)", string.Empty, string.IsNullOrEmpty(current), noloc: false));
+        items.Add(new Separator());
+        foreach (var theme in Services.ColorThemes.Available())
+        {
+            items.Add(Item(theme.DisplayName, theme.Id, string.Equals(theme.Id, current, StringComparison.OrdinalIgnoreCase), noloc: true));
+        }
+    }
+
+    /// <summary>Start menu: the fixed "change" entry, then the user's entries.</summary>
+    private void FillStartMenu()
+    {
+        if (_vm is null)
+        {
+            return;
+        }
+        var items = StartMenuRoot.Items;
+        while (items.Count > 2)
+        {
+            items.RemoveAt(items.Count - 1);
+        }
+        if (_vm.StartMenu.Count == 0)
+        {
+            items.Add(new MenuItem { Header = "(empty: add entries with Change start menu)", IsEnabled = false });
+            return;
+        }
+        foreach (var entry in _vm.StartMenu)
+        {
+            if (entry.IsSeparator)
+            {
+                items.Add(new Separator());
+                continue;
+            }
+            var item = new MenuItem { Header = entry.Label ?? entry.Tooltip ?? entry.Command, Icon = Services.MenuIcons.Create(entry.Command) };
+            var definition = entry;
+            item.Click += (_, _) => _ = _vm.ExecuteButtonAsync(definition);
+            items.Add(item);
+        }
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        _titleTimer.Stop();
+        base.OnClosed(e);
+        _vm?.Dispose();
+    }
+
+    private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (_vm is null)
+        {
+            return;
+        }
+        switch (e.PropertyName)
+        {
+            case nameof(MainWindowViewModel.ActiveSide):
+                if (!CommandLine.IsKeyboardFocusWithin)
+                {
+                    ActiveView.FocusList();
+                }
+                if (_vm.IsSinglePanel)
+                {
+                    UpdatePanelLayout();
+                }
+                break;
+            case nameof(MainWindowViewModel.DiskUsage):
+                UpdateDiskUsageHost();
+                break;
+            case nameof(MainWindowViewModel.QuickViewSide):
+                UpdateQuickViewHost();
+                break;
+            case nameof(MainWindowViewModel.QuickViewEntry):
+                ScheduleQuickViewLoad();
+                break;
+            case nameof(MainWindowViewModel.ShowTreePane):
+                LeftPanel.IsTreeVisible = RightPanel.IsTreeVisible = _vm.ShowTreePane;
+                break;
+            case nameof(MainWindowViewModel.IsSinglePanel):
+            case nameof(MainWindowViewModel.LeftPanelPercent):
+            case nameof(MainWindowViewModel.VerticalPanels):
+                UpdatePanelLayout();
+                break;
+            case nameof(MainWindowViewModel.MainFont):
+                Services.UiFonts.ApplyMain(this, _vm.Settings);
+                _terminal?.SetFont(_vm.Settings.TerminalFont, _vm.Settings.TerminalFontSize);
+                break;
+            case nameof(MainWindowViewModel.ShowMenuIcons):
+                Services.MenuIcons.Clear(MainMenu.Items); // rebuilt: frame / pressed style may have changed
+                if (_vm.ShowMenuIcons)
+                {
+                    Services.MenuIcons.Apply(MainMenu.Items);
+                }
+                else
+                {
+                    Services.MenuIcons.Clear(MainMenu.Items);
+                }
+                break;
+        }
+    }
+
+    private void UpdateButtonBars()
+    {
+        if (_vm is null)
+        {
+            return;
+        }
+        _topBar.Bind(_vm, _vm.Settings.ButtonBar, _vm.Settings.ButtonBarIconSize);
+        _verticalBar.Bind(_vm, _vm.Settings.VerticalButtonBar, _vm.Settings.VerticalButtonBarIconSize);
+        TopBarHost.IsVisible = _vm.Settings.ShowButtonBar;
+        VerticalBarHost.IsVisible = _vm.Settings.ShowVerticalButtonBar && !_vm.VerticalPanels;
+        UpdateVerticalBarSpace();
+    }
+
+    /// <summary>The vertical button bar has a column of its own between the sides: nothing to move aside.</summary>
+    private void UpdateVerticalBarSpace()
+    {
+        RightSideView.Margin = default;
+        QuickViewHost.Margin = default;
+    }
+
+    /// <summary>Top of the vertical button bar: where the file list of the right panel begins.</summary>
+    private void UpdateVerticalBarTop()
+    {
+        if (!VerticalBarHost.IsVisible || VerticalBarHost.Parent is not Avalonia.Visual parent)
+        {
+            return;
+        }
+        var top = Avalonia.VisualExtensions.TranslatePoint(RightPanel.ListArea, default, parent)?.Y ?? 0;
+        if (Math.Abs(VerticalBarHost.Margin.Top - top) > 0.5)
+        {
+            VerticalBarHost.Margin = new Avalonia.Thickness(4, Math.Max(0, top), 0, 0); // 4: the splitter left of it
+        }
+    }
+
+    /// <summary>Shows the quick view over the side chosen by the view model (or hides it).</summary>
+    /// <summary>Folder sizes over the other panel: a title with a close button above the view; gone when closed.</summary>
+    private void UpdateDiskUsageHost()
+    {
+        if (_vm is null)
+        {
+            return;
+        }
+        if (_vm.DiskUsage is not { } request || _vm.DiskUsageSide is not { } side)
+        {
+            DiskUsageHost.IsVisible = false;
+            DiskUsageHost.Child = null; // stops a scan in progress
+            ActiveView.FocusList();
+            return;
+        }
+        var view = new Tools.DiskUsageView(request);
+        view.CloseRequested += (_, _) => _vm.CloseDiskUsage();
+        var title = new TextBlock
+        {
+            Text = "Folder sizes — " + request.Start.ToDisplayString(),
+            Margin = new Avalonia.Thickness(6, 3),
+            FontSize = 12,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            TextTrimming = Avalonia.Media.TextTrimming.CharacterEllipsis,
+        };
+        var close = new Button { Content = "✕", Padding = new Avalonia.Thickness(8, 0), MinHeight = 0, Background = Avalonia.Media.Brushes.Transparent, Focusable = false };
+        ToolTip.SetTip(close, "Close (Esc)");
+        close.Click += (_, _) => _vm.CloseDiskUsage();
+        var bar = new DockPanel();
+        DockPanel.SetDock(close, Dock.Right);
+        bar.Children.Add(close);
+        bar.Children.Add(title);
+        var header = new Border { Child = bar };
+        header[!Border.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("FmPanelHeaderBrush");
+        var dock = new DockPanel();
+        DockPanel.SetDock(header, Dock.Top);
+        dock.Children.Add(header);
+        dock.Children.Add(view);
+        DiskUsageHost.Child = dock;
+        var vertical = _vm.VerticalPanels;
+        Grid.SetColumn(DiskUsageHost, vertical ? 0 : ReferenceEquals(side, _vm.LeftSide) ? 0 : 2);
+        Grid.SetRow(DiskUsageHost, vertical ? (ReferenceEquals(side, _vm.LeftSide) ? 0 : 2) : 0);
+        DiskUsageHost.IsVisible = true;
+    }
+
+    private void UpdateQuickViewHost()
+    {
+        if (_vm is null)
+        {
+            return;
+        }
+        if (_vm.QuickViewSide is not { } side)
+        {
+            QuickViewHost.IsVisible = false;
+            _quickView?.Unload();
+            ActiveView.FocusList();
+            return;
+        }
+        if (_quickView is null)
+        {
+            _quickView = new ListerView(_vm.Tools);
+            var title = new TextBlock { Margin = new Avalonia.Thickness(6, 3), FontSize = 12, TextTrimming = Avalonia.Media.TextTrimming.CharacterEllipsis };
+            var header = new Border { Child = title };
+            header[!Border.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("FmPanelHeaderBrush");
+            var status = new TextBlock { Margin = new Avalonia.Thickness(6, 2), FontSize = 12, TextTrimming = Avalonia.Media.TextTrimming.CharacterEllipsis };
+            var footer = new Border { Child = status };
+            footer[!Border.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("FmStatusBrush");
+            _quickView.StatusChanged += (_, _) =>
+            {
+                title.Text = "Quick View (Ctrl+Q) — " + (_quickView.Entry?.Name ?? string.Empty);
+                status.Text = _quickView.StatusText;
+            };
+            var dock = new DockPanel();
+            DockPanel.SetDock(header, Dock.Top);
+            DockPanel.SetDock(footer, Dock.Bottom);
+            dock.Children.Add(header);
+            dock.Children.Add(footer);
+            dock.Children.Add(_quickView);
+            QuickViewHost.Child = dock;
+        }
+        Grid.SetColumn(QuickViewHost, ReferenceEquals(side, _vm.LeftSide) ? 0 : 2);
+        UpdateVerticalBarSpace();
+        QuickViewHost.IsVisible = true;
+        _ = LoadQuickViewAsync();
+        ActiveView.FocusList();
+    }
+
+    private void ScheduleQuickViewLoad()
+    {
+        _quickViewTimer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(120), DispatcherPriority.Background, (_, _) =>
+        {
+            _quickViewTimer?.Stop();
+            _ = LoadQuickViewAsync();
+        });
+        _quickViewTimer.Stop();
+        _quickViewTimer.Start();
+    }
+
+    /// <summary>Loads the entry under the cursor into the quick view (tests call it directly instead of waiting for the timer).</summary>
+    public Task LoadQuickViewAsync()
+    {
+        _quickViewTimer?.Stop();
+        if (_quickView is null || _vm?.QuickViewSide is null)
+        {
+            return Task.CompletedTask;
+        }
+        if (_vm.QuickViewEntry is { } entry)
+        {
+            return ReferenceEquals(entry, _quickView.Entry) ? Task.CompletedTask : _quickView.LoadAsync(entry);
+        }
+        _quickView.Unload();
+        return Task.CompletedTask;
+    }
+
+    private bool? _arrangedVertically;
+
+    /// <summary>Show > Vertical arrangement: panels above each other (the vertical button bar is hidden then).</summary>
+    private void ApplyArrangement(bool vertical)
+    {
+        if (_arrangedVertically == vertical)
+        {
+            return;
+        }
+        _arrangedVertically = vertical;
+        PanelsGrid.ColumnDefinitions = vertical ? new ColumnDefinitions("*") : new ColumnDefinitions("*,Auto,*");
+        PanelsGrid.RowDefinitions = vertical ? new RowDefinitions("*,4,*") : new RowDefinitions("*");
+        Control[] parts = [LeftSideView, Splitter, RightSideView];
+        for (var i = 0; i < parts.Length; i++)
+        {
+            Grid.SetColumn(parts[i], vertical ? 0 : i);
+            Grid.SetRow(parts[i], vertical ? i : 0);
+        }
+        Grid.SetColumn(VerticalBarHost, vertical ? 0 : 1);
+        Splitter.Width = vertical ? double.NaN : 4;
+        Splitter.HorizontalAlignment = vertical ? Avalonia.Layout.HorizontalAlignment.Stretch : Avalonia.Layout.HorizontalAlignment.Left;
+        Grid.SetColumn(QuickViewHost, vertical ? 0 : 2);
+        Grid.SetRow(QuickViewHost, vertical ? 2 : 0);
+        if (_vm?.DiskUsageSide is { } diskSide)
+        {
+            var onLeft = ReferenceEquals(diskSide, _vm.LeftSide);
+            Grid.SetColumn(DiskUsageHost, vertical ? 0 : onLeft ? 0 : 2);
+            Grid.SetRow(DiskUsageHost, vertical ? (onLeft ? 0 : 2) : 0);
+        }
+        Splitter.ResizeDirection = vertical ? GridResizeDirection.Rows : GridResizeDirection.Columns;
+        VerticalBarHost.IsVisible = !vertical && _vm?.Settings.ShowVerticalButtonBar == true;
+        UpdateVerticalBarSpace();
+    }
+
+    /// <summary>Split ratio, or only the active side when "100%" is on.</summary>
+    private void UpdatePanelLayout()
+    {
+        if (_vm is null)
+        {
+            return;
+        }
+        ApplyArrangement(_vm.VerticalPanels);
+        var vertical = _vm.VerticalPanels;
+        void Size(int index, GridLength length)
+        {
+            if (vertical)
+            {
+                PanelsGrid.RowDefinitions[index].Height = length;
+            }
+            else
+            {
+                PanelsGrid.ColumnDefinitions[index].Width = length;
+            }
+        }
+        if (_vm.IsSinglePanel)
+        {
+            var leftActive = ReferenceEquals(_vm.ActiveSide, _vm.LeftSide);
+            Size(0, leftActive ? new GridLength(1, GridUnitType.Star) : new GridLength(0));
+            Size(2, leftActive ? new GridLength(0) : new GridLength(1, GridUnitType.Star));
+            Splitter.IsVisible = false;
+            LeftSideView.IsVisible = leftActive;
+            RightSideView.IsVisible = !leftActive;
+            return;
+        }
+        var percent = vertical ? 50 : Math.Clamp(_vm.LeftPanelPercent, 5, 95);
+        Size(0, new GridLength(percent, GridUnitType.Star));
+        Size(2, new GridLength(100 - percent, GridUnitType.Star));
+        Splitter.IsVisible = true;
+        LeftSideView.IsVisible = RightSideView.IsVisible = true;
+    }
+
+    /// <summary>The control the next hotlist menu opens at (the "*" button of a path line); null: the active file list.</summary>
+    public Control? HotlistAnchor { get; set; }
+
+    /// <summary>The hotlist menu of the last <see cref="ShowHotlistMenu"/> (tests).</summary>
+    public MenuFlyout? HotlistMenu { get; private set; }
+
+    /// <summary>
+    /// Ctrl+D: hotlist as a menu ("Group/Name" makes submenus, 1..9 select the first entries). From the "*" button it
+    /// opens below the button, from the keyboard at the top left of the active file list.
+    /// </summary>
+    private void ShowHotlistMenu()
+    {
+        if (_vm is null)
+        {
+            return;
+        }
+        var anchor = HotlistAnchor is { IsVisible: true } button && Avalonia.VisualTree.VisualExtensions.GetVisualRoot(button) is not null ? button : null;
+        HotlistAnchor = null;
+        var flyout = new MenuFlyout
+        {
+            Placement = PlacementMode.AnchorAndGravity,
+            PlacementAnchor = anchor is null ? PopupAnchor.TopLeft : PopupAnchor.BottomRight,
+            PlacementGravity = anchor is null ? PopupGravity.BottomRight : PopupGravity.BottomLeft,
+        };
+        HotlistMenu = flyout;
+        var groups = new Dictionary<string, MenuItem>(StringComparer.OrdinalIgnoreCase);
+        var number = 0;
+        foreach (var entry in _vm.Settings.Hotlist)
+        {
+            var parts = entry.Name.Split('/', 2, StringSplitOptions.TrimEntries);
+            var header = parts.Length == 2 ? parts[1] : parts[0];
+            if (parts.Length == 1 && number < 9)
+            {
+                header = $"_{++number} {header}";
+            }
+            var item = new MenuItem { Header = header };
+            ToolTip.SetTip(item, entry.Path);
+            var e = entry;
+            item.Click += async (_, _) => await _vm.NavigateToHotlistEntryAsync(e);
+            if (parts.Length == 2)
+            {
+                if (!groups.TryGetValue(parts[0], out var group))
+                {
+                    group = new MenuItem { Header = parts[0] };
+                    groups[parts[0]] = group;
+                    flyout.Items.Add(group);
+                }
+                group.Items.Add(item);
+            }
+            else
+            {
+                flyout.Items.Add(item);
+            }
+        }
+        if (flyout.Items.Count > 0)
+        {
+            flyout.Items.Add(new Separator());
+        }
+        void Command(string header, string command)
+        {
+            var item = new MenuItem { Header = header };
+            item.Click += async (_, _) => await _vm.ExecuteAsync(command);
+            flyout.Items.Add(item);
+        }
+        Command("_+ Add this folder...", "nc_AddToHotlist");
+        Command("Most frequently used...", "nc_FrequentDirectories");
+        Command("Edit...", "nc_ConfigDirHotlist");
+        flyout.ShowAt(anchor ?? ActiveView.ListArea);
+    }
+
+    private static bool IsFunctionKey(Key key) => key is >= Key.F1 and <= Key.F24;
+
+    private void OnWindowKeyDown(object? sender, KeyEventArgs e)
+    {
+        _suppressTextInput = false;
+        if (_vm is null)
+        {
+            return;
+        }
+        if (_vm.TabSwitcher is not null)
+        {
+            HandleTabSwitcherKey(e);
+            return;
+        }
+        var focused = FocusManager?.GetFocusedElement();
+        var inTextBox = focused is TextBox;
+
+        // the terminal screen takes every key (F keys, Tab, Ctrl+letters go to the shell); only the terminal key hides it
+        if (focused is TerminalScreen)
+        {
+            if (_vm.Hotkeys.Find(e) is { } terminalCommand && terminalCommand.Equals("nc_ToggleTerminal", StringComparison.OrdinalIgnoreCase))
+            {
+                e.Handled = true;
+                _ = _vm.ExecuteAsync(terminalCommand);
+            }
+            return;
+        }
+
+        // Quick view: Tab moves between the panel and the viewer; inside the viewer its own keys win.
+        if (_vm.IsQuickViewActive && _quickView is not null)
+        {
+            var inQuickView = _quickView.IsKeyboardFocusWithin;
+            if (e.Key == Key.Tab && e.KeyModifiers == KeyModifiers.None && (!inTextBox || inQuickView))
+            {
+                if (inQuickView)
+                {
+                    ActiveView.FocusList();
+                }
+                else
+                {
+                    _quickView.FocusContent();
+                }
+                e.Handled = true;
+                return;
+            }
+            if (inQuickView)
+            {
+                if (_vm.Hotkeys.Find(e) is { } c && c.Equals("nc_QuickView", StringComparison.OrdinalIgnoreCase))
+                {
+                    e.Handled = true;
+                    _ = _vm.ExecuteAsync(c);
+                }
+                return;
+            }
+        }
+
+        if (e.Key == Key.Tab && e.KeyModifiers == KeyModifiers.None && !inTextBox)
+        {
+            _vm.ActivateSide(_vm.OtherSide);
+            ActiveView.FocusList();
+            e.Handled = true;
+            return;
+        }
+
+        var command = _vm.Hotkeys.Find(e);
+        if (command is not null && (!inTextBox || IsFunctionKey(e.Key) || command.Equals("nc_ToggleTerminal", StringComparison.OrdinalIgnoreCase)))
+        {
+            e.Handled = true;
+            _suppressTextInput = true;
+            _ = _vm.ExecuteAsync(command);
+            return;
+        }
+
+        // Ctrl+Alt+letter: quick search (unless the combination is a hotkey).
+        if (!inTextBox && e.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Alt) && e.Key is >= Key.A and <= Key.Z)
+        {
+            e.Handled = true;
+            _suppressTextInput = true;
+            ActiveView.BeginQuickSearch(e.Key.ToString().ToLowerInvariant(), filter: false);
+        }
+    }
+
+    /// <summary>Keys while the Ctrl+Tab list is open: Tab / arrows move, Enter switches, Esc cancels; nothing else runs.</summary>
+    private void HandleTabSwitcherKey(KeyEventArgs e)
+    {
+        var vm = _vm!;
+        e.Handled = true;
+        _suppressTextInput = true;
+        switch (e.Key)
+        {
+            case Key.Tab:
+                vm.TabSwitcher!.Move(e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? -1 : 1);
+                break;
+            case Key.Down or Key.Right:
+                vm.TabSwitcher!.Move(1);
+                break;
+            case Key.Up or Key.Left:
+                vm.TabSwitcher!.Move(-1);
+                break;
+            case Key.Enter:
+                CommitTabSwitcher();
+                break;
+            case Key.Escape:
+                vm.CancelTabSwitcher();
+                break;
+            case Key.LeftCtrl or Key.RightCtrl or Key.LeftShift or Key.RightShift:
+                break;
+            default:
+                e.Handled = false;
+                _suppressTextInput = false;
+                break;
+        }
+    }
+
+    /// <summary>Releasing Ctrl ends the Ctrl+Tab list and switches to the selected tab.</summary>
+    private void OnWindowKeyUp(object? sender, KeyEventArgs e)
+    {
+        if (_vm?.TabSwitcher is not null && e.Key is Key.LeftCtrl or Key.RightCtrl)
+        {
+            e.Handled = true;
+            CommitTabSwitcher();
+        }
+    }
+
+    private void CommitTabSwitcher()
+    {
+        _vm?.CommitTabSwitcher();
+        ActiveView.FocusList();
+    }
+
+    /// <summary>Typing in a panel goes to the command line, or starts quick search ("letters only" mode).</summary>
+    private void OnWindowTextInput(object? sender, TextInputEventArgs e)
+    {
+        var focusedTextBox = FocusManager?.GetFocusedElement() is TextBox;
+        if (_quickView?.IsKeyboardFocusWithin == true || FocusManager?.GetFocusedElement() is TerminalScreen)
+        {
+            return;
+        }
+        if (_suppressTextInput || LeftPanel.LastKeyHandled || RightPanel.LastKeyHandled)
+        {
+            _suppressTextInput = false;
+            e.Handled = !focusedTextBox;
+            return;
+        }
+        if (_vm is null || string.IsNullOrEmpty(e.Text) || focusedTextBox || e.Text.Any(char.IsControl))
+        {
+            return;
+        }
+        // "/" in a panel (when it is no hotkey: those ran on the key press already, and not while typing a command line):
+        // to the root of the drive, whichever key gives "/" on the keyboard layout
+        if (e.Text == "/" && string.IsNullOrEmpty(_vm.CommandLineText))
+        {
+            e.Handled = true;
+            _ = _vm.ExecuteAsync("nc_GoToRoot");
+            return;
+        }
+        if ((_vm.Settings.QuickSearchTrigger == QuickSearchTrigger.LetterOnly && e.Text != " ") || !_vm.ShowCommandLine)
+        {
+            ActiveView.BeginQuickSearch(e.Text, filter: false);
+        }
+        else
+        {
+            _vm.CommandLineText += e.Text;
+            if (!_vm.Settings.CommandLineOnlyWhenFocused)
+            {
+                FocusCommandLine();
+            }
+        }
+        e.Handled = true;
+    }
+
+    /// <summary>The drop-down of the command line: the last 20 command lines.</summary>
+    public void ShowCommandHistory()
+    {
+        if (_vm is null)
+        {
+            return;
+        }
+        var items = _vm.RecentCommandLines(20);
+        CommandHistoryList.ItemsSource = items.Count > 0 ? items : null;
+        if (items.Count == 0)
+        {
+            FocusCommandLine();
+            return;
+        }
+        CommandHistoryPopup.IsOpen = true;
+        CommandHistoryList.SelectedIndex = 0;
+        Dispatcher.UIThread.Post(() =>
+        {
+            CommandHistoryList.Focus();
+            (CommandHistoryList.ContainerFromIndex(0) as Control)?.Focus();
+        }, DispatcherPriority.Input);
+    }
+
+    private void TakeCommandFromHistory()
+    {
+        if (_vm is null || CommandHistoryList.SelectedItem is not string command)
+        {
+            return;
+        }
+        CommandHistoryPopup.IsOpen = false;
+        _vm.CommandLineText = command;
+        FocusCommandLine();
+    }
+
+    private TerminalView? _terminal;
+
+    /// <summary>Path completion of the last word of the command line.</summary>
+    public Services.PathAutoComplete CommandLineCompletion { get; private set; } = null!;
+
+    /// <summary>The internal terminal (created when first shown).</summary>
+    public TerminalView? Terminal => _terminal;
+
+    /// <summary>
+    /// Shows the internal terminal (starting a shell in the active panel's folder) or hides it. While it is open the
+    /// command line is hidden and the terminal takes a good part of the window; closing it brings the command line back.
+    /// </summary>
+    public void ToggleTerminal()
+    {
+        if (_vm is null)
+        {
+            return;
+        }
+        if (_terminal is null)
+        {
+            _terminal = new TerminalView
+            {
+                CurrentFolder = () => _vm.ActivePanel.CurrentPath is { IsLocal: true } dir ? dir.Path : null,
+                HeightRatio = _vm.Settings.TerminalHeightRatio,
+                RestoreTabs = _vm.Settings.TerminalTabs.ToList(),
+            };
+            // the height and the open tabs are kept in the settings
+            _terminal.HeightRatioChanged += (_, _) => _vm.Settings.TerminalHeightRatio = Math.Round(_terminal.HeightRatio, 3);
+            _terminal.TabsChanged += (_, _) => _vm.Settings.TerminalTabs = _terminal.Consoles.Select(c => c.Shell.Name).ToList();
+            _terminal.CloseRequested += (_, _) =>
+            {
+                _terminal.Stop();
+                _vm.Settings.TerminalTabs = [];
+                HideTerminal();
+            };
+            TerminalHost.Child = _terminal;
+            Closed += (_, _) => _terminal.Stop();
+            SizeChanged += (_, e) =>
+            {
+                if (TerminalHost.IsVisible)
+                {
+                    _terminal.FitWindow(e.NewSize.Height);
+                }
+            };
+        }
+        if (TerminalHost.IsVisible && _terminal.IsKeyboardFocusWithin)
+        {
+            HideTerminal(); // the shells keep running
+            return;
+        }
+        _terminal.Shell = _vm.Settings.InternalTerminalShell;
+        _terminal.Emulation = _vm.Settings.TerminalEmulation;
+        _terminal.SetFont(_vm.Settings.TerminalFont, _vm.Settings.TerminalFontSize);
+        if (!TerminalHost.IsVisible)
+        {
+            TerminalHost.IsVisible = true;
+            _vm.IsTerminalOpen = true;
+            _terminal.FitWindow(Bounds.Height);
+        }
+        _terminal.Activate();
+    }
+
+    private void HideTerminal()
+    {
+        TerminalHost.IsVisible = false;
+        if (_vm is not null)
+        {
+            _vm.IsTerminalOpen = false;
+        }
+        ActiveView.FocusList();
+    }
+
+    private void FocusCommandLine()
+    {
+        CommandLine.Focus();
+        CommandLine.CaretIndex = CommandLine.Text?.Length ?? 0;
+    }
+
+    private async void OnCommandLineKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (_vm is null)
+        {
+            return;
+        }
+        var history = _vm.Settings.CommandLineHistory;
+        switch (e.Key)
+        {
+            case Key.Enter:
+                e.Handled = true;
+                _historyIndex = -1;
+                await _vm.ExecuteCommandLineAsync(keepTerminalOpen: e.KeyModifiers.HasFlag(KeyModifiers.Shift));
+                ActiveView.FocusList();
+                break;
+            case Key.Escape:
+                e.Handled = true;
+                _historyIndex = -1;
+                _vm.CommandLineText = string.Empty;
+                ActiveView.FocusList();
+                break;
+            case Key.Tab when e.KeyModifiers == KeyModifiers.None:
+                e.Handled = true;
+                await _vm.CompleteCommandLineAsync();
+                CommandLine.CaretIndex = _vm.CommandLineText.Length;
+                break;
+            case Key.Up when e.KeyModifiers == KeyModifiers.None && history.Count > 0:
+            case Key.Down when e.KeyModifiers == KeyModifiers.Control && history.Count > 0:
+                e.Handled = true;
+                _historyIndex = Math.Min(_historyIndex + 1, history.Count - 1);
+                _vm.CommandLineText = history[_historyIndex];
+                CommandLine.CaretIndex = _vm.CommandLineText.Length;
+                break;
+            case Key.Down when e.KeyModifiers == KeyModifiers.None:
+                e.Handled = true;
+                if (_historyIndex <= 0)
+                {
+                    _historyIndex = -1;
+                    _vm.CommandLineText = string.Empty;
+                    ActiveView.FocusList();
+                }
+                else
+                {
+                    _historyIndex--;
+                    _vm.CommandLineText = history[_historyIndex];
+                    CommandLine.CaretIndex = _vm.CommandLineText.Length;
+                }
+                break;
+        }
+    }
+}
