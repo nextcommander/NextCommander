@@ -22,7 +22,7 @@ public sealed class SystemFolderIconsTests : IDisposable
         }
     }
 
-    [Fact]
+    [AvaloniaFact]
     public void User_folders_are_found_by_path()
     {
         var downloads = KnownFolders.Downloads;
@@ -67,7 +67,7 @@ public sealed class SystemFolderIconsTests : IDisposable
         }
     }
 
-    [Fact]
+    [AvaloniaFact]
     public void Icon_theme_settings_are_read_from_ini_files()
     {
         var file = Path.Combine(_dir, "index.theme");
