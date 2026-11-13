@@ -2195,6 +2195,7 @@
   "MtpFileSystemProvider.TheStoragesOfADevice": "The storages of a device cannot be renamed.",
   "Settings.Layout.TrashButton": "Trash / Recycle Bin button",
   "Settings.Layout.TrashButton.Description": "The trash after Network on the drive buttons: deleted files in the panel.",
+  "SystemNames.CommandPrompt": "Command Prompt",
   "TerminalView.MaximizeTheTerminalDoubleClick": "Maximize the terminal (double click on the title)",
   "TerminalView.RestoreTheTerminalSizeDouble": "Restore the terminal size (double click on the title)",
   "TrashFileSystemProvider.ItemsInsideADeletedFolder": "Items inside a deleted folder are deleted with the folder only.",

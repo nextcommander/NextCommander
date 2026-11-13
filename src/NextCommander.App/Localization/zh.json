@@ -2195,6 +2195,7 @@
   "MtpFileSystemProvider.TheStoragesOfADevice": "无法重命名设备的存储。",
   "Settings.Layout.TrashButton": "回收站按钮",
   "Settings.Layout.TrashButton.Description": "驱动器按钮中“网络”之后的回收站：在面板中显示已删除的文件。",
+  "SystemNames.CommandPrompt": "命令提示符",
   "TerminalView.MaximizeTheTerminalDoubleClick": "最大化终端（双击标题）",
   "TerminalView.RestoreTheTerminalSizeDouble": "还原终端大小（双击标题）",
   "TrashFileSystemProvider.ItemsInsideADeletedFolder": "已删除文件夹中的项目只能随文件夹一起删除。",
