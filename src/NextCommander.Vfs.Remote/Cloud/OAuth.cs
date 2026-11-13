@@ -147,7 +147,7 @@ public static class OAuthClient
         JsonElement root;
         try
         {
-            root = JsonDocument.Parse(text).RootElement;
+            root = JsonElement.Parse(text);
         }
         catch (JsonException)
         {

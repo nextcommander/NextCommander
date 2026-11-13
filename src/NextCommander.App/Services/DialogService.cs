@@ -117,9 +117,14 @@ public sealed class DialogService : IDialogService
     public async Task TrackJobAsync(FileJob job, Task running)
     {
         // Quick jobs finish before the window would appear.
-        if (await Task.WhenAny(running, Task.Delay(400)) == running)
+        using (var delay = new CancellationTokenSource())
         {
-            return;
+            var finished = await Task.WhenAny(running, Task.Delay(400, delay.Token)) == running;
+            delay.Cancel(); // stops the timer when the job finished first
+            if (finished)
+            {
+                return;
+            }
         }
         var window = new ProgressWindow(job);
         window.Show(RequireOwner());
