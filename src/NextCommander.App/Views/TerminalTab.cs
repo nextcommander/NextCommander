@@ -23,8 +23,8 @@ public abstract class TerminalTab : Border
     /// <summary>The local folder of the active panel (for a new shell and "Panel folder").</summary>
     public Func<string?> CurrentFolder { get; }
 
-    /// <summary>Tab title: the shell's name.</summary>
-    public virtual string Title => Shell.Name;
+    /// <summary>Tab title: the shell's shown name.</summary>
+    public virtual string Title => Shell.DisplayName;
 
     /// <summary>What the terminal shows as text (output and, for the line console, the command being typed).</summary>
     public abstract string OutputText { get; }

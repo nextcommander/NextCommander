@@ -2195,6 +2195,7 @@
   "MtpFileSystemProvider.TheStoragesOfADevice": "No se puede cambiar el nombre de los almacenamientos de un dispositivo.",
   "Settings.Layout.TrashButton": "Botón de la papelera",
   "Settings.Layout.TrashButton.Description": "La papelera después de Red en los botones de unidad: los archivos eliminados en el panel.",
+  "SystemNames.CommandPrompt": "Símbolo del sistema",
   "TerminalView.MaximizeTheTerminalDoubleClick": "Maximizar el terminal (doble clic en el título)",
   "TerminalView.RestoreTheTerminalSizeDouble": "Restaurar el tamaño del terminal (doble clic en el título)",
   "TrashFileSystemProvider.ItemsInsideADeletedFolder": "Los elementos de una carpeta eliminada solo se eliminan junto con la carpeta.",

@@ -59,9 +59,12 @@ public sealed class TerminalSession : IDisposable
     {
         /// <summary>The Windows Command Prompt (cmd.exe): "cd /d", "cls".</summary>
         public bool IsCommandPrompt => IsCommandPromptFile(FileName);
+
+        /// <summary>The name shown in tabs and lists: the Command Prompt in the application's language as Windows names it.</summary>
+        public string DisplayName => IsCommandPrompt ? SystemNames.CommandPrompt() : Name;
     }
 
-    /// <summary>The name of cmd.exe in the terminal (tabs, shell list) as Windows calls it.</summary>
+    /// <summary>The name of cmd.exe kept in the settings (<see cref="ShellInfo.DisplayName"/> is the shown one).</summary>
     public const string CommandPromptName = "Command Prompt";
 
     private static bool IsCommandPromptFile(string file) =>

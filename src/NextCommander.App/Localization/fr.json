@@ -2195,6 +2195,7 @@
   "MtpFileSystemProvider.TheStoragesOfADevice": "Les espaces de stockage d'un appareil ne peuvent pas être renommés.",
   "Settings.Layout.TrashButton": "Bouton Corbeille",
   "Settings.Layout.TrashButton.Description": "La corbeille après Réseau sur les boutons de lecteur : les fichiers supprimés dans le panneau.",
+  "SystemNames.CommandPrompt": "Invite de commandes",
   "TerminalView.MaximizeTheTerminalDoubleClick": "Agrandir le terminal (double-clic sur le titre)",
   "TerminalView.RestoreTheTerminalSizeDouble": "Restaurer la taille du terminal (double-clic sur le titre)",
   "TrashFileSystemProvider.ItemsInsideADeletedFolder": "Les éléments d'un dossier supprimé ne sont supprimés qu'avec le dossier.",
