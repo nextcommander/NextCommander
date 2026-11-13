@@ -2162,5 +2162,8 @@
   "MainWindow.Reset": "Zurücksetzen",
   "Command.nc_ResetButtonBar": "Symbolleiste auf die Standardschaltflächen zurücksetzen",
   "Command.nc_ResetVertButtonBar": "Vertikale Symbolleiste auf die Standardschaltflächen zurücksetzen",
-  "AboutDialog.OpenTheProjectPageIn": "Projektseite im Browser öffnen"
+  "AboutDialog.OpenTheProjectPageIn": "Projektseite im Browser öffnen",
+  "Command.nc_MaximizeTerminal": "Internes Terminal maximieren / wiederherstellen",
+  "TerminalView.MaximizeTheTerminalDoubleClick": "Terminal maximieren (Doppelklick auf den Titel)",
+  "TerminalView.RestoreTheTerminalSizeDouble": "Terminalgröße wiederherstellen (Doppelklick auf den Titel)"
 }

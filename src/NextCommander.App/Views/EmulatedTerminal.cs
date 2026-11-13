@@ -102,7 +102,7 @@ public sealed class EmulatedTerminal : TerminalTab
         _screen.Vt.Clear();
         _screen.InvalidateVisual();
         // the shell draws its prompt again
-        Send(Shell.Name.StartsWith("cmd", StringComparison.OrdinalIgnoreCase) ? "cls\r" : "\f");
+        Send(Shell.IsCommandPrompt ? "cls\r" : "\f");
         _screen.Focus();
     }
 

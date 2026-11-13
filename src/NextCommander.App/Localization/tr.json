@@ -2162,5 +2162,8 @@
   "MainWindow.Reset": "Sıfırla",
   "Command.nc_ResetButtonBar": "Düğme çubuğunu varsayılan düğmelere döndür",
   "Command.nc_ResetVertButtonBar": "Dikey düğme çubuğunu varsayılan düğmelere döndür",
-  "AboutDialog.OpenTheProjectPageIn": "Proje sayfasını tarayıcıda aç"
+  "AboutDialog.OpenTheProjectPageIn": "Proje sayfasını tarayıcıda aç",
+  "Command.nc_MaximizeTerminal": "Dahili terminali büyüt / eski boyutuna getir",
+  "TerminalView.MaximizeTheTerminalDoubleClick": "Terminali büyüt (başlığa çift tıklama)",
+  "TerminalView.RestoreTheTerminalSizeDouble": "Terminali eski boyutuna getir (başlığa çift tıklama)"
 }

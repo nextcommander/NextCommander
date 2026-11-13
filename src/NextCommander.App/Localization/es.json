@@ -2162,5 +2162,8 @@
   "MainWindow.Reset": "Restablecer",
   "Command.nc_ResetButtonBar": "Restablecer la barra de botones a los botones predeterminados",
   "Command.nc_ResetVertButtonBar": "Restablecer la barra de botones vertical a los botones predeterminados",
-  "AboutDialog.OpenTheProjectPageIn": "Abrir la página del proyecto en el navegador"
+  "AboutDialog.OpenTheProjectPageIn": "Abrir la página del proyecto en el navegador",
+  "Command.nc_MaximizeTerminal": "Maximizar / restaurar el terminal integrado",
+  "TerminalView.MaximizeTheTerminalDoubleClick": "Maximizar el terminal (doble clic en el título)",
+  "TerminalView.RestoreTheTerminalSizeDouble": "Restaurar el tamaño del terminal (doble clic en el título)"
 }

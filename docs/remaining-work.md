@@ -139,6 +139,7 @@ Since 7 November 2026 colors come only from theme files (default: system colors,
 - [x] Real terminal emulation (Windows ConPTY / Linux, macOS pty; VT100 / xterm screen): colors, programs that draw the screen themselves, Ctrl+C signal. When turned off in the settings, the line console is used. The app was tried on Linux (Ubuntu 26.10) and macOS (M5); on macOS job control (Ctrl+Z) may not work because the shell has no controlling terminal.
 - [x] Multiple terminal tabs; choice among the installed shells (cmd, PowerShell, pwsh, Git Bash, WSL, $SHELL).
 - [x] Keep the terminal height and the open tabs in the settings.
+- [x] Maximize / restore (button in the title bar, double click on the title, `nc_MaximizeTerminal`): maximized, the terminal starts where the panels start. cmd.exe is shown as "Command Prompt".
 
 ## Tools
 - [x] Duplicate files window (Commands > Duplicate files...): search by choosing folders, groups, marking by rule, deleting to the recycle bin / permanently, moving to a folder.
