@@ -62,6 +62,7 @@
   <StreamGeometry x:Key="MiFilter">F1 M1.2,2 L14.8,2 L9.6,8.2 L9.6,13.4 L6.4,15 L6.4,8.2 Z</StreamGeometry>
   <StreamGeometry x:Key="MiDesktop">F1 M1,1.8 L15,1.8 L15,11.4 L1,11.4 Z M2.4,10 L13.6,10 L13.6,3.2 L2.4,3.2 Z M7,11.4 L9,11.4 L9,13.3 L7,13.3 Z M4.3,13.3 L11.7,13.3 L11.7,14.8 L4.3,14.8 Z</StreamGeometry>
   <StreamGeometry x:Key="MiDrive">F1 M1,4 L15,4 L15,12 L1,12 Z M2.3,10.7 L13.7,10.7 L13.7,5.3 L2.3,5.3 Z M10.6,8.6 L13,8.6 L13,10 L10.6,10 Z M3,8.8 L8,8.8 L8,9.8 L3,9.8 Z</StreamGeometry>
+  <StreamGeometry x:Key="MiPhone">F1 M3.5,1 L12.5,1 L12.5,15 L3.5,15 Z M4.8,13.7 L11.2,13.7 L11.2,2.3 L4.8,2.3 Z M6.5,12.1 L9.5,12.1 L9.5,13.2 L6.5,13.2 Z</StreamGeometry>
   <StreamGeometry x:Key="MiHammer">F1 M8.87,0.33 L15.67,7.13 L13.13,9.67 L6.33,2.87 Z M1.09,13.49 L9.49,5.09 L10.91,6.51 L2.51,14.91 Z</StreamGeometry>
   <StreamGeometry x:Key="MiStacked">F1 M1,1.5 L15,1.5 L15,14.5 L1,14.5 Z M2.3,13.2 L13.7,13.2 L13.7,2.8 L2.3,2.8 Z M2.3,7.35 L13.7,7.35 L13.7,8.65 L2.3,8.65 Z</StreamGeometry>
   <StreamGeometry x:Key="MiComments">F1 M2.5,1 L10.3,1 L13.5,4.2 L13.5,15 L2.5,15 Z M3.8,13.7 L12.2,13.7 L12.2,4.5 L10,4.5 L10,2.3 L3.8,2.3 Z M5,5.5 L11,5.5 L11,6.6 L5,6.6 Z M5,8 L11,8 L11,9.1 L5,9.1 Z M5,10.5 L9,10.5 L9,11.6 L5,11.6 Z</StreamGeometry>

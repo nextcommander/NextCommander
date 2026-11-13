@@ -11,6 +11,7 @@ using NextCommander.Core.Formatting;
 using NextCommander.Core.Matching;
 using NextCommander.Core.Vfs;
 using NextCommander.Platform;
+using NextCommander.Platform.Mtp;
 using Serilog;
 
 namespace NextCommander.App.ViewModels;
@@ -700,6 +701,13 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         SyncDriveSelection();
     }
 
+    /// <summary>Takes a drive list read by another tab of the same side (drives plugged in or removed).</summary>
+    public void SetDrives(IReadOnlyList<DriveItem> drives)
+    {
+        Drives = drives;
+        SyncDriveSelection();
+    }
+
     /// <summary>Last folder used on each drive (drive root → folder), for changing back to a drive.</summary>
     private readonly Dictionary<string, string> _lastFolderOnDrive = new(StringComparer.OrdinalIgnoreCase);
 
@@ -744,6 +752,10 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         if (CurrentPath?.LocalAnchor is { } here && SelectedDrive is { } current && !current.IsSpecial)
         {
             _lastFolderOnDrive[current.RootPath] = here.Path;
+        }
+        if (drive.RootPath.Contains("://", StringComparison.Ordinal))
+        {
+            return NavigateAsync(VfsPath.Parse(drive.RootPath)); // a phone or camera over MTP
         }
         // Configuration > Operation: the drive's root, or the folder last used there
         var target = !_settings.DriveChangeGoesToRoot && _lastFolderOnDrive.TryGetValue(drive.RootPath, out var last) && Directory.Exists(last)
@@ -792,7 +804,7 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         // a drive opened in the Computer view: its root
         if (ComputerFileSystemProvider.LocalRootOf(path) is { } driveRoot)
         {
-            path = VfsPath.Local(driveRoot);
+            path = driveRoot.Contains("://", StringComparison.Ordinal) ? VfsPath.Parse(driveRoot) : VfsPath.Local(driveRoot); // a phone: mtp://name/
         }
         // a share or a service of a network machine: the connection itself
         if (NetworkFileSystemProvider.TargetOf(path) is { } target)
@@ -2095,6 +2107,12 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         if (CurrentPath?.Scheme == NetworkFileSystemProvider.NetworkScheme)
         {
             SelectedDrive = DriveItem.SpecialEntries[2];
+            return;
+        }
+        if (CurrentPath?.Scheme == MtpFileSystemProvider.MtpScheme)
+        {
+            var device = MtpFileSystemProvider.DeviceRoot(CurrentPath.Authority).ToString();
+            SelectedDrive = Drives.FirstOrDefault(d => string.Equals(d.RootPath, device, StringComparison.OrdinalIgnoreCase));
             return;
         }
         if (CurrentPath?.LocalAnchor is not { } path || Drives.Count == 0)

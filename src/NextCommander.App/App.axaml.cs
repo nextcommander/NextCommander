@@ -170,6 +170,7 @@ public partial class App : Application
             }, s_listen.Token));
         }
         await vm.InitializeAsync();
+        vm.StartDriveWatch();
         if (args.Length > 0)
         {
             await vm.HandleArgumentsAsync(args);
@@ -305,6 +306,8 @@ public partial class App : Application
         services.AddSingleton<IFileSystemProvider, LocalFileSystemProvider>();
         services.AddSingleton<IFileSystemProvider>(sp => new ComputerFileSystemProvider(sp.GetRequiredService<IPlatformService>()));
         services.AddSingleton<IFileSystemProvider>(sp => new NetworkFileSystemProvider(sp.GetRequiredService<IPlatformService>(), () => settings.ShowAdminShares));
+        services.AddSingleton(sp => new NextCommander.Platform.Mtp.MtpFileSystemProvider(sp.GetRequiredService<IPlatformService>().PortableDevices));
+        services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Platform.Mtp.MtpFileSystemProvider>());
         services.AddSingleton(_ => new SecretStore(store.Directory));
         services.AddSingleton<RemoteSession>();
         services.AddSingleton(sp => new NextCommander.Vfs.Remote.SftpFileSystemProvider(sp.GetRequiredService<RemoteSession>().Hooks));

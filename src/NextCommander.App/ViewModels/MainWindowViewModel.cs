@@ -626,8 +626,70 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     private async void OnPanelError(object? sender, string message) =>
         await _dialogs.ShowMessageAsync("Error", message);
 
+    private IDisposable? _driveWatch;
+
+    /// <summary>Starts watching for drives plugged in or removed (USB disks, memory cards, phones as disks, network drives).</summary>
+    public void StartDriveWatch() =>
+        _driveWatch ??= _platform.WatchDrives(() =>
+        {
+            _ = _platform.PortableDevices.GetDevices(); // read the phones here, on the worker thread, not in the UI thread's drive refresh
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => _ = OnDrivesChangedAsync());
+        });
+
+    /// <summary>
+    /// Drives appeared or disappeared: every tab gets the new drive list (drive box, drive buttons); a tab left in a
+    /// folder that is gone with its drive goes to the nearest folder still there, or the home folder.
+    /// </summary>
+    internal async Task OnDrivesChangedAsync()
+    {
+        Log.Information("Drives changed, refreshing the drive lists");
+        foreach (var side in new[] { LeftSide, RightSide })
+        {
+            side.ActiveTab.RefreshDrives();
+            var drives = side.ActiveTab.Drives;
+            foreach (var tab in side.Tabs)
+            {
+                if (tab != side.ActiveTab)
+                {
+                    tab.SetDrives(drives);
+                }
+            }
+        }
+        var mtp = _registry.Providers.OfType<NextCommander.Platform.Mtp.MtpFileSystemProvider>().FirstOrDefault();
+        mtp?.CloseDisconnected();
+        var phones = LeftSide.ActiveTab.Drives.Where(d => d.Kind == DriveKind.Phone).Select(d => d.RootPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var tab in LeftSide.Tabs.Concat(RightSide.Tabs).ToList())
+        {
+            if (tab.CurrentPath is { IsLocal: true } path
+                && await Task.Run(() => ExistingFolderAbove(path.Path)) is { } target && target != path.Path)
+            {
+                await tab.NavigateAsync(VfsPath.Local(target), recordHistory: false);
+            }
+            else if (tab.CurrentPath is { Scheme: NextCommander.Platform.Mtp.MtpFileSystemProvider.MtpScheme } device && device.Authority.Length > 0
+                && !phones.Contains(NextCommander.Platform.Mtp.MtpFileSystemProvider.DeviceRoot(device.Authority).ToString()))
+            {
+                await tab.NavigateAsync(VfsPath.Local(_platform.HomeDirectory), recordHistory: false); // the phone was unplugged
+            }
+        }
+    }
+
+    /// <summary>The folder itself when it exists, else its nearest existing parent, else the home folder.</summary>
+    private string ExistingFolderAbove(string path)
+    {
+        for (var p = path; !string.IsNullOrEmpty(p); p = Path.GetDirectoryName(p))
+        {
+            if (Directory.Exists(p))
+            {
+                return p;
+            }
+        }
+        return _platform.HomeDirectory;
+    }
+
     public void Dispose()
     {
+        _driveWatch?.Dispose();
+        _driveWatch = null;
         LeftSide.Dispose();
         RightSide.Dispose();
     }

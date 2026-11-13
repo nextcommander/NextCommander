@@ -15,7 +15,13 @@ From top to bottom:
 - **Button bar:** one-click buttons for common commands. Right click it to add, change or remove buttons,
   or use *Configuration > Button bar...*. A second, vertical button bar sits between the two panels.
 - **Drive buttons:** one button per drive. At the right end there are shortcuts to your home folder,
-  Documents and Downloads (Desktop can be turned on in *Configuration > Options > Layout*).
+  Documents and Downloads (Desktop can be turned on in *Configuration > Options > Layout*). When you plug in or
+  remove a USB disk, a memory card or a phone, the drives update by themselves within a second or two;
+  a panel showing a removed drive moves to the nearest folder that still exists (on Windows, your home folder).
+- **Phones and cameras:** a phone connected over USB in "File transfer" mode (MTP) gets a drive button with a phone
+  icon. Its first level is the phone's storages (internal storage, SD card); copy, move, new folder, rename and
+  delete work as on a disk. Unlock the phone and allow file transfer when it asks. On Linux the phone appears when the
+  desktop (GNOME) has mounted it.
 - **Drive box:** the current drive with its label and free space, plus the `\` (root) and `..` (parent folder)
   buttons. Alt+F1 and Alt+F2 open the drive list of the left and right panel.
 - **Folder tabs:** each panel can have several tabs. The `+` button opens a new one.

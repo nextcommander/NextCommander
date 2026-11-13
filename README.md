@@ -45,6 +45,8 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
   Google Drive, OneDrive and Dropbox, all in the same panels as local files.
 - A connection manager, saved passwords protected by an optional master password, and a view of the
   machines on your local network.
+- Phones, cameras and players connected over USB (MTP) appear as drives: copy photos off a phone, put files on it,
+  make folders, rename and delete (Windows; on Linux the folders GNOME mounts for them).
 
 ### Customization
 - Color themes: follow the system's light/dark mode, a Dark theme, macOS and Ubuntu looks, or your own.

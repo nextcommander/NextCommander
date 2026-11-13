@@ -67,8 +67,28 @@ internal sealed partial class WindowsPlatformService : PlatformServiceBase, IPla
         return result == 0 && op.fAnyOperationsAborted == 0;
     }, cancellationToken);
 
-    public override IReadOnlyList<DriveItem> GetDrives() =>
-        DriveInfo.GetDrives().Select(d => ToDriveItem(d, d.Name.TrimEnd('\\'))).ToList();
+    private readonly Wpd.WpdDeviceSource _portableDevices = new();
+
+    public override NextCommander.Platform.Mtp.IMtpDeviceSource PortableDevices => _portableDevices;
+
+    /// <summary>The drive letters, then the phones / cameras connected over MTP (<c>mtp://name/</c>).</summary>
+    public override IReadOnlyList<DriveItem> GetDrives()
+    {
+        var drives = DriveInfo.GetDrives().Select(d => ToDriveItem(d, d.Name.TrimEnd('\\'))).ToList();
+        foreach (var device in _portableDevices.GetDevices())
+        {
+            drives.Add(new DriveItem(device.Name, Mtp.MtpFileSystemProvider.DeviceRoot(device.Name).ToString(), null, 0, 0, DriveKind.Phone, true));
+        }
+        return drives;
+    }
+
+    /// <summary>
+    /// The drive letters, and for removable drives whether media is in (a memory card in a card reader keeps its letter);
+    /// the portable devices present. Floppy letters are not asked: that would make the drive seek every second.
+    /// </summary>
+    protected override string DriveSignature() => string.Join('|', DriveInfo.GetDrives().Select(d =>
+        d.DriveType == DriveType.Removable && !d.Name.StartsWith('A') && !d.Name.StartsWith('B') && d.IsReady ? d.Name + "+" : d.Name))
+        + "\n" + Wpd.WpdDeviceSource.Signature();
 
     public override void OpenWithDefaultApp(string path)
     {
