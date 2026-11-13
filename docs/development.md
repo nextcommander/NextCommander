@@ -11,7 +11,7 @@ Other project documents:
 
 - [docs/history-and-decisions.md](history-and-decisions.md): history, decisions, lessons.
 - [docs/remaining-work.md](remaining-work.md): what is not done yet.
-- [docs/screenshots/](screenshots/): screenshots of the application.
+- [docs/screenshots/](screenshots/): screenshots of the application (1920x1080), made by `tests/NextCommander.App.Tests/DocScreenshots.cs`: `FM_DOC_SCREENSHOTS=<folder> dotnet test tests/NextCommander.App.Tests --filter DocScreenshots` (Windows).
 
 ## Requirements
 
