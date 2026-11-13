@@ -436,12 +436,16 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         UpdateColumnSet();
     }
 
+    /// <summary>A view mode the application brings for a kind of folder (automatic mode, when no view mode of the user matches): the trash's original location.</summary>
+    private static Core.Columns.ColumnSet? BuiltInColumnSet(VfsPath path) =>
+        path.Scheme == NextCommander.Platform.Trash.TrashFileSystemProvider.TrashScheme && path.Path == "/" ? NextCommander.Platform.Trash.TrashColumns.ViewMode : null;
+
     /// <summary>Applies the chosen or (automatic mode) path-matching column set.</summary>
     public void UpdateColumnSet()
     {
         var name = _panelSettings.ColumnSet;
         var set = name is null
-            ? (CurrentPath is { } p ? _settings.ColumnSets.FirstOrDefault(s => s.MatchesPath(p)) : null)
+            ? (CurrentPath is { } p ? _settings.ColumnSets.FirstOrDefault(s => s.MatchesPath(p)) ?? BuiltInColumnSet(p) : null)
             : _settings.ColumnSets.FirstOrDefault(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase));
         if (set?.Columns.Count == 0)
         {
@@ -2082,6 +2086,11 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
 
     private void UpdateFreeSpace()
     {
+        if (CurrentPath is { IsLocal: false } remote && remote.LocalAnchor is null && SpaceProviderOf(remote) is { } spaces)
+        {
+            _ = ShowVolumeSpaceAsync(spaces, remote); // a phone's storage ...: asked on a worker thread
+            return;
+        }
         if (CurrentPath?.LocalAnchor is not { } path)
         {
             FreeSpaceText = string.Empty;
@@ -2112,6 +2121,39 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         {
             FreeSpaceText = string.Empty;
         }
+    }
+
+    private IVolumeSpaceProvider? SpaceProviderOf(VfsPath path)
+    {
+        try
+        {
+            return _registry.Resolve(path) as IVolumeSpaceProvider;
+        }
+        catch (NotSupportedException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>The footer's free space of a volume that is not a local drive ("[Internal storage] 12 G of 128 G free").</summary>
+    private async Task ShowVolumeSpaceAsync(IVolumeSpaceProvider spaces, VfsPath path)
+    {
+        VolumeSpace? space;
+        try
+        {
+            space = await spaces.GetSpaceAsync(path, CancellationToken.None);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            space = null;
+        }
+        if (CurrentPath != path)
+        {
+            return; // navigated meanwhile
+        }
+        FreeSpaceText = space is null ? string.Empty
+            : string.Format(CultureInfo.CurrentCulture, "[{0}] {1} of {2} free", string.IsNullOrEmpty(space.Label) ? "_none_" : space.Label,
+                FooterSize(space.Free), FooterSize(space.Total));
     }
 
     private void SyncDriveSelection()
@@ -2211,6 +2253,10 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
                 .Any(m => WildcardMatcher.ToRegex(m).IsMatch(path.ToDisplayString())))
         {
             return false;
+        }
+        if (path.Scheme == MtpFileSystemProvider.MtpScheme && !_settings.AutoRefreshRemovableDrives)
+        {
+            return false; // a phone is a removable drive: its folders are read again every few seconds
         }
         if (path.IsLocal && (!_settings.AutoRefreshNetworkDrives || !_settings.AutoRefreshRemovableDrives))
         {

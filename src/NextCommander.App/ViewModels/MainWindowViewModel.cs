@@ -84,7 +84,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         ColumnValues = new ColumnValueService(new NextCommander.Core.Columns.ColumnRegistry(
         [
             new NextCommander.Core.Columns.FileInfoColumns(), new NextCommander.Core.Columns.TextColumns(), new NextCommander.Core.Columns.CommentColumns(),
-            new NextCommander.Columns.ImageColumns(), new NextCommander.Columns.MediaColumns(),
+            new NextCommander.Columns.ImageColumns(), new NextCommander.Columns.MediaColumns(), new NextCommander.Platform.Trash.TrashColumns(),
         ]), registry);
 
         thumbnails ??= new ThumbnailService(registry, cacheDirectory: null);

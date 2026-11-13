@@ -57,13 +57,26 @@ internal sealed unsafe class WpdDevice : IMtpDevice
 
     public IReadOnlyList<MtpObject> ListChildren(string parentId)
     {
+        var result = new List<MtpObject>();
+        foreach (var id in ChildIds(parentId))
+        {
+            if (Describe(id) is { } item)
+            {
+                result.Add(item);
+            }
+        }
+        return result;
+    }
+
+    public IReadOnlyList<string> ChildIds(string parentId)
+    {
         WpdNative.EnsureMta();
         IEnumPortableDeviceObjectIDs ids;
         fixed (char* parent = parentId)
         {
             WpdNative.Check(_content.EnumObjects(0, parent, IntPtr.Zero, out ids));
         }
-        var result = new List<MtpObject>();
+        var result = new List<string>();
         var batch = stackalloc IntPtr[64];
         while (true)
         {
@@ -72,11 +85,7 @@ internal sealed unsafe class WpdDevice : IMtpDevice
             WpdNative.Check(hr);
             for (var i = 0; i < fetched; i++)
             {
-                var id = WpdNative.TakeString(batch[i]);
-                if (Describe(id) is { } item)
-                {
-                    result.Add(item);
-                }
+                result.Add(WpdNative.TakeString(batch[i]));
             }
             if (hr == WpdNative.SFalse || fetched == 0)
             {
@@ -84,6 +93,30 @@ internal sealed unsafe class WpdDevice : IMtpDevice
             }
         }
         return result;
+    }
+
+    public (long Total, long Free)? StorageSpace(string storageId)
+    {
+        WpdNative.EnsureMta();
+        var keys = WpdNative.Create<IPortableDeviceKeyCollection>(WpdNative.ClsidPortableDeviceKeyCollection);
+        var capacityKey = WpdNative.StorageCapacity;
+        var freeKey = WpdNative.StorageFreeSpace;
+        keys.Add(&capacityKey);
+        keys.Add(&freeKey);
+        IPortableDeviceValues values;
+        fixed (char* id = storageId)
+        {
+            if (_properties.GetValues(id, keys, out values) < 0)
+            {
+                return null;
+            }
+        }
+        ulong capacity = 0, free = 0;
+        if (values.GetUnsignedLargeIntegerValue(&capacityKey, &capacity) < 0 || values.GetUnsignedLargeIntegerValue(&freeKey, &free) < 0 || capacity == 0)
+        {
+            return null;
+        }
+        return ((long)Math.Min(capacity, long.MaxValue), (long)Math.Min(free, long.MaxValue));
     }
 
     private MtpObject? Describe(string objectId)

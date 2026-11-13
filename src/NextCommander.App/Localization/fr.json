@@ -2206,6 +2206,7 @@
   "SystemNames.CommandPrompt": "Invite de commandes",
   "TerminalView.MaximizeTheTerminalDoubleClick": "Agrandir le terminal (double-clic sur le titre)",
   "TerminalView.RestoreTheTerminalSizeDouble": "Restaurer la taille du terminal (double-clic sur le titre)",
+  "TrashColumns.OriginalLocation": "Emplacement d'origine",
   "TrashFileSystemProvider.ItemsInsideADeletedFolder": "Les éléments d'un dossier supprimé ne sont supprimés qu'avec le dossier.",
   "TrashFileSystemProvider.NothingCanBePutInto": "Rien ne peut être placé dans la corbeille ni y être modifié : copiez les éléments, restaurez-les ou supprimez-les définitivement.",
   "TrashFileSystemProvider.NotInTheTrash": "Pas dans la corbeille : {0}",
