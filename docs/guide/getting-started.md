@@ -36,8 +36,8 @@ From top to bottom:
 - **Trash / Recycle Bin:** the trash button at the end of the drive bar (it can be hidden in *Configuration > Options >
   Layout*), the `×` entry of the drive box and the end of the Computer view show the
   deleted files in the panel, under their original names with the deletion date. Copy them out (F5), move them
-  somewhere (F6), put them back where they were (*Files > Trash > Restore from the trash*, or the right-click menu),
-  delete them for good (F8) or empty the trash. On macOS items cannot be put back (Finder keeps their places to
+  somewhere (F6), put them back where they were (*Restore from the trash* in the right-click menu), delete them for
+  good (F8) or empty the trash (the right-click menu, or the trash button's). On macOS items cannot be put back (Finder keeps their places to
   itself), and reading the Trash needs Full Disk Access.
 - **Folder tabs:** each panel can have several tabs. The `+` button opens a new one.
 - **Path line:** the current folder. Click a part of the path to go there, click the small arrow between
