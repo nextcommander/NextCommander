@@ -127,10 +127,11 @@ switch -Wildcard ($Rid) {
             Write-Host "makeappx.exe not found (Windows SDK): skipping MSIX."
         }
 
-        # Setup program (Inno Setup): ISCC.exe of an installed Inno Setup 6, otherwise from the NuGet package
-        # Tools.InnoSetup (downloaded once into artifacts/tools; no installation)
-        $innoVersion = '6.7.1'
-        $iscc = @("${env:ProgramFiles(x86)}/Inno Setup 6/ISCC.exe", "$env:ProgramFiles/Inno Setup 6/ISCC.exe", "$env:LOCALAPPDATA/Programs/Inno Setup 6/ISCC.exe") |
+        # Setup program (Inno Setup 7): ISCC.exe of an installed Inno Setup 7 (64-bit edition first), otherwise from the
+        # NuGet package Tools.InnoSetup (downloaded once into artifacts/tools; no installation). Inno Setup 6 cannot
+        # compile the script (SetupArchitecture, WizardStyle "dynamic").
+        $innoVersion = '7.1.0'
+        $iscc = @("$env:ProgramFiles/Inno Setup 7/ISCC.exe", "${env:ProgramFiles(x86)}/Inno Setup 7/ISCC.exe", "$env:LOCALAPPDATA/Programs/Inno Setup 7/ISCC.exe") |
             Where-Object { Test-Path $_ } | Select-Object -First 1
         if (-not $iscc) {
             $innoTools = Join-Path $root "artifacts/tools/innosetup-$innoVersion"
@@ -153,8 +154,12 @@ switch -Wildcard ($Rid) {
         }
         if ($iscc) {
             $setupArch = if ($Rid -eq 'win-arm64') { 'arm64' } else { 'x64' }
-            & $iscc /Q "/DAppVersion=$version" "/DSourceDir=$out" "/DOutputDir=$dist" "/DOutputName=$name-setup" "/DArch=$setupArch" `
-                "/DIconFile=$root/src/NextCommander.App/Assets/NextCommander.ico" "$PSScriptRoot/windows/NextCommander.iss"
+            # Inno Setup 7 writes its warnings to stderr: Windows PowerShell 5.1 must not take them as a failure
+            $previous = $ErrorActionPreference
+            $ErrorActionPreference = 'Continue'
+            & $iscc -q "-DAppVersion=$version" "-DSourceDir=$out" "-DOutputDir=$dist" "-DOutputName=$name-setup" "-DArch=$setupArch" `
+                "-DIconFile=$root/src/NextCommander.App/Assets/NextCommander.ico" "$PSScriptRoot/windows/NextCommander.iss"
+            $ErrorActionPreference = $previous
             if ($LASTEXITCODE -ne 0) { throw "ISCC failed" }
             # signed with the same certificate as the MSIX, when there is one
             $publisher = if ($env:MSIX_PUBLISHER) { $env:MSIX_PUBLISHER } else { 'CN=NextCommander' }
