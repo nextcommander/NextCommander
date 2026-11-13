@@ -51,13 +51,39 @@ public sealed class TerminalSession : IDisposable
     }
 
     /// <summary>A shell the internal terminal can start.</summary>
-    /// <param name="Name">Shown name ("cmd", "PowerShell 7", "Git Bash" ...).</param>
+    /// <param name="Name">Shown name ("Command Prompt", "PowerShell 7", "Git Bash" ...).</param>
     /// <param name="Echoes">The shell writes its prompt and the command it reads (cmd); otherwise the terminal shows them.</param>
     /// <param name="Prompt">Prompt shown by the terminal for shells that do not echo ("PS> ", "$ ").</param>
     /// <param name="TerminalArguments">Arguments when the shell runs on a pseudo terminal (interactive, with its own prompt).</param>
-    public sealed record ShellInfo(string Name, string FileName, string Arguments, bool Echoes, string Prompt, string TerminalArguments = "");
+    public sealed record ShellInfo(string Name, string FileName, string Arguments, bool Echoes, string Prompt, string TerminalArguments = "")
+    {
+        /// <summary>The Windows Command Prompt (cmd.exe): "cd /d", "cls".</summary>
+        public bool IsCommandPrompt => IsCommandPromptFile(FileName);
+    }
 
-    private static ShellInfo Cmd(string file) => new("cmd", file, "/K \"@chcp 65001>nul\"", true, string.Empty);
+    /// <summary>The name of cmd.exe in the terminal (tabs, shell list) as Windows calls it.</summary>
+    public const string CommandPromptName = "Command Prompt";
+
+    private static bool IsCommandPromptFile(string file) =>
+        string.Equals(Path.GetFileNameWithoutExtension(file), "cmd", StringComparison.OrdinalIgnoreCase);
+
+    private static ShellInfo Cmd(string file) => new(CommandPromptName, file, "/K \"@chcp 65001>nul\"", true, string.Empty);
+
+    /// <summary>
+    /// The installed shell of a name kept in the settings ("Command Prompt", "PowerShell 7" ...; "cmd" of earlier
+    /// versions is the Command Prompt); null when it is not installed.
+    /// </summary>
+    public static ShellInfo? FindShell(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return null;
+        }
+        var wanted = name.Trim();
+        var cmd = IsCommandPromptFile(wanted);
+        return AvailableShells().FirstOrDefault(s => string.Equals(s.Name, wanted, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(s.FileName, wanted, StringComparison.OrdinalIgnoreCase) || (cmd && s.IsCommandPrompt));
+    }
 
     private static ShellInfo PowerShell(string name, string file) => new(name, file, "-NoLogo -NoProfile -NoExit -Command -", false, "PS> ", "-NoLogo");
 
@@ -70,8 +96,7 @@ public sealed class TerminalSession : IDisposable
         if (!string.IsNullOrWhiteSpace(shell))
         {
             var wanted = shell.Trim();
-            if (AvailableShells().FirstOrDefault(s => string.Equals(s.Name, wanted, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(s.FileName, wanted, StringComparison.OrdinalIgnoreCase)) is { } known)
+            if (FindShell(wanted) is { } known)
             {
                 return known;
             }
@@ -243,13 +268,13 @@ public sealed class TerminalSession : IDisposable
     }
 
     /// <summary>The command that changes the shell's directory (switch drive too on Windows).</summary>
-    public string ChangeDirectoryCommand(string directory) => ChangeDirectoryCommand(ShellName, Prompt, directory);
+    public string ChangeDirectoryCommand(string directory) => ChangeDirectoryCommand(ShellName, Prompt, directory, ShellName == CommandPromptName);
 
     /// <summary>The command that changes the directory of a shell.</summary>
-    public static string ChangeDirectoryCommand(ShellInfo shell, string directory) => ChangeDirectoryCommand(shell.Name, shell.Prompt, directory);
+    public static string ChangeDirectoryCommand(ShellInfo shell, string directory) => ChangeDirectoryCommand(shell.Name, shell.Prompt, directory, shell.IsCommandPrompt);
 
-    private static string ChangeDirectoryCommand(string shellName, string prompt, string directory) =>
-        shellName.StartsWith("cmd", StringComparison.OrdinalIgnoreCase) ? $"cd /d \"{directory}\""
+    private static string ChangeDirectoryCommand(string shellName, string prompt, string directory, bool commandPrompt) =>
+        commandPrompt ? $"cd /d \"{directory}\""
         : prompt == "PS> " ? $"Set-Location -LiteralPath '{directory.Replace("'", "''", StringComparison.Ordinal)}'"
         : $"cd \"{UnixPath(shellName, directory).Replace("\"", "\\\"", StringComparison.Ordinal)}\"";
 

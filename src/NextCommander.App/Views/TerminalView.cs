@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 using NextCommander.App.Services;
 
 namespace NextCommander.App.Views;
@@ -22,6 +23,7 @@ public sealed class TerminalView : DockPanel
     private TerminalTab? _active;
     private double? _resizeStartY;
     private double _resizeHeight;
+    private readonly Button _maximize;
 
     /// <summary>Height as a part of the window: kept when the window is resized.</summary>
     private double _ratio = 0.45;
@@ -34,7 +36,7 @@ public sealed class TerminalView : DockPanel
         var grip = new Border { Height = 5, Background = Brushes.Transparent, Cursor = new Cursor(StandardCursorType.SizeNorthSouth) };
         grip.PointerPressed += (_, e) =>
         {
-            if (TopLevel.GetTopLevel(this) is not { } top)
+            if (IsMaximized || TopLevel.GetTopLevel(this) is not { } top)
             {
                 return;
             }
@@ -65,6 +67,9 @@ public sealed class TerminalView : DockPanel
         buttons.Children.Add(HeaderButton("Panel folder", "Go to the folder of the active panel in the terminal", () => _active?.GoToPanelFolder()));
         buttons.Children.Add(HeaderButton("Clear", "Clear the output (Ctrl+L)", () => _active?.Clear()));
         buttons.Children.Add(HeaderButton("Stop", "Stop the running program and restart the shell (Ctrl+C)", () => _active?.Restart()));
+        _maximize = HeaderButton("□", "Maximize the terminal (double click on the title)", () => MaximizeToggleRequested?.Invoke(this, EventArgs.Empty));
+        _maximize.Tag = "maximize";
+        buttons.Children.Add(_maximize);
         buttons.Children.Add(HeaderButton("✕", "Close the terminal (ends every shell)", () => CloseRequested?.Invoke(this, EventArgs.Empty)));
         SetDock(buttons, Dock.Right);
         header.Children.Add(buttons);
@@ -77,6 +82,16 @@ public sealed class TerminalView : DockPanel
         left.Children.Add(add);
         left.Children.Add(choose);
         header.Children.Add(left);
+        // a double click on the title bar maximizes or restores, like a window
+        header.DoubleTapped += (_, e) =>
+        {
+            if (e.Source is not Button && (e.Source as Visual)?.FindAncestorOfType<Button>() is null)
+            {
+                MaximizeToggleRequested?.Invoke(this, EventArgs.Empty);
+                e.Handled = true;
+            }
+        };
+        header.Background = Brushes.Transparent;
         SetDock(header, Dock.Top);
         Children.Add(header);
         Children.Add(_host);
@@ -85,6 +100,31 @@ public sealed class TerminalView : DockPanel
 
     /// <summary>The close button was pressed or the last tab was closed.</summary>
     public event EventHandler? CloseRequested;
+
+    /// <summary>The maximize / restore button was pressed or the title bar double clicked.</summary>
+    public event EventHandler? MaximizeToggleRequested;
+
+    /// <summary>The terminal takes the place of the panels (<see cref="SetMaximized"/>).</summary>
+    public bool IsMaximized { get; private set; }
+
+    /// <summary>
+    /// Maximized: the terminal is <paramref name="height"/> high (from the top of the panels to the bottom), its top edge
+    /// cannot be dragged; null restores the height as a part of the window.
+    /// </summary>
+    public void SetMaximized(double? height, double windowHeight = 0)
+    {
+        IsMaximized = height is not null;
+        if (height is { } h)
+        {
+            Height = Math.Max(MinHeight, h);
+        }
+        else
+        {
+            FitWindow(windowHeight);
+        }
+        _maximize.Content = IsMaximized ? "❐" : "□";
+        ToolTip.SetTip(_maximize, IsMaximized ? "Restore the terminal size (double click on the title)" : "Maximize the terminal (double click on the title)");
+    }
 
     /// <summary>The height was changed by dragging (<see cref="HeightRatio"/>).</summary>
     public event EventHandler? HeightRatioChanged;
@@ -162,7 +202,7 @@ public sealed class TerminalView : DockPanel
     /// <summary>The window changed its size: the terminal keeps its part of the window.</summary>
     public void FitWindow(double windowHeight)
     {
-        if (windowHeight > 0)
+        if (windowHeight > 0 && !IsMaximized)
         {
             Height = Math.Clamp(windowHeight * _ratio, MinHeight, Math.Max(MinHeight, windowHeight * 0.85));
         }
@@ -174,7 +214,7 @@ public sealed class TerminalView : DockPanel
         if (_active is null)
         {
             // the tabs of the last session, else one with the default shell
-            var shells = (RestoreTabs ?? []).Select(name => TerminalSession.AvailableShells().FirstOrDefault(s => s.Name == name))
+            var shells = (RestoreTabs ?? []).Select(name => TerminalSession.FindShell(name))
                 .OfType<TerminalSession.ShellInfo>().ToList();
             RestoreTabs = null;
             if (shells.Count == 0)

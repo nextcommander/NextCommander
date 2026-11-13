@@ -2162,5 +2162,8 @@
   "MainWindow.Reset": "Reset",
   "Command.nc_ResetButtonBar": "Reset button bar to the default buttons",
   "Command.nc_ResetVertButtonBar": "Reset vertical button bar to the default buttons",
-  "AboutDialog.OpenTheProjectPageIn": "Open the project page in the browser"
+  "AboutDialog.OpenTheProjectPageIn": "Open the project page in the browser",
+  "Command.nc_MaximizeTerminal": "Maximize / restore the internal terminal",
+  "TerminalView.MaximizeTheTerminalDoubleClick": "Maximize the terminal (double click on the title)",
+  "TerminalView.RestoreTheTerminalSizeDouble": "Restore the terminal size (double click on the title)"
 }

@@ -2162,5 +2162,8 @@
   "MainWindow.Reset": "重置",
   "Command.nc_ResetButtonBar": "将工具栏重置为默认按钮",
   "Command.nc_ResetVertButtonBar": "将垂直工具栏重置为默认按钮",
-  "AboutDialog.OpenTheProjectPageIn": "在浏览器中打开项目页面"
+  "AboutDialog.OpenTheProjectPageIn": "在浏览器中打开项目页面",
+  "Command.nc_MaximizeTerminal": "最大化/还原内置终端",
+  "TerminalView.MaximizeTheTerminalDoubleClick": "最大化终端（双击标题）",
+  "TerminalView.RestoreTheTerminalSizeDouble": "还原终端大小（双击标题）"
 }

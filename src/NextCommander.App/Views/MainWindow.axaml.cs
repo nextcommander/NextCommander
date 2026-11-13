@@ -173,6 +173,7 @@ public partial class MainWindow : Window
         _vm.CommandLineFocusRequested += (_, _) => FocusCommandLine();
         _vm.CommandLineHistoryRequested += (_, _) => ShowCommandHistory();
         _vm.TerminalToggleRequested += (_, _) => ToggleTerminal();
+        _vm.TerminalMaximizeRequested += (_, _) => ToggleTerminalMaximized();
         _vm.EditPathRequested += (_, _) => ActiveView.BeginEditPath();
         _vm.QuickSearchRequested += (_, filter) => ActiveView.BeginQuickSearch(null, filter);
         _vm.ButtonBarFocusRequested += (_, _) => _topBar.FocusFirst();
@@ -1008,6 +1009,7 @@ public partial class MainWindow : Window
             // the height and the open tabs are kept in the settings
             _terminal.HeightRatioChanged += (_, _) => _vm.Settings.TerminalHeightRatio = Math.Round(_terminal.HeightRatio, 3);
             _terminal.TabsChanged += (_, _) => _vm.Settings.TerminalTabs = _terminal.Consoles.Select(c => c.Shell.Name).ToList();
+            _terminal.MaximizeToggleRequested += (_, _) => ToggleTerminalMaximized();
             _terminal.CloseRequested += (_, _) =>
             {
                 _terminal.Stop();
@@ -1018,7 +1020,12 @@ public partial class MainWindow : Window
             Closed += (_, _) => _terminal.Stop();
             SizeChanged += (_, e) =>
             {
-                if (TerminalHost.IsVisible)
+                if (TerminalHost.IsVisible && _terminal.IsMaximized)
+                {
+                    // the bars above and below keep their height: the terminal takes the whole change
+                    _terminal.SetMaximized(_terminal.Height + e.NewSize.Height - e.PreviousSize.Height);
+                }
+                else if (TerminalHost.IsVisible)
                 {
                     _terminal.FitWindow(e.NewSize.Height);
                 }
@@ -1041,8 +1048,49 @@ public partial class MainWindow : Window
         _terminal.Activate();
     }
 
+    /// <summary>
+    /// Maximizes the internal terminal (opening it first when it is closed): it starts where the panels start and the
+    /// panels are hidden; again: back to its own height and the panels.
+    /// </summary>
+    public void ToggleTerminalMaximized()
+    {
+        if (_vm is null)
+        {
+            return;
+        }
+        if (_terminal is null || !TerminalHost.IsVisible)
+        {
+            ToggleTerminal();
+        }
+        if (_terminal is null || !TerminalHost.IsVisible)
+        {
+            return;
+        }
+        if (_terminal.IsMaximized)
+        {
+            RestoreTerminalSize();
+            return;
+        }
+        // from the top of the panels to the bottom of the terminal (inside its frame line)
+        UpdateLayout();
+        var height = PanelsGrid.Bounds.Height + TerminalHost.Bounds.Height - TerminalHost.BorderThickness.Top;
+        PanelsGrid.IsVisible = false;
+        _terminal.SetMaximized(height);
+        _terminal.Activate();
+    }
+
+    private void RestoreTerminalSize()
+    {
+        if (_terminal is { IsMaximized: true })
+        {
+            PanelsGrid.IsVisible = true;
+            _terminal.SetMaximized(null, Bounds.Height);
+        }
+    }
+
     private void HideTerminal()
     {
+        RestoreTerminalSize();
         TerminalHost.IsVisible = false;
         if (_vm is not null)
         {

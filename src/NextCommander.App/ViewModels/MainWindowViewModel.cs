@@ -173,6 +173,9 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     /// <summary>nc_ToggleTerminal: show or hide the internal terminal.</summary>
     public event EventHandler? TerminalToggleRequested;
 
+    /// <summary>nc_MaximizeTerminal: maximize or restore the internal terminal.</summary>
+    public event EventHandler? TerminalMaximizeRequested;
+
     /// <summary>nc_ShowCmdLineHistory: open the list of the last command lines.</summary>
     public event EventHandler? CommandLineHistoryRequested;
 
@@ -1160,6 +1163,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         c.Register("nc_FocusCmdLine", "Focus command line", () => CommandLineFocusRequested?.Invoke(this, EventArgs.Empty));
         c.Register("nc_ShowCmdLineHistory", "Show command line history", () => CommandLineHistoryRequested?.Invoke(this, EventArgs.Empty));
         c.Register("nc_ToggleTerminal", "Show/hide the internal terminal", () => TerminalToggleRequested?.Invoke(this, EventArgs.Empty));
+        c.Register("nc_MaximizeTerminal", "Maximize / restore the internal terminal", () => TerminalMaximizeRequested?.Invoke(this, EventArgs.Empty));
         c.Register("nc_CopyNamesToClip", "Copy names to the clipboard", _ => CopyTextToClipboardAsync(ClipText.Names));
         c.Register("nc_CopyFullNamesToClip", "Copy full paths to clipboard", _ => CopyTextToClipboardAsync(ClipText.FullNames));
         c.Register("nc_CopyDetailsToClip", "Copy details to the clipboard", _ => CopyTextToClipboardAsync(ClipText.Details));
