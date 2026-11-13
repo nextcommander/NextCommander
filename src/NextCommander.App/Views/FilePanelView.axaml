@@ -74,7 +74,7 @@
               </StackPanel>
             </DataTemplate>
           </ComboBox.ItemTemplate>
-          <!-- The open list: two columns (letter / label) with Computer, Documents and Network below the drives -->
+          <!-- The open list: two columns (letter / label) with Computer, Network and the trash below the drives -->
           <ComboBox.Styles>
             <Style Selector="ComboBoxItem">
               <Setter Property="ContentTemplate">

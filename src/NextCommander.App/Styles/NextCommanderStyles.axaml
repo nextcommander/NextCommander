@@ -203,6 +203,17 @@
     <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
     <Setter Property="Background" Value="{DynamicResource FmPanelHeaderBrush}" />
   </Style>
+  <!-- the drive the panel is on (the active panel's on the shared bar): plainly marked, like the active path line
+       (after the raised style: the later of two equal styles wins) -->
+  <Style Selector="Button.drivebtn.current">
+    <Setter Property="Background" Value="{DynamicResource FmActivePathBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FmActiveAccentBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,2" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="ItemsControl.raised Button.drivebtn.current">
+    <Setter Property="BorderThickness" Value="1,1,1,2" />
+  </Style>
   <Style Selector="Button.drivebtn PathIcon.driveicon">
     <Setter Property="Width" Value="18" />
     <Setter Property="Height" Value="18" />

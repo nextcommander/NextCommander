@@ -54,6 +54,10 @@ public partial class MainWindow : Window
         ColorThemeMenu.SubmenuOpened += (_, _) => FillColorThemeMenu();
         SavedConnectionsMenu.SubmenuOpened += (_, _) => FillSavedConnectionsMenu();
         Activated += (_, _) => _ = _vm?.OnWindowActivatedAsync();
+        // the shared drive bar marks the active panel's drive
+        DriveBarMarks.Watch(SharedDriveBar);
+        LeftPanel.CurrentDriveChanged += (_, _) => MarkSharedDrive();
+        RightPanel.CurrentDriveChanged += (_, _) => MarkSharedDrive();
         foreach (var bar in new Control[] { SharedDriveBar, SharedShortcutBar })
         {
             bar.AddHandler(Button.ClickEvent, (_, e) =>
@@ -161,6 +165,8 @@ public partial class MainWindow : Window
     public ListerView? QuickView => _quickView;
 
     private FilePanelView ActiveView => _vm is not null && ReferenceEquals(_vm.ActiveSide, _vm.RightSide) ? RightPanel : LeftPanel;
+
+    private void MarkSharedDrive() => DriveBarMarks.Mark(SharedDriveBar, _vm?.ActivePanel.SelectedDrive);
 
     protected override void OnDataContextChanged(EventArgs e)
     {
@@ -454,6 +460,7 @@ public partial class MainWindow : Window
         switch (e.PropertyName)
         {
             case nameof(MainWindowViewModel.ActiveSide):
+                MarkSharedDrive();
                 if (!CommandLine.IsKeyboardFocusWithin)
                 {
                     ActiveView.FocusList();
