@@ -42,7 +42,15 @@ public partial class FilePanelView : UserControl
         ("Add to Hotlist", null, "nc_AddToHotlist"),
         ("Show in system file manager", "Ctrl+Shift+E", "nc_RevealInExplorer"),
         ("Open terminal here", "Ctrl+Alt+T", "nc_ExecuteTerminal"),
+        // shown only while the panel shows the trash
+        ("-", null, TrashOnly),
+        ("Restore from the trash", null, "nc_RestoreFromTrash"),
+        ("Empty the trash...", null, "nc_EmptyTrash"),
     ];
+
+    private const string TrashOnly = "trash";
+
+    private static bool IsTrashOnly(object? tag) => tag is TrashOnly or "nc_RestoreFromTrash" or "nc_EmptyTrash";
 
     private PanelViewModel? _vm;
 
@@ -119,6 +127,11 @@ public partial class FilePanelView : UserControl
                 FocusList();
             }
         });
+        foreach (var bar in new Control[] { DriveButtons, ShortcutButtons, DriveCombo })
+        {
+            // the drive box's open list lives in a popup: its events reach the box through the logical tree
+            bar.AddHandler(ContextRequestedEvent, OnDriveContextRequested, RoutingStrategies.Bubble, handledEventsToo: true);
+        }
         RootButton.Click += async (_, _) => await RunAsync("nc_GoToRoot");
         ParentButton.Click += async (_, _) => await RunAsync("nc_GoToParent");
 
@@ -265,7 +278,7 @@ public partial class FilePanelView : UserControl
         {
             if (header == "-")
             {
-                menu.Items.Add(new Separator());
+                menu.Items.Add(new Separator { Tag = command });
                 continue;
             }
             var item = new MenuItem { Header = header, Tag = command };
@@ -291,6 +304,14 @@ public partial class FilePanelView : UserControl
     {
         var selected = _vm?.GetSelectedEntries().Count > 0;
         var icons = _vm?.Settings.ShowMenuIcons != false;
+        var inTrash = _vm?.CurrentPath?.Scheme == Platform.Trash.TrashFileSystemProvider.TrashScheme;
+        foreach (var control in menu.Items.OfType<Control>())
+        {
+            if (IsTrashOnly(control.Tag))
+            {
+                control.IsVisible = inTrash;
+            }
+        }
         foreach (var item in menu.Items.OfType<MenuItem>())
         {
             item.IsEnabled = selected || item.Tag is not string command || !MainWindowViewModel.SelectionCommands.Contains(command.Split(' ', 2)[0]);
@@ -615,8 +636,11 @@ public partial class FilePanelView : UserControl
         var entries = vm.CursorItem is { IsParent: true } && !vm.Items.Any(i => i.IsMarked)
             ? []
             : vm.GetSelectedEntries();
+        // the drives of the Computer view are their roots ("C:\")
+        var natives = entries.Select(e => e.Path.IsLocal ? e.Path.Path
+            : Platform.ComputerFileSystemProvider.LocalRootOf(e.Path) is { } root && !root.Contains("://", StringComparison.Ordinal) ? root : null).ToList();
         IReadOnlyList<string> paths = entries.Count > 0
-            ? (entries.All(e => e.Path.IsLocal) ? [.. entries.Select(e => e.Path.Path)] : [])
+            ? (natives.All(n => n is not null) ? [.. natives!] : [])
             : vm.CurrentPath is { IsLocal: true } folder ? [folder.Path] : [];
         if (paths.Count == 0)
         {
@@ -626,7 +650,7 @@ public partial class FilePanelView : UserControl
         var screen = list.PointToScreen(point);
         var icons = vm.Settings.ShowMenuIcons ? Services.ShellMenuIcons.ForScale(TopLevel.GetTopLevel(this)?.RenderScaling ?? 1) : null;
         // the application's items at the top of Explorer's menu (the native menu is not translated by the text hook: done here)
-        IReadOnlyList<Platform.SystemMenuItem> extras = entries.Count > 0
+        IReadOnlyList<Platform.SystemMenuItem> extras = entries.Count > 0 && entries.All(e => e.Path.IsLocal)
             ? [new(Core.Localization.Localizer.T("Pack..."), "nc_PackFiles", () => _ = RunAsync("nc_PackFiles"))]
             : [];
         if (!vm.Platform.ShowSystemContextMenu(handle.Handle, paths, screen.X, screen.Y, extended: false, icons, extras))
@@ -635,6 +659,78 @@ public partial class FilePanelView : UserControl
         }
         Dispatcher.UIThread.Post(() => _ = vm.RefreshAsync(), DispatcherPriority.Background); // renamed, deleted, new ... by the shell
         return true;
+    }
+
+    /// <summary>Right click on a drive button or an entry of the drive box (open or closed): the drive's menu.</summary>
+    private void OnDriveContextRequested(object? sender, ContextRequestedEventArgs e)
+    {
+        if (e.Source is not Control { DataContext: Platform.DriveItem drive } source)
+        {
+            return;
+        }
+        e.Handled = true;
+        var at = e.TryGetPosition(source, out var point) ? point : new Point(source.Bounds.Width / 2, source.Bounds.Height / 2);
+        var screen = source.PointToScreen(at);
+        var fromDropDown = DriveCombo.IsDropDownOpen;
+        DriveCombo.IsDropDownOpen = false; // the menu replaces the list
+        ShowDriveMenu(fromDropDown || !source.IsAttachedToVisualTree() ? DriveCombo : source, drive, screen);
+    }
+
+    /// <summary>The path the system's menu of a drive box entry is made for (Windows shell names for Computer, Network, Recycle Bin, phones); null for none.</summary>
+    private static string? SystemMenuPath(Platform.DriveItem drive) => Services.Icons.DriveIconConverter.ShellName(drive);
+
+    /// <summary>
+    /// The menu of a drive at a screen point: the system's (Explorer's menu of the drive: open, format, eject, properties ...)
+    /// when the file list uses the system's menu too, otherwise the application's (open; empty for the trash).
+    /// </summary>
+    public void ShowDriveMenu(Control target, Platform.DriveItem drive, PixelPoint screen)
+    {
+        if (_vm is not { } vm)
+        {
+            return;
+        }
+        if (vm.Settings.SystemContextMenu && !CurrentModifiers.HasFlag(KeyModifiers.Shift) && SystemMenuPath(drive) is { } path
+            && TopLevel.GetTopLevel(this)?.TryGetPlatformHandle() is { HandleDescriptor: "HWND" } handle)
+        {
+            var icons = vm.Settings.ShowMenuIcons ? Services.ShellMenuIcons.ForScale(TopLevel.GetTopLevel(this)?.RenderScaling ?? 1) : null;
+            if (vm.Platform.ShowSystemContextMenu(handle.Handle, [path], screen.X, screen.Y, extended: false, icons))
+            {
+                // a label changed, a disk ejected or formatted, the Recycle Bin emptied ...
+                Dispatcher.UIThread.Post(() =>
+                {
+                    vm.RefreshDrives();
+                    _ = vm.RefreshAsync();
+                }, DispatcherPriority.Background);
+                return;
+            }
+        }
+        var menu = new ContextMenu();
+        void Add(string header, string command, Action run)
+        {
+            var item = new MenuItem { Header = header, Tag = command };
+            item.Click += (_, _) => run();
+            menu.Items.Add(item);
+        }
+        Add("Open", "nc_Open", () =>
+        {
+            Activated?.Invoke(this, EventArgs.Empty);
+            _ = vm.ChangeDriveAsync(drive);
+            FocusList();
+        });
+        if (drive.Kind == Platform.DriveKind.Trash)
+        {
+            Add("Empty the trash...", "nc_EmptyTrash", () => _ = RunAsync("nc_EmptyTrash"));
+        }
+        void SetIcons()
+        {
+            foreach (var item in menu.Items.OfType<MenuItem>())
+            {
+                item.Icon = vm.Settings.ShowMenuIcons && item.Tag is string command ? Services.MenuIcons.Create(command) : null;
+            }
+        }
+        menu.Opening += (_, _) => SetIcons();
+        menu.Opened += (_, _) => SetIcons();
+        menu.Open(target);
     }
 
     /// <summary>Opens the context menu at a point of the list: the system's when wanted, otherwise the application's.</summary>

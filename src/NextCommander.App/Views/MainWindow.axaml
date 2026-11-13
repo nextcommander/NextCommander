@@ -51,6 +51,10 @@
           <MenuItem Header="Create checksums (MD5/SHA)..." Command="{Binding RunCommandCommand}" CommandParameter="nc_CRCcreate" />
           <MenuItem Header="Verify checksums" Command="{Binding RunCommandCommand}" CommandParameter="nc_CRCcheck" />
         </MenuItem>
+        <MenuItem Header="Trash" Tag="nc_RestoreFromTrash">
+          <MenuItem Header="Restore from the trash" Command="{Binding RunCommandCommand}" CommandParameter="nc_RestoreFromTrash" />
+          <MenuItem Header="Empty the trash..." Command="{Binding RunCommandCommand}" CommandParameter="nc_EmptyTrash" />
+        </MenuItem>
         <Separator />
         <MenuItem Header="Exit" InputGesture="Alt+F4" Command="{Binding RunCommandCommand}" CommandParameter="nc_Exit" />
       </MenuItem>
@@ -309,8 +313,8 @@
                 </StackPanel>
               </ToolTip.Tip>
               <Panel>
-                <PathIcon Classes="driveicon" Data="{Binding Kind, Converter={x:Static icons:DriveIconConverter.Glyph}}" IsVisible="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Missing}}" />
-                <Image Classes="driveimage" Source="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Instance}}" />
+                <PathIcon Classes="driveicon" Data="{Binding Kind, Converter={x:Static icons:DriveIconConverter.Glyph}}" IsVisible="{Binding Converter={x:Static icons:DriveIconConverter.Missing}}" />
+                <Image Classes="driveimage" Source="{Binding Converter={x:Static icons:DriveIconConverter.Instance}}" />
               </Panel>
             </Button>
           </DataTemplate>
@@ -328,8 +332,8 @@
             <Button Classes="drivebtn" Classes.special="{Binding IsSpecial}" Tag="{Binding}" Focusable="False" ToolTip.Tip="{Binding ToolTipText}">
               <StackPanel Orientation="Horizontal" Spacing="3">
                 <Panel>
-                  <PathIcon Classes="driveicon" Data="{Binding Kind, Converter={x:Static icons:DriveIconConverter.Glyph}}" IsVisible="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Missing}}" />
-                  <Image Classes="driveimage" Source="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Instance}}" />
+                  <PathIcon Classes="driveicon" Data="{Binding Kind, Converter={x:Static icons:DriveIconConverter.Glyph}}" IsVisible="{Binding Converter={x:Static icons:DriveIconConverter.Missing}}" />
+                  <Image Classes="driveimage" Source="{Binding Converter={x:Static icons:DriveIconConverter.Instance}}" />
                 </Panel>
                 <TextBlock Text="{Binding ShortName}" Classes="noloc" VerticalAlignment="Center" IsVisible="{Binding !IsSpecial}" />
               </StackPanel>

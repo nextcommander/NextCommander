@@ -190,6 +190,45 @@ public sealed class WindowsShellIconService : IFileIconService, IDisposable
         }
     }
 
+    /// <summary>
+    /// Icon of a shell item by its parsing name: a virtual folder ("::{645FF040-...}" Recycle Bin, This PC, Network) or a
+    /// portable device below This PC; null when the shell does not know it.
+    /// </summary>
+    public static Bitmap? LoadParsingName(string name)
+    {
+        const uint shgfiPidl = 0x8;
+        if (SHParseDisplayName(name, IntPtr.Zero, out var pidl, 0, out _) != 0 || pidl == IntPtr.Zero)
+        {
+            return null;
+        }
+        try
+        {
+            var info = default(SHFILEINFO);
+            if (SHGetFileInfoPidl(pidl, 0, ref info, (uint)Marshal.SizeOf<SHFILEINFO>(), SHGFI_ICON | SHGFI_LARGEICON | shgfiPidl) == IntPtr.Zero
+                || info.hIcon == IntPtr.Zero)
+            {
+                return null;
+            }
+            try
+            {
+                return Render(info.hIcon);
+            }
+            finally
+            {
+                DestroyIcon(info.hIcon);
+            }
+        }
+        catch (Exception ex) when (ex is ExternalException or ArgumentException or InvalidOperationException)
+        {
+            Log.Debug(ex, "Icon load failed for {Name}", name);
+            return null;
+        }
+        finally
+        {
+            Marshal.FreeCoTaskMem(pidl);
+        }
+    }
+
     private static Bitmap? Load(string path, bool useAttributes, bool isDirectory)
     {
         var info = default(SHFILEINFO);
@@ -316,6 +355,12 @@ public sealed class WindowsShellIconService : IFileIconService, IDisposable
 #pragma warning disable SYSLIB1054 // classic marshalling (struct with strings) is intended
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr SHGetFileInfo(string pszPath, uint dwFileAttributes, ref SHFILEINFO psfi, uint cbFileInfo, uint uFlags);
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, EntryPoint = "SHGetFileInfoW")]
+    private static extern IntPtr SHGetFileInfoPidl(IntPtr pidl, uint dwFileAttributes, ref SHFILEINFO psfi, uint cbFileInfo, uint uFlags);
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern int SHParseDisplayName(string name, IntPtr bindContext, out IntPtr pidl, uint attributesIn, out uint attributesOut);
 
     [DllImport("user32.dll")]
     private static extern bool DestroyIcon(IntPtr hIcon);

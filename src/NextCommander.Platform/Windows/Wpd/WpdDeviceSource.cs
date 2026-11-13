@@ -18,6 +18,12 @@ internal sealed unsafe class WpdDeviceSource : IMtpDeviceSource
     /// <summary>The device interfaces present (cheap): changes when a device is plugged in or removed.</summary>
     public static string Signature() => WpdNative.DeviceInterfaceList();
 
+    /// <summary>How long a device list that misses devices is read again (a phone's interface comes before the phone can be listed).</summary>
+    private static readonly TimeSpan RetryFor = TimeSpan.FromSeconds(30);
+
+    private string? _pending;
+    private DateTime _pendingSince;
+
     public IReadOnlyList<MtpDeviceInfo> GetDevices()
     {
         var now = Signature();
@@ -29,19 +35,30 @@ internal sealed unsafe class WpdDeviceSource : IMtpDeviceSource
             }
         }
         IReadOnlyList<MtpDeviceInfo> devices;
+        var complete = true;
         try
         {
             devices = now.Length == 0 ? [] : OnWorker(Enumerate);
+            // every portable device interface (but the WPD side of disks) should be a device in the list
+            var expected = now.Split('|', StringSplitOptions.RemoveEmptyEntries).Count(i => !i.Contains("wpdbusenum", StringComparison.OrdinalIgnoreCase));
+            complete = devices.Count >= expected;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException
             or System.Runtime.InteropServices.COMException or AggregateException)
         {
             System.Diagnostics.Trace.TraceWarning("Portable devices could not be listed: " + ex.Message);
             devices = [];
+            complete = false;
         }
         lock (_lock)
         {
-            _signature = now;
+            if (_pending != now)
+            {
+                _pending = now;
+                _pendingSince = DateTime.UtcNow;
+            }
+            // a list that misses a device is not kept: it is read again on the next call (for a while)
+            _signature = complete || DateTime.UtcNow - _pendingSince > RetryFor ? now : null;
             _devices = devices;
         }
         return devices;

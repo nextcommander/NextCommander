@@ -28,8 +28,8 @@
                   </StackPanel>
                 </ToolTip.Tip>
                 <Panel>
-                  <PathIcon Classes="driveicon" Data="{Binding Kind, Converter={x:Static icons:DriveIconConverter.Glyph}}" IsVisible="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Missing}}" />
-                  <Image Classes="driveimage" Source="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Instance}}" />
+                  <PathIcon Classes="driveicon" Data="{Binding Kind, Converter={x:Static icons:DriveIconConverter.Glyph}}" IsVisible="{Binding Converter={x:Static icons:DriveIconConverter.Missing}}" />
+                  <Image Classes="driveimage" Source="{Binding Converter={x:Static icons:DriveIconConverter.Instance}}" />
                 </Panel>
               </Button>
             </DataTemplate>
@@ -47,8 +47,8 @@
               <Button Classes="drivebtn" Classes.special="{Binding IsSpecial}" Tag="{Binding}" Focusable="False" ToolTip.Tip="{Binding ToolTipText}">
                 <StackPanel Orientation="Horizontal" Spacing="3">
                   <Panel>
-                    <PathIcon Classes="driveicon" Data="{Binding Kind, Converter={x:Static icons:DriveIconConverter.Glyph}}" IsVisible="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Missing}}" />
-                    <Image Classes="driveimage" Source="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Instance}}" />
+                    <PathIcon Classes="driveicon" Data="{Binding Kind, Converter={x:Static icons:DriveIconConverter.Glyph}}" IsVisible="{Binding Converter={x:Static icons:DriveIconConverter.Missing}}" />
+                    <Image Classes="driveimage" Source="{Binding Converter={x:Static icons:DriveIconConverter.Instance}}" />
                   </Panel>
                   <TextBlock Text="{Binding ShortName}" Classes="noloc" VerticalAlignment="Center" IsVisible="{Binding !IsSpecial}" />
                 </StackPanel>
@@ -66,8 +66,8 @@
             <DataTemplate x:DataType="p:DriveItem">
               <StackPanel Orientation="Horizontal" Spacing="4">
                 <Panel>
-                  <PathIcon Classes="driveicon" Data="{Binding Kind, Converter={x:Static icons:DriveIconConverter.Glyph}}" IsVisible="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Missing}}" />
-                  <Image Width="16" Height="16" Source="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Instance}}" />
+                  <PathIcon Classes="driveicon" Data="{Binding Kind, Converter={x:Static icons:DriveIconConverter.Glyph}}" IsVisible="{Binding Converter={x:Static icons:DriveIconConverter.Missing}}" />
+                  <Image Width="16" Height="16" Source="{Binding Converter={x:Static icons:DriveIconConverter.Instance}}" />
                 </Panel>
                 <TextBlock Text="{Binding ShortName}" Classes="noloc" VerticalAlignment="Center" />
                 <TextBlock Text="{Binding LabelText}" Classes="drivelabel noloc" VerticalAlignment="Center" />
@@ -81,11 +81,27 @@
                 <DataTemplate x:DataType="p:DriveItem">
                   <Grid ColumnDefinitions="22,28,*" MinWidth="240">
                     <Panel VerticalAlignment="Center">
-                      <PathIcon Classes="driveicon" Data="{Binding Kind, Converter={x:Static icons:DriveIconConverter.Glyph}}" IsVisible="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Missing}}" />
-                      <Image Width="16" Height="16" Source="{Binding RootPath, Converter={x:Static icons:DriveIconConverter.Instance}}" />
+                      <PathIcon Classes="driveicon" Data="{Binding Kind, Converter={x:Static icons:DriveIconConverter.Glyph}}" IsVisible="{Binding Converter={x:Static icons:DriveIconConverter.Missing}}" />
+                      <Image Width="16" Height="16" Source="{Binding Converter={x:Static icons:DriveIconConverter.Instance}}" />
                     </Panel>
                     <TextBlock Grid.Column="1" Text="{Binding ShortName}" Classes="noloc" VerticalAlignment="Center" FontWeight="SemiBold" />
-                    <TextBlock Grid.Column="2" Text="{Binding Label}" Classes="noloc" VerticalAlignment="Center" IsVisible="{Binding !IsSpecial}" Opacity="0.75" />
+                    <!-- the drive's label (not translated), or what it is ("Local Disk", translated) -->
+                    <TextBlock Grid.Column="2" Text="{Binding Label}" Classes="noloc" VerticalAlignment="Center" Opacity="0.75">
+                      <TextBlock.IsVisible>
+                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                          <Binding Path="!IsSpecial" />
+                          <Binding Path="HasLabel" />
+                        </MultiBinding>
+                      </TextBlock.IsVisible>
+                    </TextBlock>
+                    <TextBlock Grid.Column="2" Text="{Binding KindText}" VerticalAlignment="Center" Opacity="0.75">
+                      <TextBlock.IsVisible>
+                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                          <Binding Path="!IsSpecial" />
+                          <Binding Path="!HasLabel" />
+                        </MultiBinding>
+                      </TextBlock.IsVisible>
+                    </TextBlock>
                     <TextBlock Grid.Column="2" Text="{Binding Label}" VerticalAlignment="Center" IsVisible="{Binding IsSpecial}" />
                   </Grid>
                 </DataTemplate>

@@ -26,9 +26,20 @@ public sealed class ComputerFileSystemProvider(Func<IReadOnlyList<DriveItem>> dr
     public static string? LocalRootOf(VfsPath path) =>
         path.Scheme == ComputerScheme && path.Path.Trim('/').Length > 0 ? Uri.UnescapeDataString(path.Path.Trim('/')) : null;
 
+    /// <summary>The name of a drive in the overview, as Explorer shows it: "System (C:)", or its kind without a label: "Local Disk (D:)".</summary>
+    public static string ShownName(DriveItem drive)
+    {
+        if (drive.Kind == DriveKind.Trash)
+        {
+            return NextCommander.Core.Localization.Localizer.T(OperatingSystem.IsWindows() ? "Recycle Bin" : "Trash");
+        }
+        var name = drive.Name.TrimEnd('\\') is { Length: > 0 } trimmed ? trimmed : drive.Name;
+        return $"{(drive.HasLabel ? drive.Label : NextCommander.Core.Localization.Localizer.T(drive.KindText))} ({name})";
+    }
+
     private VfsEntry EntryOf(DriveItem drive) => new()
     {
-        Name = drive.DisplayName.TrimEnd('\\', '/') is { Length: > 0 } name ? name : drive.Name,
+        Name = ShownName(drive),
         Path = VfsPath.Create(ComputerScheme, string.Empty, "/" + Uri.EscapeDataString(drive.RootPath)),
         IsDirectory = true,
         Size = drive.TotalSize,
@@ -41,9 +52,16 @@ public sealed class ComputerFileSystemProvider(Func<IReadOnlyList<DriveItem>> dr
         {
             throw new UnauthorizedAccessException("The Computer view shows the drives only: open a drive to work in it.");
         }
-        IReadOnlyList<VfsEntry> entries = drives().Where(d => d.IsReady).Select(EntryOf).ToList();
+        IReadOnlyList<VfsEntry> entries = [.. Ordered(drives()).Select(EntryOf), EntryOf(DriveItem.TrashEntry)];
         return Task.FromResult(entries);
     }
+
+    /// <summary>
+    /// The drives as the overview lists them: the system's drives in their order (drive letters on Windows), then
+    /// external (removable) disks, then phones and cameras.
+    /// </summary>
+    public static IEnumerable<DriveItem> Ordered(IEnumerable<DriveItem> drives) =>
+        drives.Where(d => d.IsReady).OrderBy(d => d.Kind switch { DriveKind.Removable => 1, DriveKind.Phone => 2, _ => 0 }); // stable: keeps the letter order
 
     public Task<VfsEntry?> GetEntryAsync(VfsPath path, CancellationToken cancellationToken)
     {
@@ -51,7 +69,7 @@ public sealed class ComputerFileSystemProvider(Func<IReadOnlyList<DriveItem>> dr
         {
             return Task.FromResult<VfsEntry?>(new VfsEntry { Name = "Computer", Path = Root, IsDirectory = true, LastWriteTime = DateTime.MinValue });
         }
-        var drive = drives().FirstOrDefault(d => string.Equals(d.RootPath, root, StringComparison.OrdinalIgnoreCase));
+        var drive = drives().Append(DriveItem.TrashEntry).FirstOrDefault(d => string.Equals(d.RootPath, root, StringComparison.OrdinalIgnoreCase));
         return Task.FromResult(drive is null ? null : EntryOf(drive));
     }
 

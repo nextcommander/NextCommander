@@ -26,9 +26,11 @@ public sealed class DriveBarNetworkTests : IDisposable
         // one bar for both panels, or one above each (Configuration > Layout)
         var bar = w.GetVisualDescendants().OfType<ItemsControl>().First(c => c.Name is "SharedDriveBar" or "DriveButtons" && c.IsEffectivelyVisible);
         var buttons = bar.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("drivebtn")).ToList();
-        Assert.Equal(vm.Left.Drives.Count + 1, buttons.Count);
-        Assert.Equal(vm.Left.Drives.Select(d => d.RootPath), buttons.SkipLast(1).Select(b => ((DriveItem)b.Tag!).RootPath));
-        var network = buttons[^1];
+        // the drives, then Network and the trash
+        Assert.Equal(vm.Left.Drives.Count + 2, buttons.Count);
+        Assert.Equal(vm.Left.Drives.Select(d => d.RootPath), buttons.SkipLast(2).Select(b => ((DriveItem)b.Tag!).RootPath));
+        Assert.Equal(DriveKind.Trash, ((DriveItem)buttons[^1].Tag!).Kind);
+        var network = buttons[^2];
         Assert.Equal(DriveKind.NetworkPlaces, ((DriveItem)network.Tag!).Kind);
         Assert.Equal("Network (machines on the network)", ToolTip.GetTip(network));
         // an icon, no "\" text

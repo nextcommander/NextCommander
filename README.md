@@ -45,6 +45,7 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
   Google Drive, OneDrive and Dropbox, all in the same panels as local files.
 - A connection manager, saved passwords protected by an optional master password, and a view of the
   machines on your local network.
+- Browse the trash / Recycle Bin in a panel: restore, copy out, delete for good, empty.
 - Phones, cameras and players connected over USB (MTP) appear as drives: copy photos off a phone, put files on it,
   make folders, rename and delete (Windows; on Linux the folders GNOME mounts for them).
 

@@ -247,6 +247,8 @@ public static class MenuIcons
         ["nc_DiskUsage"] = new("MiPie", Teal),
         ["nc_SearchStandalone"] = new("MiSearch", Teal, "OvArrowRight", Green),
         ["nc_VolumeLabel"] = new("MiTag", Orange),
+        ["nc_RestoreFromTrash"] = new("MiTrash", Gray, "OvArrowLeft", Green),
+        ["nc_EmptyTrash"] = new("MiTrash", Red, "OvX", Red),
         ["nc_SysInfo"] = new("MiChip", Teal),
         ["nc_SyncDirs"] = new("MiSwap", Green),
         ["nc_ExecuteTerminal"] = new("MiTerminal", Gray),

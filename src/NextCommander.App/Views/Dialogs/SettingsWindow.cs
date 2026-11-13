@@ -1529,6 +1529,8 @@ public sealed class SettingsWindow : Window
             Bool(layout, screen, "Shortcut: Documents", "The Documents folder at the end of the drive buttons.", s => s.DriveBarDocuments, (s, v) => s.DriveBarDocuments = v, indent: true),
             Bool(layout, screen, "Shortcut: Downloads", "The Downloads folder at the end of the drive buttons.", s => s.DriveBarDownloads, (s, v) => s.DriveBarDownloads = v, indent: true),
             Bool(layout, screen, "Shortcut: Desktop", "The Desktop folder at the end of the drive buttons.", s => s.DriveBarDesktop, (s, v) => s.DriveBarDesktop = v, indent: true),
+            Bool(layout, screen, "Trash / Recycle Bin button", "The trash after Network on the drive buttons: deleted files in the panel.",
+                s => s.DriveBarTrash, (s, v) => s.DriveBarTrash = v, indent: true),
             Bool(layout, screen, "Show drive combobox", "Drive box, free space, \\ and .. buttons.", s => s.ShowDriveCombo, (s, v) => s.ShowDriveCombo = v),
             Bool(layout, screen, "Show folder tabs", null, s => s.ShowFolderTabs, (s, v) => s.ShowFolderTabs = v),
             Bool(layout, screen, "Show current directory", "The path line above the file list.", s => s.ShowPathLine, (s, v) => s.ShowPathLine = v),

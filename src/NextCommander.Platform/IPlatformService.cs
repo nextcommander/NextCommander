@@ -31,6 +31,9 @@ public enum DriveKind
 
     /// <summary>A phone, camera or player connected over MTP / PTP (Windows: <c>mtp://name/</c>; Linux: a gvfs folder).</summary>
     Phone,
+
+    /// <summary>Drive box / drive bar entry: the trash / Recycle Bin (trash:///).</summary>
+    Trash,
 }
 
 /// <summary>A shared folder of a machine on the network: its path is \\host\name.</summary>
@@ -59,7 +62,22 @@ public sealed record DriveItem(string Name, string RootPath, string? Label, long
     public string ShortName => Name.Length >= 2 && Name[1] == ':' ? char.ToLowerInvariant(Name[0]).ToString() : Name;
 
     /// <summary>One of the extra entries of the drive box (Computer, Documents, Network), not a drive.</summary>
-    public bool IsSpecial => Kind is DriveKind.Computer or DriveKind.Documents or DriveKind.NetworkPlaces or DriveKind.Downloads or DriveKind.Desktop or DriveKind.UserHome;
+    public bool IsSpecial => Kind is DriveKind.Computer or DriveKind.Documents or DriveKind.NetworkPlaces or DriveKind.Downloads or DriveKind.Desktop or DriveKind.UserHome
+        or DriveKind.Trash;
+
+    public bool HasLabel => !string.IsNullOrEmpty(Label);
+
+    /// <summary>What the drive is, for a drive without a label (as Explorer names them): "Local Disk", "CD Drive" ...</summary>
+    public string KindText => Kind switch
+    {
+        DriveKind.Fixed => "Local Disk",
+        DriveKind.Removable => "Removable Disk",
+        DriveKind.Optical => "CD Drive",
+        DriveKind.Network => "Network Drive",
+        DriveKind.Phone => "Phone",
+        DriveKind.Home => "Home folder",
+        _ => "Disk",
+    };
 
 
     /// <summary>
@@ -83,14 +101,18 @@ public sealed record DriveItem(string Name, string RootPath, string? Label, long
         return list;
     }
 
-    /// <summary>The extra entries below the drives in the drive box.</summary>
-    public static IReadOnlyList<DriveItem> SpecialEntries { get; } =
-    [
-        new("+", ComputerFileSystemProvider.ComputerScheme + ":///", "Computer (drive overview)", 0, 0, DriveKind.Computer, true),
-        new("*", Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) is { Length: > 0 } documents && Directory.Exists(documents)
-            ? documents : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "My Documents (folder)", 0, 0, DriveKind.Documents, true),
-        new("\\", NetworkFileSystemProvider.NetworkScheme + ":///", "Network (machines on the network)", 0, 0, DriveKind.NetworkPlaces, true),
-    ];
+    /// <summary>Drive box entry "+": the drive overview in the panel.</summary>
+    public static DriveItem ComputerEntry { get; } = new("+", ComputerFileSystemProvider.ComputerScheme + ":///", "Computer (drive overview)", 0, 0, DriveKind.Computer, true);
+
+    /// <summary>Drive box entry "\": the machines of the local network.</summary>
+    public static DriveItem NetworkEntry { get; } = new("\\", NetworkFileSystemProvider.NetworkScheme + ":///", "Network (machines on the network)", 0, 0, DriveKind.NetworkPlaces, true);
+
+    /// <summary>Drive box entry "×": the trash / Recycle Bin.</summary>
+    public static DriveItem TrashEntry { get; } = new("×", Trash.TrashFileSystemProvider.TrashScheme + ":///",
+        OperatingSystem.IsWindows() ? "Recycle Bin (deleted files)" : "Trash (deleted files)", 0, 0, DriveKind.Trash, true);
+
+    /// <summary>The extra entries below the drives in the drive box (the Documents folder is a drive bar shortcut instead).</summary>
+    public static IReadOnlyList<DriveItem> SpecialEntries { get; } = [ComputerEntry, NetworkEntry, TrashEntry];
 }
 
 /// <summary>An item of the application in the system's context menu ("Pack..."): its text, the command whose icon it shows, what it does.</summary>
@@ -123,6 +145,9 @@ public interface IPlatformService : ITrashService
     /// folders itself (Linux gvfs) or has no MTP (macOS).
     /// </summary>
     NextCommander.Platform.Mtp.IMtpDeviceSource PortableDevices { get; }
+
+    /// <summary>The system's trash / Recycle Bin of the current user (browsed through <c>trash:///</c>).</summary>
+    NextCommander.Platform.Trash.ITrashStore TrashStore { get; }
 
     /// <summary>
     /// The folder of a drive, mounting it first when it is a partition the system has not mounted yet (Linux: udisks,

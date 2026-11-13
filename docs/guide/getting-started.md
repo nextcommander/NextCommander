@@ -23,7 +23,22 @@ From top to bottom:
   delete work as on a disk. Unlock the phone and allow file transfer when it asks. On Linux the phone appears when the
   desktop (GNOME) has mounted it.
 - **Drive box:** the current drive with its label and free space, plus the `\` (root) and `..` (parent folder)
-  buttons. Alt+F1 and Alt+F2 open the drive list of the left and right panel.
+  buttons. Alt+F1 and Alt+F2 open the drive list of the left and right panel. The list shows each drive's label, or
+  what it is ("Local Disk", "Removable Disk", "Network Drive" ...). Below the drives: `+` Computer, `\` Network and
+  `×` the trash. The `+` entry lists the drives in the panel (Computer view): the drives in letter order, then external
+  disks, then phones, then the trash.
+- **Drive icons** are the system's own wherever drives appear (drive buttons, drive box, Computer view): Explorer's on
+  Windows (Recycle Bin, This PC and Network too), the desktop's icon theme on Linux, Finder's on macOS. *Configuration >
+  Options > Icons* can turn them off (built-in icons then).
+- **Right click on a drive** (drive buttons, drive list, Computer view) opens the system's menu of that drive:
+  on Windows Explorer's (open, eject, format, properties ...). Shift+right click, or other systems: a short menu of the
+  application.
+- **Trash / Recycle Bin:** the trash button at the end of the drive bar (it can be hidden in *Configuration > Options >
+  Layout*), the `×` entry of the drive box and the end of the Computer view show the
+  deleted files in the panel, under their original names with the deletion date. Copy them out (F5), move them
+  somewhere (F6), put them back where they were (*Files > Trash > Restore from the trash*, or the right-click menu),
+  delete them for good (F8) or empty the trash. On macOS items cannot be put back (Finder keeps their places to
+  itself), and reading the Trash needs Full Disk Access.
 - **Folder tabs:** each panel can have several tabs. The `+` button opens a new one.
 - **Path line:** the current folder. Click a part of the path to go there, click the small arrow between
   parts to pick a subfolder, or click the empty area (or press Alt+D) to type a path.
