@@ -55,7 +55,7 @@ public sealed class DuplicatesLayoutTests : IDisposable
             Assert.NotEmpty(list.GetVisualDescendants().OfType<ListBoxItem>().Skip(1).First().GetVisualDescendants().OfType<Viewbox>());
             if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
             {
-                Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(window)!.Save(Path.Combine(dir, $"duplicates-scroll-{scale}.png"));
+                Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(window)!.SavePng(Path.Combine(dir, $"duplicates-scroll-{scale}.png"));
             }
         }
         finally

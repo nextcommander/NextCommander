@@ -63,7 +63,7 @@ public sealed class SystemFolderIconsTests : IDisposable
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } shots)
         {
             Directory.CreateDirectory(shots);
-            bitmap.Save(Path.Combine(shots, "theme-folder-download.png"));
+            bitmap.SavePng(Path.Combine(shots, "theme-folder-download.png"));
         }
     }
 

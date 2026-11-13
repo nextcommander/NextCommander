@@ -70,7 +70,7 @@ public sealed class CopyDialog : DialogWindow
     private readonly bool _move;
     private readonly CopyDialogOptions _options;
     private readonly TextBox _target;
-    private readonly TextBox _filter = new() { Watermark = "*.* (all files), e.g. *.jpg *.png | thumbs\\" };
+    private readonly TextBox _filter = new() { PlaceholderText = "*.* (all files), e.g. *.jpg *.png | thumbs\\" };
     private readonly ComboBox _policy;
     private readonly CheckBox _verify;
     private readonly CheckBox _permissions = new() { Content = "Copy NTFS permissions (may need administrator rights)" };

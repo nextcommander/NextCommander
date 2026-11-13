@@ -14,7 +14,7 @@ public sealed class FontDialog : DialogWindow
 {
     private const string Sample = "for (var i = 0; i < 10; i++) { Console.WriteLine($\"{i}: ÇĞİÖŞÜ çğıöşü\"); } // 0O 1lI";
 
-    private readonly TextBox _filter = new() { Watermark = "Search" };
+    private readonly TextBox _filter = new() { PlaceholderText = "Search" };
     private readonly CheckBox _fixedOnly = new() { Content = "Fixed-width fonts only", IsChecked = true };
     private readonly ListBox _list = new() { Height = 260, SelectionMode = SelectionMode.Single };
     private readonly NumericUpDown _size = new() { Minimum = 6, Maximum = 48, Increment = 1, FormatString = "0", Width = 130 };

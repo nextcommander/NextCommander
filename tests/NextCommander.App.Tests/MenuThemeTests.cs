@@ -83,9 +83,9 @@ public sealed class MenuThemeTests : IDisposable
                 await SettleAsync(3);
                 files.IsSubMenuOpen = true;
                 await SettleAsync(3);
-                w.CaptureRenderedFrame()!.Save(Path.Combine(dir, $"menutheme-{(theme.Length == 0 ? "system" : theme)}.png"));
+                w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, $"menutheme-{(theme.Length == 0 ? "system" : theme)}.png"));
                 var popup = files.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.Popup>().First();
-                TopLevel.GetTopLevel(popup.Child)!.CaptureRenderedFrame()!.Save(Path.Combine(dir, $"menutheme-{(theme.Length == 0 ? "system" : theme)}-drop.png"));
+                TopLevel.GetTopLevel(popup.Child)!.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, $"menutheme-{(theme.Length == 0 ? "system" : theme)}-drop.png"));
                 files.IsSubMenuOpen = false;
             }
         }
@@ -126,7 +126,7 @@ public sealed class MenuThemeTests : IDisposable
             Assert.Equal(2, innerRoot.BorderThickness.Left);
             if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
             {
-                w.CaptureRenderedFrame()!.Save(Path.Combine(dir, $"menubar-open-{(theme.Length == 0 ? "light" : theme)}.png"));
+                w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, $"menubar-open-{(theme.Length == 0 ? "light" : theme)}.png"));
             }
             files.IsSubMenuOpen = false;
             await SettleAsync();

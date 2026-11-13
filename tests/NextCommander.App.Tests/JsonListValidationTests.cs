@@ -54,7 +54,7 @@ public sealed class JsonListValidationTests : IDisposable
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
         {
             Directory.CreateDirectory(dir);
-            window.CaptureRenderedFrame()!.Save(Path.Combine(dir, name + ".png"));
+            window.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, name + ".png"));
         }
     }
 

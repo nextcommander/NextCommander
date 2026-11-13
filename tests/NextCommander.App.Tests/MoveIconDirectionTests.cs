@@ -36,7 +36,7 @@ public sealed class MoveIconDirectionTests : IDisposable
         Assert.NotSame(right, Move().Content); // drawn again
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
         {
-            w.CaptureRenderedFrame()!.Save(Path.Combine(dir, "move-left.png"));
+            w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "move-left.png"));
         }
 
         // panels above each other: down / up

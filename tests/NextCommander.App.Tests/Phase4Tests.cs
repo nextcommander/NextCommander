@@ -204,7 +204,7 @@ public sealed class Phase4Tests : IDisposable
         if (!string.IsNullOrEmpty(dir))
         {
             Directory.CreateDirectory(dir);
-            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(w)!.Save(Path.Combine(dir, "phase4-archive.png"));
+            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(w)!.SavePng(Path.Combine(dir, "phase4-archive.png"));
         }
     }
 

@@ -27,7 +27,7 @@ public sealed class ContextMenuIconTests : IDisposable
         Assert.Contains(copy.GetVisualDescendants().OfType<Border>(), b => b.Classes.Contains("menuicon") && b.IsEffectivelyVisible && b.Bounds.Width > 0);
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
         {
-            w.CaptureRenderedFrame()!.Save(Path.Combine(dir, "context-menu-icons.png"));
+            w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "context-menu-icons.png"));
         }
         list.ContextMenu.Close();
         await SettleAsync();

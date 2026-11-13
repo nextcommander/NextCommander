@@ -4,7 +4,7 @@ Developed with Claude Code in November 2026. This file keeps the information fro
 
 ## Initial decisions (user)
 - **Goal:** A keyboard-driven, cross-platform dual-pane file manager for personal use.
-- **Technology:** C# .NET 10 + Avalonia (11.3).
+- **Technology:** C# .NET 10 + Avalonia (11.3 at first, 12.1 since 13 November 2026).
 - **Look:** Classic dual-pane layout and shortcuts, modern theme, dark and light mode.
 - **Scope:** The main feature groups of a dual-pane file manager, in phases.
 

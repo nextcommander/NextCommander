@@ -80,7 +80,7 @@ public sealed class ConfigIconsTests : IDisposable
             show.IsSubMenuOpen = true;
             await SettleAsync();
             var popup = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(show).OfType<Avalonia.Controls.Primitives.Popup>().First();
-            TopLevel.GetTopLevel(popup.Child)!.CaptureRenderedFrame()!.Save(Path.Combine(dir, "menu-show-icons24.png"));
+            TopLevel.GetTopLevel(popup.Child)!.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "menu-show-icons24.png"));
             show.IsSubMenuOpen = false;
             await vm.ExecuteAsync("nc_VerticalPanels");
         }
@@ -107,8 +107,8 @@ public sealed class ConfigIconsTests : IDisposable
         var dir = Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR");
         if (!string.IsNullOrEmpty(dir))
         {
-            dialog.CaptureRenderedFrame()!.Save(Path.Combine(dir, "dialog-scaled.png"));
-            w.CaptureRenderedFrame()!.Save(Path.Combine(dir, "main-font12.png"));
+            dialog.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "dialog-scaled.png"));
+            w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "main-font12.png"));
         }
         dialog.Close();
     }

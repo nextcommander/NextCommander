@@ -33,7 +33,7 @@ public enum ListFieldKind
 public sealed record ListField<T>(string Label, ListFieldKind Kind, Func<T, string?> Get, Action<T, string?> Set)
 {
     /// <summary>Grey hint in an empty box.</summary>
-    public string? Watermark { get; init; }
+    public string? PlaceholderText { get; init; }
 
     /// <summary>Choice: the values with their texts; Program: quick values (e.g. "internal", "system") with their texts.</summary>
     public IReadOnlyList<(string Value, string Text)> Options { get; init; } = [];
@@ -363,7 +363,7 @@ public sealed class ListEditor<T> : UserControl where T : class
             {
                 var swatch = new Border { Width = 22, Height = 22, CornerRadius = new CornerRadius(3), BorderThickness = new Thickness(1), VerticalAlignment = VerticalAlignment.Center,
                     BorderBrush = new SolidColorBrush(Color.FromArgb(0x80, 0x80, 0x80, 0x80)) };
-                var box = new TextBox { Text = value, Width = 110, Watermark = field.Watermark ?? "#RRGGBB", Classes = { "noloc" }, VerticalAlignment = VerticalAlignment.Center };
+                var box = new TextBox { Text = value, Width = 110, PlaceholderText = field.PlaceholderText ?? "#RRGGBB", Classes = { "noloc" }, VerticalAlignment = VerticalAlignment.Center };
                 void Paint() => swatch.Background = Color.TryParse(box.Text, out var c) ? new SolidColorBrush(c) : Brushes.Transparent;
                 Paint();
                 box.TextChanged += (_, _) =>
@@ -393,7 +393,7 @@ public sealed class ListEditor<T> : UserControl where T : class
             }
             case ListFieldKind.Program:
             {
-                var box = new TextBox { Text = value, Watermark = field.Watermark, Classes = { "noloc" } };
+                var box = new TextBox { Text = value, PlaceholderText = field.PlaceholderText, Classes = { "noloc" } };
                 box.TextChanged += (_, _) =>
                 {
                     field.Set(entry, box.Text);
@@ -431,7 +431,7 @@ public sealed class ListEditor<T> : UserControl where T : class
             }
             default:
             {
-                var box = new TextBox { Text = value, Watermark = field.Watermark, Classes = { "noloc" } };
+                var box = new TextBox { Text = value, PlaceholderText = field.PlaceholderText, Classes = { "noloc" } };
                 if (field.Kind == ListFieldKind.Number)
                 {
                     box.Width = 110;

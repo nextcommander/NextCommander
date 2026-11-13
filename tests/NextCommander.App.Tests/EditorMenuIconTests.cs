@@ -36,7 +36,7 @@ public sealed class EditorMenuIconTests : IDisposable
         {
             items["_Edit"].IsSubMenuOpen = true;
             await SettleAsync(4);
-            editor.CaptureRenderedFrame()!.Save(Path.Combine(dir, "editor-menu-icons.png"));
+            editor.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "editor-menu-icons.png"));
             items["_Edit"].IsSubMenuOpen = false;
         }
     }

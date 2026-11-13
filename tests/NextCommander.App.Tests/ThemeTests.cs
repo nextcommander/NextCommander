@@ -84,14 +84,14 @@ public sealed class ThemeTests : IDisposable
         }
         Directory.CreateDirectory(dir);
         await _fx_NavigateBoth(w);
-        w.CaptureRenderedFrame()!.Save(Path.Combine(dir, "theme-dark.png"));
+        w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "theme-dark.png"));
         foreach (var (menu, file) in new[] { ("_Files", "menu-files"), ("_Mark", "menu-mark"), ("_Commands", "menu-commands"), ("_Net", "menu-net"), ("_Show", "menu-show"), ("C_onfiguration", "menu-config") })
         {
             await CaptureMenuAsync(w, menu, Path.Combine(dir, file + "-dark.png"));
         }
         App.ApplyColorTheme(null);
         await SettleAsync();
-        w.CaptureRenderedFrame()!.Save(Path.Combine(dir, "theme-light.png"));
+        w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "theme-light.png"));
         await CaptureMenuAsync(w, "_Files", Path.Combine(dir, "menu-files-light.png"));
     }
 
@@ -110,7 +110,7 @@ public sealed class ThemeTests : IDisposable
         var popup = item.GetLogicalDescendants().OfType<Popup>().FirstOrDefault()
             ?? item.GetVisualDescendantsSafe().OfType<Popup>().First();
         var root = TopLevel.GetTopLevel(popup.Child)!;
-        root.CaptureRenderedFrame()!.Save(file);
+        root.CaptureRenderedFrame()!.SavePng(file);
         item.IsSubMenuOpen = false;
         await SettleAsync();
     }

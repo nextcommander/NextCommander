@@ -196,8 +196,8 @@ public sealed class Phase5Tests : IDisposable
             return;
         }
         Directory.CreateDirectory(dir);
-        compare.CaptureRenderedFrame()!.Save(Path.Combine(dir, "phase5-compare.png"));
-        rename.CaptureRenderedFrame()!.Save(Path.Combine(dir, "phase5-rename.png"));
-        sync.CaptureRenderedFrame()!.Save(Path.Combine(dir, "phase5-sync.png"));
+        compare.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "phase5-compare.png"));
+        rename.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "phase5-rename.png"));
+        sync.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "phase5-sync.png"));
     }
 }

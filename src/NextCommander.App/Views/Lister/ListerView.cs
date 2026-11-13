@@ -1,3 +1,4 @@
+using Avalonia.Input.Platform;
 using System.Globalization;
 using System.Text;
 using Avalonia;
@@ -161,7 +162,7 @@ public sealed class ListerView : UserControl
 
         _info = new TextBlock { Margin = new Thickness(16), TextWrapping = TextWrapping.Wrap, FontSize = 13 };
 
-        _findBox = new TextBox { MinWidth = 260, Watermark = "Text to find (Enter: next, Shift+Enter: previous)" };
+        _findBox = new TextBox { MinWidth = 260, PlaceholderText = "Text to find (Enter: next, Shift+Enter: previous)" };
         _findCase = new CheckBox { Content = "Case sensitive", Margin = new Thickness(8, 0, 0, 0) };
         _findWords = new CheckBox { Content = "Whole words", Margin = new Thickness(8, 0, 0, 0) };
         _findRegex = new CheckBox { Content = "Regex", Margin = new Thickness(8, 0, 0, 0) };

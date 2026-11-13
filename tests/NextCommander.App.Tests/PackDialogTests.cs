@@ -33,7 +33,7 @@ public sealed class PackDialogTests : IDisposable
         Assert.True(leaveOut.IsEnabled);
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
         {
-            dialog.CaptureRenderedFrame()!.Save(Path.Combine(dir, "pack-dialog.png"));
+            dialog.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "pack-dialog.png"));
         }
 
         // another packer swaps the extension; TGZ has no encryption

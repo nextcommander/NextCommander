@@ -14,13 +14,13 @@ public sealed class ArchiveTests : IAsyncLifetime
     private ArchiveFileSystemProvider _archives = new();
     private ProviderRegistry _registry = null!;
 
-    public Task InitializeAsync()
+    public ValueTask InitializeAsync()
     {
         _registry = NewRegistry(_archives);
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         await _archives.DisposeAsync();
         _dir.Dispose();

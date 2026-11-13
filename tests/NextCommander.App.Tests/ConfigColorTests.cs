@@ -78,7 +78,7 @@ public sealed class ConfigColorTests : IDisposable
             settings.Show();
             settings.SelectPage("Display/Color");
             await SettleAsync();
-            settings.CaptureRenderedFrame()!.Save(Path.Combine(shots, "settings-color.png"));
+            settings.CaptureRenderedFrame()!.SavePng(Path.Combine(shots, "settings-color.png"));
         }
     }
 }

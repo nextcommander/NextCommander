@@ -311,7 +311,7 @@ public sealed class ThumbnailService : IDisposable
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            bitmap.Save(path);
+            bitmap.Save(path, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

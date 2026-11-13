@@ -43,7 +43,7 @@ public sealed class ShippedLanguagesTests : IDisposable
         {
             files.IsSubMenuOpen = true;
             await SettleAsync(4);
-            w.CaptureRenderedFrame()!.Save(Path.Combine(dir, $"language-{code}.png"));
+            w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, $"language-{code}.png"));
             files.IsSubMenuOpen = false;
         }
     }

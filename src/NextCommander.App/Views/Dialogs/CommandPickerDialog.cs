@@ -21,7 +21,7 @@ public sealed class CommandPickerDialog : Window
     public static Func<IReadOnlyList<Entry>>? Source { get; set; }
 
     private readonly List<Entry> _all;
-    private readonly TextBox _search = new() { Watermark = "Search by name or description" };
+    private readonly TextBox _search = new() { PlaceholderText = "Search by name or description" };
     private readonly ListBox _list = new() { SelectionMode = SelectionMode.Single };
     private readonly TextBlock _count = new() { Opacity = 0.65, FontSize = 12, VerticalAlignment = VerticalAlignment.Center };
 

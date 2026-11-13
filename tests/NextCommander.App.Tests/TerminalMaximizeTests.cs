@@ -39,7 +39,7 @@ public sealed class TerminalMaximizeTests : IDisposable
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
         {
             Directory.CreateDirectory(dir);
-            w.CaptureRenderedFrame()!.Save(Path.Combine(dir, "terminal-maximized.png"));
+            w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "terminal-maximized.png"));
         }
 
         // a taller window: the terminal still reaches the top of the panels

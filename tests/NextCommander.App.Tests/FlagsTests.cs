@@ -50,8 +50,8 @@ public sealed class FlagsTests : IDisposable
             var flags = _fx.Track(new Window { Width = 760, Height = 70, Content = strip });
             flags.Show();
             await SettleAsync(4);
-            flags.CaptureRenderedFrame()!.Save(Path.Combine(dir, "flags.png"));
-            window.CaptureRenderedFrame()!.Save(Path.Combine(dir, "settings-language.png"));
+            flags.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "flags.png"));
+            window.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "settings-language.png"));
         }
     }
 }

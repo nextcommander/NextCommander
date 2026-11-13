@@ -70,10 +70,10 @@ public sealed partial class FindFilesWindow : Window
     private readonly CheckBox _notContaining = new() { Content = "Not containing" };
     private readonly CheckBox _utf16 = new() { Content = "UTF-16", IsChecked = true };
     private readonly CheckBox _office = new() { Content = "Office / ODT / EPUB text", IsChecked = true };
-    private readonly TextBox _minSize = new() { Watermark = "e.g. 10k", Width = 90 };
-    private readonly TextBox _maxSize = new() { Watermark = "e.g. 2M", Width = 90 };
-    private readonly TextBox _after = new() { Watermark = "2024-05-01 / 7g", Width = 130 };
-    private readonly TextBox _before = new() { Watermark = "2024-12-31 / 1g", Width = 130 };
+    private readonly TextBox _minSize = new() { PlaceholderText = "e.g. 10k", Width = 90 };
+    private readonly TextBox _maxSize = new() { PlaceholderText = "e.g. 2M", Width = 90 };
+    private readonly TextBox _after = new() { PlaceholderText = "2024-05-01 / 7g", Width = 130 };
+    private readonly TextBox _before = new() { PlaceholderText = "2024-12-31 / 1g", Width = 130 };
     private readonly ComboBox _hidden = TriCombo();
     private readonly ComboBox _readOnly = TriCombo();
     private readonly ComboBox _archive = TriCombo();

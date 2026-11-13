@@ -91,7 +91,7 @@ public sealed class DuplicatesWindow : Window
     private readonly ListBox _folders = new() { Height = 92, Classes = { "noloc" } };
     private readonly ComboBox _mode = new() { MinWidth = 220 };
     private readonly TextBox _mask = new() { Text = "*", Width = 180 };
-    private readonly TextBox _minSize = new() { Watermark = "e.g. 100k", Width = 90 };
+    private readonly TextBox _minSize = new() { PlaceholderText = "e.g. 100k", Width = 90 };
     private readonly CheckBox _skipEmpty = new() { Content = "Skip empty files", IsChecked = true };
     private readonly CheckBox _hidden = new() { Content = "Hidden and system files too" };
     private readonly Button _start = new() { Content = "Search", IsDefault = true };

@@ -104,14 +104,14 @@ public sealed class IconPackTests : IDisposable
                 vm.Settings.IconPack = id;
                 vm.ApplySettings();
                 await SettleAsync(6);
-                w.CaptureRenderedFrame()!.Save(Path.Combine(dir, $"iconpack-{id}{(theme is null ? "" : "-" + theme)}.png"));
+                w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, $"iconpack-{id}{(theme is null ? "" : "-" + theme)}.png"));
             }
             App.ApplyColorTheme(null);
             var settings = _fx.Track(new Views.Dialogs.SettingsWindow(vm.Settings, () => { }, []));
             settings.Show();
             settings.SelectPage("Display/Icons");
             await SettleAsync(4);
-            settings.CaptureRenderedFrame()!.Save(Path.Combine(dir, "settings-icons.png"));
+            settings.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "settings-icons.png"));
         }
     }
 }

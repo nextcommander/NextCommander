@@ -721,7 +721,7 @@ public partial class MainWindow : Window
         {
             return;
         }
-        var anchor = HotlistAnchor is { IsVisible: true } button && Avalonia.VisualTree.VisualExtensions.GetVisualRoot(button) is not null ? button : null;
+        var anchor = HotlistAnchor is { IsVisible: true } button && TopLevel.GetTopLevel(button) is not null ? button : null;
         HotlistAnchor = null;
         var flyout = new MenuFlyout
         {

@@ -38,7 +38,7 @@ public sealed class AboutDialogTests : IDisposable
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } shots)
         {
             Directory.CreateDirectory(shots);
-            dialog.CaptureRenderedFrame()!.Save(Path.Combine(shots, "about.png"));
+            dialog.CaptureRenderedFrame()!.SavePng(Path.Combine(shots, "about.png"));
         }
 
         // "Open" next to the settings folder shows it in the active panel

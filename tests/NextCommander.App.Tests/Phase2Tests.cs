@@ -400,7 +400,7 @@ public sealed class Phase2Tests : IDisposable
                 }
             }
         }
-        bitmap.Save(path);
+        bitmap.SavePng(path);
     }
 
     [AvaloniaFact]
@@ -488,7 +488,7 @@ public sealed class Phase2Tests : IDisposable
         if (!string.IsNullOrEmpty(dir))
         {
             Directory.CreateDirectory(dir);
-            frame!.Save(Path.Combine(dir, "phase2-light.png"));
+            frame!.SavePng(Path.Combine(dir, "phase2-light.png"));
         }
     }
 }
