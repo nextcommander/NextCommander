@@ -2206,6 +2206,7 @@
   "SystemNames.CommandPrompt": "命令提示符",
   "TerminalView.MaximizeTheTerminalDoubleClick": "最大化终端（双击标题）",
   "TerminalView.RestoreTheTerminalSizeDouble": "还原终端大小（双击标题）",
+  "TrashColumns.OriginalLocation": "原位置",
   "TrashFileSystemProvider.ItemsInsideADeletedFolder": "已删除文件夹中的项目只能随文件夹一起删除。",
   "TrashFileSystemProvider.NothingCanBePutInto": "无法向回收站放入或在其中更改任何内容：请将项目复制出来、还原或永久删除。",
   "TrashFileSystemProvider.NotInTheTrash": "不在回收站中：{0}",

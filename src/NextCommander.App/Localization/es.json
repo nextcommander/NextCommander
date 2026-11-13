@@ -2206,6 +2206,7 @@
   "SystemNames.CommandPrompt": "Símbolo del sistema",
   "TerminalView.MaximizeTheTerminalDoubleClick": "Maximizar el terminal (doble clic en el título)",
   "TerminalView.RestoreTheTerminalSizeDouble": "Restaurar el tamaño del terminal (doble clic en el título)",
+  "TrashColumns.OriginalLocation": "Ubicación original",
   "TrashFileSystemProvider.ItemsInsideADeletedFolder": "Los elementos de una carpeta eliminada solo se eliminan junto con la carpeta.",
   "TrashFileSystemProvider.NothingCanBePutInto": "No se puede poner nada en la papelera ni cambiar nada en ella: copie los elementos fuera, restáurelos o elimínelos definitivamente.",
   "TrashFileSystemProvider.NotInTheTrash": "No está en la papelera: {0}",

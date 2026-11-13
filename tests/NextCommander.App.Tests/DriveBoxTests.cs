@@ -142,6 +142,10 @@ public sealed class DriveBoxTests : IDisposable
         Assert.Same(DriveItem.TrashEntry, panel.SelectedDrive);
         var item = Assert.Single(panel.Items, i => !i.IsParent);
         Assert.Equal("old.txt", item.FullName);
+        // the trash's own view mode: the folder the file was deleted from
+        Assert.Same(NextCommander.Platform.Trash.TrashColumns.ViewMode, panel.ActiveColumnSet);
+        await WaitUntilAsync(() => item.Custom.FirstOrDefault() is { Length: > 1 }); // "…" while it is read
+        Assert.Equal(_fx.L(), item.Custom[0]);
 
         panel.CursorItem = item;
         await vm.ExecuteAsync("nc_RestoreFromTrash");

@@ -2206,6 +2206,7 @@
   "SystemNames.CommandPrompt": "Command Prompt",
   "TerminalView.MaximizeTheTerminalDoubleClick": "Maximize the terminal (double click on the title)",
   "TerminalView.RestoreTheTerminalSizeDouble": "Restore the terminal size (double click on the title)",
+  "TrashColumns.OriginalLocation": "Original location",
   "TrashFileSystemProvider.ItemsInsideADeletedFolder": "Items inside a deleted folder are deleted with the folder only.",
   "TrashFileSystemProvider.NothingCanBePutInto": "Nothing can be put into the trash or changed in it: copy items out, restore them, or delete them for good.",
   "TrashFileSystemProvider.NotInTheTrash": "Not in the trash: {0}",

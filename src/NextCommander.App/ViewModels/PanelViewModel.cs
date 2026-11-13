@@ -436,12 +436,16 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         UpdateColumnSet();
     }
 
+    /// <summary>A view mode the application brings for a kind of folder (automatic mode, when no view mode of the user matches): the trash's original location.</summary>
+    private static Core.Columns.ColumnSet? BuiltInColumnSet(VfsPath path) =>
+        path.Scheme == NextCommander.Platform.Trash.TrashFileSystemProvider.TrashScheme && path.Path == "/" ? NextCommander.Platform.Trash.TrashColumns.ViewMode : null;
+
     /// <summary>Applies the chosen or (automatic mode) path-matching column set.</summary>
     public void UpdateColumnSet()
     {
         var name = _panelSettings.ColumnSet;
         var set = name is null
-            ? (CurrentPath is { } p ? _settings.ColumnSets.FirstOrDefault(s => s.MatchesPath(p)) : null)
+            ? (CurrentPath is { } p ? _settings.ColumnSets.FirstOrDefault(s => s.MatchesPath(p)) ?? BuiltInColumnSet(p) : null)
             : _settings.ColumnSets.FirstOrDefault(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase));
         if (set?.Columns.Count == 0)
         {
