@@ -2206,6 +2206,7 @@
   "SystemNames.CommandPrompt": "Eingabeaufforderung",
   "TerminalView.MaximizeTheTerminalDoubleClick": "Terminal maximieren (Doppelklick auf den Titel)",
   "TerminalView.RestoreTheTerminalSizeDouble": "Terminalgröße wiederherstellen (Doppelklick auf den Titel)",
+  "TrashColumns.OriginalLocation": "Ursprünglicher Ort",
   "TrashFileSystemProvider.ItemsInsideADeletedFolder": "Elemente in einem gelöschten Ordner werden nur mit dem Ordner gelöscht.",
   "TrashFileSystemProvider.NothingCanBePutInto": "In den Papierkorb kann nichts gelegt und darin nichts geändert werden: Kopieren Sie Elemente heraus, stellen Sie sie wieder her oder löschen Sie sie endgültig.",
   "TrashFileSystemProvider.NotInTheTrash": "Nicht im Papierkorb: {0}",

@@ -2206,6 +2206,7 @@
   "SystemNames.CommandPrompt": "Komut İstemi",
   "TerminalView.MaximizeTheTerminalDoubleClick": "Terminali büyüt (başlığa çift tıklama)",
   "TerminalView.RestoreTheTerminalSizeDouble": "Terminali eski boyutuna getir (başlığa çift tıklama)",
+  "TrashColumns.OriginalLocation": "Asıl konum",
   "TrashFileSystemProvider.ItemsInsideADeletedFolder": "Silinmiş bir klasörün içindekiler yalnızca klasörle birlikte silinir.",
   "TrashFileSystemProvider.NothingCanBePutInto": "Çöp kutusuna bir şey konulamaz ya da içinde değiştirilemez: öğeleri dışarı kopyalayın, geri yükleyin ya da kalıcı olarak silin.",
   "TrashFileSystemProvider.NotInTheTrash": "Çöp kutusunda değil: {0}",

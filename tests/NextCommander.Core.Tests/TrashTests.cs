@@ -187,6 +187,21 @@ public sealed class TrashTests : IDisposable
     }
 
     [Fact]
+    public async Task Original_location_column()
+    {
+        var provider = new TrashFileSystemProvider(MakeFreedesktopTrash());
+        var registry = new ProviderRegistry([new LocalFileSystemProvider(), provider]);
+        var columns = new TrashColumns();
+        var notes = (await provider.ListAsync(TrashFileSystemProvider.Root, CancellationToken.None)).Single(e => e.Path.Name == "0_notes.txt");
+        Assert.True(columns.Supports(notes));
+        Assert.False(columns.Supports(new VfsEntry { Name = "a", Path = VfsPath.Local(R("a")) }));
+        var values = await columns.GetValuesAsync(notes, [TrashColumns.OriginalField], registry, CancellationToken.None);
+        Assert.Equal(R("home", "docs").Replace('\\', '/'), ((string)values[TrashColumns.OriginalField]!).Replace('\\', '/'));
+        // the trash's own view mode shows it
+        Assert.Contains(TrashColumns.ViewMode.Columns, c => c.Field == TrashColumns.OriginalField);
+    }
+
+    [Fact]
     public async Task MovingOutOfTheTrashPutsTheItemThereUnderItsOwnName()
     {
         var provider = new TrashFileSystemProvider(MakeFreedesktopTrash());
