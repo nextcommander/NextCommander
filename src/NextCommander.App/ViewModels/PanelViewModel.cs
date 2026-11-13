@@ -2045,11 +2045,22 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         };
     }
 
+    /// <summary>
+    /// Label and space of the drive of a path instead of the real drive's (the documentation screenshots, which must not
+    /// show the machine's disks); null = the real drive.
+    /// </summary>
+    internal static Func<string, (string Label, long Free, long Total)?>? DriveSpaceOverride { get; set; }
+
     private void UpdateFreeSpace()
     {
         if (CurrentPath?.LocalAnchor is not { } path)
         {
             FreeSpaceText = string.Empty;
+            return;
+        }
+        if (DriveSpaceOverride?.Invoke(path.Path) is { } fixedSpace)
+        {
+            FreeSpaceText = string.Format(CultureInfo.CurrentCulture, "[{0}] {1} of {2} free", fixedSpace.Label, FooterSize(fixedSpace.Free), FooterSize(fixedSpace.Total));
             return;
         }
         try

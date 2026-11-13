@@ -60,6 +60,7 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
 | ![Tree and thumbnails](docs/screenshots/tree-and-thumbnails.png)<br>Tree panel and thumbnails | ![Quick View](docs/screenshots/quick-view.png)<br>Quick View | ![Inside a zip archive](docs/screenshots/archive.png)<br>Inside a zip archive |
 | ![Find files](docs/screenshots/find-files.png)<br>Find files | ![Multi-Rename Tool](docs/screenshots/multi-rename.png)<br>Multi-Rename Tool | ![Synchronize directories](docs/screenshots/synchronize.png)<br>Synchronize directories |
 | ![Folder sizes](docs/screenshots/disk-usage.png)<br>Folder sizes | ![Duplicate files](docs/screenshots/duplicates.png)<br>Duplicate files | ![Configuration](docs/screenshots/configuration.png)<br>Configuration |
+| ![Compare by content](docs/screenshots/compare.png)<br>Compare by content | ![Connection manager](docs/screenshots/connections.png)<br>Connection manager | ![About](docs/screenshots/about.png)<br>About |
 
 ## Guides
 

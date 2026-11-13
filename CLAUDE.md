@@ -32,6 +32,7 @@ python build/make_menu_icons.py src/NextCommander.App/Styles/MenuIcons.axaml   #
 python build/extract_strings.py missing.json   # UI texts of the code missing from en.json, with suggested keys (and literals still holding Turkish letters)
 ```
 Tests that take screenshots write PNGs when `FM_SCREENSHOT_DIR=<folder>` is set.
+The documentation screenshots (`docs/screenshots`, 1920x1080, English, sample files only, nothing of the machine: own drive letter with `subst`, fixed drive list / free space / file times, en-US) are made by `DocScreenshots` (Windows): `FM_DOC_SCREENSHOTS=<folder> dotnet test tests/NextCommander.App.Tests --filter DocScreenshots`, then copy the PNGs to `docs/screenshots`.
 With `FM_L10N_REPORT=<file>`, `LocalizationSurveyTests` lists texts left untranslated in Turkish mode.
 The remote integration tests are skipped unless `FM_TEST_FTP` / `FM_TEST_SFTP` / `FM_TEST_WEBDAV` / `FM_TEST_S3` / `FM_TEST_SMB` / `FM_TEST_AZURE` are set (`scheme://user:pass@host:port/dir`; WebDAV `dav://`, S3 `s3://key:secret@host:port/bucket`, SMB `smb://...:4445/TEST`, Azure `azblob://account:key@host:port/container`).
 
