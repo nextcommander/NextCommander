@@ -22,14 +22,11 @@ public partial class MainWindow : Window
     private ListerView? _quickView;
     private readonly DispatcherTimer _titleTimer;
 
-    /// <summary>"NextCommander 1.0.1000": the application with its version (major.minor.build).</summary>
-    public static string AppTitle { get; } = "NextCommander " + Core.Tools.UpdateChecker.DisplayVersion(typeof(MainWindow).Assembly);
-
-    /// <summary>"NextCommander 1.0.1000", "%42 — NextCommander 1.0.1000" while jobs run.</summary>
+    /// <summary>"%42 — NextCommander" while jobs run (the version is shown in About only).</summary>
     public void UpdateTitle()
     {
         var progress = _vm?.Settings.ProgressInTitle == true ? _vm.JobsProgress : null;
-        Title = progress is { } p ? $"%{p * 100:0} — {AppTitle}" : AppTitle;
+        Title = progress is { } p ? $"%{p * 100:0} — NextCommander" : "NextCommander";
     }
     private DispatcherTimer? _quickViewTimer;
 
@@ -142,7 +139,6 @@ public partial class MainWindow : Window
         // Progress of long jobs in the title (visible in the task bar / dock too).
         _titleTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(500), DispatcherPriority.Background, (_, _) => UpdateTitle());
         _titleTimer.Start();
-        UpdateTitle();
     }
 
     public FilePanelView LeftPanel => LeftSideView.Panel;

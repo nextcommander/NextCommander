@@ -77,7 +77,7 @@ public sealed class Phase7Tests : IDisposable
 
         Assert.Null(vm.JobsProgress);
         w.UpdateTitle();
-        Assert.Matches(@"^NextCommander \d+\.\d+\.\d+$", w.Title);
+        Assert.Equal("NextCommander", w.Title);
     }
 
     [Fact]
