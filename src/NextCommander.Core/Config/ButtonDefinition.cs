@@ -64,6 +64,18 @@ public sealed class ButtonDefinition
         new() { Command = "nc_ExecuteTerminal", Icon = "terminal", Tooltip = "Terminal (Ctrl+Alt+T)" },
         new() { Command = "nc_CommandBrowser", Icon = "commands", Tooltip = "Commands and shortcuts" },
     ];
+
+    /// <summary>The default buttons of the vertical button bar.</summary>
+    public static List<ButtonDefinition> VerticalDefaults() =>
+    [
+        new() { Command = "nc_List", Tooltip = "View (F3)" },
+        new() { Command = "nc_Delete", Tooltip = "Delete (F8)" },
+        new() { Command = "nc_Copy", Tooltip = "Copy (F5)" },
+        new() { Command = "nc_RenMov", Tooltip = "Move (F6)" },
+        Separator(),
+        new() { Command = "nc_PackFiles", Tooltip = "Pack (Alt+F5)" },
+        new() { Command = "nc_UnpackFiles", Tooltip = "Unpack (Alt+F9)" },
+    ];
 }
 
 public sealed class HotlistEntry

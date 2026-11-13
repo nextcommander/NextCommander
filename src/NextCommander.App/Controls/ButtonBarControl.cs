@@ -60,14 +60,49 @@ public sealed class ButtonBarControl : UserControl
         AddHandler(KeyDownEvent, OnKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
 
         var menu = new ContextMenu();
-        var add = new MenuItem { Header = "New button..." };
-        add.Click += async (_, _) => await (_vm?.AddButtonAsync(null, _vertical) ?? Task.CompletedTask);
-        menu.Items.Add(add);
-        var change = new MenuItem { Header = "Change button bar..." };
-        change.Click += async (_, _) => await (_vm?.EditButtonBarAsync(_vertical) ?? Task.CompletedTask);
-        menu.Items.Add(change);
+        AddBarItems(menu);
+        WatchIcons(menu);
         ContextMenu = menu;
     }
+
+    /// <summary>The items for the whole bar: new button, edit the bar, reset it to the default buttons.</summary>
+    private void AddBarItems(ContextMenu menu)
+    {
+        void Add(string header, string icon, Func<Task> action)
+        {
+            var item = new MenuItem { Header = header, Tag = icon };
+            item.Click += async (_, _) => await action();
+            menu.Items.Add(item);
+        }
+        Add("New button...", "nc_AddButton", () => _vm?.AddButtonAsync(null, _vertical) ?? Task.CompletedTask);
+        Add("Edit button bar...", _vertical ? "nc_VertButtonConfig" : "nc_ButtonConfig", () => _vm?.EditButtonBarAsync(_vertical) ?? Task.CompletedTask);
+        menu.Items.Add(new Separator());
+        Add("Reset button bar", _vertical ? "nc_ResetVertButtonBar" : "nc_ResetButtonBar", () => _vm?.ResetButtonBarAsync(_vertical) ?? Task.CompletedTask);
+    }
+
+    /// <summary>
+    /// Sets the icons of a menu when it opens (the icon pack or the "icons in the menus" setting may have changed);
+    /// Opening does not come when the menu is opened in code, Opened does.
+    /// </summary>
+    private void WatchIcons(ContextMenu menu)
+    {
+        void SetIcons()
+        {
+            var show = _vm?.Settings.ShowMenuIcons != false;
+            foreach (var item in menu.Items.OfType<MenuItem>())
+            {
+                if (item.Tag is string key && key != "history")
+                {
+                    item.Icon = show ? Services.MenuIcons.Create(key) : null;
+                }
+            }
+        }
+        menu.Opening += (_, _) => SetIcons();
+        menu.Opened += (_, _) => SetIcons();
+    }
+
+    /// <summary>The vertical button bar (between the panels) rather than the one at the top.</summary>
+    public bool IsVertical => _vertical;
 
     /// <summary>Icon size of the buttons (16, 20, 24, 32, 48).</summary>
     public int IconSize { get; private set; } = 16;
@@ -273,23 +308,24 @@ public sealed class ButtonBarControl : UserControl
         }
 
         var menu = new ContextMenu();
-        void Add(string header, Action action)
+        void Add(string header, string icon, Action action)
         {
-            var item = new MenuItem { Header = header };
+            var item = new MenuItem { Header = header, Tag = icon };
             item.Click += (_, _) => action();
             menu.Items.Add(item);
         }
-        Add("Edit...", () => _ = _vm?.EditButtonAsync(_buttons, definition));
-        Add("Delete", () => _vm?.RemoveButton(_buttons, definition));
-        Add(_vertical ? "Move up" : "Move left", () => _vm?.MoveButton(_buttons, definition, -1));
-        Add(_vertical ? "Move down" : "Move right", () => _vm?.MoveButton(_buttons, definition, 1));
-        Add("Add separator", () =>
+        Add("Edit...", "bar.edit", () => _ = _vm?.EditButtonAsync(_buttons, definition));
+        Add("Delete", "bar.delete", () => _vm?.RemoveButton(_buttons, definition));
+        Add(_vertical ? "Move up" : "Move left", _vertical ? "bar.up" : "bar.left", () => _vm?.MoveButton(_buttons, definition, -1));
+        Add(_vertical ? "Move down" : "Move right", _vertical ? "bar.down" : "bar.right", () => _vm?.MoveButton(_buttons, definition, 1));
+        Add("Add separator", "bar.separator", () =>
         {
             _buttons.Insert(_buttons.IndexOf(definition) + 1, ButtonDefinition.Separator());
             Rebuild();
         });
-        Add("New button...", () => _ = _vm?.AddButtonAsync(null, _vertical));
-        Add("Change button bar...", () => _ = _vm?.EditButtonBarAsync(_vertical));
+        menu.Items.Add(new Separator());
+        AddBarItems(menu);
+        WatchIcons(menu);
         if (IsBack(definition) || IsForward(definition))
         {
             menu.Opening += (_, _) => AddHistoryItems(menu, IsBack(definition));

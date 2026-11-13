@@ -21,6 +21,12 @@ public sealed class DialogService : IDialogService
         await dialog.ShowDialog(RequireOwner());
     }
 
+    public async Task ShowAboutAsync(AboutInfo info)
+    {
+        var dialog = new AboutDialog(info);
+        await dialog.ShowDialog(RequireOwner());
+    }
+
     public async Task<bool> ConfirmAsync(string title, string message, string okText = "OK")
     {
         var dialog = new ChoiceDialog<bool>(title, message, [(okText, true), ("Cancel", false)], cancelValue: false);

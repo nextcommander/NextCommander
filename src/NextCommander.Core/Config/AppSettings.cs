@@ -955,16 +955,7 @@ public sealed class AppSettings
     /// <summary>Icon size of the vertical button bar.</summary>
     public int VerticalButtonBarIconSize { get; set; } = 16;
 
-    public List<ButtonDefinition> VerticalButtonBar { get; set; } =
-    [
-        new() { Command = "nc_List", Tooltip = "View (F3)" },
-        new() { Command = "nc_Delete", Tooltip = "Delete (F8)" },
-        new() { Command = "nc_Copy", Tooltip = "Copy (F5)" },
-        new() { Command = "nc_RenMov", Tooltip = "Move (F6)" },
-        ButtonDefinition.Separator(),
-        new() { Command = "nc_PackFiles", Tooltip = "Pack (Alt+F5)" },
-        new() { Command = "nc_UnpackFiles", Tooltip = "Unpack (Alt+F9)" },
-    ];
+    public List<ButtonDefinition> VerticalButtonBar { get; set; } = ButtonDefinition.VerticalDefaults();
 
     /// <summary>User commands callable as uc_Name (buttons, hotkeys, command line).</summary>
     public Dictionary<string, ButtonDefinition> UserCommands

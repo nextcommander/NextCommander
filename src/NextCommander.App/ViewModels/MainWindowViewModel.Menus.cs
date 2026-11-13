@@ -106,6 +106,8 @@ public sealed partial class MainWindowViewModel
         // Configuration
         c.Register("nc_ButtonConfig", "Edit button bar", _ => EditButtonBarAsync(vertical: false));
         c.Register("nc_VertButtonConfig", "Edit vertical button bar", _ => EditButtonBarAsync(vertical: true));
+        c.Register("nc_ResetButtonBar", "Reset button bar to the default buttons", _ => ResetButtonBarAsync(vertical: false));
+        c.Register("nc_ResetVertButtonBar", "Reset vertical button bar to the default buttons", _ => ResetButtonBarAsync(vertical: true));
         // settings are never edited as JSON, so the command opens the Configuration window
         c.Register("nc_EditConfig", "Edit settings file directly", _ => ShowSettingsAsync());
         c.Register("nc_SwitchDarkNormal", "Dark <-> normal", ToggleDark);
@@ -281,9 +283,19 @@ public sealed partial class MainWindowViewModel
     private async Task AboutAsync()
     {
         var assembly = typeof(MainWindowViewModel).Assembly;
-        var version = NextCommander.Core.Tools.UpdateChecker.DisplayVersion(assembly);
-        var avalonia = typeof(Avalonia.Application).Assembly.GetName().Version;
-        await _dialogs.ShowMessageAsync("About",
-            $"NextCommander {version}\nDual-pane file manager\n\n.NET {Environment.Version} · Avalonia {avalonia}\n{System.Runtime.InteropServices.RuntimeInformation.OSDescription}\n\nSettings folder: {_store.Directory}");
+        var copyright = assembly.GetCustomAttribute<AssemblyCopyrightAttribute>()?.Copyright ?? string.Empty;
+        var os = $"{System.Runtime.InteropServices.RuntimeInformation.OSDescription} ({System.Runtime.InteropServices.RuntimeInformation.OSArchitecture})";
+        var info = new Views.Dialogs.AboutInfo(
+            NextCommander.Core.Tools.UpdateChecker.DisplayVersion(assembly),
+            copyright,
+            Environment.Version.ToString(),
+            typeof(Avalonia.Application).Assembly.GetName().Version?.ToString(3) ?? "?",
+            os,
+            Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory),
+            _store.Directory,
+            Views.Dialogs.AboutInfo.BuiltInComponents,
+            () => CheckForUpdatesAsync(interactive: true),
+            folder => ActivePanel.NavigateAsync(VfsPath.Local(folder)));
+        await _dialogs.ShowAboutAsync(info);
     }
 }

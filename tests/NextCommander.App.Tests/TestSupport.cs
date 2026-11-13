@@ -132,6 +132,14 @@ internal sealed class FakeDialogs : IDialogService
         return Task.CompletedTask;
     }
 
+    public NextCommander.App.Views.Dialogs.AboutInfo? LastAbout { get; private set; }
+
+    public Task ShowAboutAsync(NextCommander.App.Views.Dialogs.AboutInfo info)
+    {
+        LastAbout = info;
+        return Task.CompletedTask;
+    }
+
     /// <summary>Answer of <see cref="ConfirmAsync"/> (default yes).</summary>
     public bool ConfirmAnswer { get; set; } = true;
 
