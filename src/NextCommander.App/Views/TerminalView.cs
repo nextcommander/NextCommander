@@ -323,7 +323,7 @@ public sealed class TerminalView : DockPanel
         var flyout = new MenuFlyout();
         foreach (var shell in TerminalSession.AvailableShells())
         {
-            var item = new MenuItem { Header = shell.Name, Classes = { "noloc" } };
+            var item = new MenuItem { Header = shell.DisplayName, Classes = { "noloc" } };
             ToolTip.SetTip(item, shell.FileName);
             var s = shell;
             item.Click += (_, _) => NewTab(s);

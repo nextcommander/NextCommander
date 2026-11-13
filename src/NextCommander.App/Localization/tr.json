@@ -2195,6 +2195,7 @@
   "MtpFileSystemProvider.TheStoragesOfADevice": "Bir aygıtın depolama alanları yeniden adlandırılamaz.",
   "Settings.Layout.TrashButton": "Çöp kutusu / Geri Dönüşüm Kutusu düğmesi",
   "Settings.Layout.TrashButton.Description": "Sürücü düğmelerinde Ağ'dan sonra çöp kutusu: silinen dosyalar panelde.",
+  "SystemNames.CommandPrompt": "Komut İstemi",
   "TerminalView.MaximizeTheTerminalDoubleClick": "Terminali büyüt (başlığa çift tıklama)",
   "TerminalView.RestoreTheTerminalSizeDouble": "Terminali eski boyutuna getir (başlığa çift tıklama)",
   "TrashFileSystemProvider.ItemsInsideADeletedFolder": "Silinmiş bir klasörün içindekiler yalnızca klasörle birlikte silinir.",
