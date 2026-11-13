@@ -45,6 +45,9 @@ public interface IDialogService
 {
     Task ShowMessageAsync(string title, string message);
 
+    /// <summary>Help > About window.</summary>
+    Task ShowAboutAsync(Views.Dialogs.AboutInfo info);
+
     Task<bool> ConfirmAsync(string title, string message, string okText = "OK");
 
     /// <summary>Text input. <paramref name="selectBaseName"/> selects the name without extension.</summary>

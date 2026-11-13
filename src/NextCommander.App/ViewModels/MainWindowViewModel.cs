@@ -1318,6 +1318,30 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// Sets a button bar back to its default buttons and icon size (after asking); its own buttons are lost.
+    /// </summary>
+    public async Task ResetButtonBarAsync(bool vertical, bool ask = true)
+    {
+        if (ask && !await _dialogs.ConfirmAsync(vertical ? "Reset vertical button bar" : "Reset button bar",
+                "Set the button bar back to its default buttons? The buttons you added or changed are removed.", "Reset"))
+        {
+            return;
+        }
+        if (vertical)
+        {
+            _settings.VerticalButtonBar = ButtonDefinition.VerticalDefaults();
+            _settings.VerticalButtonBarIconSize = 16;
+        }
+        else
+        {
+            _settings.ButtonBar = ButtonDefinition.Defaults();
+            _settings.ButtonBarIconSize = 16;
+        }
+        ButtonBarsChanged?.Invoke(this, EventArgs.Empty);
+        SaveSettings();
+    }
+
     public void RemoveButton(List<ButtonDefinition> bar, ButtonDefinition button)
     {
         if (bar.Remove(button))
