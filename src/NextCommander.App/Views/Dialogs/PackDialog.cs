@@ -26,7 +26,7 @@ public sealed class PackDialog : Window
     ];
 
     /// <summary>Extensions the name may end in (swapped when the packer changes).</summary>
-    private static readonly string[] s_extensions = ["zip", "7z", "tar", "tar.gz", "tgz", "tar.bz2", "tbz", "tar.zst", "tzst"];
+    private static readonly string[] s_extensions = ["zip", "7z", "tar", "tar.gz", "tgz", "tar.bz2", "tbz", "tar.zst", "tzst", "exe", "sfx"];
 
     /// <summary>Configuration > Packer: compression level chosen first (index into Store / Fast / Normal / Smallest).</summary>
     public static int DefaultLevelIndex { get; set; } = 2;
@@ -42,6 +42,9 @@ public sealed class PackDialog : Window
     private readonly CheckBox _move = new() { Content = "Move to archive" };
     private readonly CheckBox _separate = new() { Content = "Create separate archives, one per selected file/dir" };
     private readonly CheckBox _leaveOutBase = new() { Content = "Leave out base directory when packing folders", Margin = new Thickness(26, 0, 0, 0), IsEnabled = false };
+    private readonly CheckBox _split = new() { Content = "Split into volumes of", VerticalAlignment = VerticalAlignment.Center };
+    private readonly TextBox _volume = new() { Text = "100M", Width = 110, IsEnabled = false, Classes = { "noloc" } };
+    private readonly CheckBox _sfx = new() { Content = "Create a self-extracting archive" };
     private readonly CheckBox _encrypt = new() { Content = "Encrypt" };
     private readonly TextBox _password = new() { PasswordChar = '●', PlaceholderText = "Password" };
     private readonly TextBox _repeat = new() { PasswordChar = '●', PlaceholderText = "Repeat password" };
@@ -72,10 +75,31 @@ public sealed class PackDialog : Window
             }
         };
         _passwords.Children.AddRange([_password, _repeat, _encryptNote]);
+
+        // 7-Zip: volumes (name.7z.001 ...) or a self-extracting archive; 7-Zip cannot split a self-extracting one
+        ToolTip.SetTip(_volume, "Size of each volume: 100M, 650M (CD), 4092M (FAT32), 1.5G ... A plain number is megabytes.");
+        _split.IsCheckedChanged += (_, _) =>
+        {
+            _volume.IsEnabled = _split.IsChecked == true;
+            UpdateSevenZipOptions();
+            if (_volume.IsEnabled)
+            {
+                _volume.Focus();
+                _volume.SelectAll();
+            }
+        };
+        _sfx.IsCheckedChanged += (_, _) =>
+        {
+            UpdateSevenZipOptions();
+            OnPackerChanged(); // the name ends in .exe
+        };
+        var splitRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        splitRow.Children.AddRange([_split, _volume]);
+
         var left = new StackPanel { Spacing = 8 };
         left.Children.AddRange([
             new TextBlock { Text = description, Classes = { "noloc" } }, _target,
-            _paths, _recursive, _move, _separate, _leaveOutBase, _encrypt, _passwords, _error,
+            _paths, _recursive, _move, _separate, _leaveOutBase, splitRow, _sfx, _encrypt, _passwords, _error,
         ]);
 
         // ---- right: rate, packer, configure
@@ -193,7 +217,10 @@ public sealed class PackDialog : Window
 
     /// <summary>The check boxes by their text and the rate box (tests).</summary>
     public CheckBox Option(string text) =>
-        new[] { _paths, _recursive, _move, _separate, _leaveOutBase, _encrypt }.First(c => string.Equals(c.Content as string, text, StringComparison.Ordinal));
+        new[] { _paths, _recursive, _move, _separate, _leaveOutBase, _split, _sfx, _encrypt }.First(c => string.Equals(c.Content as string, text, StringComparison.Ordinal));
+
+    /// <summary>The volume size box (tests).</summary>
+    public TextBox VolumeBox => _volume;
 
     public NumericUpDown Rate => _rate;
 
@@ -208,13 +235,32 @@ public sealed class PackDialog : Window
 
     private (string Text, PackFormat Format, IPackerPlugin? Plugin, RadioButton Radio) Selected => _packers[_selected];
 
-    private string SelectedExtension => Selected.Plugin is { } p ? "." + p.Extension : PackJob.Extension(Selected.Format);
+    private string SelectedExtension => SelfExtracting ? SevenZipCli.SfxExtension
+        : Selected.Plugin is { } p ? "." + p.Extension : PackJob.Extension(Selected.Format);
+
+    /// <summary>The built-in 7-Zip packer is chosen: volumes and self-extracting archives are its own.</summary>
+    private bool SevenZipChosen => Selected.Format == PackFormat.SevenZip && Selected.Plugin is null;
+
+    private bool SelfExtracting => SevenZipChosen && _sfx.IsChecked == true;
+
+    /// <summary>Volumes and self-extracting archives: only with 7-Zip (the latter when it has an SFX module), not both at once.</summary>
+    private void UpdateSevenZipOptions()
+    {
+        var sfxModule = SevenZipCli.SfxModule is not null;
+        _split.IsEnabled = SevenZipChosen && _sfx.IsChecked != true;
+        _sfx.IsEnabled = SevenZipChosen && sfxModule && _split.IsChecked != true;
+        _volume.IsEnabled = _split.IsEnabled && _split.IsChecked == true;
+        ToolTip.SetTip(_sfx, !sfxModule ? "This 7-Zip has no module for self-extracting archives (7z.sfx)."
+            : _split.IsChecked == true ? "7-Zip cannot split a self-extracting archive." : null);
+        ToolTip.SetTip(_split, _sfx.IsChecked == true ? "7-Zip cannot split a self-extracting archive." : null);
+    }
 
     private bool SelectedEncrypts => Selected.Plugin is { } p ? p.SupportsPassword : Selected.Format is PackFormat.Zip or PackFormat.SevenZip;
 
     /// <summary>Swaps the archive extension when the packer changes; encryption only where the packer has it.</summary>
     private void OnPackerChanged()
     {
+        UpdateSevenZipOptions();
         _encrypt.IsEnabled = SelectedEncrypts;
         if (!SelectedEncrypts)
         {
@@ -279,10 +325,22 @@ public sealed class PackDialog : Window
             _error.Text = "Enter an archive name.";
             return;
         }
+        long volumeSize = 0;
+        if (SevenZipChosen && _split.IsChecked == true && !SelfExtracting)
+        {
+            volumeSize = SevenZipCli.ParseVolumeSize(_volume.Text);
+            if (volumeSize == 0)
+            {
+                _error.Text = "Enter a volume size such as 100M, 700M or 4G.";
+                _volume.Focus();
+                return;
+            }
+        }
         var rate = (int)(_rate.Value ?? 6);
         Result = new PackDialogResult(_target.Text.Trim(), Selected.Format, LevelOf(rate), password, _move.IsChecked == true, _separate.IsChecked == true,
             queue, Selected.Plugin, KeepPaths: _paths.IsChecked == true, Recursive: _recursive.IsChecked == true,
-            LeaveOutBaseFolder: _separate.IsChecked == true && _leaveOutBase.IsChecked == true, Rate: rate);
+            LeaveOutBaseFolder: _separate.IsChecked == true && _leaveOutBase.IsChecked == true, Rate: rate,
+            VolumeSize: volumeSize, SelfExtracting: SelfExtracting);
         Close();
     }
 

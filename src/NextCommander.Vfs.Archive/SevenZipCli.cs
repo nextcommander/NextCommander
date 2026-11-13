@@ -37,6 +37,46 @@ public static partial class SevenZipCli
 
     public static bool IsAvailable => Executable is not null;
 
+    /// <summary>
+    /// The module 7-Zip puts in front of a self-extracting archive: 7z.sfx (with a window, Windows) or 7zCon.sfx
+    /// (console), next to the 7-Zip program; null when this 7-Zip has none (Linux / macOS builds usually do not).
+    /// </summary>
+    public static string? SfxModule => Executable is { } exe && Path.GetDirectoryName(exe) is { } dir
+        ? s_sfxModules.Select(m => Path.Combine(dir, m)).FirstOrDefault(File.Exists)
+        : null;
+
+    private static readonly string[] s_sfxModules = ["7z.sfx", "7zCon.sfx"];
+
+    /// <summary>Extension of a self-extracting archive.</summary>
+    public static string SfxExtension => OperatingSystem.IsWindows() ? ".exe" : ".sfx";
+
+    /// <summary>
+    /// A volume size typed by the user: a number with an optional unit ("100M", "1.5G", "650 MB", "500k"); a plain
+    /// number is megabytes. 0 when the text is not a size.
+    /// </summary>
+    public static long ParseVolumeSize(string? text)
+    {
+        var match = VolumeSize().Match(text ?? string.Empty);
+        if (!match.Success || !double.TryParse(match.Groups[1].Value.Replace(',', '.'), System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var number) || number <= 0)
+        {
+            return 0;
+        }
+        var unit = match.Groups[2].Value.ToUpperInvariant();
+        double factor = unit switch
+        {
+            "B" => 1,
+            "K" or "KB" => 1024,
+            "G" or "GB" => 1024d * 1024 * 1024,
+            _ => 1024d * 1024, // M, MB or none
+        };
+        var bytes = number * factor;
+        return bytes is >= 1024 and < long.MaxValue ? (long)bytes : 0;
+    }
+
+    [GeneratedRegex(@"^\s*(\d+(?:[.,]\d+)?)\s*(B|K|KB|M|MB|G|GB)?\s*$", RegexOptions.IgnoreCase)]
+    private static partial Regex VolumeSize();
+
     private static string? Find()
     {
         if (Environment.GetEnvironmentVariable("FM_7Z") is { Length: > 0 } env && File.Exists(env))
@@ -89,7 +129,9 @@ public static partial class SevenZipCli
     /// <paramref name="percent"/> receives 0..100. Exit code 1 (some files skipped) returns the warning text; failures throw.
     /// </summary>
     /// <summary>The switches of "7z a" for the level, password and the options of Configuration > Packer > 7-Zip.</summary>
-    public static IReadOnlyList<string> Arguments(CompressionLevel level, string? password, SevenZipOptions options)
+    /// <param name="volumeSize">Split into volumes of this many bytes (archive.7z.001, .002 ...); 0 = one file.</param>
+    /// <param name="sfxModule">Make a self-extracting archive with this module (see <see cref="SfxModule"/>); null = a plain .7z.</param>
+    public static IReadOnlyList<string> Arguments(CompressionLevel level, string? password, SevenZipOptions options, long volumeSize = 0, string? sfxModule = null)
     {
         var args = new List<string> { "a", "-t7z", $"-mx={(options.Level is >= 0 and <= 9 ? options.Level.Value : Level(level))}" };
         if (!string.IsNullOrWhiteSpace(options.Method))
@@ -117,6 +159,14 @@ public static partial class SevenZipCli
             {
                 args.Add("-mhe=on");
             }
+        }
+        if (volumeSize > 0)
+        {
+            args.Add("-v" + volumeSize.ToString(System.Globalization.CultureInfo.InvariantCulture) + "b");
+        }
+        if (!string.IsNullOrEmpty(sfxModule))
+        {
+            args.Add("-sfx" + sfxModule);
         }
         args.AddRange(SplitArguments(options.Arguments));
         return args;
@@ -157,7 +207,7 @@ public static partial class SevenZipCli
     }
 
     public static async Task<string?> AddAsync(string archive, string workingDirectory, IReadOnlyList<string> names, CompressionLevel level,
-        string? password, SevenZipOptions? options, Action<int>? percent, CancellationToken ct)
+        string? password, SevenZipOptions? options, Action<int>? percent, CancellationToken ct, long volumeSize = 0, string? sfxModule = null)
     {
         var exe = Executable ?? throw new IOException("7-Zip not found (7zz / 7z). Install it or specify its path with the FM_7Z environment variable.");
         var list = Path.Combine(ArchiveSettings.TempRoot, "fm7z-" + Guid.NewGuid().ToString("N") + ".txt");
@@ -174,7 +224,7 @@ public static partial class SevenZipCli
                 StandardOutputEncoding = Encoding.UTF8,
                 StandardErrorEncoding = Encoding.UTF8,
             };
-            foreach (var arg in Arguments(level, password, options ?? new SevenZipOptions()))
+            foreach (var arg in Arguments(level, password, options ?? new SevenZipOptions(), volumeSize, sfxModule))
             {
                 info.ArgumentList.Add(arg);
             }

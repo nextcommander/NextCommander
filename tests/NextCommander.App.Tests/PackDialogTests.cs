@@ -61,6 +61,55 @@ public sealed class PackDialogTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task Volumes_and_self_extracting_archives_with_7zip()
+    {
+        await _fx.OpenAsync();
+        var dialog = _fx.Track(new PackDialog("Pack 1 file(s) to the archive", @"C:\Users\me\Downloads\Debug.zip", PackFormat.Zip));
+        dialog.Show();
+        await SettleAsync(4);
+        var split = dialog.Option("Split into volumes of");
+        var sfx = dialog.Option("Create a self-extracting archive");
+        // ZIP: 7-Zip's own options are off
+        Assert.False(split.IsEnabled);
+        Assert.False(sfx.IsEnabled);
+        if (!SevenZipCli.IsAvailable)
+        {
+            return; // the 7-ZIP packer needs the program
+        }
+        dialog.SelectedPacker = "7-ZIP";
+        Assert.True(split.IsEnabled);
+        Assert.Equal(SevenZipCli.SfxModule is not null, sfx.IsEnabled);
+
+        // volumes: the size is checked, a plain number is megabytes
+        split.IsChecked = true;
+        Assert.True(dialog.VolumeBox.IsEnabled);
+        Assert.False(sfx.IsEnabled); // 7-Zip cannot split a self-extracting archive
+        dialog.VolumeBox.Text = "big";
+        dialog.Accept(queue: false);
+        Assert.Null(dialog.Result);
+        Assert.Contains("volume size", dialog.ErrorText, StringComparison.Ordinal);
+        dialog.VolumeBox.Text = "700";
+        dialog.Accept(queue: false);
+        Assert.Equal((700L * 1024 * 1024, false), (dialog.Result!.VolumeSize, dialog.Result.SelfExtracting));
+        Assert.EndsWith("Debug.7z", dialog.TargetText, StringComparison.Ordinal);
+
+        if (SevenZipCli.SfxModule is null)
+        {
+            return;
+        }
+        // self-extracting: the name ends in .exe, no volumes
+        var again = _fx.Track(new PackDialog("Pack 1 file(s) to the archive", @"C:\Users\me\Downloads\Debug.7z", PackFormat.SevenZip));
+        again.Show();
+        await SettleAsync(4);
+        again.Option("Create a self-extracting archive").IsChecked = true;
+        Assert.EndsWith("Debug" + SevenZipCli.SfxExtension, again.TargetText, StringComparison.Ordinal);
+        Assert.False(again.Option("Split into volumes of").IsEnabled);
+        again.Accept(queue: false);
+        Assert.Equal((0L, true), (again.Result!.VolumeSize, again.Result.SelfExtracting));
+        Assert.Equal(SevenZipCli.SfxExtension, again.Result.Extension);
+    }
+
+    [AvaloniaFact]
     public async Task Pack_is_in_the_right_click_menus()
     {
         var (w, vm) = await _fx.OpenAsync();
