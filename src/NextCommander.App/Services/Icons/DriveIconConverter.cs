@@ -35,6 +35,7 @@ public sealed class DriveIconConverter : IValueConverter
         DriveKind.Downloads => "MiArrowDown",
         DriveKind.Desktop => "MiDesktop",
         DriveKind.UserHome => "MiHome",
+        DriveKind.Phone => "MiPhone",
         _ => "MiDrive",
     };
 

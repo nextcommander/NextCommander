@@ -28,6 +28,9 @@ public enum DriveKind
 
     /// <summary>Shortcut at the end of the drive bar: the user's home folder.</summary>
     UserHome,
+
+    /// <summary>A phone, camera or player connected over MTP / PTP (Windows: <c>mtp://name/</c>; Linux: a gvfs folder).</summary>
+    Phone,
 }
 
 /// <summary>A shared folder of a machine on the network: its path is \\host\name.</summary>
@@ -108,6 +111,18 @@ public interface IPlatformService : ITrashService
 
     /// <summary>Drives (Windows) or relevant mount points (Linux/macOS), with the home folder first on Unix.</summary>
     IReadOnlyList<DriveItem> GetDrives();
+
+    /// <summary>
+    /// Calls <paramref name="changed"/> (on a thread-pool thread) when drives appear or disappear: a USB disk or memory
+    /// card plugged in or removed, a partition mounted or unmounted, a network drive mapped. Dispose to stop.
+    /// </summary>
+    IDisposable WatchDrives(Action changed);
+
+    /// <summary>
+    /// The MTP / PTP devices reached through the <c>mtp://</c> provider (Windows); none where the system mounts them as
+    /// folders itself (Linux gvfs) or has no MTP (macOS).
+    /// </summary>
+    NextCommander.Platform.Mtp.IMtpDeviceSource PortableDevices { get; }
 
     /// <summary>
     /// The folder of a drive, mounting it first when it is a partition the system has not mounted yet (Linux: udisks,

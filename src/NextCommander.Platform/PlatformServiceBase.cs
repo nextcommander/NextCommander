@@ -12,6 +12,16 @@ public abstract class PlatformServiceBase : IPlatformService
 
     public abstract IReadOnlyList<DriveItem> GetDrives();
 
+    public IDisposable WatchDrives(Action changed) => new DriveWatcher(DriveSignature, changed);
+
+    public virtual NextCommander.Platform.Mtp.IMtpDeviceSource PortableDevices => NextCommander.Platform.Mtp.NoMtpDevices.Instance;
+
+    /// <summary>
+    /// A cheap reading of what makes up the drive list (no volume labels or free space, nothing that waits for a
+    /// device), compared at an interval by <see cref="WatchDrives"/>. Default: the mount points.
+    /// </summary>
+    protected virtual string DriveSignature() => string.Join('\n', DriveInfo.GetDrives().Select(d => d.Name));
+
     public virtual Task<string> MountAsync(DriveItem drive, CancellationToken cancellationToken) => Task.FromResult(drive.RootPath);
 
     public abstract void OpenWithDefaultApp(string path);

@@ -120,7 +120,53 @@ internal sealed class LinuxPlatformService : PlatformServiceBase, IPlatformServi
                 result.Add(ToDriveItem(d, Path.GetFileName(path)));
             }
         }
+        foreach (var (name, folder) in GvfsDevices())
+        {
+            result.Add(new DriveItem(name, folder, null, 0, 0, DriveKind.Phone, true));
+        }
         return result;
+    }
+
+    /// <summary>gvfs (GNOME) mounts phones and cameras as folders: <c>$XDG_RUNTIME_DIR/gvfs/mtp:host=…</c>, <c>gphoto2:host=…</c>.</summary>
+    private static string? GvfsFolder()
+    {
+        var runtime = Environment.GetEnvironmentVariable("XDG_RUNTIME_DIR");
+        return string.IsNullOrEmpty(runtime) ? null : Path.Combine(runtime, "gvfs");
+    }
+
+    private static IEnumerable<(string Name, string Folder)> GvfsDevices()
+    {
+        if (GvfsFolder() is not { } gvfs)
+        {
+            return [];
+        }
+        try
+        {
+            return Directory.EnumerateDirectories(gvfs)
+                .Select(folder => (Name: Mtp.MtpDeviceNames.FromGvfsFolder(Path.GetFileName(folder)), Folder: folder))
+                .Where(d => d.Name is not null)
+                .Select(d => (d.Name!, d.Folder))
+                .OrderBy(d => d.Item1, StringComparer.Ordinal)
+                .ToList();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return [];
+        }
+    }
+
+
+
+    /// <summary>
+    /// The mount table and the block devices: a USB disk that is not mounted (yet) appears in /sys/block, its partitions
+    /// are listed as drives to mount.
+    /// </summary>
+    protected override string DriveSignature()
+    {
+        var mounts = File.ReadAllText("/proc/self/mounts");
+        var blocks = Directory.Exists("/sys/block") ? string.Join('|', Directory.GetFileSystemEntries("/sys/block").Order(StringComparer.Ordinal)) : string.Empty;
+        var phones = GvfsFolder() is { } gvfs && Directory.Exists(gvfs) ? string.Join('|', Directory.GetDirectories(gvfs).Order(StringComparer.Ordinal)) : string.Empty;
+        return mounts + "\n" + blocks + "\n" + phones;
     }
 
     /// <summary>The file system type of a mount ("nfs4", "cifs", "autofs" ...); empty when it cannot be read.</summary>
