@@ -39,7 +39,7 @@ public sealed class ButtonBarResetTests : IDisposable
             if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
             {
                 Directory.CreateDirectory(dir);
-                w.CaptureRenderedFrame()!.Save(Path.Combine(dir, $"bar-menu-{(vertical ? "vertical" : "top")}-{(menu == buttonMenu ? "button" : "bar")}.png"));
+                w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, $"bar-menu-{(vertical ? "vertical" : "top")}-{(menu == buttonMenu ? "button" : "bar")}.png"));
             }
             menu.Close();
             await SettleAsync();

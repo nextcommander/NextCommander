@@ -35,7 +35,7 @@ public sealed class RemoteDialogsTests : IDisposable
         Assert.False(Shown("Key file:"));
 
         var boxes = dialog.GetVisualDescendants().OfType<TextBox>().ToList();
-        TextBox Box(string watermark) => boxes.First(b => b.Watermark == watermark);
+        TextBox Box(string watermark) => boxes.First(b => b.PlaceholderText == watermark);
         Box("s3.eu-central-1.amazonaws.com").Text = "127.0.0.1";
         Box("default").Text = "9000";
         Box("empty: from the server name or us-east-1").Text = "eu-west-1";
@@ -43,7 +43,7 @@ public sealed class RemoteDialogsTests : IDisposable
         dialog.GetVisualDescendants().OfType<CheckBox>().First(c => Equals(c.Content, "No TLS: plain HTTP (a local MinIO, for example)")).IsChecked = true;
         dialog.GetVisualDescendants().OfType<Button>().First(b => Equals(b.Content, "Save")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         var error = dialog.GetVisualDescendants().OfType<TextBlock>().FirstOrDefault(t => t.Foreground == Avalonia.Media.Brushes.IndianRed)?.Text;
-        Assert.True(dialog.Result is not null, error + " | " + string.Join(", ", boxes.Select(b => b.Watermark + "=" + b.Text)));
+        Assert.True(dialog.Result is not null, error + " | " + string.Join(", ", boxes.Select(b => b.PlaceholderText + "=" + b.Text)));
         var result = dialog.Result!;
         Assert.Equal((RemoteProtocol.S3, "s3", "AKIAEXAMPLE", "eu-west-1", true, 9000), (result.Protocol, result.Scheme, result.User, result.Region, result.PlainHttp, result.Port));
         Assert.Equal("s3://AKIAEXAMPLE@127.0.0.1:9000", result.SecretId);
@@ -59,7 +59,7 @@ public sealed class RemoteDialogsTests : IDisposable
         var combo = dialog.GetVisualDescendants().OfType<ComboBox>().First();
         var protocols = ((IEnumerable<string>)combo.ItemsSource!).ToList();
         bool Shown(string text) => dialog.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == text && t.IsEffectivelyVisible);
-        TextBox Box(string watermark) => dialog.GetVisualDescendants().OfType<TextBox>().First(b => b.Watermark == watermark);
+        TextBox Box(string watermark) => dialog.GetVisualDescendants().OfType<TextBox>().First(b => b.PlaceholderText == watermark);
         void Save() => dialog.GetVisualDescendants().OfType<Button>().First(b => Equals(b.Content, "Save")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
         combo.SelectedIndex = protocols.IndexOf("Google Drive");
@@ -109,7 +109,7 @@ public sealed class RemoteDialogsTests : IDisposable
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
         {
             Directory.CreateDirectory(dir);
-            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(dialog)!.Save(Path.Combine(dir, "connection-manager.png"));
+            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(dialog)!.SavePng(Path.Combine(dir, "connection-manager.png"));
         }
     }
 }

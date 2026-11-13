@@ -37,9 +37,9 @@ public sealed partial class LanguageEditorDialog : Window
     private readonly List<Row> _rows;
     private readonly IReadOnlyList<(string Code, string Name)> _languages;
     private readonly ComboBox _language = new() { MinWidth = 220 };
-    private readonly TextBox _code = new() { Watermark = "Code, e.g. it", Width = 120, Classes = { "noloc" } };
-    private readonly TextBox _name = new() { Watermark = "Name in the language, e.g. Italiano", Width = 240, Classes = { "noloc" } };
-    private readonly TextBox _search = new() { Watermark = "Search", Width = 220 };
+    private readonly TextBox _code = new() { PlaceholderText = "Code, e.g. it", Width = 120, Classes = { "noloc" } };
+    private readonly TextBox _name = new() { PlaceholderText = "Name in the language, e.g. Italiano", Width = 240, Classes = { "noloc" } };
+    private readonly TextBox _search = new() { PlaceholderText = "Search", Width = 220 };
     private readonly CheckBox _onlyMissing = new() { Content = "Only texts not translated yet" };
     private readonly ListBox _list = new() { SelectionMode = SelectionMode.Single };
     private readonly TextBlock _count = new() { Opacity = 0.7, VerticalAlignment = VerticalAlignment.Center };

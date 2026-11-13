@@ -42,7 +42,7 @@ public sealed class SettingsWindow : Window
     private readonly Action _changed;
     private readonly IReadOnlyList<SettingItem> _items;
     private readonly IReadOnlyList<(string Text, Func<Task> Action)> _extras;
-    private readonly TextBox _search = new() { Watermark = "Search settings..." };
+    private readonly TextBox _search = new() { PlaceholderText = "Search settings..." };
     private readonly TreeView _tree = new() { Width = 240 };
     private readonly TextBlock _title = new() { FontSize = 18, FontWeight = FontWeight.SemiBold };
     private readonly TextBlock _breadcrumb = new() { FontSize = 12, Opacity = 0.6 };
@@ -233,7 +233,7 @@ public sealed class SettingsWindow : Window
     private static AppSettings Clone(AppSettings settings) =>
         JsonSerializer.Deserialize<AppSettings>(JsonSerializer.Serialize(settings, SettingsStore.JsonOptions), SettingsStore.JsonOptions)!;
 
-    private static Avalonia.Data.IBinding Resource(string key) => new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension(key);
+    private static Avalonia.Data.BindingBase Resource(string key) => new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension(key);
 
     private void BuildTree()
     {
@@ -550,7 +550,7 @@ public sealed class SettingsWindow : Window
         string? watermark = null, bool indent = false) =>
         new(page, group, label, description, (s, changed) =>
         {
-            var box = new TextBox { Text = get(s), Watermark = watermark, MinWidth = 360, MaxWidth = 560 };
+            var box = new TextBox { Text = get(s), PlaceholderText = watermark, MinWidth = 360, MaxWidth = 560 };
             box.TextChanged += (_, _) =>
             {
                 set(s, string.IsNullOrWhiteSpace(box.Text) ? null : box.Text.Trim());
@@ -610,7 +610,7 @@ public sealed class SettingsWindow : Window
                 {
                     continue; // a substitute was found instead
                 }
-                double Width(char c) => glyphs.TryGetGlyph(c, out var g) ? glyphs.GetGlyphAdvance(g) : -1;
+                double Width(char c) => glyphs.CharacterToGlyphMap.TryGetGlyph(c, out var g) && glyphs.TryGetHorizontalGlyphAdvance(g, out var advance) ? advance : -1;
                 var m = Width('M');
                 if (m > 0 && Math.Abs(Width('i') - m) < 0.5 && Math.Abs(Width('W') - m) < 0.5 && Math.Abs(Width('.') - m) < 0.5)
                 {
@@ -1110,7 +1110,7 @@ public sealed class SettingsWindow : Window
             Clone = e => new TextEntry { Value = e.Value },
             Summary = e => e.Value.Length > 0 ? e.Value : "(empty)",
             Validate = e => string.IsNullOrWhiteSpace(e.Value) ? "empty text" : null,
-            Fields = [new(fieldLabel, ListFieldKind.Text, e => e.Value, (e, v) => e.Value = v ?? string.Empty) { Watermark = watermark }],
+            Fields = [new(fieldLabel, ListFieldKind.Text, e => e.Value, (e, v) => e.Value = v ?? string.Empty) { PlaceholderText = watermark }],
         }, list =>
         {
             set(s, list.Select(e => e.Value).ToList());
@@ -1134,12 +1134,12 @@ public sealed class SettingsWindow : Window
         AddText = "Add rule",
         Fields =
         [
-            new("Name", ListFieldKind.Text, r => r.Name, (r, v) => r.Name = v ?? string.Empty) { Watermark = "e.g. Pictures" },
-            new("Mask", ListFieldKind.Text, r => r.Mask, (r, v) => r.Mask = v ?? string.Empty) { Watermark = "e.g. *.jpg *.png | thumbs\\ (name\\ for folders)" },
+            new("Name", ListFieldKind.Text, r => r.Name, (r, v) => r.Name = v ?? string.Empty) { PlaceholderText = "e.g. Pictures" },
+            new("Mask", ListFieldKind.Text, r => r.Mask, (r, v) => r.Mask = v ?? string.Empty) { PlaceholderText = "e.g. *.jpg *.png | thumbs\\ (name\\ for folders)" },
             new("Color (light)", ListFieldKind.Color, r => r.LightColor, (r, v) => r.LightColor = v ?? string.Empty),
             new("Color (dark)", ListFieldKind.Color, r => r.DarkColor, (r, v) => r.DarkColor = v ?? string.Empty),
             new("Changed within (minutes)", ListFieldKind.Number, r => r.MaxAgeMinutes?.ToString(CultureInfo.CurrentCulture), (r, v) => r.MaxAgeMinutes = ParseNumber(v))
-                { Watermark = "any age" },
+                { PlaceholderText = "any age" },
             new("Executable files only", ListFieldKind.Bool, r => r.ExecutableOnly.ToString(CultureInfo.InvariantCulture), (r, v) => r.ExecutableOnly = v == bool.TrueString),
         ],
     };
@@ -1155,10 +1155,10 @@ public sealed class SettingsWindow : Window
         PickProgram = title => PickProgram?.Invoke(title) ?? Task.FromResult<string?>(null),
         Fields =
         [
-            new("Mask", ListFieldKind.Text, e => e.Mask, (e, v) => e.Mask = v ?? string.Empty) { Watermark = "e.g. *.md *.txt" },
+            new("Mask", ListFieldKind.Text, e => e.Mask, (e, v) => e.Mask = v ?? string.Empty) { PlaceholderText = "e.g. *.md *.txt" },
             new("Editor", ListFieldKind.Program, e => e.Program, (e, v) => e.Program = v ?? string.Empty)
             {
-                Watermark = "program path",
+                PlaceholderText = "program path",
                 Options = [("internal", "Built-in"), ("system", "System")],
             },
         ],
@@ -1175,15 +1175,15 @@ public sealed class SettingsWindow : Window
         PickProgram = title => PickProgram?.Invoke(title) ?? Task.FromResult<string?>(null),
         Fields =
         [
-            new("Label", ListFieldKind.Text, a => a.Label, (a, v) => a.Label = EmptyToNull(v)) { Watermark = "name in the Open with menu" },
-            new("Mask", ListFieldKind.Text, a => a.Mask, (a, v) => a.Mask = v ?? string.Empty) { Watermark = "e.g. *.log *.txt" },
+            new("Label", ListFieldKind.Text, a => a.Label, (a, v) => a.Label = EmptyToNull(v)) { PlaceholderText = "name in the Open with menu" },
+            new("Mask", ListFieldKind.Text, a => a.Mask, (a, v) => a.Mask = v ?? string.Empty) { PlaceholderText = "e.g. *.log *.txt" },
             new("Command", ListFieldKind.Program, a => a.Command, (a, v) => a.Command = v ?? string.Empty)
             {
-                Watermark = "program path or nc_ command",
+                PlaceholderText = "program path or nc_ command",
                 Options = [("lister", "Lister"), ("editor", "Editor"), ("system", "System")],
                 PickCommand = true,
             },
-            new("Parameters", ListFieldKind.Text, a => a.Parameters, (a, v) => a.Parameters = EmptyToNull(v)) { Watermark = "default \"%P%N\" (%P path, %N name ...)" },
+            new("Parameters", ListFieldKind.Text, a => a.Parameters, (a, v) => a.Parameters = EmptyToNull(v)) { PlaceholderText = "default \"%P%N\" (%P path, %N name ...)" },
         ],
     };
 
@@ -1197,8 +1197,8 @@ public sealed class SettingsWindow : Window
         AddText = "Add file type",
         Fields =
         [
-            new("Mask", ListFieldKind.Text, r => r.Mask, (r, v) => r.Mask = v ?? string.Empty) { Watermark = "e.g. *.mp4 *.mkv" },
-            new("Fields", ListFieldKind.Text, r => r.Fields, (r, v) => r.Fields = v ?? string.Empty) { Watermark = "e.g. image.dimensions media.duration (separated by spaces)" },
+            new("Mask", ListFieldKind.Text, r => r.Mask, (r, v) => r.Mask = v ?? string.Empty) { PlaceholderText = "e.g. *.mp4 *.mkv" },
+            new("Fields", ListFieldKind.Text, r => r.Fields, (r, v) => r.Fields = v ?? string.Empty) { PlaceholderText = "e.g. image.dimensions media.duration (separated by spaces)" },
         ],
     };
 
@@ -1216,11 +1216,11 @@ public sealed class SettingsWindow : Window
         [
             new("Name in the menu", ListFieldKind.Text, b => b.Label, (b, v) => b.Label = EmptyToNull(v)) { IsVisibleFor = b => !b.IsSeparator },
             new("Command", ListFieldKind.Program, b => b.Command, (b, v) => b.Command = v ?? string.Empty)
-                { Watermark = "program path or nc_ command", IsVisibleFor = b => !b.IsSeparator, PickCommand = true },
+                { PlaceholderText = "program path or nc_ command", IsVisibleFor = b => !b.IsSeparator, PickCommand = true },
             new("Parameters", ListFieldKind.Text, b => b.Parameters, (b, v) => b.Parameters = EmptyToNull(v))
-                { Watermark = "e.g. %P%N", IsVisibleFor = b => !b.IsSeparator },
+                { PlaceholderText = "e.g. %P%N", IsVisibleFor = b => !b.IsSeparator },
             new("Start path", ListFieldKind.Text, b => b.StartPath, (b, v) => b.StartPath = EmptyToNull(v))
-                { Watermark = "empty = the folder of the panel", IsVisibleFor = b => !b.IsSeparator },
+                { PlaceholderText = "empty = the folder of the panel", IsVisibleFor = b => !b.IsSeparator },
             new("Window", ListFieldKind.Choice, b => b.WindowState.ToString(), (b, v) => b.WindowState = Enum.TryParse<ProgramWindowState>(v, out var w) ? w : ProgramWindowState.Normal)
             {
                 Options = [(nameof(ProgramWindowState.Normal), "Normal"), (nameof(ProgramWindowState.Minimized), "Minimized"), (nameof(ProgramWindowState.Maximized), "Maximized")],
@@ -1243,19 +1243,19 @@ public sealed class SettingsWindow : Window
                     ("No proxy (connect directly)", Core.Net.ProxyMode.None),
                     ("Use this proxy:", Core.Net.ProxyMode.Manual),
                 };
-                var host = new TextBox { Text = s.ProxyHost, Watermark = "proxy.example.com or http://proxy:3128", MinWidth = 300, Classes = { "noloc" } };
+                var host = new TextBox { Text = s.ProxyHost, PlaceholderText = "proxy.example.com or http://proxy:3128", MinWidth = 300, Classes = { "noloc" } };
                 var port = new NumericUpDown { Minimum = 1, Maximum = 65535, Value = s.ProxyPort, Width = 140, FormatString = "0" };
                 var kinds = new (string Text, Core.Net.ProxyKind Kind)[] { ("HTTP", Core.Net.ProxyKind.Http), ("SOCKS5", Core.Net.ProxyKind.Socks5) };
                 var kind = new ComboBox { ItemsSource = kinds.Select(k => k.Text).ToList(), Width = 140, SelectedIndex = s.ProxyKind == Core.Net.ProxyKind.Socks5 ? 1 : 0 };
                 var fileTransfers = new CheckBox { Content = "Also for FTP, SFTP and SMB connections", IsChecked = s.ProxyFileTransfers };
                 ToolTip.SetTip(fileTransfers, "An HTTP proxy has to allow CONNECT to their ports (21, 22, 445 ...); a SOCKS5 proxy takes any connection.");
-                var user = new TextBox { Text = s.ProxyUser, Watermark = "only when the proxy asks for one", MinWidth = 300, Classes = { "noloc" } };
+                var user = new TextBox { Text = s.ProxyUser, PlaceholderText = "only when the proxy asks for one", MinWidth = 300, Classes = { "noloc" } };
                 var password = new TextBox
                 {
                     PasswordChar = '•', MinWidth = 300,
-                    Watermark = Core.Net.WebProxyConfig.Password is { Length: > 0 } ? "saved (type to change)" : "kept encrypted in the password store",
+                    PlaceholderText = Core.Net.WebProxyConfig.Password is { Length: > 0 } ? "saved (type to change)" : "kept encrypted in the password store",
                 };
-                var bypass = new TextBox { Text = s.ProxyBypass, Watermark = "localhost; *.local; 10.*", MinWidth = 300, Classes = { "noloc" } };
+                var bypass = new TextBox { Text = s.ProxyBypass, PlaceholderText = "localhost; *.local; 10.*", MinWidth = 300, Classes = { "noloc" } };
                 var bypassLocal = new CheckBox { Content = "Also for local names (without a dot)", IsChecked = s.ProxyBypassLocal };
                 var problem = new TextBlock { Foreground = Brushes.IndianRed, FontSize = 12, TextWrapping = TextWrapping.Wrap };
 

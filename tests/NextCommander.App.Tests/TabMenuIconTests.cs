@@ -24,7 +24,7 @@ public sealed class TabMenuIconTests : IDisposable
         Assert.All(items, i => Assert.NotNull(i.Icon)); // every item of this menu has a command with an icon
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
         {
-            w.CaptureRenderedFrame()!.Save(Path.Combine(dir, "tab-menu-icons.png"));
+            w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "tab-menu-icons.png"));
         }
         strip.ContextMenu.Close();
         await SettleAsync();

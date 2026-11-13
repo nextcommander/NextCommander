@@ -35,7 +35,7 @@ public sealed class DriveBarNetworkTests : IDisposable
         Assert.DoesNotContain(network.GetVisualDescendants().OfType<TextBlock>(), t => t.IsEffectivelyVisible && t.Text == "\\");
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
         {
-            w.CaptureRenderedFrame()!.Save(Path.Combine(dir, "drivebar-network.png"));
+            w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "drivebar-network.png"));
         }
 
         network.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));

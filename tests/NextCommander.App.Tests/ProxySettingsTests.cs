@@ -35,7 +35,7 @@ public sealed class ProxySettingsTests : IDisposable
         Assert.Equal(3, radios.Count);
         Assert.True(radios[0].IsChecked); // the system's proxy by default
         var boxes = window.GetVisualDescendants().OfType<TextBox>().ToList();
-        var host = boxes.First(b => (b.Watermark ?? string.Empty).StartsWith("proxy.example.com", StringComparison.Ordinal));
+        var host = boxes.First(b => (b.PlaceholderText ?? string.Empty).StartsWith("proxy.example.com", StringComparison.Ordinal));
         Assert.False(host.IsEffectivelyEnabled); // the server fields wait for "Use this proxy"
 
         radios[2].IsChecked = true;
@@ -43,13 +43,13 @@ public sealed class ProxySettingsTests : IDisposable
         Assert.True(host.IsEffectivelyEnabled);
         Assert.False(window.CanApply()); // a manual proxy without a server
         host.Text = "proxy.corp";
-        boxes.First(b => (b.Watermark ?? string.Empty).StartsWith("only when", StringComparison.Ordinal)).Text = "alice";
+        boxes.First(b => (b.PlaceholderText ?? string.Empty).StartsWith("only when", StringComparison.Ordinal)).Text = "alice";
         boxes.First(b => b.PasswordChar == '•').Text = "s3cret";
         await SettleAsync();
         Assert.True(window.CanApply());
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
         {
-            window.CaptureRenderedFrame()!.Save(Path.Combine(dir, "settings-proxy.png"));
+            window.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "settings-proxy.png"));
         }
 
         window.Apply();

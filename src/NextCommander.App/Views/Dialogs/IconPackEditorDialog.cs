@@ -31,7 +31,7 @@ public sealed class IconPackEditorDialog : Window
     ];
 
     private readonly IconPack _pack;
-    private readonly TextBox _name = new() { Watermark = "Icon pack name", Width = 260, Classes = { "noloc" } };
+    private readonly TextBox _name = new() { PlaceholderText = "Icon pack name", Width = 260, Classes = { "noloc" } };
     private readonly ComboBox _style = new() { Width = 240 };
     private readonly ColorPicker _monoColor = new() { Width = 70 };
     private readonly CheckBox _themeColor = new() { Content = "The icon color of the color theme" };

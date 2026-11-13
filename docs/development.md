@@ -2,7 +2,7 @@
 
 [Back to the README](../README.md)
 
-NextCommander is written in C# on .NET 10 with Avalonia 11.3 (Fluent theme). The UI texts in the code are
+NextCommander is written in C# on .NET 10 with Avalonia 12.1 (Fluent theme). The UI texts in the code are
 English; translations are applied at run time. The repository folder and the GitHub repository still carry the
 former name `FileManager`.
 

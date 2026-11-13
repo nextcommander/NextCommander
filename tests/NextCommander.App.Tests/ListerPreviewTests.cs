@@ -77,11 +77,11 @@ public sealed class ListerPreviewTests : IDisposable
             return;
         }
         Directory.CreateDirectory(dir);
-        lister.CaptureRenderedFrame()!.Save(Path.Combine(dir, "preview-md-light.png"));
+        lister.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "preview-md-light.png"));
         App.ApplyColorTheme("dark");
         await SettleAsync(6);
-        lister.CaptureRenderedFrame()!.Save(Path.Combine(dir, "preview-md-dark.png"));
-        rtfLister.CaptureRenderedFrame()!.Save(Path.Combine(dir, "preview-rtf-dark.png"));
+        lister.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "preview-md-dark.png"));
+        rtfLister.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "preview-rtf-dark.png"));
     }
 
     /// <summary>Viewer plugin in the Lister: chosen by default for files it wants, key 6 switches to it.</summary>

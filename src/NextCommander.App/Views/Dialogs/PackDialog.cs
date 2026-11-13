@@ -43,8 +43,8 @@ public sealed class PackDialog : Window
     private readonly CheckBox _separate = new() { Content = "Create separate archives, one per selected file/dir" };
     private readonly CheckBox _leaveOutBase = new() { Content = "Leave out base directory when packing folders", Margin = new Thickness(26, 0, 0, 0), IsEnabled = false };
     private readonly CheckBox _encrypt = new() { Content = "Encrypt" };
-    private readonly TextBox _password = new() { PasswordChar = '●', Watermark = "Password" };
-    private readonly TextBox _repeat = new() { PasswordChar = '●', Watermark = "Repeat password" };
+    private readonly TextBox _password = new() { PasswordChar = '●', PlaceholderText = "Password" };
+    private readonly TextBox _repeat = new() { PasswordChar = '●', PlaceholderText = "Repeat password" };
     private readonly TextBlock _encryptNote = new() { FontSize = 12, Opacity = 0.7, TextWrapping = TextWrapping.Wrap };
     private readonly StackPanel _passwords = new() { Spacing = 6, Margin = new Thickness(26, 0, 0, 0), IsVisible = false };
     private readonly TextBlock _error = new() { Foreground = Brushes.IndianRed, TextWrapping = TextWrapping.Wrap };

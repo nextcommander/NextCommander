@@ -1,7 +1,7 @@
 # NextCommander — project notes
 
 A cross-platform (Windows / Linux / macOS) dual-pane file manager with keyboard-driven panels. For personal use.
-C# / .NET 10, Avalonia 11.3, Fluent theme. The UI language of the code is English; the translations (Turkish, German, Spanish, French, Chinese; others as user files) are applied at run time.
+C# / .NET 10, Avalonia 12.1, Fluent theme. The UI language of the code is English; the translations (Turkish, German, Spanish, French, Chinese; others as user files) are applied at run time.
 Formerly FileManager (renamed NextCommander on 8 November 2026). The settings folder is `NextCommander`; if it is missing, the old `FileManager` folder is copied on first start (`SettingsStore.CopyLegacyFolder`).
 Commands are named `nc_*` (built in) and `uc_*` (user commands); the names of earlier versions (`cm_*`, `em_*`, `%COMMANDER_PATH%`) are converted when settings are read and still run (`Core/Commands/LegacyNames.cs`).
 
@@ -21,7 +21,7 @@ This file gathers what is needed to continue the project on another machine or i
 ## Commands
 ```sh
 dotnet build                                   # warnings are errors (TreatWarningsAsErrors)
-dotnet test                                    # Core ~256, App ~206 tests; App tests are headless Avalonia
+dotnet test                                    # Core ~290, App ~280 tests (xunit v3 through VSTest); App tests are headless Avalonia
 dotnet run --project src/NextCommander.App
 ./build/publish.ps1 -Rid win-x64               # zip, portable zip, .msix and -setup.exe (Inno Setup 7, build/windows/NextCommander.iss) under dist/
                                                # (without the SDK / Inno Setup, makeappx and ISCC come from NuGet: BuildTools, Tools.InnoSetup)
@@ -79,6 +79,8 @@ The remote integration tests are skipped unless `FM_TEST_FTP` / `FM_TEST_SFTP` /
 - **Root resource priority:** the root keys of `Application.Resources` are read before the theme dictionaries; the color theme writes the Fm* brushes there.
 - **Closing the running app:** never kill the process. Close the window properly (`CloseMainWindow`); the single-window lock (mutex + named pipe) relies on it. If the app runs from bin/Debug, ask the user to close it before building.
 - **Plain `[Fact]` and Avalonia:** in the App tests, a test that touches a static member of an Avalonia control class (e.g. `FilePanelView.X`, `ButtonBarControl.Y`) must be `[AvaloniaFact]` / `[AvaloniaTheory]`; a plain `[Fact]` runs on the thread pool and can start the dispatcher on the wrong thread, after which a random test fails in 1 ms with `Dispatcher.PushFrame: PlatformNotSupportedException`.
+- **xunit v3 version:** `xunit.v3` must match the version `Avalonia.Headless.XUnit` is built against (12.1.6 → 3.2.2). With a newer xunit.v3 (4.x) test discovery fails with `MissingMethodException` and `dotnet test` hangs. The test projects keep `IsTestingPlatformApplication=false` (and `UseMicrosoftTestingPlatformRunner=false`) so `dotnet test` stays on VSTest; without it the .NET 10 SDK refuses VSTest.
+- **Avalonia 12 APIs:** `TextBox.PlaceholderText` (not `Watermark`), `Bitmap.Save(path, new PngBitmapEncoderOptions())` (tests: `SavePng`), `DragDrop.DoDragDropAsync` needs the `PointerPressedEventArgs` of the press, the clipboard `SetTextAsync` needs `using Avalonia.Input.Platform`. Avalonia.Diagnostics has no 12 release (not referenced). LibVLCSharp.Avalonia 3.10.2 is built against Avalonia 11.
 - **Timing tests:** they slow down under the full suite; keep limits generous (e.g. 8 s in the single-window test).
 - **Windows PowerShell 5.1:** with `$ErrorActionPreference = 'Stop'`, native tools that write to stderr (pip, git) count as failing.
 - **Single-file publish:** `Assembly.Location` is empty in the published program and the analyzer makes it an error (IL3000) only in `dotnet publish`, not in `dotnet build`. Use `AppContext.BaseDirectory` (`AppRestart.ProgramDll()`). Run `./build/publish.ps1 -Rid win-x64` (or at least `dotnet publish -r win-x64 -p:PublishSingleFile=true`) before a release.

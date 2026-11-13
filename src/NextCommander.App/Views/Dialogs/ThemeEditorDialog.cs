@@ -14,9 +14,9 @@ namespace NextCommander.App.Views.Dialogs;
 public sealed class ThemeEditorDialog : Window
 {
     private readonly ColorTheme _theme;
-    private readonly TextBox _name = new() { Watermark = "Theme name", Width = 260, Classes = { "noloc" } };
+    private readonly TextBox _name = new() { PlaceholderText = "Theme name", Width = 260, Classes = { "noloc" } };
     private readonly ComboBox _base = new() { ItemsSource = new[] { "Light", "Dark" }, Width = 140 };
-    private readonly TextBox _filter = new() { Watermark = "Search", Width = 220 };
+    private readonly TextBox _filter = new() { PlaceholderText = "Search", Width = 220 };
     private readonly StackPanel _rows = new() { Spacing = 2 };
     private readonly TextBlock _error = new() { Foreground = Brushes.IndianRed };
     private readonly Dictionary<string, Control> _rowOf = new(StringComparer.OrdinalIgnoreCase);
@@ -92,7 +92,7 @@ public sealed class ThemeEditorDialog : Window
     {
         var current = ColorThemes.Parse(_theme.Colors.GetValueOrDefault(key.Key));
         var picker = new ColorPicker { Color = current ?? Colors.Gray, IsAlphaEnabled = true, Width = 70 };
-        var hex = new TextBox { Text = current is { } c ? ColorThemes.Hex(c) : string.Empty, Watermark = "default", Width = 110, Classes = { "noloc" } };
+        var hex = new TextBox { Text = current is { } c ? ColorThemes.Hex(c) : string.Empty, PlaceholderText = "default", Width = 110, Classes = { "noloc" } };
         var reset = new Button { Content = "Default", Padding = new Thickness(8, 2) };
         ToolTip.SetTip(reset, "Leave this area to the light or dark look");
         var updating = false;

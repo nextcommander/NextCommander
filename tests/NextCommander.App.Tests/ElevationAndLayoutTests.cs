@@ -78,13 +78,13 @@ public sealed class ElevationAndLayoutTests : IDisposable
             Assert.InRange(painted, 40, 32 * 32 - 1); // drawn, with a transparent ground
             if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
             {
-                drawn.Save(Path.Combine(dir, "shell-menu-icon.png"));
+                drawn.SavePng(Path.Combine(dir, "shell-menu-icon.png"));
             }
         }
         var png = _fx.L("dot.png");
         var bitmap = new Avalonia.Media.Imaging.WriteableBitmap(new Avalonia.PixelSize(64, 64), new Avalonia.Vector(96, 96), Avalonia.Platform.PixelFormat.Bgra8888,
             Avalonia.Platform.AlphaFormat.Premul);
-        bitmap.Save(png);
+        bitmap.SavePng(png);
         Assert.NotNull(ThumbnailSources.Shell(png, 64));
     }
 

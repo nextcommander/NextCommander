@@ -58,21 +58,21 @@ public sealed class ConnectionEditDialog : DialogWindow
 
     private readonly TextBox _name = new();
     private readonly ComboBox _protocol = new() { MinWidth = 200 };
-    private readonly TextBox _host = new() { Watermark = "server.example.com" };
-    private readonly TextBox _port = new() { Watermark = "default", Width = 100 };
+    private readonly TextBox _host = new() { PlaceholderText = "server.example.com" };
+    private readonly TextBox _port = new() { PlaceholderText = "default", Width = 100 };
     private readonly TextBox _user = new();
     private readonly CheckBox _savePassword = new() { Content = "Save password (asked on first connect)" };
-    private readonly TextBox _keyFile = new() { Watermark = "SFTP private key file (optional)" };
+    private readonly TextBox _keyFile = new() { PlaceholderText = "SFTP private key file (optional)" };
     private readonly TextBox _path = new();
     private readonly CheckBox _passive = new() { Content = "Passive mode (FTP)" };
     private readonly CheckBox _anyCertificate = new() { Content = "Accept any certificate (not recommended)" };
     private readonly CheckBox _sharePoint = new() { Content = "Show SharePoint sites too (work / school account; a \"SharePoint\" folder at the root)" };
-    private readonly TextBox _region = new() { Watermark = "empty: from the server name or us-east-1" };
+    private readonly TextBox _region = new() { PlaceholderText = "empty: from the server name or us-east-1" };
     private readonly CheckBox _plainHttp = new() { Content = "No TLS: plain HTTP (a local MinIO, for example)" };
     private readonly CheckBox _virtualHost = new() { Content = "Virtual-hosted addresses (bucket.server/key instead of path style)" };
-    private readonly TextBox _awsProfile = new() { Watermark = "empty: access key and secret key" };
-    private readonly TextBox _clientId = new() { Watermark = "id of the registered application" };
-    private readonly TextBox _clientSecret = new() { Watermark = "client secret of the Google desktop application" };
+    private readonly TextBox _awsProfile = new() { PlaceholderText = "empty: access key and secret key" };
+    private readonly TextBox _clientId = new() { PlaceholderText = "id of the registered application" };
+    private readonly TextBox _clientSecret = new() { PlaceholderText = "client secret of the Google desktop application" };
     private Control? _hostRow;
     private Control? _clientIdRow;
     private Control? _clientSecretRow;
@@ -125,7 +125,7 @@ public sealed class ConnectionEditDialog : DialogWindow
         }
         if (NextCommander.Vfs.Remote.AwsProfiles.Names() is { Count: > 0 } profiles)
         {
-            _awsProfile.Watermark = "empty: keys typed in; profiles: " + string.Join(", ", profiles);
+            _awsProfile.PlaceholderText = "empty: keys typed in; profiles: " + string.Join(", ", profiles);
         }
 
         Grid Row(string caption, Control control, Control? extra = null) => RowWith(new TextBlock { Text = caption, VerticalAlignment = VerticalAlignment.Center }, control, extra);
@@ -199,10 +199,10 @@ public sealed class ConnectionEditDialog : DialogWindow
         _clientSecretRow!.IsVisible = protocol == RemoteProtocol.GoogleDrive;
         _sharePoint.IsVisible = protocol == RemoteProtocol.OneDrive;
         _userCaption.Text = s3 ? "Access key:" : azure ? "Storage account:" : cloud ? "Account name:" : "User:";
-        _user.Watermark = cloud ? "e.g. personal, work (tells several accounts apart)" : null;
+        _user.PlaceholderText = cloud ? "e.g. personal, work (tells several accounts apart)" : null;
         _savePassword.Content = cloud ? "Remember the sign-in (sign in once in the browser)"
             : s3 || azure ? "Save the secret key (asked at the first login)" : "Save password (asked on first connect)";
-        _host.Watermark = s3 ? "s3.eu-central-1.amazonaws.com" : azure ? "account.blob.core.windows.net"
+        _host.PlaceholderText = s3 ? "s3.eu-central-1.amazonaws.com" : azure ? "account.blob.core.windows.net"
             : protocol is RemoteProtocol.WebDav or RemoteProtocol.WebDavs ? "cloud.example.com" : "server.example.com";
         _hint.Text = protocol == RemoteProtocol.GoogleDrive
             ? "On first use you sign in with your Google account in the browser. For the application id: console.cloud.google.com → new project → enable the Google Drive API → OAuth consent screen → Credentials → OAuth client ID, type: Desktop app. Enter the client id and client secret it gives here."
@@ -413,9 +413,9 @@ public sealed class FingerprintDialog : DialogWindow
 /// <summary>Sets / changes / removes the master password.</summary>
 public sealed class MasterPasswordDialog : DialogWindow
 {
-    private readonly TextBox _current = new() { PasswordChar = '●', Watermark = "Current master password" };
-    private readonly TextBox _new = new() { PasswordChar = '●', Watermark = "New master password (empty = remove)" };
-    private readonly TextBox _repeat = new() { PasswordChar = '●', Watermark = "Repeat new master password" };
+    private readonly TextBox _current = new() { PasswordChar = '●', PlaceholderText = "Current master password" };
+    private readonly TextBox _new = new() { PasswordChar = '●', PlaceholderText = "New master password (empty = remove)" };
+    private readonly TextBox _repeat = new() { PasswordChar = '●', PlaceholderText = "Repeat new master password" };
     private readonly TextBlock _error = new() { Foreground = Avalonia.Media.Brushes.IndianRed };
 
     public MasterPasswordDialog(bool hasMaster)

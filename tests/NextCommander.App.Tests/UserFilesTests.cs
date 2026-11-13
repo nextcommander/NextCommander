@@ -259,7 +259,7 @@ public sealed class UserFilesTests : IDisposable
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
         {
             Directory.CreateDirectory(dir);
-            w.CaptureRenderedFrame()!.Save(Path.Combine(dir, "tab-close.png"));
+            w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "tab-close.png"));
         }
 
         var closing = side.ActiveTab;

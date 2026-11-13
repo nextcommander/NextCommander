@@ -19,7 +19,7 @@ public partial class FilePanelView
 
     private static DragPayload? s_activeDrag;
 
-    private (FileItemViewModel Item, Point Origin)? _dragCandidate;
+    private (FileItemViewModel Item, Point Origin, PointerPressedEventArgs Press)? _dragCandidate;
 
     private sealed record DragPayload(IReadOnlyList<VfsEntry> Entries, PanelViewModel Source);
 
@@ -33,9 +33,9 @@ public partial class FilePanelView
         }
     }
 
-    private void BeginDragCandidate(FileItemViewModel item, Point origin)
+    private void BeginDragCandidate(FileItemViewModel item, PointerPressedEventArgs press)
     {
-        _dragCandidate = PanelViewModel.CanMark(item) ? (item, origin) : null;
+        _dragCandidate = PanelViewModel.CanMark(item) ? (item, press.GetPosition(this), press) : null;
     }
 
     private void CancelDragCandidate() => _dragCandidate = null;
@@ -69,7 +69,7 @@ public partial class FilePanelView
         s_activeDrag = payload;
         try
         {
-            var result = await DragDrop.DoDragDropAsync(e, data, DragDropEffects.Copy | DragDropEffects.Move | DragDropEffects.Link);
+            var result = await DragDrop.DoDragDropAsync(candidate.Press, data, DragDropEffects.Copy | DragDropEffects.Move | DragDropEffects.Link);
             if (result == DragDropEffects.Move)
             {
                 // Another application moved the files: show the new state.

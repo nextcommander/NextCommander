@@ -746,7 +746,7 @@ public partial class FilePanelView : UserControl
         }
         if (point.Properties.IsLeftButtonPressed)
         {
-            BeginDragCandidate(item, e.GetPosition(this));
+            BeginDragCandidate(item, e);
         }
     }
 
@@ -778,7 +778,7 @@ public partial class FilePanelView : UserControl
         _vm.CursorItem = item;
         if (point.Properties.IsLeftButtonPressed)
         {
-            BeginDragCandidate(item, e.GetPosition(this));
+            BeginDragCandidate(item, e);
         }
     }
 

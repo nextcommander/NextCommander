@@ -145,7 +145,7 @@ public sealed class Phase3Tests : IDisposable
         var path = _fx.L("pic.png");
         using (var bmp = new WriteableBitmap(new PixelSize(40, 20), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Premul))
         {
-            bmp.Save(path);
+            bmp.SavePng(path);
         }
         var w = await OpenListerAsync(vm, path);
         Assert.Equal(ListerMode.Image, w.View.Mode);
@@ -216,7 +216,7 @@ public sealed class Phase3Tests : IDisposable
         Assert.NotEmpty(dialog.Fonts);
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } shots)
         {
-            dialog.CaptureRenderedFrame()!.Save(Path.Combine(shots, "editor-font.png"));
+            dialog.CaptureRenderedFrame()!.SavePng(Path.Combine(shots, "editor-font.png"));
         }
         Assert.All(dialog.Fonts, f => Assert.Contains(f, Views.Dialogs.SettingsWindow.MonospaceFonts()));
         if (OperatingSystem.IsWindows())
@@ -489,14 +489,14 @@ public sealed class Phase3Tests : IDisposable
         {
             App.ApplyColorTheme(theme);
             await SettleAsync();
-            lister.CaptureRenderedFrame()!.Save(Path.Combine(dir, $"phase3-lister-{suffix}.png"));
-            editor.CaptureRenderedFrame()!.Save(Path.Combine(dir, $"phase3-editor-{suffix}.png"));
-            find.CaptureRenderedFrame()!.Save(Path.Combine(dir, $"phase3-find-{suffix}.png"));
-            w.CaptureRenderedFrame()!.Save(Path.Combine(dir, $"phase3-quickview-{suffix}.png"));
+            lister.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, $"phase3-lister-{suffix}.png"));
+            editor.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, $"phase3-editor-{suffix}.png"));
+            find.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, $"phase3-find-{suffix}.png"));
+            w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, $"phase3-quickview-{suffix}.png"));
         }
         Press(lister, Key.D3);
         await SettleAsync();
-        lister.CaptureRenderedFrame()!.Save(Path.Combine(dir, "phase3-hex-dark.png"));
+        lister.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "phase3-hex-dark.png"));
         App.ApplyColorTheme(null);
     }
 

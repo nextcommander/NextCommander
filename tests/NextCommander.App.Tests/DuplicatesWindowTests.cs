@@ -49,7 +49,7 @@ public sealed class DuplicatesWindowTests : IDisposable
             window.MarkAllBut(DuplicateKeep.Oldest);
             await SettleAsync();
             Directory.CreateDirectory(dir);
-            window.CaptureRenderedFrame()!.Save(Path.Combine(dir, "duplicates.png"));
+            window.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "duplicates.png"));
         }
 
         // keep the oldest photo, keep the copy of the note in the first folder (left)

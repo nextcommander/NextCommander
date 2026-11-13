@@ -65,7 +65,7 @@ public sealed class DiskUsageViewTests : IDisposable
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
         {
             Directory.CreateDirectory(dir);
-            w.CaptureRenderedFrame()!.Save(Path.Combine(dir, "disk-usage.png"));
+            w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "disk-usage.png"));
         }
 
         // deleting a folder takes its size out of the tree, the statistics and the map

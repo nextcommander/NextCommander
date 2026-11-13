@@ -11,7 +11,6 @@ using NextCommander.App.Services.Icons;
 using NextCommander.App.ViewModels;
 using NextCommander.Core.Config;
 using NextCommander.Core.Vfs;
-using Xunit.Abstractions;
 using static NextCommander.App.Tests.UiFixture;
 
 namespace NextCommander.App.Tests;
@@ -386,10 +385,10 @@ public sealed class PerformanceTests(ITestOutputHelper output) : IDisposable
         Directory.CreateDirectory(dir);
         await vm.Right.NavigateAsync(VfsPath.Local(_fx.L()));
         await SettleAsync();
-        w.CaptureRenderedFrame()!.Save(Path.Combine(dir, "phase1-light.png"));
+        w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "phase1-light.png"));
         App.ApplyColorTheme("dark");
         await SettleAsync();
-        w.CaptureRenderedFrame()!.Save(Path.Combine(dir, "phase1-dark.png"));
+        w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "phase1-dark.png"));
         App.ApplyColorTheme(null);
     }
 }

@@ -15,7 +15,7 @@ namespace NextCommander.App.Views.Dialogs;
 public sealed class QuickListDialog : DialogWindow
 {
     private readonly IReadOnlyList<QuickListItem> _all;
-    private readonly TextBox _filter = new() { Watermark = "Type to search..." };
+    private readonly TextBox _filter = new() { PlaceholderText = "Type to search..." };
     private readonly ListBox _list = new() { Height = 380 };
 
     public QuickListDialog(string title, IReadOnlyList<QuickListItem> items, IReadOnlyList<string>? actions)
@@ -158,9 +158,9 @@ public sealed class ButtonEditDialog : DialogWindow
 {
     private readonly TextBox _command = new();
     private readonly TextBox _parameters = new();
-    private readonly TextBox _startPath = new() { Watermark = "Empty = active panel's folder" };
-    private readonly TextBox _label = new() { Watermark = "Short text (shown if there is no icon)" };
-    private readonly TextBox _icon = new() { Watermark = "Built-in icon name or program/icon file" };
+    private readonly TextBox _startPath = new() { PlaceholderText = "Empty = active panel's folder" };
+    private readonly TextBox _label = new() { PlaceholderText = "Short text (shown if there is no icon)" };
+    private readonly TextBox _icon = new() { PlaceholderText = "Built-in icon name or program/icon file" };
     private readonly TextBox _tooltip = new();
     private readonly Func<Task<string?>> _pickFile;
 
@@ -315,8 +315,8 @@ public sealed class HotlistEditorDialog : DialogWindow
 /// <summary>One hotlist entry: its name, and the folder (chosen with the folder picker) or the command it runs.</summary>
 public sealed class HotlistEntryDialog : DialogWindow
 {
-    private readonly TextBox _name = new() { Watermark = "Group/Name for a submenu", Classes = { "noloc" } };
-    private readonly TextBox _path = new() { Watermark = "Folder, or a command", Classes = { "noloc" } };
+    private readonly TextBox _name = new() { PlaceholderText = "Group/Name for a submenu", Classes = { "noloc" } };
+    private readonly TextBox _path = new() { PlaceholderText = "Folder, or a command", Classes = { "noloc" } };
     private readonly TextBlock _error = new() { Foreground = Brushes.IndianRed };
 
     public HotlistEntryDialog(string title, Core.Config.HotlistEntry? existing)

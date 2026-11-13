@@ -101,12 +101,12 @@ public sealed class Phase7Tests : IDisposable
         if (!string.IsNullOrEmpty(dir))
         {
             Directory.CreateDirectory(dir);
-            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(window)!.Save(Path.Combine(dir, "phase7-settings.png"));
+            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(window)!.SavePng(Path.Combine(dir, "phase7-settings.png"));
             foreach (var (page, file) in new[] { ("Display", "settings-display"), ("Operation/Copy and delete", "settings-copy"), ("Misc.", "settings-misc") })
             {
                 window.SelectPage(page);
                 await SettleAsync();
-                Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(window)!.Save(Path.Combine(dir, file + ".png"));
+                Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(window)!.SavePng(Path.Combine(dir, file + ".png"));
             }
         }
     }

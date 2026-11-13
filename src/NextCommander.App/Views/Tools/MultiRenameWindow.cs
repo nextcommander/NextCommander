@@ -47,8 +47,8 @@ public sealed class MultiRenameWindow : Window
     private readonly Func<Task> _refresh;
     private readonly TextBox _nameMask = new() { Text = "[N]" };
     private readonly TextBox _extMask = new() { Text = "[E]", Width = 120 };
-    private readonly TextBox _search = new() { Watermark = "Search for (| for multiple)" };
-    private readonly TextBox _replace = new() { Watermark = "Replace with" };
+    private readonly TextBox _search = new() { PlaceholderText = "Search for (| for multiple)" };
+    private readonly TextBox _replace = new() { PlaceholderText = "Replace with" };
     private readonly CheckBox _regex = new() { Content = "Regex" };
     private readonly CheckBox _caseSensitive = new() { Content = "Case sensitive" };
     private readonly CheckBox _firstOnly = new() { Content = "First only" };

@@ -26,10 +26,10 @@ public sealed class ButtonBarEditorDialog : Window
     private readonly ComboBox _size = new() { MinWidth = 90 };
     private readonly TextBox _command = new();
     private readonly TextBox _parameters = new();
-    private readonly TextBox _startPath = new() { Watermark = "Empty = active panel's folder" };
-    private readonly TextBox _iconFile = new() { Watermark = "Empty = the command's icon; built-in name (refresh, star ...) or program / icon file" };
-    private readonly TextBox _label = new() { Watermark = "Short name shown next to the icon on the button (optional)" };
-    private readonly TextBox _tooltip = new() { Watermark = "Tip shown when the mouse is over the button" };
+    private readonly TextBox _startPath = new() { PlaceholderText = "Empty = active panel's folder" };
+    private readonly TextBox _iconFile = new() { PlaceholderText = "Empty = the command's icon; built-in name (refresh, star ...) or program / icon file" };
+    private readonly TextBox _label = new() { PlaceholderText = "Short name shown next to the icon on the button (optional)" };
+    private readonly TextBox _tooltip = new() { PlaceholderText = "Tip shown when the mouse is over the button" };
     private readonly ComboBox _window = new() { MinWidth = 220, Margin = new Thickness(0, 3) };
 
     private static readonly (string Text, ProgramWindowState State)[] s_windowStates =

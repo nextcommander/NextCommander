@@ -302,7 +302,7 @@ public sealed class DocScreenshots
             }
             ctx.DrawGeometry(new SolidColorBrush(mood.Hill), null, hills);
         }
-        bitmap.Save(path);
+        bitmap.SavePng(path);
     }
 
     // ------------------------------------------------------------------ the main window
@@ -351,7 +351,7 @@ public sealed class DocScreenshots
     private void Save(Bitmap bitmap, string name)
     {
         Assert.Equal(new PixelSize(Width, Height), bitmap.PixelSize);
-        bitmap.Save(Path.Combine(_out, name));
+        bitmap.SavePng(Path.Combine(_out, name));
     }
 
     private static async Task CloseMenusAsync(MainWindow w)

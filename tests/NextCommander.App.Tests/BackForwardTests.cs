@@ -102,7 +102,7 @@ public sealed class BackForwardTests : IDisposable
         Assert.Contains(items, i => i.Header as string == "Edit...");
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
         {
-            w.CaptureRenderedFrame()!.Save(Path.Combine(dir, "back-list.png"));
+            w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "back-list.png"));
         }
         items[1].RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
         back.ContextMenu.Close();

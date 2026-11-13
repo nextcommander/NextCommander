@@ -78,17 +78,17 @@ public sealed class LocalizationTests
         {
             var (w, _) = await fx.OpenAsync();
             await UiFixture.SettleAsync();
-            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(w)!.Save(Path.Combine(dir, "tr-main.png"));
+            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(w)!.SavePng(Path.Combine(dir, "tr-main.png"));
             var files = w.GetLogicalDescendants().OfType<MenuItem>().First(m => m.Header as string == "_Files");
             files.IsSubMenuOpen = true;
             await UiFixture.SettleAsync();
             var popup = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(files).OfType<Avalonia.Controls.Primitives.Popup>().First();
-            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(TopLevel.GetTopLevel(popup.Child)!)!.Save(Path.Combine(dir, "tr-menu-files.png"));
+            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(TopLevel.GetTopLevel(popup.Child)!)!.SavePng(Path.Combine(dir, "tr-menu-files.png"));
             files.IsSubMenuOpen = false;
             var settings = new Views.Dialogs.SettingsWindow(new Core.Config.AppSettings(), () => { }, []);
             settings.Show();
             await UiFixture.SettleAsync();
-            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(settings)!.Save(Path.Combine(dir, "tr-settings.png"));
+            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(settings)!.SavePng(Path.Combine(dir, "tr-settings.png"));
             settings.Close();
         }
         finally

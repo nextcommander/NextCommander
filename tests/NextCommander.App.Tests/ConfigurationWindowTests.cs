@@ -83,10 +83,10 @@ public sealed class ConfigurationWindowTests : IDisposable
             Directory.CreateDirectory(dir);
             Box(window, "Create solid archives").IsChecked = false;
             await SettleAsync(3);
-            window.CaptureRenderedFrame()!.Save(Path.Combine(dir, "settings-7zip.png"));
+            window.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "settings-7zip.png"));
             window.SelectPage("Refresh");
             await SettleAsync(3);
-            window.CaptureRenderedFrame()!.Save(Path.Combine(dir, "settings-refresh.png"));
+            window.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "settings-refresh.png"));
         }
     }
 
