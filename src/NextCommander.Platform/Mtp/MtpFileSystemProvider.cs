@@ -10,7 +10,7 @@ namespace NextCommander.Platform.Mtp;
 /// Writing collects the file first (MTP needs the size before the data); a move to another folder is a copy and a delete.
 /// <c>mtp:///</c> lists the connected devices.
 /// </summary>
-public sealed class MtpFileSystemProvider(IMtpDeviceSource source) : IFileSystemProvider, IUploadTimeSupport, IDisposable
+public sealed class MtpFileSystemProvider(IMtpDeviceSource source) : IFileSystemProvider, IUploadTimeSupport, IVolumeSpaceProvider, IDisposable
 {
     public const string MtpScheme = "mtp";
 
@@ -25,7 +25,7 @@ public sealed class MtpFileSystemProvider(IMtpDeviceSource source) : IFileSystem
 
     public string Scheme => MtpScheme;
 
-    public ProviderCapabilities Capabilities => ProviderCapabilities.Read | ProviderCapabilities.Write | ProviderCapabilities.Rename;
+    public ProviderCapabilities Capabilities => ProviderCapabilities.Read | ProviderCapabilities.Write | ProviderCapabilities.Rename | ProviderCapabilities.Watch;
 
     // ---------------------------------------------------------------- reading
 
@@ -216,6 +216,113 @@ public sealed class MtpFileSystemProvider(IMtpDeviceSource source) : IFileSystem
 
     public Task SetTimesAsync(VfsPath path, DateTime? creationTime, DateTime? lastWriteTime, CancellationToken cancellationToken) =>
         throw new NotSupportedException("MTP devices keep their own file times.");
+
+    // ---------------------------------------------------------------- free space, watching
+
+    /// <summary>The storage of a path (its first folder): its capacity and free space; the device root: all storages together.</summary>
+    public Task<VolumeSpace?> GetSpaceAsync(VfsPath path, CancellationToken cancellationToken) => Task.Run(() =>
+    {
+        if (path.Scheme != MtpScheme || path.Authority.Length == 0 || !IsConnected(path.Authority))
+        {
+            return null;
+        }
+        return Use(path, session =>
+        {
+            var storageName = path.Path.Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+            var storages = session.Children("/", session.Device.RootId, fresh: false)
+                .Where(s => storageName is null || string.Equals(s.Name, storageName, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            long total = 0, free = 0;
+            var known = false;
+            foreach (var storage in storages)
+            {
+                if (session.Device.StorageSpace(storage.Id) is { } space)
+                {
+                    total += space.Total;
+                    free += space.Free;
+                    known = true;
+                }
+            }
+            return known ? new VolumeSpace(storageName ?? path.Authority, total, free) : null;
+        });
+    }, cancellationToken);
+
+    /// <summary>How often a watched folder of a device is read again (MTP has no change notices the panel can use).</summary>
+    public TimeSpan WatchInterval { get; init; } = TimeSpan.FromSeconds(3);
+
+    /// <summary>
+    /// Watches a folder of a device: its children's ids are read every <see cref="WatchInterval"/>; files added or
+    /// deleted on the phone (a photo taken, a download) refresh the panel.
+    /// </summary>
+    public IDisposable? Watch(VfsPath directory, Action onChanged) =>
+        directory.Scheme == MtpScheme && directory.Authority.Length > 0 ? new FolderWatch(this, directory, onChanged, WatchInterval) : null;
+
+    /// <summary>The ids of a folder's children in order; null when the folder is not there.</summary>
+    private string? ChildSignature(VfsPath directory) => Use(directory, session =>
+        session.Resolve(directory.Path) is { IsFolder: true } folder
+            ? string.Join('|', session.Device.ChildIds(folder.Id).Order(StringComparer.Ordinal))
+            : null);
+
+    private sealed class FolderWatch : IDisposable
+    {
+        private readonly MtpFileSystemProvider _provider;
+        private readonly VfsPath _directory;
+        private readonly Action _changed;
+        private readonly Timer _timer;
+        private readonly Lock _lock = new();
+        private string? _last;
+        private bool _busy;
+        private bool _disposed;
+
+        public FolderWatch(MtpFileSystemProvider provider, VfsPath directory, Action changed, TimeSpan interval)
+        {
+            _provider = provider;
+            _directory = directory;
+            _changed = changed;
+            _timer = new Timer(_ => Tick(), null, TimeSpan.Zero, interval);
+        }
+
+        private void Tick()
+        {
+            lock (_lock)
+            {
+                if (_busy || _disposed)
+                {
+                    return;
+                }
+                _busy = true;
+            }
+            try
+            {
+                var now = _provider.ChildSignature(_directory);
+                if (now is not null && _last is not null && now != _last)
+                {
+                    _changed();
+                }
+                _last = now ?? _last;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+            {
+                // unplugged or busy: the drive watch handles a phone that is gone
+            }
+            finally
+            {
+                lock (_lock)
+                {
+                    _busy = false;
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            lock (_lock)
+            {
+                _disposed = true;
+            }
+            _timer.Dispose();
+        }
+    }
 
     // ---------------------------------------------------------------- sessions
 
