@@ -57,6 +57,15 @@ public sealed record PackOptions
 
     /// <summary>A selected folder's contents go to the root of the archive, without the folder itself (leave out the base directory).</summary>
     public bool LeaveOutBaseFolder { get; init; }
+
+    /// <summary>7z: split into volumes of this many bytes (name.7z.001, .002 ...); 0 = one file.</summary>
+    public long VolumeSize { get; init; }
+
+    /// <summary>7z: a self-extracting archive (the 7-Zip SFX module in front; see <see cref="SevenZipCli.SfxModule"/>).</summary>
+    public bool SelfExtracting { get; init; }
+
+    /// <summary>The archive is written in volumes.</summary>
+    public bool SplitsIntoVolumes => Format == PackFormat.SevenZip && Plugin is null && VolumeSize > 0 && !SelfExtracting;
 }
 
 /// <summary>Alt+F5: packs files and folders (recursively, names relative to their parent folder) into a new archive.</summary>
@@ -175,10 +184,15 @@ public sealed class PackJob : FileJob
                     }
                 }
             }
-            if (_target.IsLocal)
+            var newest = items.Where(i => !i.Entry.IsDirectory).Select(i => i.Entry.LastWriteTime).DefaultIfEmpty().Max();
+            if (_options.SplitsIntoVolumes)
+            {
+                await PlaceVolumesAsync(local, newest, ct).ConfigureAwait(false);
+            }
+            else if (_target.IsLocal)
             {
                 File.Move(local, _target.Path, overwrite: true);
-                if (_options.SetArchiveDate && items.Where(i => !i.Entry.IsDirectory).Select(i => i.Entry.LastWriteTime).DefaultIfEmpty().Max() is { Year: >= 1980 } newest)
+                if (_options.SetArchiveDate && newest.Year >= 1980)
                 {
                     File.SetLastWriteTime(_target.Path, newest);
                 }
@@ -195,6 +209,10 @@ public sealed class PackJob : FileJob
             if (File.Exists(local))
             {
                 File.Delete(local);
+            }
+            foreach (var volume in VolumesOf(local))
+            {
+                File.Delete(volume); // a failed or cancelled split pack
             }
         }
 
@@ -339,6 +357,62 @@ public sealed class PackJob : FileJob
         zip.Finish();
     }
 
+    /// <summary>The volumes 7-Zip wrote for <paramref name="archive"/>: archive.001, archive.002 ... in order.</summary>
+    public static IReadOnlyList<string> VolumesOf(string archive)
+    {
+        var folder = Path.GetDirectoryName(archive);
+        if (string.IsNullOrEmpty(folder) || !Directory.Exists(folder))
+        {
+            return [];
+        }
+        var name = Path.GetFileName(archive);
+        // exactly name + ".digits": "a.7z.part.001" is not a volume of "a.7z"
+        return Directory.EnumerateFiles(folder, name + ".*")
+            .Where(f => Path.GetExtension(f) is { Length: > 1 } ext && ext[1..].All(char.IsAsciiDigit)
+                && string.Equals(Path.GetFileNameWithoutExtension(f), name, StringComparison.OrdinalIgnoreCase))
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Moves the volumes written next to <paramref name="local"/> to the target's name (name.7z.001 ...). Volumes of an
+    /// earlier archive of that name are deleted first, so no stale part is left behind.
+    /// </summary>
+    private async Task PlaceVolumesAsync(string local, DateTime newest, CancellationToken ct)
+    {
+        var volumes = VolumesOf(local);
+        if (volumes.Count == 0)
+        {
+            throw new IOException("7-Zip wrote no volumes.");
+        }
+        if (_target.IsLocal)
+        {
+            foreach (var old in VolumesOf(_target.Path))
+            {
+                File.Delete(old);
+            }
+            foreach (var volume in volumes)
+            {
+                var placed = _target.Path + Path.GetExtension(volume);
+                File.Move(volume, placed, overwrite: true);
+                if (_options.SetArchiveDate && newest.Year >= 1980)
+                {
+                    File.SetLastWriteTime(placed, newest);
+                }
+            }
+            return;
+        }
+        var provider = _registry.Resolve(_target);
+        var folder = _target.Parent ?? throw new IOException($"No folder for {_target.ToDisplayString()}");
+        foreach (var volume in volumes)
+        {
+            await using var source = File.OpenRead(volume);
+            var placed = folder.Combine(_target.Name + Path.GetExtension(volume));
+            await using var target = await provider.OpenWriteAsync(placed, overwrite: true, ct).ConfigureAwait(false);
+            await source.CopyToAsync(target, ct).ConfigureAwait(false);
+        }
+    }
+
     /// <summary>
     /// 7z through the command line program. Local sources from one folder are added in place; anything else (archives,
     /// FTP, several folders) is first copied to a temporary folder.
@@ -348,6 +422,15 @@ public sealed class PackJob : FileJob
         if (File.Exists(archive))
         {
             File.Delete(archive); // 7z would add to it
+        }
+        foreach (var volume in VolumesOf(archive))
+        {
+            File.Delete(volume);
+        }
+        string? sfx = null;
+        if (_options.SelfExtracting)
+        {
+            sfx = SevenZipCli.SfxModule ?? throw new IOException("This 7-Zip has no module for self-extracting archives (7z.sfx).");
         }
         var parents = _sources.Select(s => s.Path.Parent).Distinct().ToList();
         var inPlace = _sources.All(s => s.Path.IsLocal) && parents.Count == 1 && parents[0] is { } p && p.IsLocal;
@@ -402,7 +485,11 @@ public sealed class PackJob : FileJob
             }
             Progress.BeginItem("7-Zip: " + _target.Name, total);
             var warning = await SevenZipCli.AddAsync(archive, workingDirectory, _sources.Select(s => s.Name).ToList(), _options.Level,
-                _options.Password, _options.SevenZip, OnPercent, ct).ConfigureAwait(false);
+                _options.Password, _options.SevenZip, OnPercent, ct, _options.SplitsIntoVolumes ? _options.VolumeSize : 0, sfx).ConfigureAwait(false);
+            if (sfx is not null && !File.Exists(archive) && File.Exists(archive + ".exe"))
+            {
+                File.Move(archive + ".exe", archive); // some 7-Zip versions add .exe to the name they were given
+            }
             if (warning is not null)
             {
                 AddError(_target.Name, warning);

@@ -3064,6 +3064,8 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             KeepPaths = result.KeepPaths,
             Recursive = result.Recursive,
             LeaveOutBaseFolder = result.LeaveOutBaseFolder,
+            VolumeSize = result.VolumeSize,
+            SelfExtracting = result.SelfExtracting,
         };
         panel.MarkWorkedHere();
         if (result.Separate)
@@ -3077,7 +3079,9 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             }
             return;
         }
-        var existing = await _registry.Resolve(target).GetEntryAsync(target, CancellationToken.None);
+        // in volumes: the first volume (name.7z.001) is what would be overwritten
+        var existingTarget = options.SplitsIntoVolumes && target.Parent is { } volumeFolder ? volumeFolder.Combine(target.Name + ".001") : target;
+        var existing = await _registry.Resolve(existingTarget).GetEntryAsync(existingTarget, CancellationToken.None);
         if (existing is { IsDirectory: false } && result.Plugin is null && result.Format == PackFormat.Zip && result.Password is null
             && _registry.FindContainerRoot(existing) is { } root)
         {
@@ -3087,7 +3091,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             await RunJobAsync(job, result.Queue, panel, sources);
             return;
         }
-        if (existing is not null && !await _dialogs.ConfirmAsync("Pack", $"{target.Name} already exists. Overwrite it?", "Overwrite"))
+        if (existing is not null && !await _dialogs.ConfirmAsync("Pack", $"{existingTarget.Name} already exists. Overwrite it?", "Overwrite"))
         {
             return;
         }
