@@ -80,6 +80,10 @@ public class DriveWatchTests
         Assert.Equal(VfsPath.Parse("mtp://Phone/"), vm.Left.CurrentPath);
         Assert.Equal("Internal storage", Assert.Single(vm.Left.Items, i => !i.IsParent).FullName);
         Assert.Same(phone, vm.Left.SelectedDrive);
+        // the storage's free space in the footer, as for a drive
+        await vm.Left.NavigateAsync(VfsPath.Parse("mtp://Phone/Internal storage"));
+        await UiFixture.WaitUntilAsync(() => vm.Left.FreeSpaceText.StartsWith("[Internal storage]", StringComparison.Ordinal));
+        Assert.StartsWith("[Internal storage]", vm.Left.FreeSpaceText, StringComparison.Ordinal);
 
         await vm.OnDrivesChangedAsync(); // the real drive list has no such phone: it was unplugged
         Assert.Equal(VfsPath.Local(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)), vm.Left.CurrentPath);
@@ -106,6 +110,8 @@ public class DriveWatchTests
         public void Delete(string objectId, bool recursive) => throw new IOException("read only");
 
         public void Rename(string objectId, string newName) => throw new IOException("read only");
+
+        public (long Total, long Free)? StorageSpace(string storageId) => storageId == "s1" ? (64L << 30, 10L << 30) : null;
 
         public void Dispose()
         {

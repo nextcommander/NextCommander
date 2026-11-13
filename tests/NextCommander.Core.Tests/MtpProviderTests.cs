@@ -128,6 +128,40 @@ public sealed class MtpProviderTests : IDisposable
     }
 
     [Fact]
+    public async Task StorageSpaceForTheFooter()
+    {
+        Assert.Null(await _provider.GetSpaceAsync(P("/Internal storage"), CancellationToken.None)); // the device does not tell
+        Phone.Space = (128_000_000_000, 12_000_000_000);
+        Phone.AddFolder("/Internal storage/DCIM");
+        Assert.Equal(new VolumeSpace("Internal storage", 128_000_000_000, 12_000_000_000),
+            await _provider.GetSpaceAsync(P("/Internal storage/DCIM"), CancellationToken.None));
+        Assert.Equal(new VolumeSpace("Phone", 128_000_000_000, 12_000_000_000), await _provider.GetSpaceAsync(P("/"), CancellationToken.None));
+        _source.Unplug("phone-1");
+        Assert.Null(await _provider.GetSpaceAsync(P("/Internal storage"), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task WatchedFolderNoticesFilesAddedOnThePhone()
+    {
+        using var provider = new MtpFileSystemProvider(_source) { WatchInterval = TimeSpan.FromMilliseconds(30) };
+        Phone.AddFile("/Internal storage/DCIM/old.jpg", "1");
+        var changes = 0;
+        using var watch = provider.Watch(P("/Internal storage/DCIM"), () => Interlocked.Increment(ref changes));
+        Assert.NotNull(watch);
+        await Task.Delay(250);
+        Assert.Equal(0, Volatile.Read(ref changes)); // nothing new
+
+        Phone.AddFile("/Internal storage/DCIM/new.jpg", "22"); // a photo taken
+        var start = Environment.TickCount64;
+        while (Volatile.Read(ref changes) == 0 && Environment.TickCount64 - start < 8000)
+        {
+            await Task.Delay(20);
+        }
+        Assert.True(Volatile.Read(ref changes) > 0, "the new photo was not noticed");
+        Assert.Null(provider.Watch(MtpFileSystemProvider.Root, () => { })); // the device list is not watched
+    }
+
+    [Fact]
     public void DevicesWithTheSameNameGetDistinctNames()
     {
         var names = MtpDeviceNames.MakeUnique([new("a", "Galaxy"), new("b", "Galaxy"), new("c", "Cam/era:1")]).Select(d => d.Name);
@@ -255,15 +289,30 @@ public sealed class MtpProviderTests : IDisposable
 
         private Node Add(string parentId, string name, bool folder)
         {
-            var node = new Node { Id = "o" + ++_next, ParentId = parentId, Name = name, IsFolder = folder };
-            _nodes[node.Id] = node;
+            var node = new Node { Id = "o" + Interlocked.Increment(ref _next), ParentId = parentId, Name = name, IsFolder = folder };
+            lock (_nodes)
+            {
+                _nodes[node.Id] = node;
+            }
             return node;
         }
 
         public IReadOnlyList<MtpObject> ListChildren(string parentId)
         {
             CheckConnected();
-            return _nodes.Values.Where(n => n.ParentId == parentId).Select(n => new MtpObject(n.Id, n.Name, n.IsFolder, n.Data.Length, n.Modified)).ToList();
+            lock (_nodes) // a folder watch reads from a timer thread
+            {
+                return _nodes.Values.Where(n => n.ParentId == parentId).Select(n => new MtpObject(n.Id, n.Name, n.IsFolder, n.Data.Length, n.Modified)).ToList();
+            }
+        }
+
+        /// <summary>Capacity and free space of the storage "s1" (null: the device does not tell).</summary>
+        public (long Total, long Free)? Space { get; set; }
+
+        public (long Total, long Free)? StorageSpace(string storageId)
+        {
+            CheckConnected();
+            return storageId == "s1" ? Space : null;
         }
 
         public Stream OpenRead(string objectId)

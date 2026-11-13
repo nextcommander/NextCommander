@@ -28,6 +28,12 @@ public interface IMtpDevice : IDisposable
     void Delete(string objectId, bool recursive);
 
     void Rename(string objectId, string newName);
+
+    /// <summary>The ids of a folder's children only (cheap: no names or sizes), to notice changes.</summary>
+    IReadOnlyList<string> ChildIds(string parentId) => [.. ListChildren(parentId).Select(o => o.Id)];
+
+    /// <summary>The capacity and free space of a storage (a child of <see cref="RootId"/>); null when the device does not tell.</summary>
+    (long Total, long Free)? StorageSpace(string storageId) => null;
 }
 
 /// <summary>The portable devices of the system (Windows: WPD).</summary>

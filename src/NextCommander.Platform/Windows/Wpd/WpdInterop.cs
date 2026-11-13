@@ -300,6 +300,10 @@ internal static unsafe partial class WpdNative
     public static readonly PropertyKey ObjectOriginalFileName = new(ObjectProperties, 12);
     public static readonly PropertyKey ObjectDateModified = new(ObjectProperties, 19);
 
+    private static readonly Guid StorageProperties = new("01a3057a-74d6-4e80-bea7-dc4c212ce50a");
+    public static readonly PropertyKey StorageCapacity = new(StorageProperties, 4);
+    public static readonly PropertyKey StorageFreeSpace = new(StorageProperties, 5);
+
     private static readonly Guid DeviceProperties = new("26d4979a-e643-4626-9e2b-736dc0c92fdc");
     public static readonly PropertyKey DeviceProtocol = new(DeviceProperties, 6);
 
