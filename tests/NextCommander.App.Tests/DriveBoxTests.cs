@@ -13,35 +13,89 @@ public sealed class DriveBoxTests : IDisposable
     public void Dispose() => _fx.Dispose();
 
     [AvaloniaFact]
-    public async Task Drive_box_has_computer_documents_and_network_entries()
+    public async Task Drive_box_has_computer_network_and_trash_entries()
     {
         var sep = Path.DirectorySeparatorChar.ToString();
-        IReadOnlyList<DriveItem> fake = [new DriveItem("A", _fx.L() + sep, "Veri", 1000, 500, DriveKind.Fixed, true), new DriveItem("B", _fx.R() + sep, null, 0, 0, DriveKind.Fixed, true)];
+        IReadOnlyList<DriveItem> fake =
+        [
+            new DriveItem("A", _fx.L() + sep, "Veri", 1000, 500, DriveKind.Fixed, true),
+            new DriveItem("U", _fx.Root + sep, "STICK", 0, 0, DriveKind.Removable, true),
+            new DriveItem("Galaxy", "mtp://Galaxy/", null, 0, 0, DriveKind.Phone, true),
+            new DriveItem("B", _fx.R() + sep, null, 0, 0, DriveKind.Fixed, true),
+        ];
         var provider = new ComputerFileSystemProvider(() => fake);
         var (_, vm) = await _fx.OpenAsync(provider);
         var panel = vm.Left;
         panel.Drives = fake;
-        Assert.Equal(["A", "B", "+", "*", "\\"], panel.DriveChoices.Select(d => d.ShortName).ToArray());
-        Assert.All(panel.DriveChoices.Skip(2), d => Assert.True(d.IsSpecial));
+        // no Documents entry: it is a drive bar shortcut
+        Assert.Equal(["A", "U", "Galaxy", "B", "+", "\\", "×"], panel.DriveChoices.Select(d => d.ShortName).ToArray());
+        Assert.Equal([DriveKind.NetworkPlaces, DriveKind.Trash], panel.DriveBarItems.Skip(4).Select(d => d.Kind));
+        Assert.All(panel.DriveChoices.Skip(4), d => Assert.True(d.IsSpecial));
 
-        // + Computer: every drive as a folder; opening one goes to its root
+        // the trash button on the drive bar follows Configuration > Layout
+        vm.Settings.DriveBarTrash = false;
+        Assert.Equal([DriveKind.NetworkPlaces], panel.DriveBarItems.Skip(4).Select(d => d.Kind));
+        vm.Settings.DriveBarTrash = true;
+
+        // + Computer: the drives in letter order, then external disks, then phones, then the trash, whatever the name sort
         await panel.ChangeDriveAsync(panel.DriveChoices.Single(d => d.Kind == DriveKind.Computer));
         await SettleAsync();
         Assert.Equal(ComputerFileSystemProvider.Root, panel.CurrentPath);
         Assert.Equal(DriveKind.Computer, panel.SelectedDrive!.Kind);
         var drives = panel.Items.Where(i => !i.IsParent).ToList();
-        Assert.Equal(2, drives.Count);
-        Assert.Contains(drives, d => d.FullName.Contains("Veri", StringComparison.Ordinal));
+        // as Explorer names them: the label, or what the drive is
+        Assert.Equal(["Veri (A)", "Local Disk (B)", "STICK (U)", "Phone (Galaxy)", OperatingSystem.IsWindows() ? "Recycle Bin" : "Trash"],
+            drives.Select(d => d.FullName));
         // read only: a drive cannot be deleted from here
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => provider.DeleteAsync(drives[0].Entry!.Path, true, CancellationToken.None));
-        await panel.NavigateAsync(drives.First(d => d.FullName.Contains("Veri", StringComparison.Ordinal)).Entry!.Path);
+        await panel.NavigateAsync(drives[0].Entry!.Path);
         Assert.Equal(VfsPath.Local(_fx.L()), panel.CurrentPath);
+    }
 
-        // * Documents
-        var documents = panel.DriveChoices.Single(d => d.Kind == DriveKind.Documents);
-        await panel.ChangeDriveAsync(documents);
-        Assert.Equal(VfsPath.Local(documents.RootPath), panel.CurrentPath);
+    [AvaloniaFact]
+    public void Drive_icons_come_from_the_system()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+        var system = Path.GetPathRoot(Environment.SystemDirectory)!;
+        var dir = Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR");
+        foreach (var drive in new[] { new DriveItem(system.TrimEnd('\\'), system, null, 0, 0, DriveKind.Fixed, true), DriveItem.ComputerEntry, DriveItem.NetworkEntry, DriveItem.TrashEntry })
+        {
+            var icon = NextCommander.App.Services.Icons.DriveIconConverter.IconFor(drive);
+            Assert.True(icon is not null, $"no system icon for {drive.Kind}");
+            if (dir is { Length: > 0 })
+            {
+                icon.SavePng(Path.Combine(dir, $"drive-icon-{drive.Kind}.png"));
+            }
+        }
+    }
+    [AvaloniaFact]
+    public async Task Trash_entry_lists_deleted_items_and_restores_them()
+    {
+        // a freedesktop trash in the test folder: one deleted file whose place was the left folder
+        var trash = Path.Combine(_fx.Root, "Trash");
+        Directory.CreateDirectory(Path.Combine(trash, "files"));
+        Directory.CreateDirectory(Path.Combine(trash, "info"));
+        File.WriteAllText(Path.Combine(trash, "files", "old.txt"), "old");
+        var original = Path.Combine(_fx.L(), "old.txt");
+        File.WriteAllText(Path.Combine(trash, "info", "old.txt.trashinfo"),
+            "[Trash Info]\nPath=" + string.Join('/', original.Replace('\\', '/').Split('/').Select(Uri.EscapeDataString)) + "\nDeletionDate=2024-05-06T07:08:09\n");
+        var provider = new NextCommander.Platform.Trash.TrashFileSystemProvider(new NextCommander.Platform.Trash.FreedesktopTrash(() => [(trash, null)]));
+        var (_, vm) = await _fx.OpenAsync(provider);
+        var panel = vm.Left;
 
+        await panel.ChangeDriveAsync(DriveItem.TrashEntry);
+        Assert.Equal(NextCommander.Platform.Trash.TrashFileSystemProvider.Root, panel.CurrentPath);
+        Assert.Same(DriveItem.TrashEntry, panel.SelectedDrive);
+        var item = Assert.Single(panel.Items, i => !i.IsParent);
+        Assert.Equal("old.txt", item.FullName);
+
+        panel.CursorItem = item;
+        await vm.ExecuteAsync("nc_RestoreFromTrash");
+        Assert.Equal("old", File.ReadAllText(original));
+        Assert.DoesNotContain(panel.Items, i => !i.IsParent);
     }
 
     [AvaloniaFact]

@@ -31,7 +31,8 @@ public sealed class MenuTests : IDisposable
         var (w, _) = await _fx.OpenAsync();
         // related commands in submenus (the menu fits on a smaller screen)
         Assert.Equal(["Change attributes...", "Archive", "Compare by content...", "Associations", "Properties...", "Calculate occupied space...",
-            "Multi-Rename Tool...", "Edit comment...", "Print", "Split / combine", "Encode / decode", "Checksum", "Exit"], Headers(w, "_Files"));
+            "Multi-Rename Tool...", "Edit comment...", "Print", "Split / combine", "Encode / decode", "Checksum", "Trash", "Exit"], Headers(w, "_Files"));
+        Assert.Equal(["Restore from the trash", "Empty the trash..."], Headers(w, "Trash"));
         Assert.Equal("View", Headers(w, "_Edit")[0]); // the F key commands in their own menu after Files
         Assert.Equal(["Pack...", "Unpack files...", "Test archives"], Headers(w, "Archive"));
         Assert.Equal(["Create checksums (MD5/SHA)...", "Verify checksums"], Headers(w, "Checksum"));

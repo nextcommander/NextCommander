@@ -71,13 +71,16 @@ internal sealed partial class WindowsPlatformService : PlatformServiceBase, IPla
 
     public override NextCommander.Platform.Mtp.IMtpDeviceSource PortableDevices => _portableDevices;
 
+    public override NextCommander.Platform.Trash.ITrashStore TrashStore { get; } = new WindowsRecycleBin();
+
     /// <summary>The drive letters, then the phones / cameras connected over MTP (<c>mtp://name/</c>).</summary>
     public override IReadOnlyList<DriveItem> GetDrives()
     {
         var drives = DriveInfo.GetDrives().Select(d => ToDriveItem(d, d.Name.TrimEnd('\\'))).ToList();
         foreach (var device in _portableDevices.GetDevices())
         {
-            drives.Add(new DriveItem(device.Name, Mtp.MtpFileSystemProvider.DeviceRoot(device.Name).ToString(), null, 0, 0, DriveKind.Phone, true));
+            // the device id: the shell knows the phone by it (its icon and context menu below This PC)
+            drives.Add(new DriveItem(device.Name, Mtp.MtpFileSystemProvider.DeviceRoot(device.Name).ToString(), null, 0, 0, DriveKind.Phone, true) { Device = device.Id });
         }
         return drives;
     }
@@ -88,7 +91,8 @@ internal sealed partial class WindowsPlatformService : PlatformServiceBase, IPla
     /// </summary>
     protected override string DriveSignature() => string.Join('|', DriveInfo.GetDrives().Select(d =>
         d.DriveType == DriveType.Removable && !d.Name.StartsWith('A') && !d.Name.StartsWith('B') && d.IsReady ? d.Name + "+" : d.Name))
-        + "\n" + Wpd.WpdDeviceSource.Signature();
+        // the phones by name: a phone that could be listed only a moment after its interface came changes it again
+        + "\n" + string.Join('|', _portableDevices.GetDevices().Select(d => d.Name));
 
     public override void OpenWithDefaultApp(string path)
     {

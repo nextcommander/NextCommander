@@ -92,8 +92,8 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
     [NotifyPropertyChangedFor(nameof(DriveBarItems))]
     private IReadOnlyList<DriveItem> _drives = [];
 
-    /// <summary>The drive button bar: the drives, then Network (the machines of the local network).</summary>
-    public IReadOnlyList<DriveItem> DriveBarItems => [.. Drives, DriveItem.SpecialEntries[2]];
+    /// <summary>The drive button bar: the drives, then Network (the machines of the local network) and the trash (Configuration > Layout).</summary>
+    public IReadOnlyList<DriveItem> DriveBarItems => _settings.DriveBarTrash ? [.. Drives, DriveItem.NetworkEntry, DriveItem.TrashEntry] : [.. Drives, DriveItem.NetworkEntry];
 
     /// <summary>Folder shortcuts at the right end of the drive bar (Configuration > Layout).</summary>
     public IReadOnlyList<DriveItem> FolderShortcutItems =>
@@ -101,7 +101,7 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
 
     public bool HasFolderShortcuts => FolderShortcutItems.Count > 0;
 
-    /// <summary>The drive box: the drives, then Computer (+), Documents (*) and Network (\).</summary>
+    /// <summary>The drive box: the drives, then Computer (+), Network (\) and the trash (×).</summary>
     public IReadOnlyList<DriveItem> DriveChoices => [.. Drives, .. DriveItem.SpecialEntries];
 
     /// <summary>
@@ -625,7 +625,7 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         UpdateFreeSpace();
         UpdateStatus();
         OnPropertyChanged(nameof(ColumnLayout));
-        foreach (var name in new[] { nameof(Title), nameof(ShowTabIcon), nameof(TabGlyph), nameof(InvertedSelection), nameof(FlatDriveButtons), nameof(ShowDriveLabels), nameof(ShowDriveButtons), nameof(FolderShortcutItems), nameof(HasFolderShortcuts), nameof(ShowDriveCombo), nameof(ShowPathLine), nameof(ShowBreadcrumbs),
+        foreach (var name in new[] { nameof(Title), nameof(ShowTabIcon), nameof(TabGlyph), nameof(InvertedSelection), nameof(FlatDriveButtons), nameof(ShowDriveLabels), nameof(ShowDriveButtons), nameof(FolderShortcutItems), nameof(HasFolderShortcuts), nameof(DriveBarItems), nameof(ShowDriveCombo), nameof(ShowPathLine), nameof(ShowBreadcrumbs),
                      nameof(ShowPathButtons), nameof(ShowColumnHeaders), nameof(ShowStatusBar) })
         {
             OnPropertyChanged(name);
@@ -748,6 +748,8 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
                 return NavigateAsync(VfsPath.Local(drive.RootPath));
             case DriveKind.NetworkPlaces:
                 return NavigateAsync(NetworkFileSystemProvider.Root);
+            case DriveKind.Trash:
+                return NavigateAsync(NextCommander.Platform.Trash.TrashFileSystemProvider.Root);
         }
         if (CurrentPath?.LocalAnchor is { } here && SelectedDrive is { } current && !current.IsSpecial)
         {
@@ -1542,9 +1544,22 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         }
         items = KeepOrderWithAddedAtEnd(items);
         Items = items;
+        if (CurrentPath?.Scheme == ComputerFileSystemProvider.ComputerScheme)
+        {
+            // the drive overview: the drives' own icons (Windows), not folder icons
+            foreach (var item in items)
+            {
+                if (item.Entry is { } entry && ComputerFileSystemProvider.LocalRootOf(entry.Path) is { } root
+                    && Drives.Append(DriveItem.TrashEntry).FirstOrDefault(d => string.Equals(d.RootPath, root, StringComparison.OrdinalIgnoreCase)) is { } drive
+                    && Services.Icons.DriveIconConverter.IconFor(drive) is { } icon)
+                {
+                    item.SystemIcon = icon;
+                }
+            }
+        }
         if (Services.Icons.IconSettings.UseSystemIcons)
         {
-            _icons.Request(items);
+            _icons.Request(CurrentPath?.Scheme == ComputerFileSystemProvider.ComputerScheme ? items.Where(i => i.SystemIcon is null).ToList() : items);
         }
         StartColumnLoad();
         StartThumbnailCaptions();
@@ -1650,7 +1665,9 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         {
             (e.IsDirectory ? dirs : files).Add(e);
         }
-        if (col == SortColumn.Unsorted && _panelSettings.SortField is null)
+        // the drive overview keeps its own order (drive letters, external disks, phones, the trash) unless sorted by another column
+        var driveOverview = CurrentPath?.Scheme == ComputerFileSystemProvider.ComputerScheme && col == SortColumn.Name;
+        if ((col == SortColumn.Unsorted || driveOverview) && _panelSettings.SortField is null)
         {
             // Listing order, folders first; "reversed" reverses it.
             if (desc)
@@ -2101,12 +2118,17 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
     {
         if (CurrentPath?.Scheme == ComputerFileSystemProvider.ComputerScheme)
         {
-            SelectedDrive = DriveItem.SpecialEntries[0];
+            SelectedDrive = DriveItem.ComputerEntry;
             return;
         }
         if (CurrentPath?.Scheme == NetworkFileSystemProvider.NetworkScheme)
         {
-            SelectedDrive = DriveItem.SpecialEntries[2];
+            SelectedDrive = DriveItem.NetworkEntry;
+            return;
+        }
+        if (CurrentPath?.Scheme == NextCommander.Platform.Trash.TrashFileSystemProvider.TrashScheme)
+        {
+            SelectedDrive = DriveItem.TrashEntry;
             return;
         }
         if (CurrentPath?.Scheme == MtpFileSystemProvider.MtpScheme)

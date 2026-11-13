@@ -55,14 +55,26 @@ public partial class MainWindow : Window
         SavedConnectionsMenu.SubmenuOpened += (_, _) => FillSavedConnectionsMenu();
         Activated += (_, _) => _ = _vm?.OnWindowActivatedAsync();
         foreach (var bar in new Control[] { SharedDriveBar, SharedShortcutBar })
-        bar.AddHandler(Button.ClickEvent, (_, e) =>
         {
-            if (e.Source is Button { Tag: NextCommander.Platform.DriveItem drive } && _vm is not null)
+            bar.AddHandler(Button.ClickEvent, (_, e) =>
             {
-                _ = _vm.ActivePanel.ChangeDriveAsync(drive);
-                ActiveView.FocusList();
-            }
-        });
+                if (e.Source is Button { Tag: NextCommander.Platform.DriveItem drive } && _vm is not null)
+                {
+                    _ = _vm.ActivePanel.ChangeDriveAsync(drive);
+                    ActiveView.FocusList();
+                }
+            });
+            // right click: the drive's menu (Explorer's on Windows), for the active panel
+            bar.AddHandler(ContextRequestedEvent, (_, e) =>
+            {
+                if (e.Source is Control { DataContext: NextCommander.Platform.DriveItem drive } source)
+                {
+                    e.Handled = true;
+                    var at = e.TryGetPosition(source, out var point) ? point : new Avalonia.Point(source.Bounds.Width / 2, source.Bounds.Height / 2);
+                    ActiveView.ShowDriveMenu(source, drive, Avalonia.VisualExtensions.PointToScreen(source, at));
+                }
+            });
+        }
         ActualThemeVariantChanged += (_, _) => (DataContext as MainWindowViewModel)?.NotifyThemeChanged();
         StartMenuRoot.SubmenuOpened += (_, _) => FillStartMenu();
         Closed += (_, _) => taskbarTimer.Stop();

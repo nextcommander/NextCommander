@@ -388,6 +388,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         "nc_CopyToClipboard", "nc_CutToClipboard", "nc_SetAttrib", "nc_PackFiles", "nc_UnpackFiles", "nc_TestArchive", "nc_CompareFilesByContent",
         "nc_AssociateWith", "nc_MultiRenameFiles", "nc_EditComment", "nc_PrintFile", "nc_SplitFile", "nc_CombineFiles", "nc_UUEncode", "nc_UUDecode",
         "nc_CRCcreate", "nc_CRCcheck", "nc_CopyNamesToClip", "nc_CopyFullNamesToClip", "nc_CopyDetailsToClip", "nc_CopyFullDetailsToClip",
+        "nc_RestoreFromTrash",
     };
 
     /// <summary>Whether the active panel has files or folders selected (marked ones, or the one under the cursor that is not [..]).</summary>
@@ -669,6 +670,10 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
                 && !phones.Contains(NextCommander.Platform.Mtp.MtpFileSystemProvider.DeviceRoot(device.Authority).ToString()))
             {
                 await tab.NavigateAsync(VfsPath.Local(_platform.HomeDirectory), recordHistory: false); // the phone was unplugged
+            }
+            else if (tab.CurrentPath is { } listing && (listing == ComputerFileSystemProvider.Root || listing == NextCommander.Platform.Mtp.MtpFileSystemProvider.Root))
+            {
+                await tab.RefreshAsync(); // the drive overview (or the device list) shows the drives themselves
             }
         }
     }
@@ -972,6 +977,8 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         c.Register("nc_Config", "Settings", _ => ShowSettingsAsync());
         c.Register("nc_SearchStandalone", "Find files in separate process (Alt+Shift+F7)", _ => SearchStandaloneAsync());
         c.Register("nc_VolumeLabel", "Change volume label", _ => VolumeLabelAsync());
+        c.Register("nc_RestoreFromTrash", "Restore from the trash", _ => RestoreFromTrashAsync());
+        c.Register("nc_EmptyTrash", "Empty the trash", _ => EmptyTrashAsync());
         c.Register("nc_SysInfo", "System information", _ => SystemInfoAsync());
         c.Register("nc_OpenDesktop", "Open Desktop folder", _ => OpenDesktopAsync());
         c.Register("nc_OpenNetwork", "Network: the machines of the local network", _ => ActivePanel.NavigateAsync(NextCommander.Platform.NetworkFileSystemProvider.Root));
@@ -1856,6 +1863,68 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             await _dialogs.ShowMessageAsync("Volume label", ex is UnauthorizedAccessException
                 ? "Administrator permission is required to change the label."
                 : ex.Message);
+        }
+    }
+
+    private NextCommander.Platform.Trash.TrashFileSystemProvider? TrashProvider =>
+        _registry.Providers.OfType<NextCommander.Platform.Trash.TrashFileSystemProvider>().FirstOrDefault();
+
+    /// <summary>Puts the selected items of the trash back where they were deleted from (the panel shows the trash).</summary>
+    private async Task RestoreFromTrashAsync()
+    {
+        if (TrashProvider is not { } trash || ActivePanel.CurrentPath?.Scheme != NextCommander.Platform.Trash.TrashFileSystemProvider.TrashScheme)
+        {
+            await _dialogs.ShowMessageAsync("Restore from the trash", "Open the trash in the panel (drive box or drive bar) and select what to restore.");
+            return;
+        }
+        if (!trash.Store.CanRestore)
+        {
+            await _dialogs.ShowMessageAsync("Restore from the trash",
+                "macOS does not tell other applications where an item in the Trash came from: copy it out instead.");
+            return;
+        }
+        var errors = new List<string>();
+        foreach (var entry in ActivePanel.GetSelectedEntries())
+        {
+            try
+            {
+                await trash.RestoreAsync(entry.Path, CancellationToken.None);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                errors.Add($"{entry.Name}: {ex.Message}");
+            }
+        }
+        await ActivePanel.RefreshAsync();
+        await OtherPanel.RefreshAsync();
+        if (errors.Count > 0)
+        {
+            await _dialogs.ShowMessageAsync("Restore from the trash", string.Join("\n", errors));
+        }
+    }
+
+    /// <summary>Deletes everything in the trash for good, after asking.</summary>
+    private async Task EmptyTrashAsync()
+    {
+        if (TrashProvider is not { } trash
+            || !await _dialogs.ConfirmAsync("Empty the trash", "Delete everything in the trash for good? This cannot be undone.", "Empty"))
+        {
+            return;
+        }
+        try
+        {
+            await trash.EmptyAsync(CancellationToken.None);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            await _dialogs.ShowMessageAsync("Empty the trash", ex.Message);
+        }
+        foreach (var panel in new[] { ActivePanel, OtherPanel })
+        {
+            if (panel.CurrentPath?.Scheme == NextCommander.Platform.Trash.TrashFileSystemProvider.TrashScheme)
+            {
+                await panel.NavigateAsync(NextCommander.Platform.Trash.TrashFileSystemProvider.Root, recordHistory: false);
+            }
         }
     }
 

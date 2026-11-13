@@ -16,6 +16,9 @@ public abstract class PlatformServiceBase : IPlatformService
 
     public virtual NextCommander.Platform.Mtp.IMtpDeviceSource PortableDevices => NextCommander.Platform.Mtp.NoMtpDevices.Instance;
 
+    /// <summary>Linux: the freedesktop.org trash; macOS and Windows override it.</summary>
+    public virtual NextCommander.Platform.Trash.ITrashStore TrashStore { get; } = OperatingSystem.IsMacOS() ? new NextCommander.Platform.Trash.MacTrash() : new NextCommander.Platform.Trash.FreedesktopTrash();
+
     /// <summary>
     /// A cheap reading of what makes up the drive list (no volume labels or free space, nothing that waits for a
     /// device), compared at an interval by <see cref="WatchDrives"/>. Default: the mount points.

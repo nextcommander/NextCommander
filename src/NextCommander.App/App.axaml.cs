@@ -308,6 +308,7 @@ public partial class App : Application
         services.AddSingleton<IFileSystemProvider>(sp => new NetworkFileSystemProvider(sp.GetRequiredService<IPlatformService>(), () => settings.ShowAdminShares));
         services.AddSingleton(sp => new NextCommander.Platform.Mtp.MtpFileSystemProvider(sp.GetRequiredService<IPlatformService>().PortableDevices));
         services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Platform.Mtp.MtpFileSystemProvider>());
+        services.AddSingleton<IFileSystemProvider>(sp => new NextCommander.Platform.Trash.TrashFileSystemProvider(sp.GetRequiredService<IPlatformService>().TrashStore));
         services.AddSingleton(_ => new SecretStore(store.Directory));
         services.AddSingleton<RemoteSession>();
         services.AddSingleton(sp => new NextCommander.Vfs.Remote.SftpFileSystemProvider(sp.GetRequiredService<RemoteSession>().Hooks));

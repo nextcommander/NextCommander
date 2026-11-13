@@ -116,7 +116,7 @@ public static class SystemFolderIcons
     // ------------------------------------------------------------ macOS
 
     /// <summary>NSWorkspace iconForFile: the Finder icon of the folder as PNG.</summary>
-    private static Bitmap? MacIcon(string path)
+    internal static Bitmap? MacIcon(string path)
     {
         var pool = objc_autoreleasePoolPush();
         try
