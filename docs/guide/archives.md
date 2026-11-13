@@ -52,6 +52,11 @@ Commander:
 - **Move to archive**: the files are deleted after packing,
 - **Create separate archives, one per selected file/dir**, and with it **Leave out base directory when packing
   folders** (the contents of a folder at the top of its archive),
+- **Split into volumes of** (7-ZIP): the archive is written in parts of the given size (`100M`, `650M` for a CD,
+  `4092M` for a FAT32 stick, `1.5G` ...; a plain number is megabytes): `name.7z.001`, `name.7z.002` ... 7-Zip opens
+  the set from its first part,
+- **Create a self-extracting archive** (7-ZIP, when 7-Zip has its `7z.sfx` module, as on Windows): a program
+  (`name.exe`) that unpacks itself, for computers without 7-Zip; it cannot be split into volumes,
 - **Encrypt**: a password for zip (AES-256 by default; AES-128 or the older ZipCrypto, which Windows Explorer can
   open, can be chosen on the *Packer > Zip* page) or 7z,
 - on the right, the **compression rate** (0 = store only ... 9 = smallest), the **packer** (ZIP, 7-ZIP, TAR, TGZ,

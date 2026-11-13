@@ -352,6 +352,77 @@ public sealed class ArchiveTests : IAsyncLifetime
         Assert.NotEqual(0, RunSevenZip("t", "-pyanlis", locked));
     }
 
+    [Theory]
+    [InlineData("100M", 100L * 1024 * 1024)]
+    [InlineData("100", 100L * 1024 * 1024)]
+    [InlineData("1.5G", 1536L * 1024 * 1024)]
+    [InlineData("650 MB", 650L * 1024 * 1024)]
+    [InlineData("500k", 500L * 1024)]
+    [InlineData("4092m", 4092L * 1024 * 1024)]
+    [InlineData("", 0L)]
+    [InlineData("big", 0L)]
+    [InlineData("-5M", 0L)]
+    [InlineData("10B", 0L)] // smaller than a kilobyte
+    public void Volume_sizes_are_read_with_units(string text, long bytes) => Assert.Equal(bytes, SevenZipCli.ParseVolumeSize(text));
+
+    [Fact]
+    public void Volumes_and_sfx_are_7zip_switches()
+    {
+        var args = SevenZipCli.Arguments(System.IO.Compression.CompressionLevel.Optimal, null, new SevenZipOptions(), volumeSize: 1048576);
+        Assert.Contains("-v1048576b", args);
+        Assert.DoesNotContain(args, a => a.StartsWith("-sfx", StringComparison.Ordinal));
+        var sfx = SevenZipCli.Arguments(System.IO.Compression.CompressionLevel.Optimal, null, new SevenZipOptions(), sfxModule: @"C:\7-Zip\7z.sfx");
+        Assert.Contains(@"-sfxC:\7-Zip\7z.sfx", sfx);
+        Assert.DoesNotContain(sfx, a => a.StartsWith("-v", StringComparison.Ordinal));
+        // a self-extracting archive is never split (7-Zip cannot)
+        Assert.False(new PackOptions { Format = PackFormat.SevenZip, VolumeSize = 1048576, SelfExtracting = true }.SplitsIntoVolumes);
+        Assert.False(new PackOptions { Format = PackFormat.Zip, VolumeSize = 1048576 }.SplitsIntoVolumes);
+    }
+
+    [Fact]
+    public async Task Pack_7z_in_volumes_and_self_extracting()
+    {
+        if (!SevenZipCli.IsAvailable)
+        {
+            return; // 7-Zip not installed on this machine
+        }
+        // 300 KB that does not compress: three volumes of 128 KB
+        var noise = new byte[300 * 1024];
+        new Random(7).NextBytes(noise);
+        Directory.CreateDirectory(Path.Combine(_dir.Root, "data"));
+        File.WriteAllBytes(Path.Combine(_dir.Root, "data", "noise.bin"), noise);
+        var data = (await _registry.Resolve(VfsPath.Local(_dir.Root)).GetEntryAsync(VfsPath.Local(Path.Combine(_dir.Root, "data")), CancellationToken.None))!;
+
+        var target = Path.Combine(_dir.Root, "split.7z");
+        File.WriteAllText(target + ".009", "an old volume"); // left from an earlier, bigger archive
+        var job = new PackJob(_registry, [data], VfsPath.Local(target), new PackOptions { Format = PackFormat.SevenZip, VolumeSize = 128 * 1024 });
+        await job.RunAsync();
+        Assert.True(job.State == JobState.Completed, job.Failure?.ToString() + string.Join("; ", job.Errors.Select(e => e.Message)));
+        Assert.Equal(["split.7z.001", "split.7z.002", "split.7z.003"], PackJob.VolumesOf(target).Select(Path.GetFileName));
+        Assert.False(File.Exists(target));
+        Assert.Empty(Directory.GetFiles(_dir.Root, "*.part*"));
+        Assert.True(new FileInfo(target + ".001").Length <= 128 * 1024);
+        // 7-Zip opens the set from its first volume and finds it whole
+        Assert.Equal(0, RunSevenZip("t", target + ".001"));
+
+        if (SevenZipCli.SfxModule is null)
+        {
+            return; // this 7-Zip has no SFX module (Linux / macOS builds)
+        }
+        var exe = Path.Combine(_dir.Root, "setup" + SevenZipCli.SfxExtension);
+        var sfx = new PackJob(_registry, [data], VfsPath.Local(exe), new PackOptions { Format = PackFormat.SevenZip, SelfExtracting = true, VolumeSize = 128 * 1024 });
+        await sfx.RunAsync();
+        Assert.True(sfx.State == JobState.Completed, sfx.Failure?.ToString());
+        var head = new byte[2];
+        await using (var file = File.OpenRead(exe))
+        {
+            await file.ReadExactlyAsync(head);
+        }
+        Assert.Equal("MZ"u8.ToArray(), head); // a program (the SFX module) with the archive behind it
+        Assert.Empty(PackJob.VolumesOf(exe)); // not split
+        Assert.Equal(0, RunSevenZip("t", exe));
+    }
+
     private static int RunSevenZip(params string[] args)
     {
         var info = new System.Diagnostics.ProcessStartInfo(SevenZipCli.Executable!) { RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = true };

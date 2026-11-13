@@ -8,10 +8,11 @@ namespace NextCommander.App.Services;
 /// <summary>Alt+F5 choices.</summary>
 public sealed record PackDialogResult(string Target, NextCommander.Vfs.Archive.PackFormat Format, System.IO.Compression.CompressionLevel Level,
     string? Password, bool MoveFiles, bool Separate, bool Queue, NextCommander.Core.Plugins.IPackerPlugin? Plugin = null,
-    bool KeepPaths = true, bool Recursive = true, bool LeaveOutBaseFolder = false, int? Rate = null)
+    bool KeepPaths = true, bool Recursive = true, bool LeaveOutBaseFolder = false, int? Rate = null, long VolumeSize = 0, bool SelfExtracting = false)
 {
-    /// <summary>Archive extension of the chosen format (".zip", or the plugin's).</summary>
-    public string Extension => Plugin is { } p ? "." + p.Extension : NextCommander.Vfs.Archive.PackJob.Extension(Format);
+    /// <summary>Archive extension of the chosen format (".zip", or the plugin's; ".exe" for a self-extracting archive).</summary>
+    public string Extension => SelfExtracting ? NextCommander.Vfs.Archive.SevenZipCli.SfxExtension
+        : Plugin is { } p ? "." + p.Extension : NextCommander.Vfs.Archive.PackJob.Extension(Format);
 }
 
 public sealed record CopyDialogResult(string Target, ConflictPolicy ConflictPolicy, bool Verify, string? Filter, bool Queue, long SpeedLimit = 0)
