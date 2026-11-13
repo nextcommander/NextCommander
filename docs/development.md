@@ -213,10 +213,12 @@ set `MSIX_CERT` (.pfx) / `MSIX_PUBLISHER`.
 
 ### Windows (setup program)
 
-`build/windows/NextCommander.iss` is an Inno Setup 6 script; `publish.ps1` compiles it with the `ISCC.exe` of an
-installed Inno Setup 6, or else from the `Tools.InnoSetup` NuGet package (downloaded once under `artifacts/tools`).
+`build/windows/NextCommander.iss` is an Inno Setup 7 script (Inno Setup 6 cannot compile it); `publish.ps1` compiles
+it with the `ISCC.exe` of an installed Inno Setup 7, or else from the `Tools.InnoSetup` 7.1.0 NuGet package
+(downloaded once under `artifacts/tools`). The setup program itself is 64-bit (`SetupArchitecture=x64`; on Windows
+on Arm it runs emulated) and its wizard follows the light / dark mode of Windows (`WizardStyle=modern dynamic`).
 The setup installs per user by default (`{autopf}` = `%LOCALAPPDATA%\Programs`, no administrator rights; "all
-users" can be chosen), in English or Turkish, with a Start menu entry and the optional tasks desktop icon and
+users" can be chosen), in English, Turkish, German, Spanish, French or Simplified Chinese, with a Start menu entry and the optional tasks desktop icon and
 "Open in NextCommander" (folders, folder background, drives; `HKA\Software\Classes`). A running NextCommander is
 closed through the Restart Manager before its files are replaced. Uninstalling keeps the settings folder. The
 setup is signed with the same certificate as the MSIX when there is one. Silent use:

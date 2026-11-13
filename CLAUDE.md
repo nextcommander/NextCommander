@@ -23,7 +23,7 @@ This file gathers what is needed to continue the project on another machine or i
 dotnet build                                   # warnings are errors (TreatWarningsAsErrors)
 dotnet test                                    # Core ~256, App ~206 tests; App tests are headless Avalonia
 dotnet run --project src/NextCommander.App
-./build/publish.ps1 -Rid win-x64               # zip, portable zip, .msix and -setup.exe (Inno Setup, build/windows/NextCommander.iss) under dist/
+./build/publish.ps1 -Rid win-x64               # zip, portable zip, .msix and -setup.exe (Inno Setup 7, build/windows/NextCommander.iss) under dist/
                                                # (without the SDK / Inno Setup, makeappx and ISCC come from NuGet: BuildTools, Tools.InnoSetup)
 ./build/windows/new-msix-certificate.ps1 -Trust # MSIX signing certificate (CN=NextCommander, user store) + trust it on this machine (UAC)
 ./tests/servers/run-integration-tests.ps1      # remote tests against local FTP/SFTP/WebDAV/S3/SMB (+ Azurite if Node is there) servers (needs Python)
