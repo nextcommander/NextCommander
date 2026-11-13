@@ -2195,6 +2195,7 @@
   "MtpFileSystemProvider.TheStoragesOfADevice": "Die Speicher eines Geräts können nicht umbenannt werden.",
   "Settings.Layout.TrashButton": "Schaltfläche Papierkorb",
   "Settings.Layout.TrashButton.Description": "Der Papierkorb nach „Netzwerk“ auf den Laufwerksschaltflächen: gelöschte Dateien im Bereich.",
+  "SystemNames.CommandPrompt": "Eingabeaufforderung",
   "TerminalView.MaximizeTheTerminalDoubleClick": "Terminal maximieren (Doppelklick auf den Titel)",
   "TerminalView.RestoreTheTerminalSizeDouble": "Terminalgröße wiederherstellen (Doppelklick auf den Titel)",
   "TrashFileSystemProvider.ItemsInsideADeletedFolder": "Elemente in einem gelöschten Ordner werden nur mit dem Ordner gelöscht.",
