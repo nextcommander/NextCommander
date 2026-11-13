@@ -127,6 +127,8 @@ public partial class FilePanelView : UserControl
                 FocusList();
             }
         });
+        DriveBarMarks.Watch(DriveButtons);
+        DriveBarMarks.Watch(ShortcutButtons);
         foreach (var bar in new Control[] { DriveButtons, ShortcutButtons, DriveCombo })
         {
             // the drive box's open list lives in a popup: its events reach the box through the logical tree
@@ -251,6 +253,7 @@ public partial class FilePanelView : UserControl
             _vm.PropertyChanged += OnVmPropertyChanged;
             _vm.Navigated += OnVmNavigated;
             _vm.ColumnsChanged += OnColumnsChanged;
+            MarkCurrentDrive(); // another tab: its drive
             RebuildCustomColumns();
             ApplyColumnLayout();
             ApplyViewModeBackground();
@@ -337,6 +340,20 @@ public partial class FilePanelView : UserControl
         {
             Dispatcher.UIThread.Post(FocusList, DispatcherPriority.Background);
         }
+        else if (e.PropertyName is nameof(PanelViewModel.SelectedDrive) or nameof(PanelViewModel.DriveBarItems))
+        {
+            MarkCurrentDrive();
+        }
+    }
+
+    /// <summary>The panel's drive changed (another drive, or the drive list): its button on the drive bar(s) is marked.</summary>
+    public event EventHandler? CurrentDriveChanged;
+
+    private void MarkCurrentDrive()
+    {
+        DriveBarMarks.Mark(DriveButtons, _vm?.SelectedDrive);
+        DriveBarMarks.Mark(ShortcutButtons, _vm?.SelectedDrive);
+        CurrentDriveChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private void OnCursorMoved(object? sender, EventArgs e) => ScrollToCursor();
@@ -636,11 +653,11 @@ public partial class FilePanelView : UserControl
         var entries = vm.CursorItem is { IsParent: true } && !vm.Items.Any(i => i.IsMarked)
             ? []
             : vm.GetSelectedEntries();
-        // the drives of the Computer view are their roots ("C:\")
-        var natives = entries.Select(e => e.Path.IsLocal ? e.Path.Path
-            : Platform.ComputerFileSystemProvider.LocalRootOf(e.Path) is { } root && !root.Contains("://", StringComparison.Ordinal) ? root : null).ToList();
+        // the entries of the Computer view are their shell names: a drive root ("C:\"), the Recycle Bin, a phone
+        var natives = entries.Select(e => e.Path.IsLocal ? e.Path.Path : ShellNameOfOverviewEntry(vm, e.Path)).ToList();
         IReadOnlyList<string> paths = entries.Count > 0
-            ? (natives.All(n => n is not null) ? [.. natives!] : [])
+            // one menu is for items of one shell folder: the Recycle Bin or a phone only on its own
+            ? (natives.All(n => n is not null) && (natives.Count == 1 || !natives.Any(n => n!.StartsWith("::", StringComparison.Ordinal))) ? [.. natives!] : [])
             : vm.CurrentPath is { IsLocal: true } folder ? [folder.Path] : [];
         if (paths.Count == 0)
         {
@@ -731,6 +748,18 @@ public partial class FilePanelView : UserControl
         menu.Opening += (_, _) => SetIcons();
         menu.Opened += (_, _) => SetIcons();
         menu.Open(target);
+    }
+
+    /// <summary>The Windows shell name of an entry of the Computer view (drive root, Recycle Bin, phone); null for other paths.</summary>
+    internal static string? ShellNameOfOverviewEntry(PanelViewModel vm, Core.Vfs.VfsPath path)
+    {
+        if (Platform.ComputerFileSystemProvider.LocalRootOf(path) is not { } root)
+        {
+            return null;
+        }
+        var drive = vm.Drives.Append(Platform.DriveItem.TrashEntry).FirstOrDefault(d => string.Equals(d.RootPath, root, StringComparison.OrdinalIgnoreCase))
+            ?? (root.Contains("://", StringComparison.Ordinal) ? null : new Platform.DriveItem(root, root, null, 0, 0, Platform.DriveKind.Fixed, true));
+        return drive is null ? null : Services.Icons.DriveIconConverter.ShellName(drive);
     }
 
     /// <summary>Opens the context menu at a point of the list: the system's when wanted, otherwise the application's.</summary>

@@ -1,11 +1,15 @@
+using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.LogicalTree;
+using Avalonia.VisualTree;
 using NextCommander.Core.Vfs;
 using NextCommander.Platform;
 using static NextCommander.App.Tests.UiFixture;
 
 namespace NextCommander.App.Tests;
 
-/// <summary>The drive box: drives, then Computer (+), Documents (*) and Network (\).</summary>
+/// <summary>The drive box: drives, then Computer (+), Network (\) and the trash (×).</summary>
 public sealed class DriveBoxTests : IDisposable
 {
     private readonly UiFixture _fx = new();
@@ -48,10 +52,57 @@ public sealed class DriveBoxTests : IDisposable
             drives.Select(d => d.FullName));
         // read only: a drive cannot be deleted from here
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => provider.DeleteAsync(drives[0].Entry!.Path, true, CancellationToken.None));
+        // right click: the system's menu is made for the shell name of the entry (Recycle Bin, a phone, a drive root)
+        Assert.Equal("::{645FF040-5081-101B-9F08-00AA002F954E}", NextCommander.App.Views.FilePanelView.ShellNameOfOverviewEntry(panel, drives[^1].Entry!.Path));
+        Assert.Equal(_fx.L() + sep, NextCommander.App.Views.FilePanelView.ShellNameOfOverviewEntry(panel, drives[0].Entry!.Path));
+        Assert.Null(NextCommander.App.Views.FilePanelView.ShellNameOfOverviewEntry(panel, drives[3].Entry!.Path)); // a phone without a device id
+
         await panel.NavigateAsync(drives[0].Entry!.Path);
         Assert.Equal(VfsPath.Local(_fx.L()), panel.CurrentPath);
     }
 
+    [AvaloniaFact]
+    public async Task Drive_bar_marks_the_panels_drive()
+    {
+        // the panels' folders are the "roots" of the two drives
+        IReadOnlyList<DriveItem> fake = [new DriveItem("A", _fx.L(), "Veri", 0, 0, DriveKind.Fixed, true), new DriveItem("B", _fx.R(), null, 0, 0, DriveKind.Fixed, true)];
+        var (w, vm) = await _fx.OpenAsync();
+        vm.Settings.ShowDriveButtons = true;
+        vm.Settings.TwoDriveBars = true;
+        vm.ApplySettings();
+        vm.Left.SetDrives(fake);
+        vm.Right.SetDrives(fake); // left panel on A, right panel on B
+        await SettleAsync();
+
+        List<string> Marked(string barName) => w.GetVisualDescendants().OfType<ItemsControl>().Where(c => c.Name == barName && c.IsEffectivelyVisible)
+            .Select(bar => string.Join(",", bar.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("current")).Select(b => ((DriveItem)b.Tag!).Name)))
+            .ToList();
+
+        // a bar above each panel: that panel's drive
+        Assert.Equal(["A", "B"], Marked("DriveButtons"));
+        var current = w.GetVisualDescendants().OfType<Button>().First(b => b.Classes.Contains("current") && b.IsEffectivelyVisible);
+        Assert.Equal(Avalonia.Media.FontWeight.Bold, current.FontWeight);
+        if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
+        {
+            w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "drivebar-current.png"));
+        }
+
+        // one shared bar: the active panel's drive
+        vm.Settings.TwoDriveBars = false;
+        vm.ApplySettings(); // reads the real drives again
+        vm.Left.SetDrives(fake);
+        vm.Right.SetDrives(fake);
+        await SettleAsync();
+        Assert.Equal(["A"], Marked("SharedDriveBar"));
+        vm.ActiveSide = vm.RightSide;
+        await SettleAsync();
+        Assert.Equal(["B"], Marked("SharedDriveBar"));
+
+        // the panel goes to another drive: the mark follows
+        await vm.Right.NavigateAsync(VfsPath.Local(_fx.L()));
+        await SettleAsync();
+        Assert.Equal(["A"], Marked("SharedDriveBar"));
+    }
     [AvaloniaFact]
     public void Drive_icons_come_from_the_system()
     {
