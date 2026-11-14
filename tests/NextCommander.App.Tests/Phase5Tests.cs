@@ -81,7 +81,9 @@ public sealed class Phase5Tests : IDisposable
         Assert.Equal("I", File.ReadAllText(_fx.R("sub", "inner.txt")));
         Assert.Equal("R", File.ReadAllText(_fx.L("only-right.txt")));
         Assert.All(window.AllRows.Where(r => !r.Item.IsDirectory), r => Assert.Equal(SyncStatus.Equal, r.Item.Status));
-        Assert.Empty(window.Rows); // equal rows are hidden by default
+        // what was synchronized is identical now, and shown so
+        Assert.All(window.Rows.Where(n => n.Row is not null), n => Assert.Equal(SyncStatus.Equal, n.Row!.Item.Status));
+        Assert.Contains("Done", window.StatusText, StringComparison.Ordinal);
         Assert.NotNull(w);
     }
 

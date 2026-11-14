@@ -207,6 +207,9 @@ public sealed class SyncJob : FileJob
         _rightRoot = rightRoot;
     }
 
+    /// <summary>Deleted local files and folders go here (the Recycle Bin / trash); null: they are deleted for good.</summary>
+    public ITrashService? Trash { get; init; }
+
     private VfsPath Combine(VfsPath root, string relative)
     {
         foreach (var part in relative.Split('/'))
@@ -234,7 +237,9 @@ public sealed class SyncJob : FileJob
                     if (victim is not null)
                     {
                         await WithErrorHandlingAsync(victim.Path.ToDisplayString(),
-                            () => _registry.Resolve(victim.Path).DeleteAsync(victim.Path, recursive: true, ct), ct).ConfigureAwait(false);
+                            () => Trash is { IsAvailable: true } trash && victim.Path.IsLocal
+                                ? trash.MoveToTrashAsync(victim.Path.Path, ct)
+                                : _registry.Resolve(victim.Path).DeleteAsync(victim.Path, recursive: true, ct), ct).ConfigureAwait(false);
                     }
                     break;
             }
