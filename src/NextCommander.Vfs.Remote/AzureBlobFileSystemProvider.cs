@@ -25,30 +25,44 @@ public sealed class AzureBlobFileSystemProvider(RemoteHooks hooks) : RemoteProvi
 
     public override string Scheme => "azblob";
 
-    protected override bool NeedsPassword(RemoteConnection connection) => true;
+    /// <summary>The account key or a SAS token is asked; an Entra ID account signs in in the browser instead.</summary>
+    protected override bool NeedsPassword(RemoteConnection connection) => !connection.AzureEntraId;
+
+    /// <summary>Tests: the HTTP handler of all requests (a fake service).</summary>
+    public Func<HttpMessageHandler>? HandlerFactory { get; init; }
 
     /// <summary>"/container/a/b.txt" → ("container", "a/b.txt").</summary>
     public static (string Container, string Name) Split(string path) => S3FileSystemProvider.Split(path);
 
-    /// <summary>Path style (host/account/...) when the host is not "account.something" (Azurite, an IP address).</summary>
-    public static bool IsPathStyle(RemoteConnection connection) =>
-        !connection.Host.StartsWith(connection.User + ".", StringComparison.OrdinalIgnoreCase);
-
-    protected override async Task<HttpRemoteClient> ConnectAsync(RemoteConnection connection, string? password, string? trustedFingerprint, CancellationToken cancellationToken)
+    /// <summary>
+    /// The client of an Azure connection (Blob or Files): the key or SAS checked, or the Entra ID account signed in; then
+    /// a list of the account's containers / shares checks it (a SAS or a role for one of them cannot list: fine).
+    /// </summary>
+    internal static async Task<HttpRemoteClient> ConnectAzureAsync(RemoteConnection connection, string? password, string? trustedFingerprint, RemoteHooks hooks,
+        HttpMessageHandler? testHandler, bool files, CancellationToken cancellationToken)
     {
-        if (!AzureSigner.IsSas(password) && !AzureSigner.IsAccountKey(password))
+        HttpRemoteClient client;
+        if (connection.AzureEntraId)
         {
-            throw new HttpStatusException(HttpStatusCode.Forbidden, "Azure: an account key (base64) or a SAS token (sv=...&sig=...) is needed.", "AuthenticationFailed");
+            client = HttpRemoteClient.Create(connection, null, trustedFingerprint, useCredentials: false, testHandler: testHandler,
+                bearerToken: AzureEntra.TokenSource(connection, hooks), fileRequestIntent: files);
         }
-        var client = HttpRemoteClient.Create(connection, password?.Trim().TrimStart('?'), trustedFingerprint, useCredentials: false);
+        else
+        {
+            if (!AzureSigner.IsSas(password) && !AzureSigner.IsAccountKey(password))
+            {
+                throw new HttpStatusException(HttpStatusCode.Forbidden, "Azure: an account key (base64) or a SAS token (sv=...&sig=...) is needed.", "AuthenticationFailed");
+            }
+            client = HttpRemoteClient.Create(connection, password?.Trim().TrimStart('?'), trustedFingerprint, useCredentials: false, testHandler: testHandler);
+        }
         try
         {
-            // checks the key: the container list (a SAS for one container may not list them: that is fine)
             using var response = await SendAsync(client, HttpMethod.Get, null, string.Empty, "comp=list&maxresults=1", cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
                 var error = await ErrorOf(response, "/").ConfigureAwait(false);
-                if (!AzureSigner.IsSas(client.Password) || error.ErrorCode is "AuthenticationFailed")
+                var limited = AzureSigner.IsSas(client.Password) || (client.BearerToken is not null && AzureEntra.AllowedCheckError(error.ErrorCode));
+                if (!limited || error.ErrorCode is "AuthenticationFailed" or "InvalidAuthenticationInfo")
                 {
                     throw error;
                 }
@@ -61,6 +75,13 @@ public sealed class AzureBlobFileSystemProvider(RemoteHooks hooks) : RemoteProvi
             throw;
         }
     }
+
+    /// <summary>Path style (host/account/...) when the host is not "account.something" (Azurite, an IP address).</summary>
+    public static bool IsPathStyle(RemoteConnection connection) =>
+        !connection.Host.StartsWith(connection.User + ".", StringComparison.OrdinalIgnoreCase);
+
+    protected override Task<HttpRemoteClient> ConnectAsync(RemoteConnection connection, string? password, string? trustedFingerprint, CancellationToken cancellationToken) =>
+        ConnectAzureAsync(connection, password, trustedFingerprint, Hooks, HandlerFactory?.Invoke(), files: false, cancellationToken);
 
     protected override bool IsAlive(HttpRemoteClient client) => true;
 
@@ -111,7 +132,11 @@ public sealed class AzureBlobFileSystemProvider(RemoteHooks hooks) : RemoteProvi
             request.Content = new ByteArrayContent([]); // Content-Length: 0
         }
         configure?.Invoke(request);
-        AzureSigner.Sign(request, client.Connection.User, AzureSigner.IsSas(client.Password) ? null : client.Password, DateTime.UtcNow);
+        AzureSigner.Sign(request, client.Connection.User, AzureSigner.IsSas(client.Password) || client.BearerToken is not null ? null : client.Password, DateTime.UtcNow);
+        if (client.BearerToken is not null)
+        {
+            await AzureEntra.AuthorizeAsync(request, client, ct).ConfigureAwait(false);
+        }
         return await client.SendAsync(request, ct, headersOnly).ConfigureAwait(false);
     }
 

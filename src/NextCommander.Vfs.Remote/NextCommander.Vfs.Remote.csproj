@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>NextCommander.Vfs.Remote</RootNamespace>
+    <!-- Pageant's window message protocol (LibraryImport) -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="SSH.NET" />

@@ -77,15 +77,27 @@ public sealed class HttpRemoteClient : IDisposable
     /// <summary>S3: session token of temporary keys (x-amz-security-token).</summary>
     public string? SessionToken { get; init; }
 
+    /// <summary>Azure with Entra ID: the access token of the signed-in account (instead of the account key's signature).</summary>
+    public Func<CancellationToken, Task<string>>? BearerToken { get; init; }
+
+    /// <summary>Azure Files with Entra ID: requests say they are made for backup (x-ms-file-request-intent), as the service asks.</summary>
+    public bool FileRequestIntent { get; init; }
+
     public HttpClient Http { get; }
 
     /// <summary>scheme://host:port/ of the server.</summary>
     public Uri BaseUri { get; }
 
     /// <param name="testHandler">Tests: the handler of all requests (a fake service) instead of the network.</param>
+    /// <param name="bearerToken">Azure with Entra ID: the access token of the signed-in account.</param>
+    /// <param name="fileRequestIntent">Azure Files with Entra ID: the backup request intent header.</param>
     public static HttpRemoteClient Create(RemoteConnection connection, string? password, string? trustedFingerprint, bool useCredentials,
-        string? sessionToken = null, HttpMessageHandler? testHandler = null) =>
-        new(connection, password, trustedFingerprint, useCredentials, testHandler) { SessionToken = sessionToken };
+        string? sessionToken = null, HttpMessageHandler? testHandler = null, Func<CancellationToken, Task<string>>? bearerToken = null,
+        bool fileRequestIntent = false) =>
+        new(connection, password, trustedFingerprint, useCredentials, testHandler)
+        {
+            SessionToken = sessionToken, BearerToken = bearerToken, FileRequestIntent = fileRequestIntent,
+        };
 
     /// <summary>Sends a request; a certificate that was not trusted becomes <see cref="UntrustedServerException"/>.</summary>
     public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken, bool headersOnly = false)
