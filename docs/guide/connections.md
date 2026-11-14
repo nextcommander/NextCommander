@@ -28,7 +28,8 @@ Supported types:
 ## The Net menu
 
 - **Connection manager...** (Ctrl+F): your saved connections.
-- **New connection:** a submenu with every connection type. The new connection is saved and opened.
+- **New connection:** a submenu with every connection type: the connection manager opens with a new connection of
+  that type.
 - **Saved connections:** opens a saved connection directly.
 - **Connect by address...** (Ctrl+N): type an address and connect without saving.
 - **Disconnect** (Ctrl+Shift+F): closes the connection of the active panel; the panel goes back to the last local
@@ -45,12 +46,33 @@ Supported types:
 
 ![The connection manager](../screenshots/connections.png)
 
-Each connection is shown with its type's icon. **New...** creates a connection, **Edit...** changes it,
-**Copy** duplicates it, **Delete** removes it, and **Forget saved password** removes its stored password.
-**Connect** opens it in the active panel.
+The connections are on the left, in folders; the selected connection or folder is on the right.
 
-A connection has a protocol, a server, a port, a user and a start folder, plus options that depend on the type.
-The dialog shows hints for each type.
+- **Folders** can be nested and have a color label (for example red for production). Drag connections and folders
+  to move them. An empty folder stays until you delete it.
+- **Search** (Ctrl+F in the window) looks in names, servers, users and folders; the chips above the tree show only
+  favorites, SSH or FTP connections, cloud storage, or the connections that are open now. The dot after a connection
+  is green while it is connected, red when its last test failed.
+- **Keys:** arrows move and open folders, Enter connects (Shift+Enter: in the right panel), F2 renames, Delete deletes
+  (a folder with everything in it; its saved passwords are forgotten), Ctrl+Z puts the last deleted items back,
+  Ctrl+D duplicates, Ctrl+N makes a new connection, Ctrl+S saves. The right click menu has the same, plus favorites,
+  copying the address and forgetting the saved password.
+- **New connection:** first choose its type from the cards (or paste an address such as
+  `sftp://user@server:22/folder`, which fills it in). Then fill in the tabs:
+  - **General:** the server, port and start folder (for FTP also the encryption and passive mode, for S3 the region;
+    a **Service** for S3 and WebDAV, see below).
+  - **Login:** the method: password, key file or the **SSH agent** (SFTP / SCP); access key or **AWS profile / SSO**
+    (S3); account key / SAS or **Microsoft Entra ID** (Azure); anonymous (FTP). Cloud drives take their application id
+    here.
+  - **Advanced:** the timeout, simultaneous connections, a **jump host** (SFTP / SCP), the **file name encoding**
+    (FTP), **server-side encryption** with SSE-S3 or SSE-KMS (S3), plain HTTP, accepting any certificate, SharePoint
+    sites (OneDrive) and the favorite mark.
+- **Test** connects with the settings as they are and lists the start folder; the result shows under the tabs.
+  **Save** writes the connections (closing the window does too; new connections never filled in are dropped).
+  **Connect** opens the connection; a folder's **Connect to all** opens each of its connections in a tab.
+- **Import** (the arrow under the tree) brings in the sites of **FileZilla** (sitemanager.xml) and **WinSCP**
+  (WinSCP.ini or its registry key) with their folders, key files, jump hosts (WinSCP tunnels) and saved passwords
+  (into the encrypted store; FileZilla's master-password-encrypted ones cannot be read).
 
 For S3 and WebDAV, the **Service** list fills in the server, port, region and start folder of well-known services:
 Amazon S3, Google Cloud Storage, Cloudflare R2, Backblaze B2, Wasabi, DigitalOcean Spaces, Hetzner and MinIO;
@@ -78,7 +100,10 @@ You can also type an address straight into the path line (Alt+D) or into *Connec
 ## Notes per type
 
 ### SFTP
-Log in with a password or with a private key file (which may have its own passphrase).
+Log in with a password, a private key file (which may have its own passphrase), or the keys of the **SSH agent**:
+the Windows OpenSSH agent, PuTTY's Pageant, or the agent of `SSH_AUTH_SOCK` on Linux and macOS. The keys stay in the
+agent, which signs the login. With a **jump host** (`user@bastion:22`), the connection goes through that SSH server;
+it logs in with the same key file, agent or password, and its key is confirmed like a server's.
 
 ### SCP
 For SSH servers that have no SFTP subsystem. The login (password or key file) is the same as for SFTP. Folders are
@@ -86,7 +111,8 @@ listed and changed with shell commands on the server (`stat`, `mkdir`, `mv`, `rm
 POSIX shell; files are sent with SCP.
 
 ### FTP / FTPS
-Choose plain FTP, FTPS with explicit TLS, or FTPS with implicit TLS (port 990), and passive or active mode.
+Choose plain FTP, FTPS with explicit TLS, or FTPS with implicit TLS (port 990), and passive or active mode. The file
+name encoding is UTF-8 when the server supports it; for old servers choose one (Windows-1254, ISO-8859-9 ...).
 More FTP options (transfer type, retries, a log file) are on the *Operation > FTP* page of the
 [Configuration window](configuration.md).
 
@@ -105,9 +131,16 @@ shares.
   asked.
 - The root lists your buckets; F7 there creates a bucket. Folders are formed by `/` in the object names.
 - Options: the region (usually found automatically), virtual-hosted addresses, and "No TLS" for a local MinIO.
+- **AWS SSO:** an AWS profile set up for IAM Identity Center (`sso_session` or `sso_start_url` in ~/.aws/config)
+  gives temporary keys of its account and role. The sign-in token is shared with the AWS CLI; when it has run out,
+  the browser signs in (as `aws sso login`).
+- **Server-side encryption** (Advanced): SSE-S3 or SSE-KMS (with an optional KMS key) for every uploaded object.
 
 ### Azure Blob Storage
 The user is the storage account; the password is the account key or a SAS token. The root lists the containers.
+With **Microsoft Entra ID** (Login tab) you sign in with your work account in the browser instead; the account
+needs a data role on the storage (Storage Blob Data Reader / Contributor ...). The tenant and the application id
+may stay empty (your organization; the Azure CLI's application). The same works for Azure Files.
 
 ### Azure Files
 The user is the storage account; the password is the account key or a SAS token. The root lists the file shares

@@ -462,7 +462,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             _ = StoreProxyPasswordAsync(proxyPassword);
         }
         Views.Dialogs.CopyDialog.DefaultPolicy = _settings.DefaultConflictPolicy;
-        Views.Dialogs.ConnectionEditDialog.DefaultPassive = _settings.FtpPassiveDefault;
+        Views.Connections.ConnectionDefaults.Passive = _settings.FtpPassiveDefault;
         _frequent.MaxEntries = _settings.FrequentMaxSaved;
         ArchiveSettings.TempDirectory = _settings.ArchiveTempDirectory;
         ArchiveSettings.OpenPartialZip = _settings.OpenPartialZip;
@@ -2655,34 +2655,72 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         return VfsPath.Create(connection.Scheme, connection.Authority, "/");
     }
 
-    private async Task ConnectAsync()
+    private Task ConnectAsync() => ShowConnectionManagerAsync(null);
+
+    /// <summary>"nc_NewConnection gdrive": the connection manager with a new connection of the type; it is saved and opened.</summary>
+    private Task NewConnectionAsync(string? scheme) =>
+        ShowConnectionManagerAsync(RemoteProtocols.FromScheme(scheme?.Trim())?.Protocol ?? RemoteProtocol.Sftp);
+
+    /// <summary>The connection manager; the connections chosen open in the left or right panel (several: in new tabs).</summary>
+    private async Task ShowConnectionManagerAsync(RemoteProtocol? newProtocol)
     {
-        var connection = await _dialogs.ShowConnectionManagerAsync(_settings.Connections, c =>
+        var request = new Views.Connections.ConnectionManagerRequest(
+            _settings,
+            SaveSettings,
+            TestConnectionAsync,
+            c => _registry.Providers.OfType<NextCommander.Vfs.Remote.IRemoteProvider>().Any(p => PathOf(c) is { } path && p.CanHandle(path) && p.IsConnected(path)),
+            c =>
+            {
+                Remote?.Secrets.Remove(c.SecretId);
+                return Task.CompletedTask;
+            },
+            async (c, password) =>
+            {
+                if (Remote?.Secrets is { } secrets)
+                {
+                    await secrets.SetAsync(c.SecretId, password);
+                }
+            },
+            _dialogs.PickOpenFileAsync)
         {
-            Remote?.Secrets.Remove(c.SecretId);
-            return Task.CompletedTask;
-        });
-        if (connection is null)
+            NewProtocol = newProtocol,
+        };
+        if (await _dialogs.ShowConnectionManagerAsync(request) is not { } result)
         {
             return;
         }
-        var path = VfsPath.Create(connection.Scheme, connection.Authority, connection.InitialPath);
-        await ActivePanel.NavigateAsync(path);
+        var side = result.RightPanel ? RightSide : LeftSide;
+        for (var i = 0; i < result.Connections.Count; i++)
+        {
+            if (i == 0)
+            {
+                await side.ActiveTab.NavigateAsync(PathOf(result.Connections[i])!);
+            }
+            else
+            {
+                await side.OpenTabAsync(PathOf(result.Connections[i])); // several connections: one tab each
+            }
+        }
     }
 
+    private static VfsPath? PathOf(RemoteConnection c) =>
+        c.Host.Length > 0 || c.IsCloudDrive ? VfsPath.Create(c.Scheme, c.Authority, c.InitialPath) : null;
+
     /// <summary>
-    /// "nc_NewConnection gdrive": the connection editor with the type chosen; the new connection is saved and opened.
+    /// The manager's test: the connection's server is opened again with its current settings and its start folder
+    /// listed; the answer says how many items there are and how long it took.
     /// </summary>
-    private async Task NewConnectionAsync(string? scheme)
+    private async Task<string> TestConnectionAsync(RemoteConnection connection, CancellationToken cancellationToken)
     {
-        var protocol = RemoteProtocols.FromScheme(scheme?.Trim())?.Protocol ?? RemoteProtocol.Sftp;
-        if (await _dialogs.ShowNewConnectionAsync(protocol) is not { } connection)
+        var path = PathOf(connection) ?? throw new IOException("Enter a valid server name (e.g. server.example.com).");
+        var provider = _registry.Resolve(path);
+        if (provider is NextCommander.Vfs.Remote.IRemoteProvider remote)
         {
-            return;
+            await remote.DisconnectAsync(path); // the settings as they are now
         }
-        _settings.Connections.Add(connection);
-        SaveSettings();
-        await ActivePanel.NavigateAsync(VfsPath.Create(connection.Scheme, connection.Authority, connection.InitialPath));
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var entries = await Task.Run(() => provider.ListAsync(path, cancellationToken), cancellationToken);
+        return $"Connected and listed {connection.InitialPath}: {entries.Count} items, {watch.ElapsedMilliseconds} ms";
     }
 
     /// <summary>"nc_OpenConnection name": opens a saved connection in the active panel.</summary>
