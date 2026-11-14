@@ -47,10 +47,9 @@ public sealed class LocalizationSurveyTests
             var settings = fx.Track(new SettingsWindow(vm.Settings, () => { }, []));
             settings.Show();
             await SettleAsync();
-            var pages = settings.GetLogicalDescendants().OfType<TreeView>().First();
-            foreach (var page in pages.GetLogicalDescendants().OfType<TreeViewItem>().ToList())
+            foreach (var page in settings.Pages)
             {
-                pages.SelectedItem = page;
+                settings.SelectPage(page);
                 await SettleAsync(3);
             }
             Window[] windows =

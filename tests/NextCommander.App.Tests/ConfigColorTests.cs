@@ -31,6 +31,34 @@ public sealed class ConfigColorTests : IDisposable
     private static Color Brush(string key) => ((ISolidColorBrush)App.Current!.Resources[key]!).Color;
 
     [AvaloniaFact]
+    public async Task A_theme_chosen_in_the_configuration_is_applied_with_Apply()
+    {
+        var (w, vm) = await _fx.OpenAsync();
+        _settings = vm.Settings;
+        vm.Settings.ColorThemeFile = string.Empty;
+        vm.ApplySettings();
+        var view = new Views.Dialogs.SettingsView(vm.Settings, vm.ApplySettings, []);
+        var shown = w.ShowSettingsAsync(view);
+        await SettleAsync(4);
+        view.SelectPage("Display/Color");
+        await SettleAsync(4);
+        var themes = Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(view).OfType<ComboBox>()
+            .First(c => c.ItemsSource is System.Collections.IEnumerable items && items.Cast<object>().Any(i => i.ToString() == "Dark"));
+        themes.SelectedIndex = themes.ItemsSource!.Cast<object>().ToList().FindIndex(i => i.ToString() == "Dark");
+        await SettleAsync();
+        Assert.Equal(Avalonia.Styling.ThemeVariant.Light, Avalonia.Application.Current!.ActualThemeVariant); // not before Apply
+        Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(view).OfType<Button>().First(b => Equals(b.Content, "Apply"))
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        await SettleAsync(4);
+        Assert.Equal("dark", vm.Settings.ColorThemeFile);
+        Assert.Equal(Avalonia.Styling.ThemeVariant.Dark, Avalonia.Application.Current.ActualThemeVariant);
+        view.Close();
+        await shown;
+        vm.Settings.ColorThemeFile = string.Empty;
+        vm.ApplySettings();
+    }
+
+    [AvaloniaFact]
     public async Task Theme_list_colors_and_inverted_selection()
     {
         var (w, vm) = await _fx.OpenAsync();

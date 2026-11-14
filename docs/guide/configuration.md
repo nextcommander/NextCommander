@@ -2,31 +2,34 @@
 
 [Back to the README](../../README.md)
 
-Most settings of NextCommander are in the Configuration window. Open it with *Configuration > Options...* or
-Ctrl+Alt+S.
+Most settings of NextCommander are in the Configuration. Open it with *Configuration > Options...*, Ctrl+Alt+S or
+the settings button at the end of the button bar. It opens inside the main window, in place of the two panels (like
+the maximized internal terminal); OK, Cancel or Esc bring the panels back. Opened from another dialog (for example
+*Configure...* in the pack dialog) it is a window of its own.
 
 ![The Configuration window, Layout page](../screenshots/configuration.png)
 
 ## Finding your way
 
-- **Pages:** the tree on the left lists the pages. Display, Operation and Packer have sub-pages. The window opens
-  on the page you used last.
-- **Search (Ctrl+F):** type into the box above the tree to find a setting on any page, by its name or its
-  description. Accents do not matter, and the search also works with the translated texts. Click the title of a
-  result group to open its page.
+- **Pages:** the list on the left shows the pages with their icons. Display, Operation and Packer have sub-pages
+  (the arrow shows or hides them). The Configuration opens on the page you used last.
+- **Search (Ctrl+F):** type into the box above the pages to find a setting on any page, by its name or its
+  description. Accents do not matter, and the search also works with the translated texts. The results are grouped
+  by page and can be changed right there; click the title of a group to open its page. Esc clears the search.
 - **Where you are:** above the page title you see its place, for example *Configuration › Display*.
-- **Changed settings:** the page header tells how many settings of the page differ from the default, and a thin
-  colored bar on the left marks each one of them.
+- **Changed settings:** under the page title you see how many settings of the page differ from the default, and a
+  dot after the name marks each one of them; a dot in the page list marks the pages with such settings.
 - **Reset page:** sets every setting of the current page back to its default. Like every other change, this is
   only written when you click Apply or OK.
-- **Dependent options:** indented options belong to the option above them and are grayed out while it is off.
-- **Help texts:** the small text under a setting explains what it does.
+- **Settings as rows:** each group of a page is a card; a row shows the setting's name and help text on the left and
+  its control on the right. On / off settings are switches.
+- **Dependent options:** indented rows belong to the switch above them and are grayed out while it is off.
 
 ## OK, Apply and Cancel
 
-Changes are not used until you click **Apply** (keeps the window open) or **OK** (applies and closes).
-**Cancel** throws your changes away. A few settings, such as the language, take effect after a restart; their
-help text says so.
+Changes are not used until you click **Apply** (keeps the Configuration open) or **OK** (applies and closes); the
+bottom bar shows how many changes are not applied yet. **Cancel** (or Esc) throws them away. The language changes at once too. A few settings take effect
+after a restart; their help text says so.
 
 ## Lists
 
@@ -104,7 +107,7 @@ click it or press Enter. **...** next to it chooses a program instead, and in th
 | **Ignore list** | Files and folders never shown in the panels. |
 | **History** | Length of the folder and command line history, frequently used folders. |
 | **Log file** | Whether file operations are logged, where the log goes, which operations, starting a new log file; whether NextCommander writes its own program log. |
-| **Misc.** | Ask before closing, the built-in terminal (shell, real terminal), the Start menu, confirmations, a sound when an operation ends, and buttons for *Shortcuts and commands...*, *Hotlist...*, *Column sets...*, *Connection manager...*, *Master password...* and *Open settings folder*. |
+| **Misc.** | Ask before closing, the built-in terminal (shell, real terminal), the Start menu, confirmations, a sound when an operation ends, and buttons for *Shortcuts and commands...*, *Hotlist...*, *Column sets...*, *Master password...*, *Export settings...*, *Import settings...* and *Open settings folder*. |
 
 | | |
 |---|---|

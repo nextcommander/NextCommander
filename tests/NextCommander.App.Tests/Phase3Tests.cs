@@ -218,13 +218,13 @@ public sealed class Phase3Tests : IDisposable
         {
             dialog.CaptureRenderedFrame()!.SavePng(Path.Combine(shots, "editor-font.png"));
         }
-        Assert.All(dialog.Fonts, f => Assert.Contains(f, Views.Dialogs.SettingsWindow.MonospaceFonts()));
+        Assert.All(dialog.Fonts, f => Assert.Contains(f, Views.Dialogs.SettingsView.MonospaceFonts()));
         if (OperatingSystem.IsWindows())
         {
             Assert.Equal("Consolas", dialog.Selected);
         }
         dialog.FixedOnly = false;
-        Assert.True(dialog.Fonts.Count > Views.Dialogs.SettingsWindow.MonospaceFonts().Count);
+        Assert.True(dialog.Fonts.Count > Views.Dialogs.SettingsView.MonospaceFonts().Count);
         var other = dialog.Fonts.First(f => f != dialog.Selected);
         dialog.Selected = other;
         dialog.Size = 18;

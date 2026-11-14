@@ -77,7 +77,7 @@ public sealed class ListEditorOptions<T>
 /// <summary>
 /// A settings list edited with controls instead of JSON: the entries on the left (add, copy, remove, move up / down),
 /// the fields of the selected one on the right. Works on a copy of the list and reports every change with the whole new
-/// list. An entry with an error is marked and the editor carries <see cref="SettingsWindow.InvalidJsonClass"/> (OK /
+/// list. An entry with an error is marked and the editor carries <see cref="SettingsView.InvalidJsonClass"/> (OK /
 /// Apply refuse it) until it is corrected.
 /// </summary>
 public sealed class ListEditor<T> : UserControl where T : class
@@ -282,11 +282,11 @@ public sealed class ListEditor<T> : UserControl where T : class
         if (problem.Problem is null)
         {
             _error.Text = string.Empty;
-            Classes.Remove(SettingsWindow.InvalidJsonClass);
+            Classes.Remove(SettingsView.InvalidJsonClass);
             return;
         }
         _error.Text = string.Format(CultureInfo.CurrentCulture, "Entry {0}: {1}", problem.i + 1, problem.Problem);
-        Classes.Add(SettingsWindow.InvalidJsonClass);
+        Classes.Add(SettingsView.InvalidJsonClass);
     }
 
     // ---------------------------------------------------------------- fields of the selected entry
