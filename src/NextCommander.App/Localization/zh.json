@@ -2191,6 +2191,8 @@
   "ConnectionPresets.UseAnAppPasswordPreferences": "请使用应用密码（Preferences → Password → App passwords）。",
   "ConnectionPresets.UseAnAppPasswordYandex": "请使用应用密码（Yandex ID → Security → App passwords）。",
   "ConnectionPresets.YourServerSAddressThe": "您的服务器地址；起始文件夹为该用户的文件。使用双重验证登录时，请使用应用密码。",
+  "FindFilesWindow.SkipBinaryFiles": "跳过二进制文件",
+  "FindFilesWindow.SkipBinaryFiles.Description": "开头看起来像二进制数据的文件（程序、图像、压缩包）不搜索文本。",
   "FreedesktopTrash.TheOriginalPlaceOfThis": "不知道此项目的原始位置。",
   "HttpListingFileSystemProvider.AWebServerListingIs": "Web 服务器列表为只读：请将文件复制出来。",
   "HttpListingFileSystemProvider.NotAFolderListing": "不是文件夹列表：{0}",
@@ -2267,7 +2269,7 @@
   "WpdInterop.ItAlreadyExistsOnThe": "设备上已存在。",
   "WpdInterop.NotFoundOnTheDevice": "在设备上找不到。",
   "WpdInterop.PortableDeviceError0x": "便携设备错误 0x{0}。",
+  "WpdInterop.TheDeviceConnectionWasReset": "设备连接已重置；正在重新打开。",
   "WpdInterop.TheDeviceIsFull": "设备已满。",
   "WpdInterop.TheDeviceWasDisconnected": "设备已断开连接。"
 }
-  "WpdInterop.TheDeviceConnectionWasReset": "设备连接已重置；正在重新打开。",

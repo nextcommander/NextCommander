@@ -154,7 +154,7 @@ Since 7 November 2026 colors come only from theme files (default: system colors,
 ## Tools
 - [x] Duplicate files window (Commands > Duplicate files...): search by choosing folders, groups, marking by rule, deleting to the recycle bin / permanently, moving to a folder.
 - [x] Folder sizes window (like WinDirStat): tree, extension statistics, treemap; deleting.
-- [ ] Find files: improve the content search (searching inside files).
+- [x] Find files content search: several files read at the same time (local: up to 8, others: 2), the line of the first match under each result (in the file's own encoding), F3 opens the Lister at the match, *Skip binary files*.
 
 ## Other
 - [x] New application icon (dark package) verified on Windows (exe, window, taskbar; the old icon came from Windows' icon cache).

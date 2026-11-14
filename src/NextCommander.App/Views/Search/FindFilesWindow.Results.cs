@@ -67,6 +67,21 @@ public sealed partial class FindFilesWindow
         Grid.SetColumn(name, 1);
         Grid.SetColumn(detail, 2);
         grid.Children.AddRange([name, detail]);
+        if (item.Hit.Length == 0)
+        {
+            return grid;
+        }
+        // a content search: the line of the first match under the name
+        grid.RowDefinitions = new RowDefinitions("Auto,Auto");
+        var hit = new TextBlock
+        {
+            Text = item.Hit, Opacity = 0.75, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis, Classes = { "noloc" },
+            FontFamily = new FontFamily("Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, monospace"),
+        };
+        Grid.SetRow(hit, 1);
+        Grid.SetColumn(hit, 1);
+        Grid.SetColumnSpan(hit, 2);
+        grid.Children.Add(hit);
         return grid;
     }
 

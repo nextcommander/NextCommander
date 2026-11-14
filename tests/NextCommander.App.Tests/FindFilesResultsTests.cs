@@ -27,6 +27,29 @@ public sealed class FindFilesResultsTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task A_content_search_shows_the_line_and_the_lister_opens_at_the_match()
+    {
+        File.WriteAllText(_fx.L("notes.txt"), "first line\nsecond line\nthe needle is here\n");
+        var (_, vm) = await _fx.OpenAsync();
+        var find = _fx.Track(new FindFilesWindow(new FindFilesRequest(vm.Tools, _fx.L(), null, false, vm.FeedSearchResultsAsync, vm.GoToFileAsync)));
+        find.Show();
+        find.SetFields("*.txt", _fx.L(), "needle");
+        await find.StartAsync();
+        await SettleAsync(4);
+        var item = Assert.Single(find.Results);
+        Assert.Equal("3: the needle is here", item.Hit);
+        Assert.Contains(find.GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "3: the needle is here");
+
+        find.Select(item.Entry!);
+        find.ViewSelected();
+        await SettleAsync(8);
+        var lister = Assert.IsType<Views.Lister.ListerWindow>(Assert.Single(find.OwnedWindows));
+        _fx.Track(lister);
+        Assert.Equal("needle", lister.View.Editor.SelectedText); // the first match is selected
+        lister.Close();
+    }
+
+    [AvaloniaFact]
     public async Task Results_show_an_icon_for_files_and_folders()
     {
         var find = await SearchAsync();

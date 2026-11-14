@@ -14,7 +14,14 @@ public sealed record ToolContext(
     Func<VfsEntry, Task> Edit);
 
 /// <summary>F3: files of the panel (for N/P) and the one to show.</summary>
-public sealed record ListerRequest(IReadOnlyList<VfsEntry> Files, int Index, ToolContext Context);
+public sealed record ListerRequest(IReadOnlyList<VfsEntry> Files, int Index, ToolContext Context)
+{
+    /// <summary>Text to find when a file is shown (opened from a content search): the first match is shown.</summary>
+    public ListerFind? Find { get; init; }
+}
+
+/// <summary>A text the Lister looks for, with the options of the search it came from.</summary>
+public sealed record ListerFind(string Text, bool CaseSensitive, bool WholeWords, bool Regex);
 
 /// <summary>Alt+F7 window: where to start, an optional preset, and how results go back to the main window.</summary>
 public sealed record FindFilesRequest(

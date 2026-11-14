@@ -71,11 +71,59 @@ public sealed class FileSearcher
 
     public SearchProgress Progress { get; } = new();
 
-    /// <summary>Runs the search, calling <paramref name="found"/> for every hit (on the search thread).</summary>
+    /// <summary>The line of the first match of each file found by its content (not for "not containing").</summary>
+    public System.Collections.Concurrent.ConcurrentDictionary<VfsPath, ContentHit> Hits { get; } = new();
+
+    /// <summary>Files read at the same time by a content search: local folders (an SSD reads several at once), others.</summary>
+    public static int LocalReaders { get; set; } = Math.Clamp(Environment.ProcessorCount, 2, 8);
+
+    public static int RemoteReaders { get; set; } = 2;
+
+    private readonly Lock _reportLock = new();
+    private readonly List<Task> _reading = [];
+    private SemaphoreSlim? _readers;
+
+    /// <summary>
+    /// Runs the search, calling <paramref name="found"/> for every hit (on a search thread; never two calls at once). A
+    /// content search reads several files at the same time, so its hits may come in another order than the walk.
+    /// </summary>
     /// <param name="within">Search only these entries (search in previous results).</param>
     public async Task RunAsync(Action<VfsEntry> found, CancellationToken cancellationToken, IReadOnlyList<VfsEntry>? within = null)
     {
         EncodingDetector.EnsureCodePages();
+        if (_content is not null)
+        {
+            var allLocal = within is not null
+                ? within.All(e => e.Path.IsLocal)
+                : _options.SearchIn.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .All(p => VfsPath.TryParse(p.Trim('"').TrimStart('@'), out var root) && root!.IsLocal);
+            _readers = new SemaphoreSlim(allLocal ? LocalReaders : RemoteReaders);
+        }
+        try
+        {
+            await RunCoreAsync(found, within, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            Task[] reading;
+            lock (_reading)
+            {
+                reading = [.. _reading];
+            }
+            try
+            {
+                await Task.WhenAll(reading).ConfigureAwait(false); // the files still being read
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+            }
+            _readers?.Dispose();
+        }
+        cancellationToken.ThrowIfCancellationRequested();
+    }
+
+    private async Task RunCoreAsync(Action<VfsEntry> found, IReadOnlyList<VfsEntry>? within, CancellationToken cancellationToken)
+    {
         if (within is not null)
         {
             foreach (var entry in within)
@@ -257,16 +305,56 @@ public sealed class FileSearcher
     private async Task CheckAsync(VfsEntry entry, Action<VfsEntry> found, CancellationToken cancellationToken)
     {
         Progress.AddScanned();
-        if (!await MatchesAsync(entry, cancellationToken).ConfigureAwait(false))
+        if (!MatchesWithoutContent(entry))
         {
             return;
         }
-        Progress.AddFound();
-        found(entry);
+        if (_content is null || _readers is null)
+        {
+            if (_content is null || await ContentMatchesAsync(entry, cancellationToken).ConfigureAwait(false))
+            {
+                Report(entry, found);
+            }
+            return;
+        }
+        // the walk goes on while the file is read; a free reader slot is waited for
+        await _readers.WaitAsync(cancellationToken).ConfigureAwait(false);
+        var reading = Task.Run(async () =>
+        {
+            try
+            {
+                if (await ContentMatchesAsync(entry, cancellationToken).ConfigureAwait(false))
+                {
+                    Report(entry, found);
+                }
+            }
+            finally
+            {
+                _readers.Release();
+            }
+        }, cancellationToken);
+        lock (_reading)
+        {
+            _reading.RemoveAll(t => t.IsCompletedSuccessfully);
+            _reading.Add(reading);
+        }
+    }
+
+    private void Report(VfsEntry entry, Action<VfsEntry> found)
+    {
+        lock (_reportLock)
+        {
+            Progress.AddFound();
+            found(entry);
+        }
     }
 
     /// <summary>All criteria except the location.</summary>
-    public async Task<bool> MatchesAsync(VfsEntry entry, CancellationToken cancellationToken)
+    public async Task<bool> MatchesAsync(VfsEntry entry, CancellationToken cancellationToken) =>
+        MatchesWithoutContent(entry) && (_content is null || await ContentMatchesAsync(entry, cancellationToken).ConfigureAwait(false));
+
+    /// <summary>Name, kind, size, time and attributes (everything that needs no reading).</summary>
+    private bool MatchesWithoutContent(VfsEntry entry)
     {
         var o = _options;
         if (entry.IsDirectory ? o.Kind == SearchItemKind.Files || _content is not null : o.Kind == SearchItemKind.Directories)
@@ -285,17 +373,23 @@ public sealed class FileSearcher
         {
             return false;
         }
-        if (!Check(o.Hidden, EntryAttributes.Hidden, entry) || !Check(o.ReadOnly, EntryAttributes.ReadOnly, entry)
-            || !Check(o.Archive, EntryAttributes.Archive, entry) || !Check(o.System, EntryAttributes.System, entry))
+        return Check(o.Hidden, EntryAttributes.Hidden, entry) && Check(o.ReadOnly, EntryAttributes.ReadOnly, entry)
+            && Check(o.Archive, EntryAttributes.Archive, entry) && Check(o.System, EntryAttributes.System, entry);
+    }
+
+    private async Task<bool> ContentMatchesAsync(VfsEntry entry, CancellationToken cancellationToken)
+    {
+        var hit = await FindTextAsync(entry, cancellationToken).ConfigureAwait(false);
+        if (hit is null)
         {
-            return false;
+            return false; // unreadable (or binary when skipped): never listed, not even for "not containing"
         }
-        if (_content is null)
+        var contains = hit.Line >= 0;
+        if (contains && !_options.NotContaining)
         {
-            return true;
+            Hits[entry.Path] = hit;
         }
-        var contains = await ContainsTextAsync(entry, cancellationToken).ConfigureAwait(false);
-        return contains is { } c && c != o.NotContaining;
+        return contains != _options.NotContaining;
     }
 
     private bool MatchesName(VfsEntry entry)
@@ -320,26 +414,100 @@ public sealed class FileSearcher
         _ => true,
     };
 
-    /// <summary>Null when the file cannot be read (never listed, not even for "not containing").</summary>
-    private async Task<bool?> ContainsTextAsync(VfsEntry entry, CancellationToken cancellationToken)
+    /// <summary>
+    /// The first match of a file: its line (<see cref="ContentHit.None"/> when the text is not there); null when the
+    /// file cannot be read or is skipped as binary (never listed, not even for "not containing").
+    /// </summary>
+    private async Task<ContentHit?> FindTextAsync(VfsEntry entry, CancellationToken cancellationToken)
     {
         try
         {
-            await using var stream = await _registry.Resolve(entry.Path).OpenReadAsync(entry.Path, cancellationToken).ConfigureAwait(false);
+            var provider = _registry.Resolve(entry.Path);
+            await using var stream = await provider.OpenReadAsync(entry.Path, cancellationToken).ConfigureAwait(false);
             if (_options.OfficeDocuments && OfficeText.IsSupported(entry.Extension) && stream.CanSeek)
             {
                 var text = await OfficeText.ExtractAsync(stream, cancellationToken).ConfigureAwait(false);
                 if (text is not null)
                 {
-                    return _content!.Find(text).Index >= 0;
+                    var (index, _) = _content!.Find(text);
+                    return index < 0 ? ContentHit.None : ContentHit.InText(text, index);
                 }
                 stream.Position = 0;
             }
-            return await StreamTextScanner.ContainsAsync(stream, _content!, _encodings, cancellationToken).ConfigureAwait(false);
+            if (_options.SkipBinary && stream.CanSeek)
+            {
+                var head = new byte[8192];
+                var length = await stream.ReadAtLeastAsync(head, head.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                if (EncodingDetector.LooksBinary(head.AsSpan(0, length)))
+                {
+                    return null;
+                }
+                stream.Position = 0;
+            }
+            if (await StreamTextScanner.FindFirstAsync(stream, _content!, _encodings, cancellationToken).ConfigureAwait(false) is not { } found)
+            {
+                return ContentHit.None;
+            }
+            if (_options.NotContaining)
+            {
+                return new ContentHit(0, string.Empty);
+            }
+            // the line of the match: from this stream, or read again when it cannot seek (a server's stream)
+            if (stream.CanSeek)
+            {
+                return await LineOfAsync(stream, found, cancellationToken).ConfigureAwait(false);
+            }
+            await using var again = await provider.OpenReadAsync(entry.Path, cancellationToken).ConfigureAwait(false);
+            return again.CanSeek ? await LineOfAsync(again, found, cancellationToken).ConfigureAwait(false) : new ContentHit(0, string.Empty);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             return null;
         }
     }
+
+    /// <summary>
+    /// The line of a match in the file's own encoding: an ASCII text is found by the UTF-8 pass in an ANSI file too, but
+    /// its line reads right (and its offset is right) only in the encoding the file is written in.
+    /// </summary>
+    private async Task<ContentHit> LineOfAsync(Stream stream, (Encoding Encoding, ByteHit Hit) found, CancellationToken cancellationToken)
+    {
+        stream.Position = 0;
+        var sample = new byte[64 * 1024];
+        var length = await stream.ReadAtLeastAsync(sample, sample.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+        var own = EncodingDetector.Detect(sample.AsSpan(0, length), out _);
+        if (own.CodePage != found.Encoding.CodePage && (own.IsSingleByte || _encodings.Any(e => e.CodePage == own.CodePage)))
+        {
+            stream.Position = 0;
+            if (await StreamTextScanner.FindAsync(stream, own, _content!, cancellationToken).ConfigureAwait(false) is { } hit)
+            {
+                found = (own, hit);
+            }
+        }
+        var (line, text) = await StreamTextScanner.LineAtAsync(stream, found.Encoding, found.Hit, cancellationToken).ConfigureAwait(false);
+        return new ContentHit(line, text);
+    }
+}
+
+/// <summary>Where a content search found its text: the line number (0: not counted) and the line around the match.</summary>
+public sealed record ContentHit(int Line, string Text)
+{
+    /// <summary>The text is not in the file.</summary>
+    public static ContentHit None { get; } = new(-1, string.Empty);
+
+    /// <summary>The hit at <paramref name="index"/> of an extracted text (Office documents).</summary>
+    public static ContentHit InText(string text, int index)
+    {
+        var start = text.LastIndexOf('\n', Math.Max(0, index - 1)) + 1;
+        if (index == 0)
+        {
+            start = 0;
+        }
+        var end = text.IndexOfAny(['\n', '\r'], index);
+        var line = 1 + text.AsSpan(0, start).Count('\n');
+        return new ContentHit(line, StreamTextScanner.Shorten(text[start..index], text[index..(end < 0 ? text.Length : end)]));
+    }
+
+    /// <summary>"12: the line" for the result list; empty when there is no line to show.</summary>
+    public string Display => Text.Length == 0 ? string.Empty : Line > 0 ? $"{Line}: {Text}" : Text;
 }
