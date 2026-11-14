@@ -153,80 +153,60 @@ public sealed class HotkeyCaptureDialog : DialogWindow
     }
 }
 
-/// <summary>Edits a button bar button / user command.</summary>
-public sealed class ButtonEditDialog : DialogWindow
+/// <summary>Edits a button bar button / user command: the fields of the button bar editor in a dialog of their own.</summary>
+public sealed class ButtonEditDialog : Window
 {
-    private readonly TextBox _command = new();
-    private readonly TextBox _parameters = new();
-    private readonly TextBox _startPath = new() { PlaceholderText = "Empty = active panel's folder" };
-    private readonly TextBox _label = new() { PlaceholderText = "Short text (shown if there is no icon)" };
-    private readonly TextBox _icon = new() { PlaceholderText = "Built-in icon name or program/icon file" };
-    private readonly TextBox _tooltip = new();
-    private readonly Func<Task<string?>> _pickFile;
+    private readonly ButtonFieldsEditor _fields;
 
-    public ButtonEditDialog(Core.Config.ButtonDefinition? existing, Func<Task<string?>> pickFile)
-        : base(existing is null ? "New button" : "Edit button", 620)
+    public ButtonEditDialog(Core.Config.ButtonDefinition? existing, Func<Task<string?>> pickFile,
+        Func<Core.Config.ButtonDefinition, int, Control?>? icon = null)
     {
-        _pickFile = pickFile;
-        _command.Text = existing?.Command;
-        _parameters.Text = existing?.Parameters;
-        _startPath.Text = existing?.StartPath;
-        _label.Text = existing?.Label;
-        _icon.Text = existing?.Icon;
-        _tooltip.Text = existing?.Tooltip;
+        Title = existing is null ? "New button" : "Edit button";
+        Width = 720;
+        SizeToContent = SizeToContent.Height;
+        CanResize = false;
+        ShowInTaskbar = false;
+        WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
-        var browse = new Button { Content = "..." };
-        ToolTip.SetTip(browse, "Choose a program");
-        browse.Click += async (_, _) =>
+        _fields = new ButtonFieldsEditor(_ => pickFile(), icon) { Margin = new Thickness(20, 16) };
+        _fields.Load(existing);
+
+        var save = new Button { Content = "Save", IsDefault = true, Classes = { "dialog" } };
+        var cancel = new Button { Content = "Cancel", IsCancel = true, Classes = { "dialog" } };
+        save.Click += (_, _) => Finish();
+        cancel.Click += (_, _) => Close();
+        var header = DialogLook.Header("MiHammer", Title, "What the button runs and how it looks");
+        var footer = DialogLook.Footer("nc_ / uc_ commands, programs and folders; parameters: %P %N %T %S %L ...", cancel, save);
+        var root = new DockPanel();
+        DockPanel.SetDock(header, Dock.Top);
+        DockPanel.SetDock(footer, Dock.Bottom);
+        root.Children.AddRange([header, footer, _fields]);
+        Content = root;
+        Opened += (_, _) => _fields.Command.Focus();
+        KeyDown += (_, e) =>
         {
-            if (await _pickFile() is { } file)
+            if (e.Key == Avalonia.Input.Key.Escape)
             {
-                _command.Text = file;
+                Close();
+                e.Handled = true;
             }
         };
-        var tools = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, Margin = new Thickness(4, 0, 0, 0) };
-        tools.Children.AddRange([browse, CommandPickerDialog.ButtonFor(_command)]);
-        var commandRow = new DockPanel();
-        DockPanel.SetDock(tools, Dock.Right);
-        commandRow.Children.Add(tools);
-        commandRow.Children.Add(_command);
-
-        Body.Children.Add(Label("Command — nc_/uc_ command, program path or folder; '*' prefix runs as administrator; '-' separator:"));
-        Body.Children.Add(commandRow);
-        Body.Children.Add(Label("Parameters — %P %N %T %M %S %L %O %E %B, %N:~0,3, %$DATE%, %$CLIPBOARD%; a leading '?' prompts:"));
-        Body.Children.Add(_parameters);
-        Body.Children.Add(Label("Start folder:"));
-        Body.Children.Add(_startPath);
-        Body.Children.Add(Label("Label:"));
-        Body.Children.Add(_label);
-        Body.Children.Add(Label("Icon:"));
-        Body.Children.Add(_icon);
-        Body.Children.Add(Label("Tooltip:"));
-        Body.Children.Add(_tooltip);
-
-        AddButton("OK", Finish, isDefault: true);
-        AddButton("Cancel", Close, isCancel: true);
-        Opened += (_, _) => _command.Focus();
     }
 
     public Core.Config.ButtonDefinition? Result { get; private set; }
 
-    private void Finish()
+    /// <summary>The fields (tests).</summary>
+    public ButtonFieldsEditor Fields => _fields;
+
+    public void Finish()
     {
-        if (string.IsNullOrWhiteSpace(_command.Text))
+        if (string.IsNullOrWhiteSpace(_fields.Command.Text))
         {
             return;
         }
-        static string? Clean(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
-        Result = new Core.Config.ButtonDefinition
-        {
-            Command = _command.Text.Trim(),
-            Parameters = Clean(_parameters.Text),
-            StartPath = Clean(_startPath.Text),
-            Label = Clean(_label.Text),
-            Icon = Clean(_icon.Text),
-            Tooltip = Clean(_tooltip.Text),
-        };
+        var button = new Core.Config.ButtonDefinition();
+        _fields.Store(button);
+        Result = button;
         Close();
     }
 }

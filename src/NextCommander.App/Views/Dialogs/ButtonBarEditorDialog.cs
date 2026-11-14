@@ -1,10 +1,14 @@
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Shapes;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.Layout;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 using NextCommander.Core.Config;
 
 namespace NextCommander.App.Views.Dialogs;
@@ -13,31 +17,20 @@ namespace NextCommander.App.Views.Dialogs;
 public sealed record ButtonBarEdit(List<ButtonDefinition> Buttons, int IconSize);
 
 /// <summary>
-/// The button bar editor: the bar as a preview strip (click a button to edit it), add / delete / separator /
-/// move, the icon size, and the fields of the selected button (command, parameters, start path, icon, name, tool tip).
-/// Works on a copy; OK returns it.
+/// The button bar editor: a header, a tool row (add, separator, move, delete; the icon size), the bar as a preview
+/// (click a button to edit it, drag it to move it), the fields of the selected button and Save / Cancel.
+/// Works on a copy; Save returns it.
 /// </summary>
 public sealed class ButtonBarEditorDialog : Window
 {
     private readonly List<ButtonDefinition> _buttons;
     private readonly Func<ButtonDefinition, int, Control?> _icon;
-    private readonly Func<string, Task<string?>> _pickFile;
-    private readonly ListBox _strip = new() { Height = 96, SelectionMode = SelectionMode.Single };
-    private readonly ComboBox _size = new() { MinWidth = 90 };
-    private readonly TextBox _command = new();
-    private readonly TextBox _parameters = new();
-    private readonly TextBox _startPath = new() { PlaceholderText = "Empty = active panel's folder" };
-    private readonly TextBox _iconFile = new() { PlaceholderText = "Empty = the command's icon; built-in name (refresh, star ...) or program / icon file" };
-    private readonly TextBox _label = new() { PlaceholderText = "Short name shown next to the icon on the button (optional)" };
-    private readonly TextBox _tooltip = new() { PlaceholderText = "Tip shown when the mouse is over the button" };
-    private readonly ComboBox _window = new() { MinWidth = 220, Margin = new Thickness(0, 3) };
-
-    private static readonly (string Text, ProgramWindowState State)[] s_windowStates =
-    [
-        ("Normal", ProgramWindowState.Normal), ("Run minimized", ProgramWindowState.Minimized), ("Run maximized", ProgramWindowState.Maximized),
-    ];
-    private readonly Control _fields;
+    private readonly ListBox _strip = new() { SelectionMode = SelectionMode.Single, Background = Brushes.Transparent, Padding = new Thickness(6), MinHeight = 62 };
+    private readonly StackPanel _sizes = new() { Orientation = Orientation.Horizontal };
+    private readonly ButtonFieldsEditor _fields;
+    private int _size;
     private bool _loading;
+    private int _dragFrom = -1;
 
     public ButtonBarEditorDialog(string title, IEnumerable<ButtonDefinition> buttons, int iconSize, bool vertical,
         Func<ButtonDefinition, int, Control?> icon, Func<string, Task<string?>> pickFile)
@@ -45,143 +38,74 @@ public sealed class ButtonBarEditorDialog : Window
         // Deep copy: Cancel leaves the bar as it was.
         _buttons = JsonSerializer.Deserialize<List<ButtonDefinition>>(JsonSerializer.Serialize(buttons.ToList())) ?? [];
         _icon = icon;
-        _pickFile = pickFile;
+        _size = Controls.ButtonBarControl.NormalizeSize(iconSize);
         Title = title;
-        Width = 820;
+        Width = 780;
         SizeToContent = SizeToContent.Height;
         CanResize = false;
         ShowInTaskbar = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
-        _size.ItemsSource = Controls.ButtonBarControl.IconSizes.Select(s => $"{s} x {s}").ToList();
-        _size.SelectedIndex = Math.Max(0, Array.IndexOf(Controls.ButtonBarControl.IconSizes, Controls.ButtonBarControl.NormalizeSize(iconSize)));
-        _size.SelectionChanged += (_, _) => RefreshStrip();
+        // the tools: add, separator, move, delete; the icon size on the right
+        var tools = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+        tools.Children.AddRange([
+            DialogLook.IconButton("MiPlus", "Add button", Add),
+            DialogLook.IconButton("MiStacked", "Add separator", AddSeparator),
+            DialogLook.IconButton("MiArrowLeft", "Move left", () => Move(-1)),
+            DialogLook.IconButton("MiArrowRight", "Move right", () => Move(1)),
+            DialogLook.IconButton("MiTrash", "Delete", Delete, danger: true),
+        ]);
+        var sizeRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, VerticalAlignment = VerticalAlignment.Center };
+        sizeRow.Children.AddRange([new TextBlock { Text = "Icon size", FontSize = 12, Opacity = 0.65, VerticalAlignment = VerticalAlignment.Center }, _sizes]);
+        RenderSizes();
+        var toolRow = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
+        DockPanel.SetDock(sizeRow, Dock.Right);
+        toolRow.Children.AddRange([sizeRow, tools]);
 
+        // the bar: a dashed frame around the buttons, wrapping like the bar
         _strip.ItemsPanel = new FuncTemplate<Panel?>(() => vertical
             ? new StackPanel { Orientation = Orientation.Horizontal } // shown across like the horizontal bar: easier to edit
             : new WrapPanel { Orientation = Orientation.Horizontal });
         _strip.ItemTemplate = new FuncDataTemplate<ButtonDefinition>((b, _) => b is null ? new TextBlock() : StripItem(b));
         _strip.SelectionChanged += (_, _) => LoadSelected();
-        ScrollViewer.SetHorizontalScrollBarVisibility(_strip, Avalonia.Controls.Primitives.ScrollBarVisibility.Auto);
+        ScrollViewer.SetHorizontalScrollBarVisibility(_strip, ScrollBarVisibility.Auto);
+        Avalonia.Automation.AutomationProperties.SetName(_strip, "Button bar preview");
+        _strip.AddHandler(PointerPressedEvent, OnStripPressed, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        _strip.AddHandler(PointerReleasedEvent, OnStripReleased, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        _strip.KeyDown += OnStripKeyDown;
+        var frame = new Rectangle { StrokeThickness = 1, StrokeDashArray = [4, 3], RadiusX = 10, RadiusY = 10 };
+        frame[!Shape.StrokeProperty] = new DynamicResourceExtension("SystemControlForegroundBaseMediumLowBrush");
+        var stripBack = new Border { CornerRadius = new CornerRadius(10) };
+        stripBack[!Border.BackgroundProperty] = new DynamicResourceExtension("FmPanelHeaderBrush");
+        var stripBox = new Panel();
+        stripBox.Children.AddRange([stripBack, frame, _strip]);
 
-        var add = SideButton("Add", Add);
-        var separator = SideButton("Add separator", AddSeparator);
-        var delete = SideButton("Delete", Delete);
-        var left = SideButton("◀ Move", () => Move(-1));
-        var right = SideButton("Move ▶", () => Move(1));
-        var side = new StackPanel { Spacing = 6, Width = 120 };
-        side.Children.AddRange([add, separator, delete, left, right]);
+        var barSection = new StackPanel { Margin = new Thickness(20, 16) };
+        barSection.Children.AddRange([toolRow, stripBox]);
+        var barBorder = new Border { Child = barSection, BorderThickness = new Thickness(0, 0, 0, 1) };
+        barBorder[!Border.BorderBrushProperty] = new DynamicResourceExtension("SystemControlForegroundBaseLowBrush");
 
-        var appearance = new StackPanel { Spacing = 6, Margin = new Thickness(10, 0, 0, 0) };
-        appearance.Children.Add(new TextBlock { Text = "Display", FontWeight = FontWeight.SemiBold });
-        var sizeRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        sizeRow.Children.Add(new TextBlock { Text = "Icon size:", VerticalAlignment = VerticalAlignment.Center });
-        sizeRow.Children.Add(_size);
-        appearance.Children.Add(sizeRow);
+        _fields = new ButtonFieldsEditor(pickFile, (b, size) => _icon(b, size)) { Margin = new Thickness(20, 16) };
+        _fields.Changed += (_, _) => StoreSelected();
 
-        var top = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto") };
-        top.Children.Add(side);
-        var stripBox = new Border { Child = _strip, BorderThickness = new Thickness(1), Margin = new Thickness(10, 0, 0, 0), BorderBrush = Brushes.Gray };
-        Grid.SetColumn(stripBox, 1);
-        top.Children.Add(stripBox);
-        Grid.SetColumn(appearance, 2);
-        top.Children.Add(appearance);
-
-        var fields = new Grid { ColumnDefinitions = new ColumnDefinitions("140,*,Auto"), RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto,Auto,Auto,Auto"), Margin = new Thickness(0, 14, 0, 0) };
-        void Field(int row, string label, TextBox box, Func<Task>? browse = null, bool command = false)
-        {
-            var text = new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center };
-            Grid.SetRow(text, row);
-            fields.Children.Add(text);
-            box.Margin = new Thickness(0, 3);
-            Grid.SetRow(box, row);
-            Grid.SetColumn(box, 1);
-            fields.Children.Add(box);
-            // the property itself (TextChanged comes later): a following add / select must not lose the text
-            box.PropertyChanged += (_, e) =>
-            {
-                if (e.Property == TextBox.TextProperty)
-                {
-                    StoreSelected();
-                }
-            };
-            var tools = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, Margin = new Thickness(6, 3, 0, 3) };
-            if (browse is not null)
-            {
-                var button = new Button { Content = "..." };
-                ToolTip.SetTip(button, command ? "Choose a program" : "Choose a file");
-                button.Click += async (_, _) => await browse();
-                tools.Children.Add(button);
-            }
-            if (command)
-            {
-                tools.Children.Add(CommandPickerDialog.ButtonFor(box));
-            }
-            Grid.SetRow(tools, row);
-            Grid.SetColumn(tools, 2);
-            fields.Children.Add(tools);
-        }
-        Field(0, "Command:", _command, async () =>
-        {
-            if (await _pickFile("Choose program") is { } file)
-            {
-                _command.Text = file;
-            }
-        }, command: true);
-        Field(1, "Parameters:", _parameters);
-        Field(2, "Start folder:", _startPath);
-        Field(3, "Icon file:", _iconFile, async () =>
-        {
-            if (await _pickFile("Choose icon file") is not { } file)
-            {
-                return;
-            }
-            _iconFile.Text = file;
-            // a file with several icons (exe, dll, icl): choose one of them
-            if (OperatingSystem.IsWindows() && Services.Icons.WindowsShellIconService.IconCount(file) > 1)
-            {
-                var picker = new IconPickerDialog(file);
-                await picker.ShowDialog(this);
-                if (picker.Result is { } index)
-                {
-                    _iconFile.Text = $"{file},{index}";
-                }
-            }
-        });
-        Field(4, "Name:", _label);
-        Field(5, "Tooltip:", _tooltip);
-        var windowLabel = new TextBlock { Text = "Window (Windows):", VerticalAlignment = VerticalAlignment.Center };
-        Grid.SetRow(windowLabel, 6);
-        fields.Children.Add(windowLabel);
-        _window.ItemsSource = s_windowStates.Select(w => w.Text).ToList();
-        _window.SelectionChanged += (_, _) => StoreSelected();
-        Grid.SetRow(_window, 6);
-        Grid.SetColumn(_window, 1);
-        fields.Children.Add(_window);
-        _fields = fields;
-
-        var help = new TextBlock
-        {
-            Text = "Command: nc_/uc_ command, program path or folder; a '*' prefix runs it as administrator. Parameters: %P %N %T %S %L ...",
-            TextWrapping = TextWrapping.Wrap,
-            Opacity = 0.65,
-            FontSize = 12,
-        };
-
-        var ok = new Button { Content = "OK", IsDefault = true, Classes = { "dialog" } };
+        var save = new Button { Content = "Save", IsDefault = true, Classes = { "dialog" } };
         var cancel = new Button { Content = "Cancel", IsCancel = true, Classes = { "dialog" } };
-        ok.Click += (_, _) =>
+        save.Click += (_, _) =>
         {
             Result = new ButtonBarEdit(_buttons.Where(b => b.IsSeparator || !string.IsNullOrWhiteSpace(b.Command)).ToList(), SelectedSize);
             Close();
         };
         cancel.Click += (_, _) => Close();
-        var buttonsRow = new StackPanel { Classes = { "buttonrow" }, Margin = new Thickness(0, 12, 0, 0) };
-        buttonsRow.Children.AddRange([ok, cancel]);
 
-        var body = new StackPanel { Margin = new Thickness(14), Spacing = 4 };
-        body.Children.AddRange([top, _fields, help, buttonsRow]);
-        Content = body;
+        var root = new DockPanel();
+        var header = DialogLook.Header("MiHammer", title, "Drag to move, select a button to edit it");
+        var footer = DialogLook.Footer("nc_ / uc_ commands, programs and folders; parameters: %P %N %T %S %L ...", cancel, save);
+        DockPanel.SetDock(header, Dock.Top);
+        DockPanel.SetDock(footer, Dock.Bottom);
+        var body = new StackPanel();
+        body.Children.AddRange([barBorder, _fields]);
+        root.Children.AddRange([header, footer, body]);
+        Content = root;
 
         RefreshStrip(select: _buttons.FindIndex(b => !b.IsSeparator));
     }
@@ -191,21 +115,29 @@ public sealed class ButtonBarEditorDialog : Window
     /// <summary>The buttons being edited (tests).</summary>
     public IReadOnlyList<ButtonDefinition> Buttons => _buttons;
 
-    public int SelectedSize => Controls.ButtonBarControl.IconSizes[Math.Max(0, _size.SelectedIndex)];
+    /// <summary>The fields of the selected button (tests).</summary>
+    public ButtonFieldsEditor Fields => _fields;
 
-    public void SelectSize(int size) => _size.SelectedIndex = Array.IndexOf(Controls.ButtonBarControl.IconSizes, size);
+    public int SelectedSize => _size;
+
+    public void SelectSize(int size)
+    {
+        _size = Controls.ButtonBarControl.NormalizeSize(size);
+        RenderSizes();
+        RefreshStrip();
+    }
 
     public void Select(int index) => _strip.SelectedIndex = index;
 
-    /// <summary>Sets the fields of the selected button (tests).</summary>
     /// <summary>Window state of the selected button (tests).</summary>
-    public void SetWindowState(ProgramWindowState state) => _window.SelectedIndex = Array.FindIndex(s_windowStates, w => w.State == state);
+    public void SetWindowState(ProgramWindowState state) => _fields.SetWindowState(state);
 
+    /// <summary>Sets the fields of the selected button (tests).</summary>
     public void SetFields(string command, string? label, string? tooltip)
     {
-        _command.Text = command;
-        _label.Text = label;
-        _tooltip.Text = tooltip;
+        _fields.Command.Text = command;
+        _fields.Label.Text = label;
+        _fields.Tooltip.Text = tooltip;
     }
 
     public void Add()
@@ -213,8 +145,8 @@ public sealed class ButtonBarEditorDialog : Window
         var index = InsertAt();
         _buttons.Insert(index, new ButtonDefinition { Command = "nc_RereadSource" });
         RefreshStrip(index);
-        _command.Focus();
-        _command.SelectAll();
+        _fields.Command.Focus();
+        _fields.Command.SelectAll();
     }
 
     public void AddSeparator()
@@ -234,42 +166,71 @@ public sealed class ButtonBarEditorDialog : Window
         }
     }
 
-    public void Move(int delta)
+    public void Move(int delta) => MoveTo(_strip.SelectedIndex, _strip.SelectedIndex + delta);
+
+    /// <summary>Moves the button at <paramref name="from"/> to <paramref name="to"/> (dragging in the preview).</summary>
+    public void MoveTo(int from, int to)
     {
-        var index = _strip.SelectedIndex;
-        var to = index + delta;
-        if (index < 0 || to < 0 || to >= _buttons.Count)
+        if (from < 0 || from >= _buttons.Count || to < 0 || to >= _buttons.Count || from == to)
         {
             return;
         }
-        (_buttons[index], _buttons[to]) = (_buttons[to], _buttons[index]);
+        var button = _buttons[from];
+        _buttons.RemoveAt(from);
+        _buttons.Insert(to, button);
         RefreshStrip(to);
     }
 
     private int InsertAt() => _strip.SelectedIndex >= 0 ? _strip.SelectedIndex + 1 : _buttons.Count;
 
-    private static Button SideButton(string text, Action action)
+    /// <summary>The icon sizes as a segmented choice.</summary>
+    private void RenderSizes()
     {
-        var button = new Button { Content = text, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Center };
-        button.Click += (_, _) => action();
-        return button;
+        _sizes.Children.Clear();
+        var sizes = Controls.ButtonBarControl.IconSizes;
+        for (var i = 0; i < sizes.Length; i++)
+        {
+            var size = sizes[i];
+            var first = i == 0;
+            var last = i == sizes.Length - 1;
+            var button = new ToggleButton
+            {
+                Content = size.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                IsChecked = size == _size,
+                FontSize = 12,
+                MinWidth = 38,
+                Height = 30,
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                CornerRadius = new CornerRadius(first ? 8 : 0, last ? 8 : 0, last ? 8 : 0, first ? 8 : 0),
+                Margin = new Thickness(first ? 0 : -1, 0, 0, 0),
+                Classes = { "noloc" },
+            };
+            ToolTip.SetTip(button, $"{size} x {size}");
+            button.Click += (_, _) => SelectSize(size);
+            _sizes.Children.Add(button);
+        }
     }
 
     private Control StripItem(ButtonDefinition button)
     {
+        var height = _size + 16;
         if (button.IsSeparator)
         {
-            return new Border { Width = 2, Height = SelectedSize, Margin = new Thickness(4, 2), Background = Brushes.Gray };
+            var line = new Border { Width = 1, Height = Math.Max(20, _size + 4), Margin = new Thickness(6, 0), VerticalAlignment = VerticalAlignment.Center };
+            line[!Border.BackgroundProperty] = new DynamicResourceExtension("SystemControlForegroundBaseMediumLowBrush");
+            ToolTip.SetTip(line, "Separator");
+            return line;
         }
-        var stack = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, Margin = new Thickness(2) };
-        if (_icon(button, SelectedSize) is { } icon)
+        var stack = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Height = height, Margin = new Thickness(2, 0) };
+        if (_icon(button, _size) is { } icon)
         {
+            icon.VerticalAlignment = VerticalAlignment.Center;
             stack.Children.Add(icon);
         }
         var text = button.Label ?? (stack.Children.Count == 0 ? button.Command : null);
         if (!string.IsNullOrEmpty(text))
         {
-            stack.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center, Classes = { "noloc" } });
+            stack.Children.Add(new TextBlock { Text = text, FontSize = 12, Opacity = 0.75, VerticalAlignment = VerticalAlignment.Center, Classes = { "noloc" } });
         }
         ToolTip.SetTip(stack, button.Tooltip ?? button.Command);
         return stack;
@@ -296,15 +257,9 @@ public sealed class ButtonBarEditorDialog : Window
         }
         _loading = true;
         var button = Selected;
-        var editable = button is { IsSeparator: false };
-        _fields.IsEnabled = editable;
-        _command.Text = editable ? button!.Command : string.Empty;
-        _parameters.Text = editable ? button!.Parameters : string.Empty;
-        _startPath.Text = editable ? button!.StartPath : string.Empty;
-        _iconFile.Text = editable ? button!.Icon : string.Empty;
-        _label.Text = editable ? button!.Label : string.Empty;
-        _tooltip.Text = editable ? button!.Tooltip : string.Empty;
-        _window.SelectedIndex = Math.Max(0, Array.FindIndex(s_windowStates, w => w.State == (editable ? button!.WindowState : ProgramWindowState.Normal)));
+        _fields.IsEnabled = button is { IsSeparator: false };
+        _fields.Opacity = _fields.IsEnabled ? 1 : 0.45;
+        _fields.Load(button);
         _loading = false;
     }
 
@@ -314,19 +269,50 @@ public sealed class ButtonBarEditorDialog : Window
         {
             return;
         }
-        static string? Clean(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
-        button.Command = _command.Text?.Trim() ?? string.Empty;
-        button.Parameters = Clean(_parameters.Text);
-        button.StartPath = Clean(_startPath.Text);
-        button.Icon = Clean(_iconFile.Text);
-        button.Label = Clean(_label.Text);
-        button.Tooltip = Clean(_tooltip.Text);
-        button.WindowState = s_windowStates[Math.Max(0, _window.SelectedIndex)].State;
+        _fields.Store(button);
         // redraw only the edited button (keeps the caret in the text box)
         if (_strip.ContainerFromIndex(_strip.SelectedIndex) is ListBoxItem item)
         {
             item.Content = null;
             item.Content = button;
+        }
+    }
+
+    // ---- dragging a button to another place of the bar
+
+    private int IndexAt(Point point) =>
+        _strip.GetRealizedContainers().OfType<ListBoxItem>()
+            .FirstOrDefault(c => c.TranslatePoint(default, _strip) is { } at && new Rect(at, c.Bounds.Size).Contains(point)) is { } item
+            ? _strip.IndexFromContainer(item)
+            : -1;
+
+    private void OnStripPressed(object? sender, PointerPressedEventArgs e) =>
+        _dragFrom = e.GetCurrentPoint(_strip).Properties.IsLeftButtonPressed ? IndexAt(e.GetPosition(_strip)) : -1;
+
+    private void OnStripReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        var from = _dragFrom;
+        _dragFrom = -1;
+        var to = IndexAt(e.GetPosition(_strip));
+        if (from >= 0 && to >= 0 && from != to)
+        {
+            MoveTo(from, to);
+            e.Handled = true;
+        }
+    }
+
+    private void OnStripKeyDown(object? sender, KeyEventArgs e)
+    {
+        switch (e.Key)
+        {
+            case Key.Left or Key.Right when e.KeyModifiers == KeyModifiers.Control:
+                Move(e.Key == Key.Left ? -1 : 1);
+                e.Handled = true;
+                break;
+            case Key.Delete:
+                Delete();
+                e.Handled = true;
+                break;
         }
     }
 

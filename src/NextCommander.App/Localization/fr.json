@@ -2413,5 +2413,21 @@
   "PathBar.Disconnect": "Déconnecter (Ctrl+Maj+F)",
   "ButtonDefinition.InternalTerminalMaximized": "Terminal interne, agrandi",
   "ButtonDefinition.ConnectionManagerCtrlF": "Gestionnaire de connexions (Ctrl+F)",
-  "ButtonDefinition.TerminalCtrlAltT": "Terminal (Ctrl+Alt+T)"
+  "ButtonDefinition.TerminalCtrlAltT": "Terminal (Ctrl+Alt+T)",
+  "ButtonBarEditorDialog.AddButton": "Ajouter un bouton",
+  "ButtonBarEditorDialog.ButtonBarPreview": "Aperçu de la barre de boutons",
+  "ButtonBarEditorDialog.DragToMoveSelectA": "Faites glisser pour déplacer, sélectionnez un bouton pour le modifier",
+  "ButtonBarEditorDialog.NcUcCommandsProgramsAnd": "Commandes nc_ / uc_, programmes et dossiers ; paramètres : %P %N %T %S %L ...",
+  "ButtonBarEditorDialog.Separator": "Séparateur",
+  "ButtonFieldsEditor.Action": "Action",
+  "ButtonFieldsEditor.Appearance": "Apparence",
+  "ButtonFieldsEditor.BuiltInNameOrIcon": "Nom intégré ou fichier d'icône",
+  "ButtonFieldsEditor.ChooseAnIconFile": "Choisir un fichier d'icône",
+  "ButtonFieldsEditor.Icon": "Icône",
+  "ButtonFieldsEditor.OptionalShownNextToThe": "Facultatif, affiché à côté de l'icône",
+  "ButtonFieldsEditor.SameAsAInFront": "Comme un * devant la commande",
+  "ButtonFieldsEditor.ShownWhenTheMouseIs": "Affiché quand la souris est sur le bouton",
+  "ButtonFieldsEditor.TheProgramSWindowWindows": "La fenêtre du programme (Windows)",
+  "ButtonFieldsEditor.Tooltip": "Info-bulle",
+  "QuickListDialog.WhatTheButtonRunsAnd": "Ce que le bouton exécute et son apparence"
 }

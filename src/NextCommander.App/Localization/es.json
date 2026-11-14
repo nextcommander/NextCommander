@@ -2413,5 +2413,21 @@
   "PathBar.Disconnect": "Desconectar (Ctrl+Mayús+F)",
   "ButtonDefinition.InternalTerminalMaximized": "Terminal interno, maximizado",
   "ButtonDefinition.ConnectionManagerCtrlF": "Administrador de conexiones (Ctrl+F)",
-  "ButtonDefinition.TerminalCtrlAltT": "Terminal (Ctrl+Alt+T)"
+  "ButtonDefinition.TerminalCtrlAltT": "Terminal (Ctrl+Alt+T)",
+  "ButtonBarEditorDialog.AddButton": "Añadir botón",
+  "ButtonBarEditorDialog.ButtonBarPreview": "Vista previa de la barra de botones",
+  "ButtonBarEditorDialog.DragToMoveSelectA": "Arrastre para mover, seleccione un botón para editarlo",
+  "ButtonBarEditorDialog.NcUcCommandsProgramsAnd": "Comandos nc_ / uc_, programas y carpetas; parámetros: %P %N %T %S %L ...",
+  "ButtonBarEditorDialog.Separator": "Separador",
+  "ButtonFieldsEditor.Action": "Acción",
+  "ButtonFieldsEditor.Appearance": "Apariencia",
+  "ButtonFieldsEditor.BuiltInNameOrIcon": "Nombre integrado o archivo de icono",
+  "ButtonFieldsEditor.ChooseAnIconFile": "Elegir un archivo de icono",
+  "ButtonFieldsEditor.Icon": "Icono",
+  "ButtonFieldsEditor.OptionalShownNextToThe": "Opcional, se muestra junto al icono",
+  "ButtonFieldsEditor.SameAsAInFront": "Igual que un * delante del comando",
+  "ButtonFieldsEditor.ShownWhenTheMouseIs": "Se muestra cuando el ratón está sobre el botón",
+  "ButtonFieldsEditor.TheProgramSWindowWindows": "La ventana del programa (Windows)",
+  "ButtonFieldsEditor.Tooltip": "Información sobre herramientas",
+  "QuickListDialog.WhatTheButtonRunsAnd": "Qué ejecuta el botón y cómo se ve"
 }

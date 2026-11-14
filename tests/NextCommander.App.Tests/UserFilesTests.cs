@@ -199,7 +199,7 @@ public sealed class UserFilesTests : IDisposable
         dialog.Move(-1);
         Assert.Equal("notepad.exe", dialog.Buttons[0].Command);
         Assert.Equal(count, vm.Settings.ButtonBar.Count); // the live bar is untouched
-        dialog.GetVisualDescendants().OfType<Button>().First(b => Equals(b.Content, "OK")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        dialog.GetVisualDescendants().OfType<Button>().First(b => Equals(b.Content, "Save")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Assert.Equal(32, dialog.Result!.IconSize);
         Assert.Equal(ProgramWindowState.Maximized, dialog.Result.Buttons.First(b => b.Command == "notepad.exe").WindowState);
         Assert.Equal(count + 2, dialog.Result.Buttons.Count);
