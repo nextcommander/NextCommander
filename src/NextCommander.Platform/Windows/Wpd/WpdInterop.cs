@@ -393,6 +393,7 @@ internal static unsafe partial class WpdNative
         unchecked((int)0x80070002) or unchecked((int)0x80070003) => new FileNotFoundException("Not found on the device."),
         unchecked((int)0x800700B7) => new IOException("It already exists on the device."),
         unchecked((int)0x80070070) => new IOException("The device is full."),
+        unchecked((int)0x802A0002) => new NextCommander.Platform.Mtp.MtpSessionLostException("The device connection was reset; it is opened again."),
         unchecked((int)0x8007048F) or unchecked((int)0x80070015) or unchecked((int)0x8007001F) => new IOException("The device was disconnected."),
         _ => new IOException($"Portable device error 0x{hr:X8}."),
     };

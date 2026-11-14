@@ -15,10 +15,13 @@ public static class PosixShell
     /// <summary>One line per entry: "d/size/mtime/type/name" (d = 1 for folders, links to folders too).</summary>
     private const string StatFormat = "stat -c '%s/%Y/%F' -- \"$f\" 2>/dev/null || stat -f '%z/%m/%HT' -- \"$f\"";
 
-    /// <summary>The command that lists a folder (hidden entries included).</summary>
+    /// <summary>
+    /// The command that lists a folder (hidden entries included). It fails only when the folder cannot be opened: an
+    /// entry that cannot be described does not fail the listing (Android's shell ends such loops with a non-zero status).
+    /// </summary>
     public static string ListCommand(string folder) =>
-        $"cd -- {Quote(folder)} && for f in * .[!.]* ..?*; do if [ -e \"$f\" ] || [ -L \"$f\" ]; then " +
-        $"if [ -d \"$f\" ]; then d=1; else d=0; fi; printf '%s/' \"$d\"; {{ {StatFormat}; }} | tr -d '\\n'; printf '/%s\\n' \"$f\"; fi; done";
+        $"cd -- {Quote(folder)} || exit 1; for f in * .[!.]* ..?*; do if [ -e \"$f\" ] || [ -L \"$f\" ]; then " +
+        $"if [ -d \"$f\" ]; then d=1; else d=0; fi; printf '%s/' \"$d\"; {{ {StatFormat}; }} | tr -d '\\n'; printf '/%s\\n' \"$f\"; fi; done; exit 0";
 
     /// <summary>The command that describes one path (nothing when it does not exist).</summary>
     public static string StatCommand(string path) =>

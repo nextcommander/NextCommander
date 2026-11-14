@@ -26,7 +26,24 @@ public sealed class MtpProviderTests : IDisposable
 
     private static VfsPath P(string path, string device = "Phone") => VfsPath.Parse("mtp://" + device + path);
 
-    private FakeMtpDevice Phone => _source.Devices["phone-1"];
+    private FakeMtpDevice Phone => _source.Devices.Values.First();
+
+    [Fact]
+    public async Task A_device_handle_that_is_no_longer_open_is_opened_again()
+    {
+        Phone.AddFile("/Internal storage/a.txt", "x");
+        Assert.Single(await _provider.ListAsync(P("/Internal storage"), CancellationToken.None));
+        Assert.Equal(1, _source.Opens);
+
+        Phone.LoseSessionOnce = true; // the call fails once: opened again and repeated
+        Assert.Single(await _provider.ListAsync(P("/Internal storage"), CancellationToken.None));
+        Assert.Equal(2, _source.Opens);
+
+        _source.Reconnect("phone-1", "phone-1b"); // same name, new id: the drive check closes the old session
+        _provider.CloseDisconnected();
+        Assert.Single(await _provider.ListAsync(P("/Internal storage"), CancellationToken.None));
+        Assert.Equal(3, _source.Opens);
+    }
 
     [Fact]
     public async Task ListsDevicesStoragesAndFolders()
@@ -213,7 +230,20 @@ public sealed class MtpProviderTests : IDisposable
         public IReadOnlyList<MtpDeviceInfo> GetDevices() =>
             MtpDeviceNames.MakeUnique(Devices.Keys.Where(id => !_unplugged.Contains(id)).Select(id => new MtpDeviceInfo(id, "Phone")));
 
-        public IMtpDevice Open(string deviceId) => Devices[deviceId];
+        public int Opens { get; private set; }
+
+        public IMtpDevice Open(string deviceId)
+        {
+            Opens++;
+            return Devices[deviceId];
+        }
+
+        /// <summary>The phone connects again under the same name with a new system id (e.g. its USB mode changed).</summary>
+        public void Reconnect(string id, string newId)
+        {
+            Devices[newId] = Devices[id];
+            Devices.Remove(id);
+        }
     }
 
     internal sealed class FakeMtpDevice : IMtpDevice
@@ -297,9 +327,17 @@ public sealed class MtpProviderTests : IDisposable
             return node;
         }
 
+        /// <summary>The next call answers "device not opened" (Windows: 0x802A0002).</summary>
+        public bool LoseSessionOnce { get; set; }
+
         public IReadOnlyList<MtpObject> ListChildren(string parentId)
         {
             CheckConnected();
+            if (LoseSessionOnce)
+            {
+                LoseSessionOnce = false;
+                throw new MtpSessionLostException("not opened");
+            }
             lock (_nodes) // a folder watch reads from a timer thread
             {
                 return _nodes.Values.Where(n => n.ParentId == parentId).Select(n => new MtpObject(n.Id, n.Name, n.IsFolder, n.Data.Length, n.Modified)).ToList();
