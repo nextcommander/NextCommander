@@ -32,6 +32,25 @@ public enum RemoteProtocol
     AzureFiles,
 }
 
+/// <summary>A folder of the connection manager: its path ("Work/Prod") and color label ("#ED4245"; empty: none).</summary>
+public sealed class ConnectionFolder
+{
+    public string Path { get; set; } = string.Empty;
+
+    public string Color { get; set; } = string.Empty;
+}
+
+/// <summary>S3 server-side encryption of uploads.</summary>
+public enum S3Encryption
+{
+    /// <summary>The bucket's default.</summary>
+    None,
+    /// <summary>SSE-S3 (AES256).</summary>
+    Aes256,
+    /// <summary>SSE-KMS (aws:kms), with an optional key id.</summary>
+    Kms,
+}
+
 /// <summary>
 /// A saved FTP / SFTP / WebDAV / S3 connection (connection manager). Passwords are not stored here but in the secret
 /// store. For S3 the user is the access key id and the password the secret access key; the host is the service
@@ -93,6 +112,43 @@ public sealed class RemoteConnection
 
     /// <summary>Simultaneous connections (listing while copying).</summary>
     public int MaxConnections { get; set; } = 3;
+
+    // ---------------------------------------------------------------- connection manager
+
+    /// <summary>The folder of the connection manager the connection is in ("Work/Prod"; empty: the top).</summary>
+    public string Folder { get; set; } = string.Empty;
+
+    /// <summary>Marked as a favorite in the connection manager.</summary>
+    public bool Favorite { get; set; }
+
+    // ---------------------------------------------------------------- more options
+
+    /// <summary>Seconds to wait for the server when connecting and for an answer (0: the protocol's default).</summary>
+    public int TimeoutSeconds { get; set; }
+
+    /// <summary>SFTP / SCP: log in with the keys of the SSH agent (OpenSSH agent, Pageant; SSH_AUTH_SOCK elsewhere).</summary>
+    public bool UseSshAgent { get; set; }
+
+    /// <summary>
+    /// SFTP / SCP: an SSH server to go through ("user@bastion:22"): the connection is tunneled from it. It logs in
+    /// with the same key file or agent; a password is asked for it separately.
+    /// </summary>
+    public string? JumpHost { get; set; }
+
+    /// <summary>FTP: the encoding of file names (empty: UTF-8 when the server supports it, otherwise the system's).</summary>
+    public string? FtpEncoding { get; set; }
+
+    /// <summary>S3: server-side encryption of uploaded objects.</summary>
+    public S3Encryption S3Encryption { get; set; }
+
+    /// <summary>S3 with <see cref="S3Encryption.Kms"/>: the KMS key (empty: the account's default key for S3).</summary>
+    public string? KmsKeyId { get; set; }
+
+    /// <summary>Azure: sign in with a Microsoft Entra ID account instead of the account key or a SAS token.</summary>
+    public bool AzureEntraId { get; set; }
+
+    /// <summary>Azure with Entra ID: the tenant (directory id or domain; empty: the account's own organization).</summary>
+    public string? TenantId { get; set; }
 
     public int EffectivePort => Port > 0 ? Port : Protocol is RemoteProtocol.S3 or RemoteProtocol.AzureBlob or RemoteProtocol.AzureFiles && PlainHttp ? 80 : DefaultPort(Protocol);
 

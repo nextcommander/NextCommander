@@ -26,7 +26,8 @@ public sealed class AzureFilesFileSystemProvider(RemoteHooks hooks) : RemoteProv
     /// <summary>Tests: the HTTP handler of all requests (a fake service).</summary>
     public Func<HttpMessageHandler>? HandlerFactory { get; init; }
 
-    protected override bool NeedsPassword(RemoteConnection connection) => true;
+    /// <summary>The account key or a SAS token is asked; an Entra ID account signs in in the browser instead.</summary>
+    protected override bool NeedsPassword(RemoteConnection connection) => !connection.AzureEntraId;
 
     /// <summary>"/share/a/b.txt" → ("share", "a/b.txt").</summary>
     public static (string Share, string Name) Split(string path) => S3FileSystemProvider.Split(path);
@@ -34,33 +35,8 @@ public sealed class AzureFilesFileSystemProvider(RemoteHooks hooks) : RemoteProv
     /// <summary>A time as the File service takes it (UTC, seven decimals).</summary>
     public static string FileTime(DateTime time) => time.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss.fffffff'Z'", CultureInfo.InvariantCulture);
 
-    protected override async Task<HttpRemoteClient> ConnectAsync(RemoteConnection connection, string? password, string? trustedFingerprint, CancellationToken cancellationToken)
-    {
-        if (!AzureSigner.IsSas(password) && !AzureSigner.IsAccountKey(password))
-        {
-            throw new HttpStatusException(HttpStatusCode.Forbidden, "Azure: an account key (base64) or a SAS token (sv=...&sig=...) is needed.", "AuthenticationFailed");
-        }
-        var client = HttpRemoteClient.Create(connection, password?.Trim().TrimStart('?'), trustedFingerprint, useCredentials: false, testHandler: HandlerFactory?.Invoke());
-        try
-        {
-            // checks the key: the share list (a SAS for one share may not list them: that is fine)
-            using var response = await SendAsync(client, HttpMethod.Get, null, string.Empty, "comp=list&maxresults=1", cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                var error = await ErrorOf(response, "/").ConfigureAwait(false);
-                if (!AzureSigner.IsSas(client.Password) || error.ErrorCode is "AuthenticationFailed")
-                {
-                    throw error;
-                }
-            }
-            return client;
-        }
-        catch
-        {
-            client.Dispose();
-            throw;
-        }
-    }
+    protected override Task<HttpRemoteClient> ConnectAsync(RemoteConnection connection, string? password, string? trustedFingerprint, CancellationToken cancellationToken) =>
+        ConnectAzureAsync(connection, password, trustedFingerprint, Hooks, HandlerFactory?.Invoke(), files: true, cancellationToken);
 
     protected override bool IsAlive(HttpRemoteClient client) => true;
 

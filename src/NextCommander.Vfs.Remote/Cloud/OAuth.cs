@@ -42,6 +42,18 @@ public sealed record OAuthService(
     public static OAuthService Box { get; } = new("Box",
         "https://account.box.com/api/oauth2/authorize", "https://api.box.com/oauth2/token",
         null, "localhost", string.Empty);
+
+    /// <summary>The public client id of the Azure CLI: Entra ID sign-in to storage without registering an application.</summary>
+    public const string AzureCliClientId = "04b07795-8ddb-461a-bbee-02f9e1bf7b46";
+
+    /// <summary>Azure Storage with a Microsoft Entra ID account (Blob and Files), in a tenant ("organizations": the account's own).</summary>
+    public static OAuthService AzureStorage(string? tenant)
+    {
+        var directory = string.IsNullOrWhiteSpace(tenant) ? "organizations" : Uri.EscapeDataString(tenant.Trim());
+        return new OAuthService("Azure",
+            $"https://login.microsoftonline.com/{directory}/oauth2/v2.0/authorize", $"https://login.microsoftonline.com/{directory}/oauth2/v2.0/token",
+            "https://storage.azure.com/user_impersonation offline_access", "localhost", string.Empty);
+    }
 }
 
 /// <summary>Tokens of a signed-in account.</summary>
