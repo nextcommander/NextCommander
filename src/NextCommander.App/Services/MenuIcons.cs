@@ -233,7 +233,7 @@ public static class MenuIcons
         ["nc_SwitchVertButtonBar"] = new("FmBarCommands", Gray),
         ["nc_SwitchDarkmode"] = new("MiTheme", Blue),
         // Net
-        ["nc_FtpConnect"] = new("MiGlobe", Blue),
+        ["nc_RemoteConnection"] = new("MiGlobe", Blue),
         ["nc_NewConnection"] = new("MiGlobe", Blue, "OvPlus", Green),
         ["nc_OpenConnection"] = new("MiGlobe", Blue),
         ["nc_OpenNetwork"] = new("MiNetwork", Blue),

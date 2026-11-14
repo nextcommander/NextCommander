@@ -21,7 +21,7 @@ public sealed class HotkeyMap
         ["Ctrl+M"] = "nc_MultiRenameFiles",
         ["Ctrl+Alt+S"] = "nc_Config",
         ["Shift+Enter"] = "nc_OpenWith",
-        ["Ctrl+F"] = "nc_FtpConnect",
+        ["Ctrl+F"] = "nc_RemoteConnection",
         ["Ctrl+Shift+F"] = "nc_FtpDisconnect",
         ["Alt+F5"] = "nc_PackFiles",
         ["Alt+F9"] = "nc_UnpackFiles",

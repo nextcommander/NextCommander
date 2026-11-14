@@ -1019,7 +1019,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         c.Register("nc_EditColumnSets", "Edit column sets", _ => EditColumnSetsAsync());
         c.Register("nc_OpenWith", "Open with (internal associations)", _ => OpenWithAsync());
         c.Register("nc_Plugins", "Loaded plugins", _ => ShowPluginsAsync());
-        c.Register("nc_FtpConnect", "Connection manager: FTP, SFTP, SCP, WebDAV, SMB, S3, Azure, Google Drive, OneDrive, Dropbox, Box (Ctrl+F)", _ => ConnectAsync());
+        c.Register("nc_RemoteConnection", "Connection manager: FTP, SFTP, SCP, WebDAV, SMB, S3, Azure, Google Drive, OneDrive, Dropbox, Box (Ctrl+F)", _ => ConnectAsync());
         c.Register("nc_NewConnection", "New connection (parameter: sftp, scp, ftp, ftps, davs, dav, smb, s3, azblob, azfile, gdrive, onedrive, dropbox, box)", p => NewConnectionAsync(p));
         c.Register("nc_OpenConnection", "Open a saved connection (parameter: the connection's name)", p => OpenConnectionAsync(p));
         c.Register("nc_FtpDisconnect", "Disconnect from server (Ctrl+Shift+F)", _ => DisconnectAsync());
@@ -2320,7 +2320,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             ("Shortcuts and commands...", () => ExecuteAsync("nc_CommandBrowser")),
             ("Hotlist...", () => ExecuteAsync("nc_ConfigDirHotlist")),
             ("Column sets...", () => ExecuteAsync("nc_EditColumnSets")),
-            ("Connection manager...", () => ExecuteAsync("nc_FtpConnect")),
+            ("Connection manager...", () => ExecuteAsync("nc_RemoteConnection")),
             ("Master password...", () => ExecuteAsync("nc_MasterPassword")),
             ("Export settings...", () => ExecuteAsync("nc_ExportSettings")),
             ("Import settings...", () => ExecuteAsync("nc_ImportSettings")),
