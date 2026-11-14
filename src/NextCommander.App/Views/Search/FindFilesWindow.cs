@@ -22,9 +22,10 @@ namespace NextCommander.App.Views.Search;
 /// <summary>One row of the result list: a file or a duplicate group header.</summary>
 public sealed class SearchResultItem
 {
-    public SearchResultItem(VfsEntry entry)
+    public SearchResultItem(VfsEntry entry, ContentHit? hit = null)
     {
         Entry = entry;
+        Hit = hit?.Display ?? string.Empty;
         Display = entry.Path.ToDisplayString() + (entry.IsDirectory ? Path.DirectorySeparatorChar.ToString() : string.Empty);
         Detail = entry.IsDirectory
             ? "<DIR>   " + entry.LastWriteTime.ToString("g", CultureInfo.CurrentCulture)
@@ -43,6 +44,9 @@ public sealed class SearchResultItem
     public string Display { get; }
 
     public string Detail { get; }
+
+    /// <summary>A content search: the line of the first match ("12: text"); empty otherwise.</summary>
+    public string Hit { get; } = string.Empty;
 
     public bool IsHeader { get; }
 
@@ -70,6 +74,7 @@ public sealed partial class FindFilesWindow : Window
     private readonly CheckBox _notContaining = new() { Content = "Not containing" };
     private readonly CheckBox _utf16 = new() { Content = "UTF-16", IsChecked = true };
     private readonly CheckBox _office = new() { Content = "Office / ODT / EPUB text", IsChecked = true };
+    private readonly CheckBox _skipBinary = new() { Content = "Skip binary files" };
     private readonly TextBox _minSize = new() { PlaceholderText = "e.g. 10k", Width = 90 };
     private readonly TextBox _maxSize = new() { PlaceholderText = "e.g. 2M", Width = 90 };
     private readonly TextBox _after = new() { PlaceholderText = "2024-05-01 / 7g", Width = 130 };
@@ -97,6 +102,9 @@ public sealed partial class FindFilesWindow : Window
     private readonly DispatcherTimer _flushTimer;
     private CancellationTokenSource? _cts;
     private FileSearcher? _searcher;
+
+    /// <summary>The criteria of the last search (the Lister looks for its text).</summary>
+    private SearchOptions? _lastOptions;
 
     public FindFilesWindow(FindFilesRequest request)
     {
@@ -206,7 +214,8 @@ public sealed partial class FindFilesWindow : Window
         Add(_text, 3, 1);
         Add(Row(_case, _words, _contentRegex), 3, 2);
 
-        var contentOptions = Row(_notContaining, _utf16, _office);
+        ToolTip.SetTip(_skipBinary, "Files whose start looks like binary data (programs, images, archives) are not searched for the text.");
+        var contentOptions = Row(_notContaining, _utf16, _office, _skipBinary);
         contentOptions.Margin = new Thickness(10, 0, 10, 4);
 
         var advanced = new StackPanel { Spacing = 6, Margin = new Thickness(4) };
@@ -290,6 +299,7 @@ public sealed partial class FindFilesWindow : Window
         NotContaining = _notContaining.IsChecked == true,
         Utf16 = _utf16.IsChecked == true,
         OfficeDocuments = _office.IsChecked == true,
+        SkipBinary = _skipBinary.IsChecked == true,
         MinSize = SearchInputParser.ParseSize(_minSize.Text),
         MaxSize = SearchInputParser.ParseSize(_maxSize.Text),
         ModifiedAfter = SearchInputParser.ParseDate(_after.Text, DateTime.Now),
@@ -321,6 +331,7 @@ public sealed partial class FindFilesWindow : Window
         _notContaining.IsChecked = o.NotContaining;
         _utf16.IsChecked = o.Utf16;
         _office.IsChecked = o.OfficeDocuments;
+        _skipBinary.IsChecked = o.SkipBinary;
         _minSize.Text = o.MinSize?.ToString(CultureInfo.InvariantCulture);
         _maxSize.Text = o.MaxSize?.ToString(CultureInfo.InvariantCulture);
         _after.Text = o.ModifiedAfter?.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
@@ -365,6 +376,7 @@ public sealed partial class FindFilesWindow : Window
         {
             options = ReadOptions();
             _searcher = new FileSearcher(_request.Context.Registry, options);
+            _lastOptions = options;
         }
         catch (Exception ex) when (ex is FormatException or ArgumentException)
         {
@@ -432,7 +444,7 @@ public sealed partial class FindFilesWindow : Window
         var added = 0;
         while (added < 5000 && _incoming.TryDequeue(out var entry))
         {
-            Results.Add(new SearchResultItem(entry));
+            Results.Add(new SearchResultItem(entry, _searcher?.Hits.GetValueOrDefault(entry.Path)));
             added++;
         }
         if (_searcher is { } s && _cts is not null)
@@ -530,7 +542,11 @@ public sealed partial class FindFilesWindow : Window
             return;
         }
         var index = files.IndexOf(entry);
-        new ListerWindow(new ListerRequest(files, Math.Max(0, index), _request.Context)).Show(this);
+        // after a content search the Lister shows the first match (F3 there goes to the next)
+        var find = _lastOptions is { ContainingText: { Length: > 0 } text, NotContaining: false } o
+            ? new ListerFind(text, o.CaseSensitive, o.WholeWords, o.ContentIsRegex)
+            : null;
+        new ListerWindow(new ListerRequest(files, Math.Max(0, index), _request.Context) { Find = find }).Show(this);
     }
 
     public async Task GoToSelectedAsync()

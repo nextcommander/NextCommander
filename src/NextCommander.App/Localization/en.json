@@ -2191,6 +2191,8 @@
   "ConnectionPresets.UseAnAppPasswordPreferences": "Use an app password (Preferences → Password → App passwords).",
   "ConnectionPresets.UseAnAppPasswordYandex": "Use an app password (Yandex ID → Security → App passwords).",
   "ConnectionPresets.YourServerSAddressThe": "Your server's address; the start folder is the files of the user. With two-factor sign-in, use an app password.",
+  "FindFilesWindow.SkipBinaryFiles": "Skip binary files",
+  "FindFilesWindow.SkipBinaryFiles.Description": "Files whose start looks like binary data (programs, images, archives) are not searched for the text.",
   "FreedesktopTrash.TheOriginalPlaceOfThis": "The original place of this item is not known.",
   "HttpListingFileSystemProvider.AWebServerListingIs": "A web server listing is read only: copy files out of it.",
   "HttpListingFileSystemProvider.NotAFolderListing": "Not a folder listing: {0}",
@@ -2267,7 +2269,7 @@
   "WpdInterop.ItAlreadyExistsOnThe": "It already exists on the device.",
   "WpdInterop.NotFoundOnTheDevice": "Not found on the device.",
   "WpdInterop.PortableDeviceError0x": "Portable device error 0x{0}.",
+  "WpdInterop.TheDeviceConnectionWasReset": "The device connection was reset; it is opened again.",
   "WpdInterop.TheDeviceIsFull": "The device is full.",
   "WpdInterop.TheDeviceWasDisconnected": "The device was disconnected."
 }
-  "WpdInterop.TheDeviceConnectionWasReset": "The device connection was reset; it is opened again.",

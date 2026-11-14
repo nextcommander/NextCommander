@@ -59,6 +59,9 @@ public sealed class SearchOptions
     /// <summary>Searches the text of Office XML / OpenDocument / EPUB files instead of their zip bytes.</summary>
     public bool OfficeDocuments { get; set; } = true;
 
+    /// <summary>Content search leaves out files whose start looks like binary data (programs, images, archives).</summary>
+    public bool SkipBinary { get; set; }
+
     public long? MinSize { get; set; }
 
     public long? MaxSize { get; set; }
