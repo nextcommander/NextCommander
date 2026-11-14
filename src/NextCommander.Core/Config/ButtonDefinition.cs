@@ -74,7 +74,7 @@ public sealed class ButtonDefinition
     /// <summary>The buttons at the end of the bar: the connection manager and the settings.</summary>
     public static List<ButtonDefinition> WindowsAtTheEnd() =>
     [
-        new() { Command = "nc_FtpConnect", Tooltip = "Connection manager (Ctrl+F)" },
+        new() { Command = "nc_RemoteConnection", Tooltip = "Connection manager (Ctrl+F)" },
         new() { Command = "nc_Config", Tooltip = "Settings" },
     ];
 

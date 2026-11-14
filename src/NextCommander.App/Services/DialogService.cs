@@ -324,7 +324,7 @@ public sealed class DialogService : IDialogService
 
     public async Task<NextCommander.Core.Config.ButtonDefinition?> EditButtonAsync(NextCommander.Core.Config.ButtonDefinition? existing)
     {
-        var dialog = new ButtonEditDialog(existing, () => PickOpenFileAsync("Choose program"));
+        var dialog = new ButtonEditDialog(existing, () => PickOpenFileAsync("Choose program"), (b, size) => Controls.ButtonBarControl.CreateIcon(b, size, null));
         await dialog.ShowDialog(RequireOwner());
         return dialog.Result;
     }

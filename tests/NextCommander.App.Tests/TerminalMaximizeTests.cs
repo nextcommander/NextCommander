@@ -80,7 +80,7 @@ public sealed class TerminalMaximizeTests : IDisposable
         var commands = bar.GetVisualDescendants().OfType<Button>().Select(b => (b.Tag as Core.Config.ButtonDefinition)?.Command).ToList();
         // next to the system terminal; the connection manager and the settings at the end
         Assert.Equal(commands.IndexOf("nc_ExecuteTerminal") + 1, commands.IndexOf("nc_MaximizeTerminal"));
-        Assert.Equal(["nc_FtpConnect", "nc_Config"], commands[^2..]);
+        Assert.Equal(["nc_RemoteConnection", "nc_Config"], commands[^2..]);
         Assert.True(vm.Settings.ButtonBar[^3].IsSeparator);
 
         var button = bar.GetVisualDescendants().OfType<Button>().Single(b => (b.Tag as Core.Config.ButtonDefinition)?.Command == "nc_MaximizeTerminal");

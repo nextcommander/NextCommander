@@ -176,6 +176,9 @@ public sealed class SettingsWindow : Window
     /// <summary>Visible setting labels (tests).</summary>
     public IReadOnlyList<string> VisibleLabels { get; private set; } = [];
 
+    /// <summary>The paths of all pages, in the order of the tree ("Display/Color" ...; screenshots).</summary>
+    public IReadOnlyList<string> Pages => [.. _treeItems.Keys];
+
     /// <summary>Title of the page shown (tests).</summary>
     public string PageTitle => _title.Text ?? string.Empty;
 
