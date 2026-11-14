@@ -27,7 +27,7 @@ public sealed class FontDialog : DialogWindow
     {
         _all = FontManager.Current.SystemFonts.Select(f => f.Name).Distinct(StringComparer.OrdinalIgnoreCase)
             .Order(StringComparer.CurrentCultureIgnoreCase).ToList();
-        _fixed = new HashSet<string>(SettingsWindow.MonospaceFonts(), StringComparer.OrdinalIgnoreCase);
+        _fixed = new HashSet<string>(SettingsView.MonospaceFonts(), StringComparer.OrdinalIgnoreCase);
         // the setting may hold a fallback list ("Cascadia Mono, Consolas, ..."): the first installed one is the current font
         var current = family.Split(',').Select(f => f.Trim()).FirstOrDefault(f => _all.Contains(f, StringComparer.OrdinalIgnoreCase)) ?? family.Split(',')[0].Trim();
         if (!_fixed.Contains(current))

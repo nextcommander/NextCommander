@@ -28,15 +28,83 @@ public static class UiLocalization
     /// <summary>&lt;settings&gt;/languages: the user's own or corrected language files (win over the shipped ones).</summary>
     public static string? UserDirectory { get; set; }
 
+    /// <summary>The language loaded last ("en", "tr" ...).</summary>
+    public static string? Language { get; private set; }
+
+    /// <summary>The language changed while the program runs (views that translate texts themselves build them again).</summary>
+    public static event EventHandler? LanguageChanged;
+
+    /// <summary>
+    /// The English text a TextBlock showed before it was translated, and the translation it got: a text that is still
+    /// that translation is translated again from the English one when the language changes.
+    /// </summary>
+    private static readonly AttachedProperty<string?> SourceProperty =
+        AvaloniaProperty.RegisterAttached<TextBlock, string?>("LocalizationSource", typeof(UiLocalization));
+
+    private static readonly AttachedProperty<string?> ShownProperty =
+        AvaloniaProperty.RegisterAttached<TextBlock, string?>("LocalizationShown", typeof(UiLocalization));
+
+    private static readonly AttachedProperty<string?> TitleSourceProperty =
+        AvaloniaProperty.RegisterAttached<Window, string?>("LocalizationTitleSource", typeof(UiLocalization));
+
+    private static readonly AttachedProperty<string?> TitleShownProperty =
+        AvaloniaProperty.RegisterAttached<Window, string?>("LocalizationTitleShown", typeof(UiLocalization));
+
     /// <summary>Loads the language chosen in the settings ("system" or a language code); English needs no translation.</summary>
     public static void Load(string? setting)
     {
         var language = ResolveLanguage(setting, CultureInfo.CurrentUICulture);
+        Language = language;
         Localizer.Current = language == Localizer.BaseLanguage ? null : Read(language);
-        if (Localizer.Current is not null)
+        Install(); // in English too: the windows shown are known when the language is switched later
+    }
+
+    /// <summary>
+    /// Switches the language while the program runs (Configuration > Display > Language, Apply): every text of the open
+    /// windows is translated again from its English text; texts shown later follow by themselves.
+    /// </summary>
+    public static void Switch(string? setting)
+    {
+        if (ResolveLanguage(setting, CultureInfo.CurrentUICulture) == Language)
         {
-            Install();
+            return;
         }
+        Load(setting);
+        Install(); // also back to English: the texts translated before go back to their English ones
+        foreach (var top in OpenTopLevels())
+        {
+            if (top is Window window)
+            {
+                ApplyTitle(window);
+            }
+            foreach (var block in top.GetVisualDescendants().OfType<TextBlock>())
+            {
+                Apply(block);
+            }
+        }
+        LanguageChanged?.Invoke(null, EventArgs.Empty);
+    }
+
+    /// <summary>The windows texts were shown in (kept weakly): the ones still open are translated again on a switch.</summary>
+    private static readonly List<WeakReference<TopLevel>> s_topLevels = [];
+
+    private static void Remember(TopLevel top)
+    {
+        s_topLevels.RemoveAll(r => !r.TryGetTarget(out _));
+        if (!s_topLevels.Any(r => r.TryGetTarget(out var known) && ReferenceEquals(known, top)))
+        {
+            s_topLevels.Add(new WeakReference<TopLevel>(top));
+        }
+    }
+
+    private static IEnumerable<TopLevel> OpenTopLevels()
+    {
+        var tops = s_topLevels.Select(r => r.TryGetTarget(out var top) ? top : null).OfType<TopLevel>().ToList();
+        if (Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            tops.AddRange(desktop.Windows.Where(w => !tops.Contains(w)));
+        }
+        return tops;
     }
 
     /// <summary>"system": the UI culture's language when there is a file for it, otherwise English.</summary>
@@ -159,14 +227,35 @@ public static class UiLocalization
                 Apply(block);
             }
         });
-        Control.LoadedEvent.AddClassHandler<TextBlock>((block, _) => Apply(block), RoutingStrategies.Direct);
-        Window.TitleProperty.Changed.AddClassHandler<Window>((window, _) =>
+        Control.LoadedEvent.AddClassHandler<TextBlock>((block, _) =>
         {
-            if (Localizer.Current is { } l && window.Title is { } title && l.Translate(title) is var t && t != title)
+            if (TopLevel.GetTopLevel(block) is { } top)
             {
-                window.SetCurrentValue(Window.TitleProperty, t);
+                Remember(top);
             }
-        });
+            Apply(block);
+        }, RoutingStrategies.Direct);
+        Window.TitleProperty.Changed.AddClassHandler<Window>((window, _) => ApplyTitle(window));
+    }
+
+    private static void ApplyTitle(Window window)
+    {
+        if (window.Title is not { } title)
+        {
+            return;
+        }
+        var source = window.GetValue(TitleSourceProperty) is { } own && title == window.GetValue(TitleShownProperty) ? own : title;
+        if (Localizer.Current is null && window.GetValue(TitleSourceProperty) is null)
+        {
+            return;
+        }
+        var translated = Localizer.Current?.Translate(source) ?? source;
+        window.SetValue(TitleSourceProperty, source);
+        window.SetValue(TitleShownProperty, translated);
+        if (translated != title)
+        {
+            window.SetCurrentValue(Window.TitleProperty, translated);
+        }
     }
 
     /// <summary>Called with texts that stayed untranslated (finding missing entries; tests and debugging).</summary>
@@ -174,16 +263,25 @@ public static class UiLocalization
 
     private static void Apply(TextBlock block)
     {
-        if (Localizer.Current is not { } localizer || block.Text is not { Length: > 0 } text || IsExcluded(block))
+        if (block.Text is not { Length: > 0 } text)
         {
             return;
         }
-        var translated = localizer.Translate(text);
-        if (translated == text)
+        // the text is still the translation given before: translate its English text (the language may have changed)
+        var earlier = block.GetValue(SourceProperty);
+        var source = earlier is not null && text == block.GetValue(ShownProperty) ? earlier : text;
+        if ((Localizer.Current is null && earlier is null) || IsExcluded(block))
         {
-            Untranslated?.Invoke(text);
+            return;
         }
-        if (!ReferenceEquals(translated, text) && translated != text)
+        var translated = Localizer.Current?.Translate(source) ?? source;
+        if (translated == source && Localizer.Current is not null)
+        {
+            Untranslated?.Invoke(source);
+        }
+        block.SetValue(SourceProperty, source);
+        block.SetValue(ShownProperty, translated);
+        if (translated != text)
         {
             // SetCurrentValue keeps bindings: a new bound value comes through here again.
             block.SetCurrentValue(TextBlock.TextProperty, translated);

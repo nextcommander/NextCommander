@@ -8,7 +8,7 @@ NextCommander comes in English, Turkish (Türkçe), German (Deutsch), Spanish (E
 ## Choosing the language
 
 Open *Configuration > Options > Display > Language* and pick a language from the list. Each language is shown
-with its country's flag; **System** has a monitor icon. The new language is used after you restart NextCommander.
+with its country's flag; **System** has a monitor icon. The new language is used as soon as you click Apply or OK: the open windows change at once.
 
 ![The Language page](../screenshots/languages.png)
 
@@ -31,7 +31,7 @@ Some of the flags the list can show:
 3. Every text of NextCommander is listed in English on the left with a box for the translation on the right.
    **Search** finds a text, and **Only texts not translated yet** hides the ones done. The count shows how many
    texts are translated.
-4. Click **Save**. The language is chosen on the Language page; click Apply and restart NextCommander.
+4. Click **Save**. The language is chosen on the Language page; click Apply.
 
 The translation is saved as `languages/<code>.json` in the [settings folder](settings-folder.md). A language you
 save there is used instead of the shipped one with the same code, so you can also improve the shipped

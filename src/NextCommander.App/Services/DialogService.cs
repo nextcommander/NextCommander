@@ -214,12 +214,24 @@ public sealed class DialogService : IDialogService
 
     public async Task ShowSettingsAsync(AppSettings settings, Action changed, IReadOnlyList<(string Text, Func<Task> Action)> extraActions, string? search = null)
     {
+        var owner = RequireOwner();
+        if (owner is Views.MainWindow main)
+        {
+            // in place of the panels, like the maximized internal terminal
+            var view = new SettingsView(settings, changed, extraActions);
+            if (search is not null)
+            {
+                view.AttachedToVisualTree += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => view.Search(search));
+            }
+            await main.ShowSettingsAsync(view);
+            return;
+        }
         var window = new SettingsWindow(settings, changed, extraActions);
         if (search is not null)
         {
             window.Opened += (_, _) => window.Search(search);
         }
-        await window.ShowDialog(RequireOwner());
+        await window.ShowDialog(owner);
     }
 
     public async Task ShowPropertiesAsync(VfsEntry entry, Func<Task<SpaceInfo>>? measure)

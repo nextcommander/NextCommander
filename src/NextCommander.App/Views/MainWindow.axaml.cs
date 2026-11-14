@@ -196,6 +196,34 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>The configuration shown in place of the panels (null: none).</summary>
+    public Dialogs.SettingsView? Settings => SettingsHost.Child as Dialogs.SettingsView;
+
+    /// <summary>
+    /// The configuration in place of both panels, like the maximized internal terminal (a maximized terminal goes back to
+    /// its own height first); the panels come back when it closes (OK, Cancel, Esc). One already open is closed first.
+    /// </summary>
+    public async Task ShowSettingsAsync(Dialogs.SettingsView view)
+    {
+        Settings?.Close();
+        RestoreTerminalSize();
+        SettingsHost.Child = view;
+        SettingsHost.IsVisible = true;
+        try
+        {
+            await view.Done;
+        }
+        finally
+        {
+            if (ReferenceEquals(SettingsHost.Child, view))
+            {
+                SettingsHost.Child = null;
+                SettingsHost.IsVisible = false;
+                ActiveView.FocusList();
+            }
+        }
+    }
+
     private void MarkSharedDrive() => DriveBarMarks.Mark(SharedDriveBar, _vm?.ActivePanel.SelectedDrive);
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -854,8 +882,9 @@ public partial class MainWindow : Window
             return;
         }
 
-        // the connection manager in a panel takes its keys (Ctrl+F, Ctrl+N, Ctrl+D, Delete, Esc ...)
-        if (focused is Avalonia.Visual inside && Avalonia.VisualTree.VisualExtensions.FindAncestorOfType<Connections.ConnectionManagerView>(inside, includeSelf: true) is not null)
+        // the connection manager in a panel and the configuration take their keys (Ctrl+F, Ctrl+N, Delete, Esc ...)
+        if (focused is Avalonia.Visual inside && (Avalonia.VisualTree.VisualExtensions.FindAncestorOfType<Connections.ConnectionManagerView>(inside, includeSelf: true) is not null
+            || Avalonia.VisualTree.VisualExtensions.FindAncestorOfType<Dialogs.SettingsView>(inside, includeSelf: true) is not null))
         {
             return;
         }
