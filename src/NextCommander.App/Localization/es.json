@@ -2169,6 +2169,7 @@
   "AdbFileSystemProvider.ADBThePhoneIsNot": "ADB: el teléfono no está conectado: {0}",
   "AdbFileSystemProvider.AndroidDevices": "Dispositivos Android",
   "AdbFileSystemProvider.MovingBetweenDevicesIsDone": "Mover entre dispositivos se hace copiando.",
+  "ArchiveContainer.ASplitArchiveIsRead": "{0}: un archivo dividido es de solo lectura.",
   "AzureFilesFileSystemProvider.AzureFilesAreWrittenInto": "Azure: los archivos se escriben en un recurso compartido.",
   "AzureFilesFileSystemProvider.AzureSharesCannotBeRenamed": "Azure: los recursos compartidos no se pueden renombrar.",
   "BoxFileSystemProvider.BoxAPartWasNot": "Box: no se aceptó una parte: {0}",

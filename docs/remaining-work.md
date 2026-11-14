@@ -132,7 +132,7 @@ Since 7 November 2026 colors come only from theme files (default: system colors,
 - [x] Proxy for web requests (Configuration > Operation > Proxy: system / none / manual with user, password and bypass list): WebDAV, S3, Azure, cloud drives and their sign-in, URL downloads, update check.
 - [x] FTP, SFTP and SMB through the manual proxy (HTTP CONNECT or SOCKS5): FluentFTP and SSH.NET proxy clients, SMB through a local forwarding port. Tested with fake proxies; to be tried with a real proxy.
 - [x] Pack dialog: split archives (7-Zip `-v`: name.7z.001 ..., the volume size with units) and self-extracting archives (`-sfx` with the 7z.sfx module next to 7-Zip; .exe). Both for the 7-ZIP packer; not together (7-Zip cannot split an SFX). Tried with 7-Zip on Windows.
-- [ ] Opening split archives (name.7z.001) in a panel like a single archive.
+- [x] Opening split archives (name.7z.001, name.zip.001 ...) in a panel like a single archive: the volumes are read as one stream (on other providers joined into a temporary copy); read-only. Tried with 7-Zip volumes.
 - [x] The Net menu reorganized by connection type (New connection, Saved connections, Connect by address, Network); product icons for connection types.
 - [x] One protocol table (`RemoteProtocols`: scheme, aliases, default port, kind) instead of the scheme maps in several places.
 - [x] Service presets in the connection dialog (S3: Amazon, Google Cloud Storage, Cloudflare R2, Backblaze B2, Wasabi, DigitalOcean Spaces, Hetzner, MinIO; WebDAV: Nextcloud / ownCloud, Yandex Disk, pCloud, Koofr).

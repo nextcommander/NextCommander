@@ -2169,6 +2169,7 @@
   "AdbFileSystemProvider.ADBThePhoneIsNot": "ADB: the phone is not connected: {0}",
   "AdbFileSystemProvider.AndroidDevices": "Android devices",
   "AdbFileSystemProvider.MovingBetweenDevicesIsDone": "Moving between devices is done by copying.",
+  "ArchiveContainer.ASplitArchiveIsRead": "{0}: a split archive is read-only.",
   "AzureFilesFileSystemProvider.AzureFilesAreWrittenInto": "Azure: files are written into a share.",
   "AzureFilesFileSystemProvider.AzureSharesCannotBeRenamed": "Azure: shares cannot be renamed.",
   "BoxFileSystemProvider.BoxAPartWasNot": "Box: a part was not taken: {0}",
