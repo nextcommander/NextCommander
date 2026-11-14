@@ -55,13 +55,17 @@ On the **Layout** page, the *Button bars* group opens the button bar editor for 
 bar (also available as *Configuration > Button bar...* and *Configuration > Button bar 2 (vertical)...*, and by
 right clicking a bar).
 
-- A preview of the bar is at the top; click a button to edit it.
-- **Add**, **Add separator**, **Delete** and **Move** change the bar.
-- For each button: the command (a NextCommander command, a program or a folder), parameters, start folder,
-  icon file, a short name shown next to the icon, the tooltip, and on Windows whether the program starts
-  normal, minimized or maximized.
+- A preview of the bar is at the top; click a button to edit it, drag it to move it (Ctrl+← / → and Delete
+  work there too).
+- The buttons above the preview add a button or a separator, move the selected one left or right and delete it;
+  the icon size (16 to 48 pixels, separately for each bar) is chosen next to them.
+- For each button, under **Action**: the command (a NextCommander command, a program or a folder), parameters and
+  start folder; under **Appearance**: the icon (with a preview), a short label shown next to the icon and the
+  tooltip. Below them, on Windows, whether the program starts normal, minimized or maximized, and
+  **Run as administrator** (the same as a `*` in front of the command).
 - On Windows, choosing a file with several icons (exe, dll, icl) lets you pick one of them.
-- The icon size (16 to 48 pixels) can be set separately for each bar.
+- **Save** keeps the changes, **Cancel** leaves the bar as it was. Changing a single button (right click on the
+  bar) opens the same fields in a dialog of their own.
 
 You can also drop a program on the button bar to add it, or right click a button to change, delete or move it.
 

@@ -2413,5 +2413,21 @@
   "PathBar.Disconnect": "Disconnect (Ctrl+Shift+F)",
   "ButtonDefinition.InternalTerminalMaximized": "Internal terminal, maximized",
   "ButtonDefinition.ConnectionManagerCtrlF": "Connection manager (Ctrl+F)",
-  "ButtonDefinition.TerminalCtrlAltT": "Terminal (Ctrl+Alt+T)"
+  "ButtonDefinition.TerminalCtrlAltT": "Terminal (Ctrl+Alt+T)",
+  "ButtonBarEditorDialog.AddButton": "Add button",
+  "ButtonBarEditorDialog.ButtonBarPreview": "Button bar preview",
+  "ButtonBarEditorDialog.DragToMoveSelectA": "Drag to move, select a button to edit it",
+  "ButtonBarEditorDialog.NcUcCommandsProgramsAnd": "nc_ / uc_ commands, programs and folders; parameters: %P %N %T %S %L ...",
+  "ButtonBarEditorDialog.Separator": "Separator",
+  "ButtonFieldsEditor.Action": "Action",
+  "ButtonFieldsEditor.Appearance": "Appearance",
+  "ButtonFieldsEditor.BuiltInNameOrIcon": "Built-in name or icon file",
+  "ButtonFieldsEditor.ChooseAnIconFile": "Choose an icon file",
+  "ButtonFieldsEditor.Icon": "Icon",
+  "ButtonFieldsEditor.OptionalShownNextToThe": "Optional, shown next to the icon",
+  "ButtonFieldsEditor.SameAsAInFront": "Same as a * in front of the command",
+  "ButtonFieldsEditor.ShownWhenTheMouseIs": "Shown when the mouse is over the button",
+  "ButtonFieldsEditor.TheProgramSWindowWindows": "The program's window (Windows)",
+  "ButtonFieldsEditor.Tooltip": "Tooltip",
+  "QuickListDialog.WhatTheButtonRunsAnd": "What the button runs and how it looks"
 }

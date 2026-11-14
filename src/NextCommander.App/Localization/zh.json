@@ -2413,5 +2413,21 @@
   "PathBar.Disconnect": "断开连接 (Ctrl+Shift+F)",
   "ButtonDefinition.InternalTerminalMaximized": "内置终端（最大化）",
   "ButtonDefinition.ConnectionManagerCtrlF": "连接管理器 (Ctrl+F)",
-  "ButtonDefinition.TerminalCtrlAltT": "终端 (Ctrl+Alt+T)"
+  "ButtonDefinition.TerminalCtrlAltT": "终端 (Ctrl+Alt+T)",
+  "ButtonBarEditorDialog.AddButton": "添加按钮",
+  "ButtonBarEditorDialog.ButtonBarPreview": "按钮栏预览",
+  "ButtonBarEditorDialog.DragToMoveSelectA": "拖动以移动，选择按钮进行编辑",
+  "ButtonBarEditorDialog.NcUcCommandsProgramsAnd": "nc_ / uc_ 命令、程序和文件夹；参数：%P %N %T %S %L ...",
+  "ButtonBarEditorDialog.Separator": "分隔符",
+  "ButtonFieldsEditor.Action": "操作",
+  "ButtonFieldsEditor.Appearance": "外观",
+  "ButtonFieldsEditor.BuiltInNameOrIcon": "内置名称或图标文件",
+  "ButtonFieldsEditor.ChooseAnIconFile": "选择图标文件",
+  "ButtonFieldsEditor.Icon": "图标",
+  "ButtonFieldsEditor.OptionalShownNextToThe": "可选，显示在图标旁边",
+  "ButtonFieldsEditor.SameAsAInFront": "等同于在命令前加 *",
+  "ButtonFieldsEditor.ShownWhenTheMouseIs": "鼠标悬停在按钮上时显示",
+  "ButtonFieldsEditor.TheProgramSWindowWindows": "程序窗口（Windows）",
+  "ButtonFieldsEditor.Tooltip": "工具提示",
+  "QuickListDialog.WhatTheButtonRunsAnd": "按钮运行的内容及其外观"
 }
