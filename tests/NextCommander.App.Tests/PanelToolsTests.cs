@@ -1,6 +1,8 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.LogicalTree;
 using Avalonia.VisualTree;
 using NextCommander.App.Views.Connections;
 using NextCommander.Core.Config;
@@ -52,6 +54,105 @@ public sealed class PanelToolsTests : IDisposable
         await SettleAsync();
         Assert.True(w.LeftPanel.IsEffectivelyVisible);
         Assert.Empty(settings.Connections); // the new connection was never filled in
+    }
+
+    [AvaloniaFact]
+    public async Task The_configuration_opens_in_place_of_the_panels()
+    {
+        var (w, vm) = await _fx.OpenAsync();
+        var applied = 0;
+        var view = new Views.Dialogs.SettingsView(vm.Settings, () => applied++, []);
+        var shown = w.ShowSettingsAsync(view);
+        await SettleAsync(4);
+        Assert.Same(view, w.Settings);
+        Assert.True(view.IsEffectivelyVisible);
+        // over both panels: as wide as the two sides together
+        var panels = w.FindControl<Grid>("PanelsGrid")!;
+        Assert.Equal(panels.Bounds.Width, view.Bounds.Width, 1);
+        Assert.Equal(panels.Bounds.Height, view.Bounds.Height, 1);
+        Assert.False(view.IsDirty);
+
+        // a switch changes the working copy; the count of changes not applied follows it
+        view.SelectPage("Operation/Copy and delete");
+        await SettleAsync(2);
+        var verify = view.GetLogicalDescendants().OfType<CheckBox>().First(c => Equals(c.Content, "Verify after copying"));
+        Assert.Contains("switch", verify.Classes);
+        verify.IsChecked = !verify.IsChecked;
+        await SettleAsync();
+        Assert.True(view.IsDirty);
+        Assert.Contains(view.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text == "1 unsaved change");
+        verify.IsChecked = !verify.IsChecked; // back as it was: nothing left to apply
+        await SettleAsync();
+        Assert.False(view.IsDirty);
+        if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
+        {
+            Directory.CreateDirectory(dir);
+            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(w)!.SavePng(Path.Combine(dir, "settings-in-window.png"));
+        }
+
+        // keys typed there stay there (Ctrl+F: the search box, not the connection manager); Esc closes it
+        Press(w, Key.F, RawInputModifiers.Control);
+        await SettleAsync();
+        Assert.Same(view, w.Settings);
+        Press(w, Key.Escape);
+        await shown;
+        await SettleAsync();
+        Assert.Null(w.Settings);
+        Assert.True(w.LeftPanel.IsEffectivelyVisible);
+        Assert.Equal(0, applied);
+
+        // the close button at the top closes it too
+        var again = new Views.Dialogs.SettingsView(vm.Settings, () => applied++, []);
+        var shownAgain = w.ShowSettingsAsync(again);
+        await SettleAsync(4);
+        Assert.True(again.CloseButton.IsEffectivelyVisible);
+        again.CloseButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        await shownAgain;
+        Assert.Null(w.Settings);
+    }
+
+    [AvaloniaFact]
+    public async Task A_switch_clicked_with_the_mouse_is_applied_with_OK()
+    {
+        var (w, vm) = await _fx.OpenAsync();
+        var view = new Views.Dialogs.SettingsView(vm.Settings, vm.ApplySettings, []);
+        var shown = w.ShowSettingsAsync(view);
+        await SettleAsync(4);
+        view.SelectPage("Operation/Copy and delete");
+        await SettleAsync(4);
+        var verify = view.GetLogicalDescendants().OfType<CheckBox>().First(c => Equals(c.Content, "Verify after copying"));
+        var was = vm.Settings.VerifyCopy;
+        var center = verify.TranslatePoint(new Avalonia.Point(verify.Bounds.Width - 10, verify.Bounds.Height / 2), w)!.Value;
+        Avalonia.Headless.HeadlessWindowExtensions.MouseDown(w, center, Avalonia.Input.MouseButton.Left);
+        Avalonia.Headless.HeadlessWindowExtensions.MouseUp(w, center, Avalonia.Input.MouseButton.Left);
+        await SettleAsync(2);
+        Assert.Equal(!was, verify.IsChecked);
+        Assert.Equal(was, vm.Settings.VerifyCopy); // not before OK
+
+        var ok = view.GetLogicalDescendants().OfType<Button>().First(b => Equals(b.Content, "OK"));
+        var at = ok.TranslatePoint(new Avalonia.Point(ok.Bounds.Width / 2, ok.Bounds.Height / 2), w)!.Value;
+        Avalonia.Headless.HeadlessWindowExtensions.MouseDown(w, at, Avalonia.Input.MouseButton.Left);
+        Avalonia.Headless.HeadlessWindowExtensions.MouseUp(w, at, Avalonia.Input.MouseButton.Left);
+        await shown;
+        Assert.Equal(!was, vm.Settings.VerifyCopy);
+
+        // a layout setting: the window follows it after Apply, while the configuration is still open
+        var again = new Views.Dialogs.SettingsView(vm.Settings, vm.ApplySettings, []);
+        var shownAgain = w.ShowSettingsAsync(again);
+        await SettleAsync(4);
+        again.SelectPage("Layout");
+        await SettleAsync(4);
+        var bar = again.GetLogicalDescendants().OfType<CheckBox>().First(c => Equals(c.Content, "Show command line"));
+        Assert.True(w.FindControl<Grid>("CommandLineRow")!.IsVisible);
+        bar.IsChecked = false;
+        await SettleAsync();
+        again.GetLogicalDescendants().OfType<Button>().First(b => Equals(b.Content, "Apply")).RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        await SettleAsync(4);
+        Assert.False(vm.Settings.ShowCommandLine);
+        Assert.False(w.FindControl<Grid>("CommandLineRow")!.IsVisible);
+        Assert.Same(again, w.Settings); // Apply keeps it open
+        again.Close();
+        await shownAgain;
     }
 
     [AvaloniaFact]

@@ -2320,7 +2320,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             ("Shortcuts and commands...", () => ExecuteAsync("nc_CommandBrowser")),
             ("Hotlist...", () => ExecuteAsync("nc_ConfigDirHotlist")),
             ("Column sets...", () => ExecuteAsync("nc_EditColumnSets")),
-            ("Connection manager...", () => ExecuteAsync("nc_RemoteConnection")),
+            // not the connection manager: it opens in a file panel, which the configuration covers
             ("Master password...", () => ExecuteAsync("nc_MasterPassword")),
             ("Export settings...", () => ExecuteAsync("nc_ExportSettings")),
             ("Import settings...", () => ExecuteAsync("nc_ImportSettings")),
@@ -2330,11 +2330,11 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
                 return Task.CompletedTask;
             }),
         };
-        Views.Dialogs.SettingsWindow.SelectedNames = SelectedNamesForIgnoreList;
-        Views.Dialogs.SettingsWindow.ButtonIcon = (button, size) => Controls.ButtonBarControl.CreateIcon(button, size, this);
-        Views.Dialogs.SettingsWindow.PickProgram = _dialogs.PickOpenFileAsync;
-        Views.Dialogs.SettingsWindow.PluginRoots = [Path.Combine(_store.Directory, "plugins"), Path.Combine(AppContext.BaseDirectory, "plugins")];
-        Views.Dialogs.SettingsWindow.ColumnFields = () => ColumnValues.Columns.AllFields.ToList();
+        Views.Dialogs.SettingsView.SelectedNames = SelectedNamesForIgnoreList;
+        Views.Dialogs.SettingsView.ButtonIcon = (button, size) => Controls.ButtonBarControl.CreateIcon(button, size, this);
+        Views.Dialogs.SettingsView.PickProgram = _dialogs.PickOpenFileAsync;
+        Views.Dialogs.SettingsView.PluginRoots = [Path.Combine(_store.Directory, "plugins"), Path.Combine(AppContext.BaseDirectory, "plugins")];
+        Views.Dialogs.SettingsView.ColumnFields = () => ColumnValues.Columns.AllFields.ToList();
         await _dialogs.ShowSettingsAsync(_settings, ApplySettings, extras, search);
         ApplySettings();
         SaveSettings();
@@ -2343,6 +2343,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     /// <summary>Re-applies everything that depends on settings (after the settings window).</summary>
     public void ApplySettings()
     {
+        Services.UiLocalization.Switch(_settings.Language); // a new language: the open windows at once
         NextCommander.Core.Tools.Descriptions.Encoding = _settings.DescriptionEncoding;
         SaveIgnoreListFile();
         ApplyOperationSettings();

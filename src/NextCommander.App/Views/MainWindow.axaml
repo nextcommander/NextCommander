@@ -384,6 +384,8 @@
       <!-- Folder sizes (Commands > Folder sizes): in place of the other panel, like Quick View -->
       <Border x:Name="DiskUsageHost" Grid.Column="2" IsVisible="False" ZIndex="10" BorderThickness="1"
               BorderBrush="{DynamicResource FmActiveAccentBrush}" Background="{DynamicResource SystemControlBackgroundAltHighBrush}" />
+      <!-- The configuration (Configuration > Options): in place of both panels, like the maximized internal terminal -->
+      <Border x:Name="SettingsHost" Grid.Column="0" Grid.ColumnSpan="3" ZIndex="30" IsVisible="False" />
       <!-- Ctrl+Tab list mode (Configuration > Folder tabs): shown while Ctrl is held -->
       <Border x:Name="TabSwitcherHost" Grid.Column="0" Grid.ColumnSpan="3" ZIndex="20" HorizontalAlignment="Center" VerticalAlignment="Center"
               MinWidth="320" MaxWidth="640" MaxHeight="480" Padding="4" BorderThickness="1" CornerRadius="4"

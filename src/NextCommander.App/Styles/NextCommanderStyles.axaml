@@ -409,6 +409,66 @@
     <Setter Property="MinWidth" Value="88" />
     <Setter Property="HorizontalContentAlignment" Value="Center" />
   </Style>
+
+  <!--
+    A check box drawn as a switch with "On" / "Off" before it (the configuration's rows: the row shows the setting's
+    name, so the check box's own text is not drawn). It stays a CheckBox: IsChecked, keyboard (Space) and tests as before.
+  -->
+  <Style Selector="CheckBox.switch">
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <StackPanel Orientation="Horizontal" Spacing="10" Background="Transparent">
+          <Panel VerticalAlignment="Center" MinWidth="24">
+            <TextBlock Name="PART_Off" Text="Off" FontSize="13" Opacity="0.75" HorizontalAlignment="Right" />
+            <TextBlock Name="PART_On" Text="On" FontSize="13" Opacity="0.75" HorizontalAlignment="Right" IsVisible="False" />
+          </Panel>
+          <Border Name="PART_Track" Width="40" Height="20" CornerRadius="10" BorderThickness="1" VerticalAlignment="Center"
+                  BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" Background="Transparent">
+            <Ellipse Name="PART_Knob" Width="12" Height="12" Margin="4,0" HorizontalAlignment="Left" VerticalAlignment="Center"
+                     Fill="{DynamicResource SystemControlForegroundBaseMediumHighBrush}" />
+          </Border>
+        </StackPanel>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="CheckBox.switch:pointerover /template/ Ellipse#PART_Knob">
+    <Setter Property="Width" Value="14" />
+    <Setter Property="Height" Value="14" />
+    <Setter Property="Margin" Value="3,0" />
+  </Style>
+  <Style Selector="CheckBox.switch:checked /template/ Border#PART_Track">
+    <Setter Property="Background" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+  </Style>
+  <Style Selector="CheckBox.switch:checked /template/ Ellipse#PART_Knob">
+    <Setter Property="HorizontalAlignment" Value="Right" />
+    <Setter Property="Fill" Value="White" />
+  </Style>
+  <Style Selector="CheckBox.switch:checked /template/ TextBlock#PART_Off">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="CheckBox.switch:checked /template/ TextBlock#PART_On">
+    <Setter Property="IsVisible" Value="True" />
+  </Style>
+  <Style Selector="CheckBox.switch:focus-visible /template/ Border#PART_Track">
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+  </Style>
+  <!-- Option chips (on: accent frame and text) and filter buttons (on / off shown by their opacity), e.g. Synchronize dirs -->
+  <Style Selector="ToggleButton.chip:checked /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.chip:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ToggleButtonBackgroundPointerOver}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+  </Style>
+  <Style Selector="ToggleButton.filter:checked /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.filter:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ToggleButtonBackground}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource ToggleButtonForeground}" />
+  </Style>
+  <Style Selector="CheckBox.switch:disabled">
+    <Setter Property="Opacity" Value="0.6" />
+  </Style>
   <Style Selector="StackPanel.buttonrow">
     <Setter Property="Orientation" Value="Horizontal" />
     <Setter Property="Spacing" Value="8" />

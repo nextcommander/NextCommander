@@ -97,8 +97,57 @@ public static class ColorThemes
         ["Menu.DisabledText"] = ["Controls.DisabledText"],
     };
 
+    /// <summary>The keys whose color a key takes while a theme leaves it out (the first one the theme has).</summary>
+    public static IReadOnlyList<string> FallbacksOf(string key) => s_fallbacks.GetValueOrDefault(key) ?? [];
+
+    private static FluentTheme? s_defaultFluent;
+
+    /// <summary>
+    /// The color a key has without a theme color, in the light or the dark look: the Fluent palette's own color or the
+    /// application's default brush (null when it has none, e.g. colors the controls take from elsewhere).
+    /// </summary>
+    public static Color? DefaultColor(ThemeKey key, bool dark)
+    {
+        var variant = dark ? ThemeVariant.Dark : ThemeVariant.Light;
+        var target = key.Targets[0];
+        static Color? ColorOfValue(object? value) => value switch
+        {
+            Color c => c,
+            ISolidColorBrush b => b.Color,
+            _ => null,
+        };
+        if (target.StartsWith(PalettePrefix, StringComparison.Ordinal))
+        {
+            // a theme of its own (not the one in use, whose palettes a theme may have replaced)
+            s_defaultFluent ??= new FluentTheme();
+            if (s_defaultFluent.TryGetResource(ResourceOf(target), variant, out var value) && ColorOfValue(value) is { } color)
+            {
+                return SplitPalette(target).Alpha is { } alpha ? Color.FromArgb(alpha, color.R, color.G, color.B) : color;
+            }
+            return null;
+        }
+        if (Application.Current is not { } app)
+        {
+            return null;
+        }
+        // the defaults of App.axaml (a theme's colors go to the root of the resources, not into these dictionaries)
+        if (app.Resources.ThemeDictionaries.TryGetValue(variant, out var dictionary)
+            && dictionary.TryGetResource(target, variant, out var own) && ColorOfValue(own) is { } ownColor)
+        {
+            return ownColor;
+        }
+        foreach (var style in app.Styles)
+        {
+            if (style.TryGetResource(target, variant, out var value) && ColorOfValue(value) is { } color)
+            {
+                return color;
+            }
+        }
+        return null;
+    }
+
     /// <summary>The color of a key in a theme: its own, else the first fallback the theme has.</summary>
-    private static Color? ColorOf(ColorTheme theme, string key)
+    public static Color? ColorOf(ColorTheme theme, string key)
     {
         if (theme.Colors.TryGetValue(key, out var text) && Parse(text) is { } own)
         {

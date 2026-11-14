@@ -225,7 +225,7 @@ public sealed class TerminalEmulationTests : IDisposable
         {
             return;
         }
-        var fonts = Views.Dialogs.SettingsWindow.MonospaceFonts();
+        var fonts = Views.Dialogs.SettingsView.MonospaceFonts();
         if (OperatingSystem.IsWindows())
         {
             Assert.Contains("Consolas", fonts);

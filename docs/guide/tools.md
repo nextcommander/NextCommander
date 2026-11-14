@@ -125,12 +125,22 @@ Renames many files at once. The list shows the old and new names live as you typ
 
 ![Synchronize directories](../screenshots/synchronize.png)
 
-- Compare by date, by size, or by content; with or without subfolders; with a file mask; skipping hidden files.
-  *One-way* only copies from left to right.
-- Each file shows its state: identical, different, left only, right only. The *Show* buttons filter the list.
-- Choose the direction of each file with the arrow buttons or the ← / → keys, or mark it for deletion.
-- Double click a file to compare its contents.
-- **Synchronize...** runs the chosen operations and compares again.
+- **The folders** are at the top, each with its file count and size; the folder button picks one, ⇄ swaps them.
+  The comparison runs when the window opens and again with **Compare** (F5) or when an option changes.
+- **Options** are chips: *Subfolders*, *By content*, *Ignore date*, *One-way (left → right)* (right-only files are
+  not copied back), *Skip hidden*, and a file **Mask** (`*.cs *.md`).
+- **Filters** with their counts show or hide *Different*, *Left only*, *Right only* and *Identical* files;
+  **Filter by name** narrows the list.
+- **The list is a tree**: folders open and close, and show how many changes they hold. Each line has the size and
+  date on both sides (the newer date is marked), the status (left only, right only, left newer, right newer,
+  different, identical) and the **action**: click it to go to the next action that fits (copy to the right, copy
+  to the left, skip, delete); on a folder it sets the action of all its files. ← / → and Delete do the same for
+  the line under the cursor; double click (or Enter) compares a file's contents.
+- **Check boxes** select files (a folder: all its files, Ctrl+A: all). With files selected, a bar offers *Copy →*,
+  *Copy ←*, *Skip*, *Delete left*, *Delete right* and *Compare by content* for all of them.
+- Below, the plan tells how much goes to each side and how much is deleted. **Synchronize** shows a summary first
+  (with the choice to send deleted files to the Recycle Bin), runs the operations and compares again; the files
+  made identical are then shown.
 
 ## Compare by content
 

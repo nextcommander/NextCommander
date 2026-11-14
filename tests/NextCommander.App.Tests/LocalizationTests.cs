@@ -12,6 +12,74 @@ namespace NextCommander.App.Tests;
 public sealed class LocalizationTests
 {
     [AvaloniaFact]
+    public void The_language_changes_while_the_program_runs()
+    {
+        UiLocalization.Load("en");
+        var label = new TextBlock { Text = "Search settings" };
+        var fileName = new TextBlock { Text = "Search settings", Classes = { "cell" } };
+        var window = new Window { Title = "Configuration", Content = new StackPanel { Children = { label, fileName } } };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        try
+        {
+            Assert.Equal("Search settings", label.Text);
+            UiLocalization.Switch("tr");
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal("Ayarlarda ara", label.Text);
+            Assert.NotEqual("Configuration", window.Title);
+            Assert.Equal("Search settings", fileName.Text); // file names stay
+
+            // from one translation to another, and back to English
+            UiLocalization.Switch("de");
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal("Einstellungen durchsuchen", label.Text);
+            UiLocalization.Switch("en");
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal("Search settings", label.Text);
+            Assert.Equal("Configuration", window.Title);
+
+            // a text set afterwards is translated as before
+            UiLocalization.Switch("tr");
+            label.Text = "Search settings";
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal("Ayarlarda ara", label.Text);
+        }
+        finally
+        {
+            UiLocalization.Switch("en");
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task Applying_the_settings_switches_the_language_of_the_main_window()
+    {
+        using var fx = new UiFixture();
+        var (w, vm) = await fx.OpenAsync();
+        bool Shows(string text) => Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(w).OfType<TextBlock>().Any(t => t.Text == text);
+        try
+        {
+            vm.Settings.Language = "en";
+            vm.ApplySettings();
+            await UiFixture.SettleAsync();
+            Assert.True(Shows("_Files"));
+            vm.Settings.Language = "tr";
+            vm.ApplySettings();
+            await UiFixture.SettleAsync();
+            Assert.True(Shows("_Dosya"));
+            Assert.False(Shows("_Files"));
+            vm.Settings.Language = "en";
+            vm.ApplySettings();
+            await UiFixture.SettleAsync();
+            Assert.True(Shows("_Files"));
+        }
+        finally
+        {
+            UiLocalization.Switch("en");
+        }
+    }
+
+    [AvaloniaFact]
     public void Ui_texts_are_translated_but_file_names_are_not()
     {
         UiLocalization.Install();
