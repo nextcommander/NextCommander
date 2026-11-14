@@ -2408,5 +2408,10 @@
   "WpdInterop.PortableDeviceError0x": "Fehler des tragbaren Geräts 0x{0}.",
   "WpdInterop.TheDeviceConnectionWasReset": "Die Geräteverbindung wurde zurückgesetzt; sie wird erneut geöffnet.",
   "WpdInterop.TheDeviceIsFull": "Das Gerät ist voll.",
-  "WpdInterop.TheDeviceWasDisconnected": "Die Verbindung zum Gerät wurde getrennt."
+  "WpdInterop.TheDeviceWasDisconnected": "Die Verbindung zum Gerät wurde getrennt.",
+  "RemoteDialogs.CloseEsc": "Schließen (Esc)",
+  "PathBar.Disconnect": "Verbindung trennen (Strg+Umschalt+F)",
+  "ButtonDefinition.InternalTerminalMaximized": "Internes Terminal, maximiert",
+  "ButtonDefinition.ConnectionManagerCtrlF": "Verbindungsmanager (Strg+F)",
+  "ButtonDefinition.TerminalCtrlAltT": "Terminal (Strg+Alt+T)"
 }

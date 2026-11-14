@@ -2408,5 +2408,10 @@
   "WpdInterop.PortableDeviceError0x": "便携设备错误 0x{0}。",
   "WpdInterop.TheDeviceConnectionWasReset": "设备连接已重置；正在重新打开。",
   "WpdInterop.TheDeviceIsFull": "设备已满。",
-  "WpdInterop.TheDeviceWasDisconnected": "设备已断开连接。"
+  "WpdInterop.TheDeviceWasDisconnected": "设备已断开连接。",
+  "RemoteDialogs.CloseEsc": "关闭 (Esc)",
+  "PathBar.Disconnect": "断开连接 (Ctrl+Shift+F)",
+  "ButtonDefinition.InternalTerminalMaximized": "内置终端（最大化）",
+  "ButtonDefinition.ConnectionManagerCtrlF": "连接管理器 (Ctrl+F)",
+  "ButtonDefinition.TerminalCtrlAltT": "终端 (Ctrl+Alt+T)"
 }

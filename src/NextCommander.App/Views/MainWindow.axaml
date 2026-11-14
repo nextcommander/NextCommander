@@ -126,22 +126,6 @@
       </MenuItem>
       <MenuItem Header="_Net">
         <MenuItem Header="Connection manager..." InputGesture="Ctrl+F" Command="{Binding RunCommandCommand}" CommandParameter="nc_FtpConnect" />
-        <MenuItem Header="New connection">
-          <MenuItem Header="SFTP (SSH)..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NewConnection sftp" />
-          <MenuItem Header="SCP (SSH without SFTP)..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NewConnection scp" />
-          <MenuItem Header="FTP / FTPS..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NewConnection ftp" />
-          <MenuItem Header="WebDAV..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NewConnection davs" />
-          <MenuItem Header="SMB (Windows share)..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NewConnection smb" />
-          <Separator />
-          <MenuItem Header="Amazon S3 / compatible..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NewConnection s3" />
-          <MenuItem Header="Azure Blob Storage..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NewConnection azblob" />
-          <MenuItem Header="Azure Files..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NewConnection azfile" />
-          <Separator />
-          <MenuItem Header="Google Drive..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NewConnection gdrive" />
-          <MenuItem Header="OneDrive..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NewConnection onedrive" />
-          <MenuItem Header="Dropbox..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NewConnection dropbox" />
-          <MenuItem Header="Box..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NewConnection box" />
-        </MenuItem>
         <MenuItem x:Name="SavedConnectionsMenu" Header="Saved connections">
           <MenuItem Header="(none)" IsEnabled="False" />
         </MenuItem>

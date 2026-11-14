@@ -12,7 +12,8 @@ file operations.
 From top to bottom:
 
 - **Menu bar:** Files, Edit, Mark, Commands, Net, Show, Configuration, Start, and Help on the right.
-- **Button bar:** one-click buttons for common commands. Right click it to add, change or remove buttons,
+- **Button bar:** one-click buttons for common commands (next to the system terminal, the internal terminal opens
+  maximized; at the end, the connection manager and the settings). Right click it to add, change or remove buttons,
   or use *Configuration > Button bar...*. A second, vertical button bar sits between the two panels.
 - **Drive buttons:** one button per drive. At the right end there are shortcuts to your home folder,
   Documents and Downloads (Desktop can be turned on in *Configuration > Options > Layout*). When you plug in or
@@ -130,7 +131,7 @@ panels (*Compare folders*, Shift+F2), which marks the files missing or newer on 
 | F4 | Edit the file; Shift+F4 creates a new file |
 | F5 | Copy to the other panel |
 | F6 | Move to the other panel (or rename) |
-| Shift+F6 | Rename in place |
+| Shift+F6 | Rename in place: the name is edited in the list; Enter renames, Esc gives up, ↑ / ↓ rename and go on to the previous / next file |
 | F7 | New folder (`a/b/c` creates nested folders); Shift+F7 creates it in the other panel |
 | F8 or Delete | Delete (to the recycle bin / trash) |
 | Shift+Delete | Delete permanently |

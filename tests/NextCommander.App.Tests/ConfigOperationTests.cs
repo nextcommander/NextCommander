@@ -100,6 +100,7 @@ public sealed class ConfigOperationTests : IDisposable
         Descriptions.Write(_fx.L(), "a.txt", "first file");
         var (_, vm) = await _fx.OpenAsync();
         await vm.Left.RefreshAsync();
+        vm.BeginInlineRename = null; // the name is asked in the dialog (the fallback of the rename in the list)
 
         // rename: the comment moves with the name; only the base name is selected by default
         vm.Left.CursorItem = vm.Left.Items.First(i => i.FullName == "a.txt");

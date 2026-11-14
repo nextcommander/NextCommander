@@ -47,7 +47,7 @@ public sealed class RemoteDialogsTests : IDisposable
         return settings;
     }
 
-    private (ConnectionManagerWindow Window, Calls Calls) Open(AppSettings settings, RemoteProtocol? newProtocol = null)
+    private (ConnectionManagerView Window, Calls Calls) Open(AppSettings settings, RemoteProtocol? newProtocol = null)
     {
         var calls = new Calls();
         var request = new ConnectionManagerRequest(settings, () => calls.Saves++,
@@ -67,18 +67,18 @@ public sealed class RemoteDialogsTests : IDisposable
         {
             NewProtocol = newProtocol,
         };
-        var window = _fx.Track(new ConnectionManagerWindow(request) { ConfirmDeletes = false });
-        window.Show();
-        return (window, calls);
+        var view = new ConnectionManagerView(request) { ConfirmDeletes = false };
+        _fx.Track(new Window { Content = view, Width = 1080, Height = 680 }).Show(); // the main window shows it in a panel
+        return (view, calls);
     }
 
-    private static List<string> Names(ConnectionManagerWindow window) =>
+    private static List<string> Names(ConnectionManagerView window) =>
         [.. window.Rows.Select(r => new string(' ', r.Depth * 2) + (r.Folder is { } f ? f[(f.LastIndexOf('/') + 1)..] + "/" : r.Connection!.Name))];
 
-    private static bool Shown(Window window, string text) =>
+    private static bool Shown(Control window, string text) =>
         window.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == text && t.IsEffectivelyVisible);
 
-    private static Button ButtonOf(Window window, string text) =>
+    private static Button ButtonOf(Control window, string text) =>
         window.GetVisualDescendants().OfType<Button>().First(b => Equals(b.Content, text) && b.IsEffectivelyVisible);
 
     private static void Click(Button button) => button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -115,7 +115,7 @@ public sealed class RemoteDialogsTests : IDisposable
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
         {
             Directory.CreateDirectory(dir);
-            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(window)!.SavePng(Path.Combine(dir, "connection-manager.png"));
+            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame((Window)TopLevel.GetTopLevel(window)!)!.SavePng(Path.Combine(dir, "connection-manager.png"));
         }
     }
 
@@ -275,7 +275,7 @@ public sealed class RemoteDialogsTests : IDisposable
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
         {
             Directory.CreateDirectory(dir);
-            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(window)!.SavePng(Path.Combine(dir, "connection-editor.png"));
+            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame((Window)TopLevel.GetTopLevel(window)!)!.SavePng(Path.Combine(dir, "connection-editor.png"));
         }
 
         await window.ImportAsync(

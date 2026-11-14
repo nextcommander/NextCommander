@@ -81,6 +81,7 @@ public sealed class ConfigPagesTests : IDisposable
         vm.Left.CursorItem = vm.Left.Items.First(i => i.FullName == "a.txt");
         await vm.ExecuteAsync("nc_Copy");
         _fx.Dialogs.NextPrompt = "b.txt";
+        vm.BeginInlineRename = null; // the name from the dialog, not typed in the list
         await vm.ExecuteAsync("nc_RenameOnly");
         var text = File.ReadAllText(log);
         Assert.Contains(_fx.L("a.txt") + " -> " + _fx.R(), text, StringComparison.Ordinal);

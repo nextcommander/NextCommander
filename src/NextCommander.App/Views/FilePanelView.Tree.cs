@@ -10,6 +10,9 @@ public partial class FilePanelView
     /// <summary>Context menu commands of the tree (tree_mkdir ...), executed by the main window.</summary>
     public event EventHandler<(string Command, VfsPath Path)>? TreeCommandRequested;
 
+    /// <summary>The width of the tree pane, kept while it is hidden.</summary>
+    private double _treeWidth = 220;
+
     public bool IsTreeVisible
     {
         get => TreePane.IsVisible;
@@ -19,6 +22,13 @@ public partial class FilePanelView
             {
                 return;
             }
+            // the tree's column: its width while shown (the splitter changes it), nothing while hidden
+            var column = Body.ColumnDefinitions[0];
+            if (!value && column.Width.IsAbsolute)
+            {
+                _treeWidth = column.Width.Value;
+            }
+            column.Width = value ? new GridLength(_treeWidth) : GridLength.Auto;
             TreePane.IsVisible = value;
             TreeSplitter.IsVisible = value;
             if (value)

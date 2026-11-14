@@ -623,16 +623,17 @@ public sealed class DocScreenshots
         sample.Connections[0].Favorite = true;
         sample.ConnectionFolders.Add(new ConnectionFolder { Path = "Work/Production", Color = "#ED4245" });
         sample.ConnectionFolders.Add(new ConnectionFolder { Path = "Work/Test", Color = "#F0B232" });
-        var manager = new NextCommander.App.Views.Connections.ConnectionManagerWindow(new NextCommander.App.Views.Connections.ConnectionManagerRequest(sample, () => { },
+        var manager = new NextCommander.App.Views.Connections.ConnectionManagerView(new NextCommander.App.Views.Connections.ConnectionManagerRequest(sample, () => { },
             (_, _) => Task.FromResult(string.Empty), _ => false, _ => Task.CompletedTask, (_, _) => Task.CompletedTask, _ => Task.FromResult<string?>(null)))
-        { Width = 1080, Height = 680 };
-        _windows.Add(manager);
-        manager.Show();
+;
+        var managerHost = new Window { Content = manager, Width = 1080, Height = 680, Title = "Connection manager" };
+        _windows.Add(managerHost);
+        managerHost.Show();
         manager.Toggle("Work/Production");
         manager.Reveal(sample.Connections[0]);
         await SettleAsync(8);
-        Save(Compose(background, manager.CaptureRenderedFrame()!, manager.Title ?? string.Empty), "connections.png");
-        manager.Close();
+        Save(Compose(background, managerHost.CaptureRenderedFrame()!, managerHost.Title ?? string.Empty), "connections.png");
+        managerHost.Close();
 
         // About (neutral folders)
         var info = new AboutInfo(UpdateChecker.DisplayVersion(typeof(MainWindowViewModel).Assembly), "© 2026 NextCommander", Environment.Version.ToString(),

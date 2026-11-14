@@ -58,6 +58,10 @@
         </ScrollViewer>
       </DockPanel>
     </Border>
-    <views:FilePanelView x:Name="FilePanel" DataContext="{Binding ActiveTab}" />
+    <!-- the file panel; a tool such as the connection manager can take its place for a while -->
+    <Panel>
+      <views:FilePanelView x:Name="FilePanel" DataContext="{Binding ActiveTab}" />
+      <ContentControl x:Name="OverlayHost" IsVisible="False" />
+    </Panel>
   </DockPanel>
 </UserControl>

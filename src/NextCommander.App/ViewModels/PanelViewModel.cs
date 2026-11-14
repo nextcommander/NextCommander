@@ -607,7 +607,20 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>Path line text without breadcrumbs: the folder with a trailing separator ("C:\x\").</summary>
-    partial void OnBreadcrumbsChanged(IReadOnlyList<BreadcrumbSegment> value) => OnPropertyChanged(nameof(PlainPathText));
+    partial void OnBreadcrumbsChanged(IReadOnlyList<BreadcrumbSegment> value)
+    {
+        OnPropertyChanged(nameof(PlainPathText));
+        OnPropertyChanged(nameof(IsRemoteConnection));
+        OnPropertyChanged(nameof(ConnectionName));
+    }
+
+    /// <summary>The panel shows a server or cloud connection (the path line offers to disconnect it).</summary>
+    public bool IsRemoteConnection => CurrentPath is { LocalAnchor: null } path && Core.Config.RemoteProtocols.FromScheme(path.Scheme) is not null;
+
+    /// <summary>The saved name of the panel's connection, else its address ("user@server").</summary>
+    public string ConnectionName => CurrentPath is { } path && IsRemoteConnection
+        ? _settings.Connections.FirstOrDefault(c => c.Scheme == path.Scheme && c.Authority == path.Authority)?.Name ?? path.Authority
+        : string.Empty;
 
     public string PlainPathText => Breadcrumbs is { Count: > 0 } crumbs
         ? string.Concat(crumbs.Select(c => c.Name + c.Separator))

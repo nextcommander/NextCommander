@@ -263,15 +263,12 @@ public sealed class MenuTests : IDisposable
     public async Task Network_menu_groups_connections_and_shows_product_marks()
     {
         var (w, vm) = await _fx.OpenAsync();
-        Assert.Equal(["Connection manager...", "New connection", "Saved connections", "Connect by address...", "Disconnect",
+        Assert.Equal(["Connection manager...", "Saved connections", "Connect by address...", "Disconnect",
             "Network (machines of the local network)", "Map network drive...", "Disconnect network drives...", "Share current directory...", "Unshare directory...",
             "Show admin shares", "Download from URL...", "Download the addresses of a list...", "Show hidden files on FTP", "Master password...", "rclone remotes"],
             Headers(w, "_Net"));
-        Assert.Equal(["SFTP (SSH)...", "SCP (SSH without SFTP)...", "FTP / FTPS...", "WebDAV...", "SMB (Windows share)...", "Amazon S3 / compatible...", "Azure Blob Storage...", "Azure Files...",
-            "Google Drive...", "OneDrive...", "Dropbox...", "Box..."], Headers(w, "New connection"));
-        var drive = w.GetLogicalDescendants().OfType<MenuItem>().First(m => m.Header as string == "Google Drive...");
-        Assert.NotNull(drive.Icon);
-        Assert.Equal(6, ((Avalonia.Controls.Canvas)((Viewbox)((Border)drive.Icon!).Child!).Child!).Children.Count); // the six parts of the Drive mark
+        // no "New connection" submenu: the connection manager makes new connections (nc_NewConnection still opens it on a type)
+        Assert.DoesNotContain(w.GetLogicalDescendants().OfType<MenuItem>(), m => m.Header as string is "New connection" or "Google Drive...");
 
         // a new Dropbox connection is saved and opened; a saved one opens by name
         _fx.Dialogs.NextNewConnection = new Core.Config.RemoteConnection
