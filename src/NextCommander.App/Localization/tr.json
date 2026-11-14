@@ -2169,6 +2169,7 @@
   "AdbFileSystemProvider.ADBThePhoneIsNot": "ADB: telefon bağlı değil: {0}",
   "AdbFileSystemProvider.AndroidDevices": "Android aygıtları",
   "AdbFileSystemProvider.MovingBetweenDevicesIsDone": "Aygıtlar arasında taşıma kopyalayarak yapılır.",
+  "ArchiveContainer.ASplitArchiveIsRead": "{0}: bölünmüş bir arşiv salt okunurdur.",
   "AzureFilesFileSystemProvider.AzureFilesAreWrittenInto": "Azure: dosyalar bir paylaşıma yazılır.",
   "AzureFilesFileSystemProvider.AzureSharesCannotBeRenamed": "Azure: paylaşımlar yeniden adlandırılamaz.",
   "BoxFileSystemProvider.BoxAPartWasNot": "Box: bir parça alınmadı: {0}",
@@ -2190,6 +2191,8 @@
   "ConnectionPresets.UseAnAppPasswordPreferences": "Bir uygulama parolası kullanın (Preferences → Password → App passwords).",
   "ConnectionPresets.UseAnAppPasswordYandex": "Bir uygulama parolası kullanın (Yandex ID → Security → App passwords).",
   "ConnectionPresets.YourServerSAddressThe": "Sunucunuzun adresi; başlangıç klasörü kullanıcının dosyalarıdır. İki adımlı oturum açmada bir uygulama parolası kullanın.",
+  "FindFilesWindow.SkipBinaryFiles": "İkili dosyaları atla",
+  "FindFilesWindow.SkipBinaryFiles.Description": "Başı ikili veri gibi görünen dosyalarda (programlar, resimler, arşivler) metin aranmaz.",
   "FreedesktopTrash.TheOriginalPlaceOfThis": "Bu öğenin asıl yeri bilinmiyor.",
   "HttpListingFileSystemProvider.AWebServerListingIs": "Bir web sunucusu listesi salt okunurdur: dosyaları dışarı kopyalayın.",
   "HttpListingFileSystemProvider.NotAFolderListing": "Klasör listesi değil: {0}",
@@ -2266,6 +2269,7 @@
   "WpdInterop.ItAlreadyExistsOnThe": "Aygıtta zaten var.",
   "WpdInterop.NotFoundOnTheDevice": "Aygıtta bulunamadı.",
   "WpdInterop.PortableDeviceError0x": "Taşınabilir aygıt hatası 0x{0}.",
+  "WpdInterop.TheDeviceConnectionWasReset": "Aygıt bağlantısı sıfırlandı; yeniden açılıyor.",
   "WpdInterop.TheDeviceIsFull": "Aygıt dolu.",
   "WpdInterop.TheDeviceWasDisconnected": "Aygıtın bağlantısı kesildi."
 }

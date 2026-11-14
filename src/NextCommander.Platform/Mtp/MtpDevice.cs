@@ -3,6 +3,12 @@ namespace NextCommander.Platform.Mtp;
 /// <summary>An object on an MTP device: a storage (internal storage, SD card), a folder or a file.</summary>
 public sealed record MtpObject(string Id, string Name, bool IsFolder, long Size, DateTime? Modified);
 
+/// <summary>
+/// The device handle is not open any more (Windows: E_WPD_DEVICE_NOT_OPENED, 0x802A0002): the device connected again,
+/// for example after its USB mode changed. The call did not run; the device can be opened again.
+/// </summary>
+public sealed class MtpSessionLostException(string message) : IOException(message);
+
 /// <summary>A connected portable device: the system's id and its name (as the system shows it).</summary>
 public sealed record MtpDeviceInfo(string Id, string Name);
 

@@ -42,6 +42,40 @@ internal sealed class ArchiveContainer : IAsyncDisposable
     /// <summary>Whether the archive was opened as a partial zip (read-only).</summary>
     public bool IsPartialZip => _partialZip;
 
+    /// <summary>The first volume of a split archive (name.7z.001): read through all its volumes, read-only.</summary>
+    public bool IsSplit => ArchiveFormats.SplitBaseName(File.Name) is not null;
+
+    /// <summary>The volumes of a split archive on this computer (local only; others are joined into a temporary copy).</summary>
+    private IReadOnlyList<string> _volumes = [];
+
+    /// <summary>Why the archive cannot be changed; null when it can (zip).</summary>
+    public string? ReadOnlyReason => IsSplit ? $"{File.Name}: a split archive is read-only."
+        : !ArchiveFormats.IsWritable(Kind) ? $"{File.Name}: this archive format is read-only (writable format: zip)."
+        : null;
+
+    /// <summary>
+    /// The volumes of a split archive next to its first one: name.001, name.002 ... while they follow each other
+    /// (a missing number ends the archive).
+    /// </summary>
+    public static IReadOnlyList<string> LocalVolumes(string firstVolume)
+    {
+        var all = PackJob.VolumesOf(firstVolume[..^4]);
+        var result = new List<string>();
+        foreach (var file in all)
+        {
+            if (!int.TryParse(Path.GetExtension(file).AsSpan(1), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var number)
+                || number != result.Count + 1)
+            {
+                break;
+            }
+            result.Add(file);
+        }
+        return result.Count > 0 ? result : [firstVolume];
+    }
+
+    /// <summary>The size of the archive's data (all volumes of a split one).</summary>
+    private long LocalLength() => _volumes.Count > 1 ? _volumes.Sum(v => new FileInfo(v).Length) : new FileInfo(_localPath!).Length;
+
     public string? Password { get; set; }
 
     /// <summary>Changes not written to the file yet.</summary>
@@ -68,9 +102,9 @@ internal sealed class ArchiveContainer : IAsyncDisposable
     /// <summary>Applies a change to the index (zip only) and schedules writing it to the file.</summary>
     public async Task ModifyAsync(Func<ArchiveIndex, Task> change, CancellationToken cancellationToken)
     {
-        if (!ArchiveFormats.IsWritable(Kind))
+        if (ReadOnlyReason is { } reason)
         {
-            throw new NotSupportedException($"{File.Name}: this archive format is read-only (writable format: zip).");
+            throw new NotSupportedException(reason);
         }
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
@@ -110,7 +144,17 @@ internal sealed class ArchiveContainer : IAsyncDisposable
         if (File.IsLocal)
         {
             var info = new FileInfo(File.Path);
-            return info.Exists ? (info.Length, info.LastWriteTimeUtc) : (-1, default);
+            if (!info.Exists)
+            {
+                return (-1, default);
+            }
+            if (IsSplit)
+            {
+                // a volume added, removed or changed changes the archive
+                var volumes = LocalVolumes(File.Path).Select(v => new FileInfo(v)).ToList();
+                return (volumes.Sum(v => v.Length) + volumes.Count, volumes.Max(v => v.LastWriteTimeUtc));
+            }
+            return (info.Length, info.LastWriteTimeUtc);
         }
         var entry = await _owner.Registry.Resolve(File).GetEntryAsync(File, cancellationToken).ConfigureAwait(false);
         return entry is null ? (-1, default) : (entry.Size, entry.LastWriteTime);
@@ -127,14 +171,21 @@ internal sealed class ArchiveContainer : IAsyncDisposable
         if (File.IsLocal)
         {
             _localPath = File.Path;
+            _volumes = IsSplit ? LocalVolumes(File.Path) : [];
             return;
         }
         var temp = _owner.NewTempFile(File.Name);
-        await using (var source = await _owner.Registry.Resolve(File).OpenReadAsync(File, cancellationToken).ConfigureAwait(false))
+        var provider = _owner.Registry.Resolve(File);
         await using (var target = System.IO.File.Create(temp))
         {
-            await source.CopyToAsync(target, cancellationToken).ConfigureAwait(false);
+            // a split archive elsewhere: its volumes one after the other into one file
+            foreach (var volume in IsSplit ? await RemoteVolumesAsync(provider, cancellationToken).ConfigureAwait(false) : [File])
+            {
+                await using var source = await provider.OpenReadAsync(volume, cancellationToken).ConfigureAwait(false);
+                await source.CopyToAsync(target, cancellationToken).ConfigureAwait(false);
+            }
         }
+        _volumes = [];
         if (_isTempCopy && _localPath is not null)
         {
             TryDelete(_localPath);
@@ -143,8 +194,28 @@ internal sealed class ArchiveContainer : IAsyncDisposable
         _isTempCopy = true;
     }
 
-    private FileStream OpenFile() =>
-        new(_localPath!, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 64 * 1024, FileOptions.RandomAccess);
+    /// <summary>The volumes of a split archive on another provider: name.001, name.002 ... while they exist.</summary>
+    private async Task<List<VfsPath>> RemoteVolumesAsync(IFileSystemProvider provider, CancellationToken cancellationToken)
+    {
+        var baseName = File.Name[..^4];
+        var folder = File.Parent ?? throw new FileNotFoundException("Archive not found: " + DisplayName);
+        var volumes = new List<VfsPath> { File };
+        for (var number = 2; number < 10000; number++)
+        {
+            var next = folder.Combine(baseName + "." + number.ToString("D3", System.Globalization.CultureInfo.InvariantCulture));
+            if (await provider.GetEntryAsync(next, cancellationToken).ConfigureAwait(false) is not { IsDirectory: false })
+            {
+                break;
+            }
+            volumes.Add(next);
+        }
+        return volumes;
+    }
+
+    /// <summary>The archive's bytes: the file, or all volumes of a split archive as one stream.</summary>
+    private Stream OpenFile() => _volumes.Count > 1
+        ? new VolumeStream(_volumes)
+        : new FileStream(_localPath!, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 64 * 1024, FileOptions.RandomAccess);
 
     private ReaderOptions Options() => new()
     {
@@ -199,7 +270,7 @@ internal sealed class ArchiveContainer : IAsyncDisposable
                     Path = "/" + ArchiveFormats.SingleEntryName(File.Name),
                     Key = ArchiveFormats.SingleEntryName(File.Name),
                     Size = Kind == ArchiveKind.SingleGZip ? GZipOriginalSize() : 0,
-                    CompressedSize = new FileInfo(_localPath!).Length,
+                    CompressedSize = LocalLength(),
                     Modified = new FileInfo(_localPath!).LastWriteTime,
                 });
                 break;
@@ -425,7 +496,7 @@ internal sealed class ArchiveContainer : IAsyncDisposable
         }
     }
 
-    private Stream OpenWithSharpCompress(FileStream file, ArchiveItem item)
+    private Stream OpenWithSharpCompress(Stream file, ArchiveItem item)
     {
         var archive = ArchiveFactory.OpenArchive(file, Options());
         try

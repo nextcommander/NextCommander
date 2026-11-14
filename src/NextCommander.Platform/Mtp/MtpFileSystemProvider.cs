@@ -337,13 +337,22 @@ public sealed class MtpFileSystemProvider(IMtpDeviceSource source) : IFileSystem
 
     private static string Join(string folder, string name) => folder == "/" ? "/" + name : folder + "/" + name;
 
-    /// <summary>Runs one call on the opened device; a device that fails is closed (opened again next time).</summary>
+    /// <summary>
+    /// Runs one call on the opened device; a device that fails is closed (opened again next time). A handle the
+    /// device no longer knows (it connected again, e.g. after its USB mode changed) is opened again and the call
+    /// repeated once: the call did not run.
+    /// </summary>
     private T Use<T>(VfsPath path, Func<Session, T> action)
     {
         var session = _sessions.GetOrAdd(path.Authority, Open);
         try
         {
             return action(session);
+        }
+        catch (MtpSessionLostException)
+        {
+            Close(path.Authority);
+            return action(_sessions.GetOrAdd(path.Authority, Open));
         }
         catch (IOException) when (!IsConnected(path.Authority))
         {
@@ -359,7 +368,7 @@ public sealed class MtpFileSystemProvider(IMtpDeviceSource source) : IFileSystem
     {
         var device = source.GetDevices().FirstOrDefault(d => string.Equals(d.Name, name, StringComparison.OrdinalIgnoreCase))
             ?? throw new DirectoryNotFoundException($"The device is not connected: {name}");
-        return new Session(source.Open(device.Id));
+        return new Session(source.Open(device.Id), device.Id);
     }
 
     private void Close(string name)
@@ -370,13 +379,19 @@ public sealed class MtpFileSystemProvider(IMtpDeviceSource source) : IFileSystem
         }
     }
 
-    /// <summary>Closes the devices that are no longer connected (drives changed).</summary>
+    /// <summary>
+    /// Closes the devices that are no longer connected (drives changed), and those connected again under the same
+    /// name with a new system id (their old handle does not work any more).
+    /// </summary>
     public void CloseDisconnected()
     {
-        var connected = source.GetDevices().Select(d => d.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        foreach (var name in _sessions.Keys.Where(n => !connected.Contains(n)).ToList())
+        var connected = source.GetDevices().ToDictionary(d => d.Name, d => d.Id, StringComparer.OrdinalIgnoreCase);
+        foreach (var (name, session) in _sessions.ToList())
         {
-            Close(name);
+            if (!connected.TryGetValue(name, out var id) || !string.Equals(id, session.DeviceId, StringComparison.OrdinalIgnoreCase))
+            {
+                Close(name);
+            }
         }
     }
 
@@ -389,8 +404,11 @@ public sealed class MtpFileSystemProvider(IMtpDeviceSource source) : IFileSystem
     }
 
     /// <summary>An opened device and the folder listings seen so far (folder path → children).</summary>
-    private sealed class Session(IMtpDevice device)
+    private sealed class Session(IMtpDevice device, string deviceId)
     {
+        /// <summary>The system's id of the device when it was opened.</summary>
+        public string DeviceId { get; } = deviceId;
+
         private readonly Lock _lock = new();
         private readonly Dictionary<string, IReadOnlyList<MtpObject>> _children = new(StringComparer.Ordinal);
 

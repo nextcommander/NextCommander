@@ -70,6 +70,11 @@ public sealed class ListerWindow : Window
         }
         Title = $"Lister — {entry.Name}";
         await View.LoadAsync(entry);
+        if (_request.Find is { } find)
+        {
+            View.SetFindText(find.Text, find.CaseSensitive, find.WholeWords, find.Regex);
+            await View.FindAsync(forward: true);
+        }
         View.FocusContent();
     }
 

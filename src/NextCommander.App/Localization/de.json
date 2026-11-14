@@ -2169,6 +2169,7 @@
   "AdbFileSystemProvider.ADBThePhoneIsNot": "ADB: Das Telefon ist nicht verbunden: {0}",
   "AdbFileSystemProvider.AndroidDevices": "Android-Geräte",
   "AdbFileSystemProvider.MovingBetweenDevicesIsDone": "Verschieben zwischen Geräten geschieht durch Kopieren.",
+  "ArchiveContainer.ASplitArchiveIsRead": "{0}: Ein geteiltes Archiv ist schreibgeschützt.",
   "AzureFilesFileSystemProvider.AzureFilesAreWrittenInto": "Azure: Dateien werden in eine Freigabe geschrieben.",
   "AzureFilesFileSystemProvider.AzureSharesCannotBeRenamed": "Azure: Freigaben können nicht umbenannt werden.",
   "BoxFileSystemProvider.BoxAPartWasNot": "Box: Ein Teil wurde nicht angenommen: {0}",
@@ -2190,6 +2191,8 @@
   "ConnectionPresets.UseAnAppPasswordPreferences": "Ein App-Kennwort verwenden (Preferences → Password → App passwords).",
   "ConnectionPresets.UseAnAppPasswordYandex": "Ein App-Kennwort verwenden (Yandex ID → Security → App passwords).",
   "ConnectionPresets.YourServerSAddressThe": "Die Adresse Ihres Servers; der Startordner sind die Dateien des Benutzers. Bei Zwei-Faktor-Anmeldung ein App-Kennwort verwenden.",
+  "FindFilesWindow.SkipBinaryFiles": "Binärdateien überspringen",
+  "FindFilesWindow.SkipBinaryFiles.Description": "Dateien, deren Anfang wie Binärdaten aussieht (Programme, Bilder, Archive), werden nicht nach dem Text durchsucht.",
   "FreedesktopTrash.TheOriginalPlaceOfThis": "Der ursprüngliche Ort dieses Elements ist nicht bekannt.",
   "HttpListingFileSystemProvider.AWebServerListingIs": "Eine Webserver-Auflistung ist schreibgeschützt: Dateien daraus herauskopieren.",
   "HttpListingFileSystemProvider.NotAFolderListing": "Keine Ordnerauflistung: {0}",
@@ -2266,6 +2269,7 @@
   "WpdInterop.ItAlreadyExistsOnThe": "Es ist auf dem Gerät bereits vorhanden.",
   "WpdInterop.NotFoundOnTheDevice": "Auf dem Gerät nicht gefunden.",
   "WpdInterop.PortableDeviceError0x": "Fehler des tragbaren Geräts 0x{0}.",
+  "WpdInterop.TheDeviceConnectionWasReset": "Die Geräteverbindung wurde zurückgesetzt; sie wird erneut geöffnet.",
   "WpdInterop.TheDeviceIsFull": "Das Gerät ist voll.",
   "WpdInterop.TheDeviceWasDisconnected": "Die Verbindung zum Gerät wurde getrennt."
 }

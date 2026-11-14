@@ -54,8 +54,26 @@ public static class ArchiveFormats
         "docx", "docm", "dotx", "xlsx", "xlsm", "pptx", "pptm", "odt", "ods", "odp", "odg", "epub", "kmz", "3mf", "msix", "appx",
     };
 
+    /// <summary>
+    /// The first volume of a split archive ("backup.7z.001" → "backup.7z": 7-Zip's -v volumes, a file splitter's
+    /// pieces); null for other names, and for the later volumes (.002 ...), which are not opened by themselves.
+    /// </summary>
+    public static string? SplitBaseName(string fileName)
+    {
+        if (!fileName.EndsWith(".001", StringComparison.Ordinal) || fileName.Length <= 4)
+        {
+            return null;
+        }
+        var baseName = fileName[..^4];
+        return Detect(baseName) is not null ? baseName : null;
+    }
+
     public static ArchiveKind? Detect(string fileName, bool includeDocuments = false)
     {
+        if (SplitBaseName(fileName) is { } whole)
+        {
+            return Detect(whole, includeDocuments);
+        }
         var lower = fileName.ToLowerInvariant();
         foreach (var compound in new[] { ".tar.gz", ".tar.bz2", ".tar.xz", ".tar.zst", ".tar.lz" })
         {

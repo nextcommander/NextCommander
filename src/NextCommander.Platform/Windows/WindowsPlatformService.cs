@@ -80,7 +80,11 @@ internal sealed partial class WindowsPlatformService : PlatformServiceBase, IPla
         foreach (var device in _portableDevices.GetDevices())
         {
             // the device id: the shell knows the phone by it (its icon and context menu below This PC)
-            drives.Add(new DriveItem(device.Name, Mtp.MtpFileSystemProvider.DeviceRoot(device.Name).ToString(), null, 0, 0, DriveKind.Phone, true) { Device = device.Id });
+            drives.Add(new DriveItem(device.Name, Mtp.MtpFileSystemProvider.DeviceRoot(device.Name).ToString(), null, 0, 0, DriveKind.Phone, true)
+            {
+                Device = device.Id,
+                UsbSerial = UsbSerials.Of(device.Id), // to leave out the same phone over ADB
+            });
         }
         return drives;
     }

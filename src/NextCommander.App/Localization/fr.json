@@ -2169,6 +2169,7 @@
   "AdbFileSystemProvider.ADBThePhoneIsNot": "ADB : le téléphone n'est pas connecté : {0}",
   "AdbFileSystemProvider.AndroidDevices": "Appareils Android",
   "AdbFileSystemProvider.MovingBetweenDevicesIsDone": "Le déplacement entre appareils se fait par copie.",
+  "ArchiveContainer.ASplitArchiveIsRead": "{0} : une archive fractionnée est en lecture seule.",
   "AzureFilesFileSystemProvider.AzureFilesAreWrittenInto": "Azure : les fichiers sont écrits dans un partage.",
   "AzureFilesFileSystemProvider.AzureSharesCannotBeRenamed": "Azure : les partages ne peuvent pas être renommés.",
   "BoxFileSystemProvider.BoxAPartWasNot": "Box : une partie n'a pas été acceptée : {0}",
@@ -2190,6 +2191,8 @@
   "ConnectionPresets.UseAnAppPasswordPreferences": "Utilisez un mot de passe d'application (Preferences → Password → App passwords).",
   "ConnectionPresets.UseAnAppPasswordYandex": "Utilisez un mot de passe d'application (Yandex ID → Security → App passwords).",
   "ConnectionPresets.YourServerSAddressThe": "L'adresse de votre serveur ; le dossier de départ contient les fichiers de l'utilisateur. Avec la connexion à deux facteurs, utilisez un mot de passe d'application.",
+  "FindFilesWindow.SkipBinaryFiles": "Ignorer les fichiers binaires",
+  "FindFilesWindow.SkipBinaryFiles.Description": "Le texte n'est pas recherché dans les fichiers dont le début ressemble à des données binaires (programmes, images, archives).",
   "FreedesktopTrash.TheOriginalPlaceOfThis": "L'emplacement d'origine de cet élément est inconnu.",
   "HttpListingFileSystemProvider.AWebServerListingIs": "Une liste de serveur web est en lecture seule : copiez-en les fichiers.",
   "HttpListingFileSystemProvider.NotAFolderListing": "Pas une liste de dossier : {0}",
@@ -2266,6 +2269,7 @@
   "WpdInterop.ItAlreadyExistsOnThe": "Il existe déjà sur l'appareil.",
   "WpdInterop.NotFoundOnTheDevice": "Introuvable sur l'appareil.",
   "WpdInterop.PortableDeviceError0x": "Erreur de l'appareil portable 0x{0}.",
+  "WpdInterop.TheDeviceConnectionWasReset": "La connexion à l'appareil a été réinitialisée ; elle est rouverte.",
   "WpdInterop.TheDeviceIsFull": "L'appareil est plein.",
   "WpdInterop.TheDeviceWasDisconnected": "L'appareil a été déconnecté."
 }

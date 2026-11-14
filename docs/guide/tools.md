@@ -82,7 +82,9 @@ F4 opens the built-in text editor; Shift+F4 creates a new file.
 - **Search in:** one or more folders separated by `;`, or *All drives*. You can limit the depth and search for
   files, folders or both.
 - **Content:** find text inside files, also in UTF-16 text and inside Office, OpenDocument and EPUB files.
-  Options: case sensitive, whole words, regular expression, and *Not containing*.
+  Options: case sensitive, whole words, regular expression, *Not containing*, and *Skip binary files* (programs,
+  images and archives are not read). Several files are read at the same time. Each result shows the line of its first
+  match with its number, and F3 opens the Lister at that match (F3 there goes to the next one).
 - **Advanced:** size (`10k`, `2M`), date (`2024-05-01`, or `7d` for the last seven days), attributes, skipping
   hidden folders, searching only in the previous results, and finding duplicates.
 - **Results:** each line has the icon of its kind (folder, document, picture, archive ...). F3 views, F4 edits,

@@ -2169,6 +2169,7 @@
   "AdbFileSystemProvider.ADBThePhoneIsNot": "ADB: el teléfono no está conectado: {0}",
   "AdbFileSystemProvider.AndroidDevices": "Dispositivos Android",
   "AdbFileSystemProvider.MovingBetweenDevicesIsDone": "Mover entre dispositivos se hace copiando.",
+  "ArchiveContainer.ASplitArchiveIsRead": "{0}: un archivo dividido es de solo lectura.",
   "AzureFilesFileSystemProvider.AzureFilesAreWrittenInto": "Azure: los archivos se escriben en un recurso compartido.",
   "AzureFilesFileSystemProvider.AzureSharesCannotBeRenamed": "Azure: los recursos compartidos no se pueden renombrar.",
   "BoxFileSystemProvider.BoxAPartWasNot": "Box: no se aceptó una parte: {0}",
@@ -2190,6 +2191,8 @@
   "ConnectionPresets.UseAnAppPasswordPreferences": "Use una contraseña de aplicación (Preferences → Password → App passwords).",
   "ConnectionPresets.UseAnAppPasswordYandex": "Use una contraseña de aplicación (Yandex ID → Security → App passwords).",
   "ConnectionPresets.YourServerSAddressThe": "La dirección de su servidor; la carpeta inicial son los archivos del usuario. Con inicio de sesión en dos pasos, use una contraseña de aplicación.",
+  "FindFilesWindow.SkipBinaryFiles": "Omitir archivos binarios",
+  "FindFilesWindow.SkipBinaryFiles.Description": "No se busca el texto en archivos cuyo comienzo parece datos binarios (programas, imágenes, archivos comprimidos).",
   "FreedesktopTrash.TheOriginalPlaceOfThis": "No se conoce la ubicación original de este elemento.",
   "HttpListingFileSystemProvider.AWebServerListingIs": "Un listado de servidor web es de solo lectura: copie los archivos fuera de él.",
   "HttpListingFileSystemProvider.NotAFolderListing": "No es un listado de carpeta: {0}",
@@ -2266,6 +2269,7 @@
   "WpdInterop.ItAlreadyExistsOnThe": "Ya existe en el dispositivo.",
   "WpdInterop.NotFoundOnTheDevice": "No se encontró en el dispositivo.",
   "WpdInterop.PortableDeviceError0x": "Error del dispositivo portátil 0x{0}.",
+  "WpdInterop.TheDeviceConnectionWasReset": "La conexión con el dispositivo se restableció; se vuelve a abrir.",
   "WpdInterop.TheDeviceIsFull": "El dispositivo está lleno.",
   "WpdInterop.TheDeviceWasDisconnected": "El dispositivo se desconectó."
 }

@@ -86,6 +86,46 @@ public sealed class AdbTests : IDisposable
         Assert.IsType(type, AdbFileSystemProvider.ErrorOf(new AdbResult(1, string.Empty, message), VfsPath.Create("adb", "R58", "/sdcard/x")));
 
     [Fact]
+    public void A_phone_seen_over_mtp_too_is_not_shown_twice()
+    {
+        // Windows: the MTP interface of a composite device, its parent holds the serial
+        Assert.Equal(@"USB\VID_04E8&PID_6860&MI_00\6&1A2B3C&0&0000",
+            NextCommander.Platform.Windows.UsbSerials.InstanceIdOf(@"\\?\usb#vid_04e8&pid_6860&mi_00#6&1a2b3c&0&0000#{6ac27878-a6fa-4155-ba85-f98f491d4f33}"));
+        Assert.Null(NextCommander.Platform.Windows.UsbSerials.SerialOf(@"USB\VID_04E8&PID_6860&MI_00\6&1A2B3C&0&0000"));
+        Assert.Equal("R5CX15QTV5J", NextCommander.Platform.Windows.UsbSerials.SerialOf(@"USB\VID_04E8&PID_6860\R5CX15QTV5J"));
+        Assert.Null(NextCommander.Platform.Windows.UsbSerials.SerialOf(@"USB\VID_04E8&PID_6860\5&2F0E&0&3")); // made up by Windows
+
+        Platform.DriveItem Adb(string serial) => new(serial + " (ADB)", AdbFileSystemProvider.DeviceRoot(serial).ToString(), null, 0, 0, Platform.DriveKind.Phone, true);
+        var system = new[]
+        {
+            new Platform.DriveItem("Galaxy S24 Ultra", "mtp://Galaxy S24 Ultra/", null, 0, 0, Platform.DriveKind.Phone, true) { UsbSerial = "R5CX15QTV5J" },
+            new Platform.DriveItem("Pixel", "/run/user/1000/gvfs/mtp:host=Google_Pixel_7_28141FDH2", null, 0, 0, Platform.DriveKind.Phone, true),
+        };
+        var shown = Platform.PlatformServiceBase.WithoutMtpTwins([Adb("R5CX15QTV5J"), Adb("28141FDH2"), Adb("OTHER1"), Adb("192.168.1.5:5555")], system);
+        Assert.Equal(["OTHER1 (ADB)", "192.168.1.5:5555 (ADB)"], shown.Select(d => d.Name));
+    }
+
+    [Fact]
+    public void A_listing_fails_only_when_the_folder_cannot_be_opened()
+    {
+        if (Shell() is not { } shell)
+        {
+            return;
+        }
+        var adb = new FakeAdb(shell);
+        var folder = OperatingSystem.IsWindows() ? adb.Run("cygpath -u " + PosixShell.Quote(_root), out _, out _).Trim() : _root;
+        File.WriteAllText(Path.Combine(_root, "a.txt"), "1");
+        // a loop that ends with a failing command (as Android's shell does) still lists: only cd decides
+        var loopFails = PosixShell.ListCommand(folder).Replace("done; exit 0", "false; done; exit 0", StringComparison.Ordinal);
+        Assert.NotEqual(PosixShell.ListCommand(folder), loopFails);
+        var output = adb.Run(loopFails, out var exit, out _);
+        Assert.Equal(0, exit);
+        Assert.Equal(["a.txt"], PosixShell.ParseListing(output).Select(e => e.Name));
+        adb.Run(PosixShell.ListCommand(folder + "/missing"), out var missing, out _);
+        Assert.NotEqual(0, missing);
+    }
+
+    [Fact]
     public void Free_space_from_df()
     {
         var space = AdbFileSystemProvider.ParseDf("""
