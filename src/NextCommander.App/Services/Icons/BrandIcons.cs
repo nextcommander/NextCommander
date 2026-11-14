@@ -7,7 +7,7 @@ using NextCommander.Core.Config;
 namespace NextCommander.App.Services.Icons;
 
 /// <summary>
-/// Icons of the connection types: the product marks of the cloud services (Google Drive, OneDrive, Dropbox, Azure,
+/// Icons of the connection types: the product marks of the cloud services (Google Drive, OneDrive, Dropbox, Box, Azure,
 /// Amazon S3) in their own colors, drawn as vectors; the protocols (SFTP, FTP, WebDAV, SMB) get the application's glyphs.
 /// </summary>
 public static class BrandIcons
@@ -31,6 +31,13 @@ public static class BrandIcons
         [
             new("M6 1.807 0 5.629l6 3.822 6.001-3.822zM18 1.807l-6 3.822 6 3.822 6-3.822zM0 13.274l6 3.822 6.001-3.822L6 9.452zM18 9.452l-6 3.822 6 3.822 6-3.822zM6 18.371l6.001 3.822 6-3.822-6-3.822z", "#0061FF"),
         ]),
+        // Box: a white "b" on the Box blue (24 × 24)
+        [RemoteProtocol.Box] = (24, 24,
+        [
+            new("M5 2h14a3 3 0 0 1 3 3v14a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3z", "#0061D5"),
+            new("M6.3 4.8h2.1v12.9H6.3z", "#FFFFFF"),
+            new("F0 M12.9 9.1a4.3 4.3 0 1 1 0 8.6a4.3 4.3 0 1 1 0-8.6z M12.9 11.2a2.2 2.2 0 1 0 0 4.4a2.2 2.2 0 1 0 0-4.4z", "#FFFFFF"),
+        ]),
         // the OneDrive clouds (24 × 24): a darker cloud behind, the lighter one in front
         [RemoteProtocol.OneDrive] = (24, 24,
         [
@@ -39,6 +46,11 @@ public static class BrandIcons
         ]),
         // the Azure "A" (24 × 24)
         [RemoteProtocol.AzureBlob] = (24, 24,
+        [
+            new("M5.483 21.3H24L14.025 4.013l-3.038 8.347 5.836 6.938zM13.23 2.7 6.105 8.677 0 19.253h5.505v.014z", "#0089D6"),
+        ]),
+        // Azure Files: the same "A"
+        [RemoteProtocol.AzureFiles] = (24, 24,
         [
             new("M5.483 21.3H24L14.025 4.013l-3.038 8.347 5.836 6.938zM13.23 2.7 6.105 8.677 0 19.253h5.505v.014z", "#0089D6"),
         ]),
@@ -81,19 +93,5 @@ public static class BrandIcons
     }
 
     /// <summary>The protocol of a path scheme ("gdrive", "s3" ...), or null.</summary>
-    public static RemoteProtocol? ProtocolOf(string scheme) => scheme.ToLowerInvariant() switch
-    {
-        "sftp" => RemoteProtocol.Sftp,
-        "ftp" => RemoteProtocol.Ftp,
-        "ftps" => RemoteProtocol.FtpsExplicit,
-        "dav" => RemoteProtocol.WebDav,
-        "davs" => RemoteProtocol.WebDavs,
-        "s3" => RemoteProtocol.S3,
-        "azblob" => RemoteProtocol.AzureBlob,
-        "smb" => RemoteProtocol.Smb,
-        "gdrive" => RemoteProtocol.GoogleDrive,
-        "onedrive" => RemoteProtocol.OneDrive,
-        "dropbox" => RemoteProtocol.Dropbox,
-        _ => null,
-    };
+    public static RemoteProtocol? ProtocolOf(string scheme) => RemoteProtocols.FromScheme(scheme)?.Protocol;
 }

@@ -97,7 +97,8 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
 
     /// <summary>Folder shortcuts at the right end of the drive bar (Configuration > Layout).</summary>
     public IReadOnlyList<DriveItem> FolderShortcutItems =>
-        DriveItem.FolderShortcuts(_settings.DriveBarHome, _settings.DriveBarDocuments, _settings.DriveBarDownloads, _settings.DriveBarDesktop);
+        [.. DriveItem.FolderShortcuts(_settings.DriveBarHome, _settings.DriveBarDocuments, _settings.DriveBarDownloads, _settings.DriveBarDesktop),
+            .. _settings.DriveBarSyncFolders ? _platform.GetShortcutFolders() : []];
 
     public bool HasFolderShortcuts => FolderShortcutItems.Count > 0;
 
@@ -1554,7 +1555,8 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
             foreach (var item in items)
             {
                 if (item.Entry is { } entry && ComputerFileSystemProvider.LocalRootOf(entry.Path) is { } root
-                    && Drives.Append(DriveItem.TrashEntry).FirstOrDefault(d => string.Equals(d.RootPath, root, StringComparison.OrdinalIgnoreCase)) is { } drive
+                    && Drives.Concat(_platform.GetShortcutFolders()).Append(DriveItem.TrashEntry)
+                        .FirstOrDefault(d => string.Equals(d.RootPath, root, StringComparison.OrdinalIgnoreCase)) is { } drive
                     && Services.Icons.DriveIconConverter.IconFor(drive) is { } icon)
                 {
                     item.SystemIcon = icon;

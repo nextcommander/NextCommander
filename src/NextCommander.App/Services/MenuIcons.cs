@@ -240,6 +240,7 @@ public static class MenuIcons
         ["nc_FtpDisconnect"] = new("MiGlobe", Gray, "OvX", Red),
         ["nc_DownloadUrl"] = new("MiGlobe", Blue, "OvArrowDown", Green),
         ["nc_MasterPassword"] = new("MiKey", Yellow),
+        ["nc_RcloneRemotes"] = new("MiTransfer", Blue),
         ["nc_Plugins"] = new("MiPlug", Purple),
         // Commands
         ["nc_SearchFor"] = new("MiSearch", Blue),

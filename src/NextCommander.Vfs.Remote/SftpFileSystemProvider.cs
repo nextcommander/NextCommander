@@ -17,59 +17,20 @@ public sealed class SftpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBa
 
     protected override async Task<SftpClient> ConnectAsync(RemoteConnection connection, string? password, string? trustedFingerprint, CancellationToken cancellationToken)
     {
-        var methods = new List<AuthenticationMethod>();
         var keys = new List<IDisposable>();
-        if (!string.IsNullOrEmpty(connection.KeyFile))
-        {
-            try
-            {
-                var key = string.IsNullOrEmpty(password) ? new PrivateKeyFile(connection.KeyFile) : new PrivateKeyFile(connection.KeyFile, password);
-                keys.Add(key);
-                methods.Add(new PrivateKeyAuthenticationMethod(connection.User, key));
-            }
-            catch (SshPassPhraseNullOrEmptyException ex)
-            {
-                throw new SshAuthenticationException("The key file requires a passphrase.", ex);
-            }
-            catch (InvalidOperationException ex) when (!string.IsNullOrEmpty(password))
-            {
-                throw new SshAuthenticationException("Wrong key passphrase.", ex);
-            }
-        }
-        if (password is not null && string.IsNullOrEmpty(connection.KeyFile))
-        {
-            methods.Add(new PasswordAuthenticationMethod(connection.User, password));
-            methods.Add(KeyboardInteractive(connection.User, password));
-        }
-        if (methods.Count == 0)
-        {
-            methods.Add(new NoneAuthenticationMethod(connection.User));
-        }
-        var info = CreateConnectionInfo(connection, [.. methods]);
-        info.Timeout = TimeSpan.FromSeconds(20);
-        var client = new SftpClient(info) { OperationTimeout = TimeSpan.FromMinutes(2) };
-        string? seen = null;
-        string? description = null;
-        client.HostKeyReceived += (_, e) =>
-        {
-            seen = Fingerprint(e.HostKey);
-            description = $"{e.HostKeyName} {e.KeyLength} bit";
-            e.CanTrust = string.Equals(seen, trustedFingerprint, StringComparison.Ordinal);
-        };
         try
         {
-            await client.ConnectAsync(cancellationToken).ConfigureAwait(false);
-            return client;
-        }
-        catch (SshConnectionException) when (seen is not null && !string.Equals(seen, trustedFingerprint, StringComparison.Ordinal))
-        {
-            client.Dispose();
-            throw new UntrustedServerException(seen, $"{connection.Host}:{connection.EffectivePort} — {description}", changed: trustedFingerprint is not null);
-        }
-        catch
-        {
-            client.Dispose();
-            throw;
+            var client = new SftpClient(SshLogin.Create(connection, password, keys)) { OperationTimeout = TimeSpan.FromMinutes(2) };
+            try
+            {
+                await SshLogin.ConnectAsync(client, connection, trustedFingerprint, cancellationToken).ConfigureAwait(false);
+                return client;
+            }
+            catch
+            {
+                client.Dispose();
+                throw;
+            }
         }
         finally
         {
@@ -90,19 +51,6 @@ public sealed class SftpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBa
         var kind = proxy.EffectiveKind == NextCommander.Core.Net.ProxyKind.Socks5 ? ProxyTypes.Socks5 : ProxyTypes.Http;
         return new ConnectionInfo(connection.Host, connection.EffectivePort, connection.User, kind, address.Host, address.Port,
             proxy.User ?? string.Empty, NextCommander.Core.Net.WebProxyConfig.Password ?? string.Empty, methods);
-    }
-
-    private static KeyboardInteractiveAuthenticationMethod KeyboardInteractive(string user, string password)
-    {
-        var method = new KeyboardInteractiveAuthenticationMethod(user);
-        method.AuthenticationPrompt += (_, e) =>
-        {
-            foreach (var prompt in e.Prompts)
-            {
-                prompt.Response = password;
-            }
-        };
-        return method;
     }
 
     protected override bool IsAlive(SftpClient client) => client.IsConnected;

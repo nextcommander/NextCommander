@@ -329,6 +329,9 @@ public sealed class AppSettings
     /// <summary>The trash / Recycle Bin button after Network on the drive bar (the drive box always lists it).</summary>
     public bool DriveBarTrash { get; set; } = true;
 
+    /// <summary>Shortcuts at the end of the drive bar: the cloud sync folders (OneDrive, iCloud Drive, Dropbox ...) and WSL distributions.</summary>
+    public bool DriveBarSyncFolders { get; set; }
+
     /// <summary>Hovering a path separator opens the subfolder list.</summary>
     public bool BreadcrumbAutoOpen { get; set; }
 

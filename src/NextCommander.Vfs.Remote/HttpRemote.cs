@@ -16,7 +16,7 @@ public sealed class HttpRemoteClient : IDisposable
     private string? _seenFingerprint;
     private string? _seenDescription;
 
-    private HttpRemoteClient(RemoteConnection connection, string? password, string? trustedFingerprint, bool useCredentials)
+    private HttpRemoteClient(RemoteConnection connection, string? password, string? trustedFingerprint, bool useCredentials, HttpMessageHandler? testHandler)
     {
         Connection = connection;
         Password = password;
@@ -24,7 +24,7 @@ public sealed class HttpRemoteClient : IDisposable
         var secure = connection.Protocol switch
         {
             RemoteProtocol.WebDav => false,
-            RemoteProtocol.S3 or RemoteProtocol.AzureBlob => !connection.PlainHttp,
+            RemoteProtocol.S3 or RemoteProtocol.AzureBlob or RemoteProtocol.AzureFiles => !connection.PlainHttp,
             _ => true,
         };
         BaseUri = new UriBuilder(secure ? "https" : "http", connection.Host, connection.EffectivePort).Uri;
@@ -62,7 +62,11 @@ public sealed class HttpRemoteClient : IDisposable
                 },
             };
         }
-        Http = new HttpClient(handler, disposeHandler: true) { Timeout = Timeout.InfiniteTimeSpan };
+        if (testHandler is not null)
+        {
+            handler.Dispose();
+        }
+        Http = new HttpClient(testHandler ?? handler, disposeHandler: true) { Timeout = Timeout.InfiniteTimeSpan };
         Http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("NextCommander", "1.0"));
     }
 
@@ -78,9 +82,10 @@ public sealed class HttpRemoteClient : IDisposable
     /// <summary>scheme://host:port/ of the server.</summary>
     public Uri BaseUri { get; }
 
+    /// <param name="testHandler">Tests: the handler of all requests (a fake service) instead of the network.</param>
     public static HttpRemoteClient Create(RemoteConnection connection, string? password, string? trustedFingerprint, bool useCredentials,
-        string? sessionToken = null) =>
-        new(connection, password, trustedFingerprint, useCredentials) { SessionToken = sessionToken };
+        string? sessionToken = null, HttpMessageHandler? testHandler = null) =>
+        new(connection, password, trustedFingerprint, useCredentials, testHandler) { SessionToken = sessionToken };
 
     /// <summary>Sends a request; a certificate that was not trusted becomes <see cref="UntrustedServerException"/>.</summary>
     public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken, bool headersOnly = false)

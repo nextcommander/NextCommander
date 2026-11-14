@@ -10,9 +10,53 @@ public abstract class PlatformServiceBase : IPlatformService
 
     public abstract Task MoveToTrashAsync(string nativePath, CancellationToken cancellationToken);
 
-    public abstract IReadOnlyList<DriveItem> GetDrives();
+    /// <summary>The drives of the system, then the phones connected over ADB (<c>adb://serial/sdcard</c>).</summary>
+    public IReadOnlyList<DriveItem> GetDrives() => [.. GetSystemDrives(), .. AdbDrives()];
 
-    public IDisposable WatchDrives(Action changed) => new DriveWatcher(DriveSignature, changed);
+    /// <summary>The drives, devices and mount points of the system.</summary>
+    protected abstract IReadOnlyList<DriveItem> GetSystemDrives();
+
+    /// <summary>The Android phones of ADB (none when adb is not installed).</summary>
+    protected virtual NextCommander.Platform.Adb.AdbBridge Adb => NextCommander.Platform.Adb.AdbBridge.Shared;
+
+    private IEnumerable<DriveItem> AdbDrives() => Adb.GetDevices().Where(d => d.IsReady)
+        .Select(d => new DriveItem(d.Name + " (ADB)", NextCommander.Platform.Adb.AdbFileSystemProvider.DeviceRoot(d.Serial).ToString(), null, 0, 0, DriveKind.Phone, true));
+
+    private readonly Lock _shortcutLock = new();
+    private (long Tick, IReadOnlyList<DriveItem> Folders)? _shortcuts;
+
+    public IReadOnlyList<DriveItem> GetShortcutFolders()
+    {
+        lock (_shortcutLock)
+        {
+            if (_shortcuts is { } cached && Environment.TickCount64 - cached.Tick < 5000)
+            {
+                return cached.Folders;
+            }
+        }
+        IReadOnlyList<DriveItem> folders;
+        try
+        {
+            folders = [.. FindShortcutFolders()];
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            folders = [];
+        }
+        lock (_shortcutLock)
+        {
+            _shortcuts = (Environment.TickCount64, folders);
+        }
+        return folders;
+    }
+
+    /// <summary>The cloud sync folders; Windows adds its WSL distributions.</summary>
+    protected virtual IEnumerable<DriveItem> FindShortcutFolders() =>
+        SyncFolders.Find().Select(f => new DriveItem(f.Name, f.Path, null, 0, 0, DriveKind.CloudFolder, true));
+
+    /// <summary>The drive signature with the ADB devices (a phone allowed or unplugged changes it).</summary>
+    public IDisposable WatchDrives(Action changed) =>
+        new DriveWatcher(() => DriveSignature() + "\nadb:" + string.Join(',', Adb.GetDevices().Select(d => d.Serial + "=" + d.State)), changed);
 
     public virtual NextCommander.Platform.Mtp.IMtpDeviceSource PortableDevices => NextCommander.Platform.Mtp.NoMtpDevices.Instance;
 

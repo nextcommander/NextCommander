@@ -134,6 +134,15 @@ Since 7 November 2026 colors come only from theme files (default: system colors,
 - [x] Pack dialog: split archives (7-Zip `-v`: name.7z.001 ..., the volume size with units) and self-extracting archives (`-sfx` with the 7z.sfx module next to 7-Zip; .exe). Both for the 7-ZIP packer; not together (7-Zip cannot split an SFX). Tried with 7-Zip on Windows.
 - [ ] Opening split archives (name.7z.001) in a panel like a single archive.
 - [x] The Net menu reorganized by connection type (New connection, Saved connections, Connect by address, Network); product icons for connection types.
+- [x] One protocol table (`RemoteProtocols`: scheme, aliases, default port, kind) instead of the scheme maps in several places.
+- [x] Service presets in the connection dialog (S3: Amazon, Google Cloud Storage, Cloudflare R2, Backblaze B2, Wasabi, DigitalOcean Spaces, Hetzner, MinIO; WebDAV: Nextcloud / ownCloud, Yandex Disk, pCloud, Koofr).
+- [x] Shortcuts to the local folders of cloud sync clients (OneDrive, iCloud Drive, Dropbox, Google Drive, Nextcloud, Box, MEGA, pCloud) and to WSL distributions: Computer view, optional drive bar shortcuts (Configuration > Layout).
+- [x] SCP (scp://) for SSH servers without SFTP: shell commands for listing and changes (tested in a real POSIX shell), SCP for the data. To be tried against a real server.
+- [x] Web server folder listings (http://, https://, read only): Apache, nginx, IIS, lighttpd, Python pages; tried against archive.apache.org and cdn.kernel.org.
+- [x] Box (box://): OAuth (client id and secret), upload sessions for big files, times given with the upload. Tested against a fake API; to be tried with a real account.
+- [x] Azure Files (azfile://): shares, folders, ranges, renames on the server, SMB times. Tested against a fake API; to be tried with a real account.
+- [x] Android over ADB (adb://serial/sdcard): phones as drives (the ADB server's device list, watched with the drives), toybox shell, exec-out / push, free space. Tested with a fake adb over a real shell; to be tried with a phone.
+- [x] rclone remotes (rclone://remote/path; Net > rclone remotes): rclone rcd on 127.0.0.1 with a random password, copyfile through temporary files. Tested against a fake rc API; to be tried with a real rclone (FM_TEST_RCLONE=remote runs the test against it).
 
 ## Internal terminal
 - [x] Terminal at the bottom of the window via the button at the end of the command line / Ctrl+` (cmd.exe or $SHELL, redirected input/output). Commands are typed after the prompt, inside the output area.

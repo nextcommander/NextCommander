@@ -17,7 +17,7 @@ public sealed class LoginDialog : DialogWindow
         var what = connection.Protocol switch
         {
             RemoteProtocol.S3 => "Secret access key",
-            RemoteProtocol.AzureBlob => "Account key or SAS token (sv=...&sig=...)",
+            RemoteProtocol.AzureBlob or RemoteProtocol.AzureFiles => "Account key or SAS token (sv=...&sig=...)",
             _ => string.IsNullOrEmpty(connection.KeyFile) ? "Password" : "Key file passphrase",
         };
         Body.Children.Add(Label($"{connection.User}@{connection.Host}:{connection.EffectivePort}", bold: true));
@@ -46,18 +46,24 @@ public sealed class ConnectionEditDialog : DialogWindow
 {
     private static readonly (string Text, RemoteProtocol Protocol)[] s_protocols =
     [
-        ("SFTP (SSH)", RemoteProtocol.Sftp), ("FTP", RemoteProtocol.Ftp), ("FTPS (explicit TLS)", RemoteProtocol.FtpsExplicit), ("FTPS (implicit TLS, 990)", RemoteProtocol.FtpsImplicit),
+        ("SFTP (SSH)", RemoteProtocol.Sftp), ("SCP (SSH without SFTP)", RemoteProtocol.Scp), ("FTP", RemoteProtocol.Ftp), ("FTPS (explicit TLS)", RemoteProtocol.FtpsExplicit), ("FTPS (implicit TLS, 990)", RemoteProtocol.FtpsImplicit),
         ("WebDAV (HTTPS)", RemoteProtocol.WebDavs), ("WebDAV (HTTP)", RemoteProtocol.WebDav),
         ("Amazon S3 / compatible (MinIO, R2, Wasabi ...)", RemoteProtocol.S3),
         ("Azure Blob Storage", RemoteProtocol.AzureBlob),
+        ("Azure Files", RemoteProtocol.AzureFiles),
         ("SMB (Windows share)", RemoteProtocol.Smb),
         ("Google Drive", RemoteProtocol.GoogleDrive),
         ("OneDrive", RemoteProtocol.OneDrive),
         ("Dropbox", RemoteProtocol.Dropbox),
+        ("Box", RemoteProtocol.Box),
     ];
 
     private readonly TextBox _name = new();
     private readonly ComboBox _protocol = new() { MinWidth = 200 };
+    private readonly ComboBox _service = new() { MinWidth = 200, Classes = { "noloc" } };
+    private Control? _serviceRow;
+    private IReadOnlyList<ConnectionPreset> _presets = [];
+    private ConnectionPreset? _preset;
     private readonly TextBox _host = new() { PlaceholderText = "server.example.com" };
     private readonly TextBox _port = new() { PlaceholderText = "default", Width = 100 };
     private readonly TextBox _user = new();
@@ -152,6 +158,7 @@ public sealed class ConnectionEditDialog : DialogWindow
         };
         Body.Children.Add(Row("Name:", _name));
         Body.Children.Add(Row("Protocol:", _protocol));
+        Body.Children.Add(_serviceRow = Row("Service:", _service));
         Body.Children.Add(_hostRow = Row("Server:", _host, _port));
         Body.Children.Add(RowWith(_userCaption, _user));
         Body.Children.Add(_clientIdRow = Row("Application id:", _clientId));
@@ -170,7 +177,13 @@ public sealed class ConnectionEditDialog : DialogWindow
         Body.Children.Add(_error);
         AddButton("Save", Accept, isDefault: true);
         AddButton("Cancel", Close, isCancel: true);
-        _protocol.SelectionChanged += (_, _) => UpdateProtocolFields();
+        _protocol.SelectionChanged += (_, _) =>
+        {
+            FillServices();
+            UpdateProtocolFields();
+        };
+        _service.SelectionChanged += (_, _) => ApplyService();
+        FillServices();
         UpdateProtocolFields();
         Opened += (_, _) => _host.Focus();
     }
@@ -180,29 +193,66 @@ public sealed class ConnectionEditDialog : DialogWindow
     /// <summary>The protocol chosen in the dialog.</summary>
     public RemoteProtocol SelectedProtocol => s_protocols[Math.Max(0, _protocol.SelectedIndex)].Protocol;
 
+    /// <summary>The services of the chosen type (S3 compatible stores, WebDAV services); "Other" keeps the fields as typed.</summary>
+    private void FillServices()
+    {
+        _presets = ConnectionPresets.For(SelectedProtocol);
+        _preset = null;
+        _service.ItemsSource = new[] { Core.Localization.Localizer.T("Other (enter the server)") }.Concat(_presets.Select(p => p.Name)).ToList();
+        _service.SelectedIndex = 0;
+        _serviceRow!.IsVisible = _presets.Count > 0;
+    }
+
+    /// <summary>The service chosen (tests choose one by its name).</summary>
+    public string? SelectedService
+    {
+        get => _preset?.Name;
+        set => _service.SelectedIndex = _presets.ToList().FindIndex(p => p.Name == value) + 1;
+    }
+
+    /// <summary>A service was chosen: its server, port, region, address style and start folder.</summary>
+    private void ApplyService()
+    {
+        _preset = _service.SelectedIndex > 0 && _service.SelectedIndex <= _presets.Count ? _presets[_service.SelectedIndex - 1] : null;
+        if (_preset is { } preset)
+        {
+            _host.Text = preset.Host;
+            _port.Text = preset.Port > 0 ? preset.Port.ToString(CultureInfo.InvariantCulture) : string.Empty;
+            _region.Text = preset.Region;
+            _virtualHost.IsChecked = preset.VirtualHost;
+            _plainHttp.IsChecked = preset.PlainHttp;
+            _path.Text = ConnectionPresets.StartFolder(preset, _user.Text);
+            if (string.IsNullOrWhiteSpace(_name.Text) || _name.Text == "New connection" || _presets.Any(p => p.Name == _name.Text))
+            {
+                _name.Text = preset.Name;
+            }
+        }
+        UpdateProtocolFields();
+    }
+
     /// <summary>Shows the fields that the chosen protocol uses.</summary>
     private void UpdateProtocolFields()
     {
         var protocol = SelectedProtocol;
         var s3 = protocol == RemoteProtocol.S3;
-        _keyRow!.IsVisible = protocol == RemoteProtocol.Sftp;
+        _keyRow!.IsVisible = protocol is RemoteProtocol.Sftp or RemoteProtocol.Scp;
         _regionRow!.IsVisible = s3;
-        var azure = protocol == RemoteProtocol.AzureBlob;
+        var azure = protocol is RemoteProtocol.AzureBlob or RemoteProtocol.AzureFiles;
         _plainHttp.IsVisible = s3 || azure;
         _virtualHost.IsVisible = s3;
         _profileRow!.IsVisible = s3;
         _passive.IsVisible = protocol is RemoteProtocol.Ftp or RemoteProtocol.FtpsExplicit or RemoteProtocol.FtpsImplicit;
-        var cloud = protocol is RemoteProtocol.GoogleDrive or RemoteProtocol.OneDrive or RemoteProtocol.Dropbox;
-        _anyCertificate.IsVisible = !cloud && protocol is not (RemoteProtocol.Sftp or RemoteProtocol.Ftp or RemoteProtocol.WebDav or RemoteProtocol.Smb);
+        var cloud = RemoteProtocols.Of(protocol).IsCloudDrive;
+        _anyCertificate.IsVisible = !cloud && protocol is not (RemoteProtocol.Sftp or RemoteProtocol.Scp or RemoteProtocol.Ftp or RemoteProtocol.WebDav or RemoteProtocol.Smb);
         _hostRow!.IsVisible = !cloud;
         _clientIdRow!.IsVisible = cloud;
-        _clientSecretRow!.IsVisible = protocol == RemoteProtocol.GoogleDrive;
+        _clientSecretRow!.IsVisible = protocol is RemoteProtocol.GoogleDrive or RemoteProtocol.Box;
         _sharePoint.IsVisible = protocol == RemoteProtocol.OneDrive;
         _userCaption.Text = s3 ? "Access key:" : azure ? "Storage account:" : cloud ? "Account name:" : "User:";
         _user.PlaceholderText = cloud ? "e.g. personal, work (tells several accounts apart)" : null;
         _savePassword.Content = cloud ? "Remember the sign-in (sign in once in the browser)"
             : s3 || azure ? "Save the secret key (asked at the first login)" : "Save password (asked on first connect)";
-        _host.PlaceholderText = s3 ? "s3.eu-central-1.amazonaws.com" : azure ? "account.blob.core.windows.net"
+        _host.PlaceholderText = s3 ? "s3.eu-central-1.amazonaws.com" : protocol == RemoteProtocol.AzureFiles ? "account.file.core.windows.net" : azure ? "account.blob.core.windows.net"
             : protocol is RemoteProtocol.WebDav or RemoteProtocol.WebDavs ? "cloud.example.com" : "server.example.com";
         _hint.Text = protocol == RemoteProtocol.GoogleDrive
             ? "On first use you sign in with your Google account in the browser. For the application id: console.cloud.google.com → new project → enable the Google Drive API → OAuth consent screen → Credentials → OAuth client ID, type: Desktop app. Enter the client id and client secret it gives here."
@@ -210,8 +260,12 @@ public sealed class ConnectionEditDialog : DialogWindow
             ? "On first use you sign in with your Microsoft account (personal or work/school) in the browser. For the application id: entra.microsoft.com → App registrations → New registration, account types: any organizational directory and personal Microsoft accounts; Authentication → Add a platform → Mobile and desktop applications, redirect URI http://localhost. Enter the Application (client) ID here."
             : protocol == RemoteProtocol.Dropbox
             ? "On first use you sign in with your Dropbox account in the browser. For the application id: dropbox.com/developers/apps → Create app → Scoped access, Full Dropbox; Permissions: files.metadata.read/write, files.content.read/write; Settings → Redirect URIs: http://localhost:53682/. Enter the App key here."
+            : protocol == RemoteProtocol.Box
+            ? "On first use you sign in with your Box account in the browser. For the application id: app.box.com/developers/console → Create Platform App → User Authentication (OAuth 2.0); Configuration: Redirect URI http://localhost:53682/, application scopes: read and write all files and folders. Enter the Client ID and Client Secret here."
             : protocol == RemoteProtocol.Smb
             ? "SMB2/3 shares (Windows, Samba, NAS); they open without mounting on Linux and macOS too. User: DOMAIN\\user or user; empty for a guest login. The root lists the machine's shares; the start folder can be a share (e.g. /documents)."
+            : protocol == RemoteProtocol.AzureFiles
+            ? "Server: account.file.core.windows.net. The account key or a SAS token is asked as the password. The root lists the file shares; the start folder can be a share (e.g. /documents)."
             : azure
             ? "Server: account.blob.core.windows.net (at another address, such as Azurite, requests go as server/account/container). The account key or a SAS token is asked as the password. The root lists the containers."
             : s3
@@ -219,16 +273,25 @@ public sealed class ConnectionEditDialog : DialogWindow
             : protocol is RemoteProtocol.WebDav or RemoteProtocol.WebDavs
                 ? "The start folder is the WebDAV path of the server, e.g. Nextcloud: /remote.php/dav/files/<user>. Without a user the connection is anonymous."
                 : string.Empty;
+        if (_preset is { } preset)
+        {
+            _hint.Text = Core.Localization.Localizer.T(preset.Hint) + "\n\n" + _hint.Text; // the service's own note first
+        }
         _hint.IsVisible = _hint.Text.Length > 0;
     }
 
     private void Accept()
     {
-        var cloud = SelectedProtocol is RemoteProtocol.GoogleDrive or RemoteProtocol.OneDrive or RemoteProtocol.Dropbox;
+        var cloud = RemoteProtocols.Of(SelectedProtocol).IsCloudDrive;
         var host = cloud ? RemoteConnection.CloudHost(SelectedProtocol) : (_host.Text ?? string.Empty).Trim();
         if (cloud && string.IsNullOrWhiteSpace(_clientId.Text))
         {
             _error.Text = "An application (client) id is needed; how to get one is written below.";
+            return;
+        }
+        if (SelectedProtocol == RemoteProtocol.Box && string.IsNullOrWhiteSpace(_clientSecret.Text))
+        {
+            _error.Text = "Box needs the client secret of the application too.";
             return;
         }
         if (cloud && string.IsNullOrWhiteSpace(_user.Text))
@@ -238,6 +301,12 @@ public sealed class ConnectionEditDialog : DialogWindow
         if (host.Length == 0 || host.Contains('/', StringComparison.Ordinal) || host.Contains(' ', StringComparison.Ordinal))
         {
             _error.Text = "Enter a valid server name (e.g. server.example.com).";
+            return;
+        }
+        if (host.Contains("ACCOUNT_ID", StringComparison.Ordinal) || host.Contains("REGION", StringComparison.Ordinal))
+        {
+            _error.Text = "Replace the part in capitals of the server name (as the note below says).";
+            _host.Focus();
             return;
         }
         var port = 0;
@@ -251,7 +320,7 @@ public sealed class ConnectionEditDialog : DialogWindow
             _error.Text = "S3 needs an access key id or an AWS profile.";
             return;
         }
-        if (SelectedProtocol == RemoteProtocol.AzureBlob && string.IsNullOrWhiteSpace(_user.Text))
+        if (SelectedProtocol is RemoteProtocol.AzureBlob or RemoteProtocol.AzureFiles && string.IsNullOrWhiteSpace(_user.Text))
         {
             _error.Text = "Azure needs the name of the storage account.";
             return;
@@ -265,15 +334,16 @@ public sealed class ConnectionEditDialog : DialogWindow
         _connection.Port = cloud ? 0 : port;
         _connection.ClientId = cloud ? _clientId.Text?.Trim() : null;
         _connection.IncludeSharePoint = SelectedProtocol == RemoteProtocol.OneDrive && _sharePoint.IsChecked == true;
-        _connection.ClientSecret = SelectedProtocol == RemoteProtocol.GoogleDrive && !string.IsNullOrWhiteSpace(_clientSecret.Text) ? _clientSecret.Text.Trim() : null;
+        _connection.ClientSecret = SelectedProtocol is RemoteProtocol.GoogleDrive or RemoteProtocol.Box && !string.IsNullOrWhiteSpace(_clientSecret.Text) ? _clientSecret.Text.Trim() : null;
         _connection.User = (_user.Text ?? string.Empty).Trim();
         _connection.Name = string.IsNullOrWhiteSpace(_name.Text) || _name.Text == "New connection"
             ? cloud ? $"{s_protocols.First(p => p.Protocol == SelectedProtocol).Text} ({_connection.User})"
             : (_connection.User.Length > 0 && !_connection.IsObjectStorage ? $"{_connection.User}@{host}" : host)
             : _name.Text.Trim();
         _connection.SavePassword = _savePassword.IsChecked == true;
-        _connection.KeyFile = string.IsNullOrWhiteSpace(_keyFile.Text) || _connection.Protocol != RemoteProtocol.Sftp ? null : _keyFile.Text.Trim();
-        _connection.InitialPath = string.IsNullOrWhiteSpace(_path.Text) ? "/" : "/" + _path.Text.Trim().Trim('/');
+        _connection.KeyFile = string.IsNullOrWhiteSpace(_keyFile.Text) || _connection.Protocol is not (RemoteProtocol.Sftp or RemoteProtocol.Scp) ? null : _keyFile.Text.Trim();
+        var path = (_path.Text ?? string.Empty).Replace("<user>", Uri.EscapeDataString(_connection.User), StringComparison.Ordinal);
+        _connection.InitialPath = string.IsNullOrWhiteSpace(path) ? "/" : "/" + path.Trim().Trim('/');
         _connection.Passive = _passive.IsChecked == true;
         _connection.AcceptAnyCertificate = _anyCertificate.IsChecked == true;
         Result = _connection;

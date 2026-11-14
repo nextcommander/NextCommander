@@ -74,7 +74,7 @@ internal sealed partial class WindowsPlatformService : PlatformServiceBase, IPla
     public override NextCommander.Platform.Trash.ITrashStore TrashStore { get; } = new WindowsRecycleBin();
 
     /// <summary>The drive letters, then the phones / cameras connected over MTP (<c>mtp://name/</c>).</summary>
-    public override IReadOnlyList<DriveItem> GetDrives()
+    protected override IReadOnlyList<DriveItem> GetSystemDrives()
     {
         var drives = DriveInfo.GetDrives().Select(d => ToDriveItem(d, d.Name.TrimEnd('\\'))).ToList();
         foreach (var device in _portableDevices.GetDevices())
@@ -83,6 +83,41 @@ internal sealed partial class WindowsPlatformService : PlatformServiceBase, IPla
             drives.Add(new DriveItem(device.Name, Mtp.MtpFileSystemProvider.DeviceRoot(device.Name).ToString(), null, 0, 0, DriveKind.Phone, true) { Device = device.Id });
         }
         return drives;
+    }
+
+    /// <summary>The cloud sync folders, then the WSL distributions (\\wsl.localhost\name; \\wsl$\name before Windows 11).</summary>
+    protected override IEnumerable<DriveItem> FindShortcutFolders()
+    {
+        foreach (var folder in base.FindShortcutFolders())
+        {
+            yield return folder;
+        }
+        var share = Environment.OSVersion.Version.Build >= 22000 ? @"\\wsl.localhost\" : @"\\wsl$\";
+        foreach (var name in WslDistributions())
+        {
+            // not checked on disk: touching the path would start the distribution
+            yield return new DriveItem(name, share + name, null, 0, 0, DriveKind.Wsl, true);
+        }
+    }
+
+    /// <summary>The installed WSL distributions, from the registry (wsl.exe is not started).</summary>
+    internal static IReadOnlyList<string> WslDistributions()
+    {
+        using var lxss = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Lxss");
+        if (lxss is null)
+        {
+            return [];
+        }
+        var names = new List<string>();
+        foreach (var id in lxss.GetSubKeyNames())
+        {
+            using var distribution = lxss.OpenSubKey(id);
+            if (distribution?.GetValue("DistributionName") is string { Length: > 0 } name && !name.StartsWith("docker-desktop", StringComparison.OrdinalIgnoreCase))
+            {
+                names.Add(name);
+            }
+        }
+        return [.. names.Order(StringComparer.OrdinalIgnoreCase)];
     }
 
     /// <summary>

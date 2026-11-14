@@ -41,8 +41,12 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
 - Pack to zip, tar and (with 7-Zip installed) 7z, with passwords; unpack and test archives.
 
 ### Remote and cloud
-- FTP, FTPS, SFTP, WebDAV, SMB, Amazon S3 (and compatible stores), Azure Blob Storage,
-  Google Drive, OneDrive and Dropbox, all in the same panels as local files.
+- FTP, FTPS, SFTP, SCP, WebDAV, SMB, Amazon S3 (and compatible stores), Azure Blob Storage, Azure Files,
+  Google Drive, OneDrive, Dropbox and Box, all in the same panels as local files; ready-made settings for
+  well-known S3 and WebDAV services.
+- Web server folder listings (`http://`, `https://`) open like folders; the remotes of an installed rclone too.
+- Android phones over ADB (USB debugging) as drives; shortcuts to the local folders of OneDrive, iCloud Drive,
+  Dropbox, Google Drive ... and to WSL distributions.
 - A connection manager, saved passwords protected by an optional master password, and a view of the
   machines on your local network.
 - Browse the trash / Recycle Bin in a panel: restore, copy out, delete for good, empty.
@@ -73,7 +77,7 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
 - [Tools](docs/guide/tools.md): Lister, editor, find files, multi-rename, synchronize, compare, duplicates,
   folder sizes, checksums, terminal and more.
 - [Archives](docs/guide/archives.md): opening, packing and unpacking archives.
-- [Connections](docs/guide/connections.md): FTP, SFTP, WebDAV, SMB, S3, Azure and cloud drives.
+- [Connections](docs/guide/connections.md): FTP, SFTP, SCP, WebDAV, SMB, S3, Azure, cloud drives, ADB and rclone.
 - [Configuration](docs/guide/configuration.md): a tour of the Configuration window.
 - [Color themes](docs/guide/themes.md): choosing a theme and making your own.
 - [Icon packs](docs/guide/icon-packs.md): choosing an icon pack and making your own.

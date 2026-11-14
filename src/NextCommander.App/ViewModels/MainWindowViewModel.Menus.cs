@@ -185,7 +185,7 @@ public sealed partial class MainWindowViewModel
     /// <summary>Net > FTP new connection: connect to a typed address without saving it (also WebDAV and S3).</summary>
     private async Task QuickConnectAsync()
     {
-        var text = await _dialogs.PromptAsync("Connect by address", "Address (sftp://, ftp://, ftps://, davs:// or dav:// (WebDAV), smb:// (Windows share), s3://, azblob:// (Azure) — user@server:port/path; for S3 the user is the access key, for Azure the storage account; the path is bucket/folder. For Google Drive, OneDrive and Dropbox use Network > New connection):", "sftp://");
+        var text = await _dialogs.PromptAsync("Connect by address", "Address (sftp://, scp://, ftp://, ftps://, davs:// or dav:// (WebDAV), smb:// (Windows share), s3://, azblob:// or azfile:// (Azure) — user@server:port/path; for S3 the user is the access key, for Azure the storage account; the path is bucket/folder. http:// and https:// open a web server's folder listing (read only). For Google Drive, OneDrive, Dropbox and Box use Network > New connection):", "sftp://");
         if (string.IsNullOrWhiteSpace(text))
         {
             return;
