@@ -103,8 +103,8 @@ public sealed class FtpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBas
             },
             DataConnectionType = connection.Passive ? FtpDataConnectionType.AutoPassive : FtpDataConnectionType.AutoActive,
             ValidateAnyCertificate = connection.AcceptAnyCertificate,
-            ConnectTimeout = 20_000,
-            ReadTimeout = 60_000,
+            ConnectTimeout = connection.TimeoutSeconds > 0 ? connection.TimeoutSeconds * 1000 : 20_000,
+            ReadTimeout = connection.TimeoutSeconds > 0 ? connection.TimeoutSeconds * 1000 : 60_000,
             DataConnectionReadTimeout = Math.Max(5, StallSeconds) * 1000,
             RetryAttempts = Math.Clamp(RetryAttempts, 0, 20),
             ActivePorts = ActivePorts is { From: > 0 } range && range.To >= range.From ? Enumerable.Range(range.From, range.To - range.From + 1) : null,
@@ -113,8 +113,9 @@ public sealed class FtpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBas
         };
         var user = string.IsNullOrEmpty(connection.User) ? "anonymous" : connection.User;
         var client = CreateClient(connection, user, password ?? (user == "anonymous" ? "anonymous@" : string.Empty), config);
-        // Credentials and names as UTF-8 from the start (otherwise non-ASCII passwords are sent as '?').
-        client.Encoding = System.Text.Encoding.UTF8;
+        // Credentials and names as UTF-8 from the start (otherwise non-ASCII passwords are sent as '?'), or the encoding chosen
+        var encoding = EncodingOf(connection);
+        client.Encoding = encoding ?? System.Text.Encoding.UTF8;
         if (!string.IsNullOrWhiteSpace(ExternalAddress))
         {
             var external = ExternalAddress.Trim();
@@ -158,6 +159,10 @@ public sealed class FtpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBas
         try
         {
             await client.Connect(cancellationToken).ConfigureAwait(false);
+            if (encoding is not null)
+            {
+                client.Encoding = encoding; // the server's UTF-8 feature does not override the choice
+            }
             return client;
         }
         catch (Exception ex) when (seen is not null && !string.Equals(seen, trustedFingerprint, StringComparison.Ordinal)
@@ -170,6 +175,27 @@ public sealed class FtpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBas
         {
             await client.DisposeAsync().ConfigureAwait(false);
             throw;
+        }
+    }
+
+    /// <summary>The encodings offered for FTP file names (web names); the first is "automatic".</summary>
+    public static IReadOnlyList<string> Encodings { get; } = ["", "utf-8", "windows-1254", "iso-8859-9", "windows-1252", "iso-8859-1", "ibm857", "ibm437"];
+
+    /// <summary>The chosen encoding of file names; null: automatic (UTF-8 when the server supports it).</summary>
+    public static System.Text.Encoding? EncodingOf(RemoteConnection connection)
+    {
+        if (string.IsNullOrWhiteSpace(connection.FtpEncoding))
+        {
+            return null;
+        }
+        NextCommander.Core.Text.EncodingDetector.EnsureCodePages();
+        try
+        {
+            return System.Text.Encoding.GetEncoding(connection.FtpEncoding.Trim());
+        }
+        catch (ArgumentException)
+        {
+            return null; // an unknown name: automatic
         }
     }
 

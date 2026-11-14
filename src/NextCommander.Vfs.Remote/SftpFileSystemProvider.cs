@@ -15,31 +15,16 @@ public sealed class SftpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBa
     /// <summary>SHA256 fingerprint in OpenSSH notation ("SHA256:base64").</summary>
     public static string Fingerprint(byte[] hostKey) => "SHA256:" + Convert.ToBase64String(SHA256.HashData(hostKey)).TrimEnd('=');
 
-    protected override async Task<SftpClient> ConnectAsync(RemoteConnection connection, string? password, string? trustedFingerprint, CancellationToken cancellationToken)
-    {
-        var keys = new List<IDisposable>();
-        try
-        {
-            var client = new SftpClient(SshLogin.Create(connection, password, keys)) { OperationTimeout = TimeSpan.FromMinutes(2) };
-            try
-            {
-                await SshLogin.ConnectAsync(client, connection, trustedFingerprint, cancellationToken).ConfigureAwait(false);
-                return client;
-            }
-            catch
-            {
-                client.Dispose();
-                throw;
-            }
-        }
-        finally
-        {
-            foreach (var key in keys)
-            {
-                key.Dispose();
-            }
-        }
-    }
+    protected override async Task<SftpClient> ConnectAsync(RemoteConnection connection, string? password, string? trustedFingerprint, CancellationToken cancellationToken) =>
+        (await SshLogin.ConnectAsync(connection, password, trustedFingerprint, Hooks,
+            info => new SftpClient(info) { OperationTimeout = OperationTimeoutOf(connection) }, 1, cancellationToken).ConfigureAwait(false))[0];
+
+    /// <summary>How long one SFTP request may take: the connection's timeout when longer, else two minutes.</summary>
+    internal static TimeSpan OperationTimeoutOf(RemoteConnection connection) =>
+        TimeSpan.FromSeconds(Math.Max(120, connection.TimeoutSeconds));
+
+    /// <summary>No password with the SSH agent or a key file (asked only when they are refused).</summary>
+    protected override bool NeedsPassword(RemoteConnection connection) => string.IsNullOrEmpty(connection.KeyFile) && !connection.UseSshAgent;
 
     /// <summary>The connection: directly, or through the proxy of Configuration > Proxy (HTTP CONNECT or SOCKS5) when it is meant for file transfers too.</summary>
     internal static ConnectionInfo CreateConnectionInfo(RemoteConnection connection, AuthenticationMethod[] methods)
@@ -66,6 +51,7 @@ public sealed class SftpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBa
             // already gone
         }
         client.Dispose();
+        SshLogin.Release(client); // the jump host it went through
         return ValueTask.CompletedTask;
     }
 

@@ -6,9 +6,15 @@ namespace NextCommander.Vfs.Remote;
 public sealed record AwsCredentials(string AccessKey, string SecretKey, string? SessionToken, string? Region);
 
 /// <summary>
+/// An AWS IAM Identity Center (SSO) profile: the start URL and region of the sign-in, the account and role whose keys
+/// it gives, and the name of its sso-session (null for the older profiles with the start URL in the profile).
+/// </summary>
+public sealed record AwsSsoProfile(string StartUrl, string SsoRegion, string AccountId, string RoleName, string? SessionName, string? Region);
+
+/// <summary>
 /// The AWS CLI's shared files: <c>~/.aws/credentials</c> (keys) and <c>~/.aws/config</c> (region; keys may be
-/// there too), or the files named by AWS_SHARED_CREDENTIALS_FILE / AWS_CONFIG_FILE. SSO and credential_process
-/// profiles are not read.
+/// there too), or the files named by AWS_SHARED_CREDENTIALS_FILE / AWS_CONFIG_FILE. SSO profiles (sso_session or
+/// sso_start_url) are read by <see cref="LoadSso"/>; credential_process profiles are not read.
 /// </summary>
 public static class AwsProfiles
 {
@@ -20,11 +26,30 @@ public static class AwsProfiles
 
     private static string AwsFolder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".aws");
 
+    private const string SessionPrefix = "sso-session ";
+
     /// <summary>Names of the profiles in both files.</summary>
     public static IReadOnlyList<string> Names(string? credentialsFile = null, string? configFile = null) =>
         Read(credentialsFile ?? CredentialsFile, config: false).Keys
-            .Concat(Read(configFile ?? ConfigFile, config: true).Keys)
+            .Concat(Read(configFile ?? ConfigFile, config: true).Keys.Where(k => !k.StartsWith(SessionPrefix, StringComparison.Ordinal)))
             .Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+
+    /// <summary>The SSO settings of <paramref name="profile"/>; null when it is no SSO profile (or misses a setting).</summary>
+    public static AwsSsoProfile? LoadSso(string profile, string? configFile = null)
+    {
+        var sections = Read(configFile ?? ConfigFile, config: true);
+        if (sections.GetValueOrDefault(profile) is not { } section)
+        {
+            return null;
+        }
+        var sessionName = section.GetValueOrDefault("sso_session");
+        var session = sessionName is null ? null : sections.GetValueOrDefault(SessionPrefix + sessionName);
+        string? Value(string key) => section.GetValueOrDefault(key) is { Length: > 0 } v ? v : session?.GetValueOrDefault(key) is { Length: > 0 } s ? s : null;
+        return Value("sso_start_url") is { } url && Value("sso_region") is { } ssoRegion
+            && Value("sso_account_id") is { } account && Value("sso_role_name") is { } role
+            ? new AwsSsoProfile(url, ssoRegion, account, role, sessionName, Value("region"))
+            : null;
+    }
 
     /// <summary>The keys of <paramref name="profile"/>; null when it has none.</summary>
     public static AwsCredentials? Load(string profile, string? credentialsFile = null, string? configFile = null)
@@ -73,6 +98,10 @@ public static class AwsProfiles
                 if (config && name.StartsWith("profile ", StringComparison.Ordinal))
                 {
                     name = name["profile ".Length..].Trim();
+                }
+                else if (config && name.StartsWith(SessionPrefix, StringComparison.Ordinal))
+                {
+                    name = SessionPrefix + name[SessionPrefix.Length..].Trim(); // the sign-in of SSO profiles
                 }
                 else if (config && name != "default")
                 {

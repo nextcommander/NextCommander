@@ -241,6 +241,18 @@ public static class MenuIcons
         ["nc_DownloadUrl"] = new("MiGlobe", Blue, "OvArrowDown", Green),
         ["nc_MasterPassword"] = new("MiKey", Yellow),
         ["nc_RcloneRemotes"] = new("MiTransfer", Blue),
+
+        // the connection manager's own menus
+        ["connections.new"] = new("MiGlobe", Blue, "OvPlus", Green),
+        ["connections.folder"] = new("MiFolderOpen", Yellow, "OvPlus", Green),
+        ["connections.connect"] = new("MiPlug", Green),
+        ["connections.favorite"] = new("MiStar", Yellow),
+        ["connections.duplicate"] = new("MiCopy", Blue),
+        ["connections.copy"] = new("MiClipboard", Gray),
+        ["connections.forget"] = new("MiKey", Gray, "OvX", Red),
+        ["connections.rename"] = new("MiPencil", Gray),
+        ["connections.delete"] = new("MiTrash", Red),
+        ["connections.import"] = new("MiArrowDown", Blue),
         ["nc_Plugins"] = new("MiPlug", Purple),
         // Commands
         ["nc_SearchFor"] = new("MiSearch", Blue),

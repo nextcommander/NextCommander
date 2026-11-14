@@ -612,17 +612,24 @@ public sealed class DocScreenshots
         var background = w.CaptureRenderedFrame()!;
 
         // connection manager
-        var connections = new[]
+        var sample = new AppSettings();
+        sample.Connections.AddRange(new[]
         {
-            (RemoteProtocol.Sftp, "Web server", "server.example.com"), (RemoteProtocol.Ftp, "Downloads", "ftp.example.org"),
-            (RemoteProtocol.WebDavs, "Nextcloud", "cloud.example.com"), (RemoteProtocol.Smb, "NAS", "nas.local"),
-            (RemoteProtocol.S3, "Backups (S3)", "s3.amazonaws.com"), (RemoteProtocol.AzureBlob, "Azure storage", "example.blob.core.windows.net"),
-            (RemoteProtocol.GoogleDrive, "Google Drive", "drive.google.com"), (RemoteProtocol.OneDrive, "OneDrive", "onedrive.live.com"),
-            (RemoteProtocol.Dropbox, "Dropbox", "dropbox.com"),
-        }.Select(c => new RemoteConnection { Name = c.Item2, Protocol = c.Item1, Host = c.Item3, User = "user" }).ToList();
-        var manager = new ConnectionManagerDialog(connections, _ => Task.FromResult<RemoteConnection?>(null), _ => Task.CompletedTask) { Width = 760, Height = 480 };
+            (RemoteProtocol.Sftp, "Web server", "server.example.com", "Work/Production"), (RemoteProtocol.Sftp, "Web server 2", "server2.example.com", "Work/Production"),
+            (RemoteProtocol.S3, "Backups (S3)", "s3.eu-central-1.amazonaws.com", "Work/Production"), (RemoteProtocol.Sftp, "Test server", "test.example.com", "Work/Test"),
+            (RemoteProtocol.Ftp, "Downloads", "ftp.example.org", "Partners"), (RemoteProtocol.WebDavs, "Nextcloud", "cloud.example.com", ""),
+            (RemoteProtocol.Smb, "NAS", "nas.local", ""), (RemoteProtocol.GoogleDrive, "Google Drive", "drive.google.com", ""),
+        }.Select(c => new RemoteConnection { Name = c.Item2, Protocol = c.Item1, Host = c.Item3, User = "user", Folder = c.Item4, ClientId = "id" }));
+        sample.Connections[0].Favorite = true;
+        sample.ConnectionFolders.Add(new ConnectionFolder { Path = "Work/Production", Color = "#ED4245" });
+        sample.ConnectionFolders.Add(new ConnectionFolder { Path = "Work/Test", Color = "#F0B232" });
+        var manager = new NextCommander.App.Views.Connections.ConnectionManagerWindow(new NextCommander.App.Views.Connections.ConnectionManagerRequest(sample, () => { },
+            (_, _) => Task.FromResult(string.Empty), _ => false, _ => Task.CompletedTask, (_, _) => Task.CompletedTask, _ => Task.FromResult<string?>(null)))
+        { Width = 1080, Height = 680 };
         _windows.Add(manager);
         manager.Show();
+        manager.Toggle("Work/Production");
+        manager.Reveal(sample.Connections[0]);
         await SettleAsync(8);
         Save(Compose(background, manager.CaptureRenderedFrame()!, manager.Title ?? string.Empty), "connections.png");
         manager.Close();

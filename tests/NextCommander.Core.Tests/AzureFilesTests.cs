@@ -34,6 +34,8 @@ public sealed class AzureFilesTests : IDisposable
 
         public List<string> Ranges { get; } = [];
 
+        public int BearerRequests { get; private set; }
+
         private const int PageSize = 2;
 
         private static HttpResponseMessage Error(HttpStatusCode status, string code)
@@ -54,8 +56,20 @@ public sealed class AzureFilesTests : IDisposable
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            Assert.StartsWith("SharedKey acct:", Header(request, "Authorization"), StringComparison.Ordinal);
-            Assert.NotEmpty(Header(request, "x-ms-version"));
+            var authorization = Header(request, "Authorization");
+            if (authorization.StartsWith("Bearer ", StringComparison.Ordinal))
+            {
+                // Entra ID: the token of the sign-in, the backup intent and a version that takes tokens
+                Assert.StartsWith("Bearer at-", authorization, StringComparison.Ordinal);
+                Assert.Equal("backup", Header(request, "x-ms-file-request-intent"));
+                Assert.Equal(AzureEntra.Version, Header(request, "x-ms-version"));
+                BearerRequests++;
+            }
+            else
+            {
+                Assert.StartsWith("SharedKey acct:", authorization, StringComparison.Ordinal);
+                Assert.NotEmpty(Header(request, "x-ms-version"));
+            }
             var url = request.RequestUri!;
             Assert.StartsWith("/acct/", url.AbsolutePath, StringComparison.Ordinal); // path style for a host without the account name
             var path = Uri.UnescapeDataString(url.AbsolutePath["/acct/".Length..]).TrimEnd('/');
@@ -237,6 +251,46 @@ public sealed class AzureFilesTests : IDisposable
         using var memory = new MemoryStream();
         await stream.CopyToAsync(memory);
         return memory.ToArray();
+    }
+
+    [Fact]
+    public async Task An_entra_id_account_signs_in_instead_of_the_key()
+    {
+        var fake = new FakeFileService();
+        fake.Items["docs"] = new FakeFileService.Item { IsFolder = true };
+        AzureEntra.Reset();
+        AzureEntra.ServiceOverride = FakeCloud.Auth;
+        AzureEntra.HandlerFactory = () => new FakeCloud(); // its token endpoint takes the saved refresh token
+        try
+        {
+            var asked = 0;
+            var hooks = new RemoteHooks
+            {
+                GetPassword = (_, _) =>
+                {
+                    asked++;
+                    return Task.FromResult<string?>(null);
+                },
+                LoadToken = _ => Task.FromResult<string?>("rt-saved"),
+                ResolveConnection = (scheme, authority) =>
+                {
+                    var c = RemoteConnection.FromAuthority(scheme, authority);
+                    c.AzureEntraId = true;
+                    return c;
+                },
+            };
+            await using var provider = new AzureFilesFileSystemProvider(hooks) { HandlerFactory = () => fake };
+            await WriteAsync(provider, P("/docs/a.txt"), [1, 2]);
+            Assert.Equal([1, 2], await ReadAsync(provider, P("/docs/a.txt")));
+            Assert.Equal(0, asked); // no key asked
+            Assert.True(fake.BearerRequests > 3);
+        }
+        finally
+        {
+            AzureEntra.Reset();
+            AzureEntra.ServiceOverride = null;
+            AzureEntra.HandlerFactory = null;
+        }
     }
 
     [Fact]

@@ -1088,6 +1088,9 @@ public sealed class AppSettings
     /// <summary>Saved FTP / SFTP connections (passwords live in the encrypted secret store).</summary>
     public List<RemoteConnection> Connections { get; set; } = [];
 
+    /// <summary>The folders of the connection manager (with their color labels; empty folders are kept too).</summary>
+    public List<ConnectionFolder> ConnectionFolders { get; set; } = [];
+
     /// <summary>Trusted server fingerprints: "sftp:host:22" → "SHA256:...".</summary>
     public Dictionary<string, string> KnownHosts { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 

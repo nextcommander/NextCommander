@@ -83,6 +83,7 @@ public sealed partial class S3FileSystemProvider(RemoteHooks hooks) : RemoteProv
         {
             var profile = connection.AwsProfile.Trim();
             var keys = AwsProfiles.Load(profile)
+                ?? (AwsProfiles.LoadSso(profile) is { } sso ? await SsoCredentialsAsync(sso, cancellationToken).ConfigureAwait(false) : null)
                 ?? throw new IOException($"S3: AWS profile not found or without keys: {profile} ({AwsProfiles.CredentialsFile})");
             connection = connection.Clone();
             connection.User = keys.AccessKey;
@@ -113,6 +114,21 @@ public sealed partial class S3FileSystemProvider(RemoteHooks hooks) : RemoteProv
             client.Dispose();
             throw;
         }
+    }
+
+    /// <summary>Tests: the SSO sign-in to use (a fake service).</summary>
+    public Func<AwsSso>? SsoFactory { get; init; }
+
+    /// <summary>The keys of an SSO profile's role (the browser signs in when the AWS CLI's token is missing or expired).</summary>
+    private async Task<AwsCredentials> SsoCredentialsAsync(AwsSsoProfile profile, CancellationToken cancellationToken)
+    {
+        if (SsoFactory is { } factory)
+        {
+            return await factory().CredentialsAsync(profile, cancellationToken).ConfigureAwait(false);
+        }
+        using var http = new HttpClient(NextCommander.Core.Net.WebProxyConfig.CreateHandler()) { Timeout = TimeSpan.FromMinutes(6) };
+        var browser = Hooks.OpenBrowser ?? (_ => Task.FromException(new IOException("AWS SSO: no browser to sign in.")));
+        return await new AwsSso(http, browser).CredentialsAsync(profile, cancellationToken).ConfigureAwait(false);
     }
 
     protected override bool IsAlive(HttpRemoteClient client) => true;
@@ -407,15 +423,33 @@ public sealed partial class S3FileSystemProvider(RemoteHooks hooks) : RemoteProv
             var content = new StreamContent(new NonDisposingStream(data));
             content.Headers.ContentLength = data.Length;
             return content;
-        }, S3Signer.UnsignedPayload).ConfigureAwait(false);
+        }, S3Signer.UnsignedPayload, r => AddEncryption(r, client.Connection)).ConfigureAwait(false);
         await EnsureSuccessAsync(response, "/" + bucket + "/" + key).ConfigureAwait(false);
+    }
+
+    /// <summary>The server-side encryption chosen for the connection, on a request that makes an object.</summary>
+    internal static void AddEncryption(HttpRequestMessage request, RemoteConnection connection)
+    {
+        switch (connection.S3Encryption)
+        {
+            case S3Encryption.Aes256:
+                request.Headers.TryAddWithoutValidation("x-amz-server-side-encryption", "AES256");
+                break;
+            case S3Encryption.Kms:
+                request.Headers.TryAddWithoutValidation("x-amz-server-side-encryption", "aws:kms");
+                if (!string.IsNullOrWhiteSpace(connection.KmsKeyId))
+                {
+                    request.Headers.TryAddWithoutValidation("x-amz-server-side-encryption-aws-kms-key-id", connection.KmsKeyId.Trim());
+                }
+                break;
+        }
     }
 
     /// <summary>Multipart upload: start, parts of <see cref="PartSize"/>, complete (aborted on an error).</summary>
     private async Task UploadInPartsAsync(HttpRemoteClient client, string bucket, string key, Stream data, CancellationToken ct)
     {
         string uploadId;
-        using (var start = await SendAsync(client, HttpMethod.Post, bucket, key, "uploads=", ct).ConfigureAwait(false))
+        using (var start = await SendAsync(client, HttpMethod.Post, bucket, key, "uploads=", ct, configure: r => AddEncryption(r, client.Connection)).ConfigureAwait(false))
         {
             await EnsureSuccessAsync(start, "/" + bucket + "/" + key).ConfigureAwait(false);
             var root = XDocument.Parse(await start.Content.ReadAsStringAsync(ct).ConfigureAwait(false)).Root!;
@@ -572,7 +606,11 @@ public sealed partial class S3FileSystemProvider(RemoteHooks hooks) : RemoteProv
                 cancellationToken.ThrowIfCancellationRequested();
                 var copySource = "/" + fromBucket + "/" + string.Join('/', from.Split('/').Select(Uri.EscapeDataString));
                 using (var copy = await SendAsync(client, HttpMethod.Put, toBucket, to, null, cancellationToken,
-                    configure: r => r.Headers.TryAddWithoutValidation("x-amz-copy-source", copySource)).ConfigureAwait(false))
+                    configure: r =>
+                    {
+                        r.Headers.TryAddWithoutValidation("x-amz-copy-source", copySource);
+                        AddEncryption(r, client.Connection); // a copy is a new object: encrypted as chosen
+                    }).ConfigureAwait(false))
                 {
                     await EnsureSuccessAsync(copy, "/" + toBucket + "/" + to).ConfigureAwait(false);
                     var text = await copy.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
@@ -625,6 +663,7 @@ public sealed partial class S3FileSystemProvider(RemoteHooks hooks) : RemoteProv
                     r.Headers.TryAddWithoutValidation("x-amz-copy-source", copySource);
                     r.Headers.TryAddWithoutValidation("x-amz-metadata-directive", "REPLACE");
                     r.Headers.TryAddWithoutValidation(MtimeHeader, MtimeValue(time));
+                    AddEncryption(r, client.Connection);
                 }).ConfigureAwait(false);
             await EnsureSuccessAsync(copy, path.Path).ConfigureAwait(false);
             var text = await copy.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);

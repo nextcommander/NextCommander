@@ -99,10 +99,9 @@ public interface IDialogService
     Task<bool> ConfirmFingerprintAsync(string host, string fingerprint, string description, bool changed);
 
     /// <summary>Ctrl+F connection manager (edits the list in place); returns the connection to open.</summary>
-    Task<RemoteConnection?> ShowConnectionManagerAsync(List<RemoteConnection> connections, Func<RemoteConnection, Task> forgetPassword);
+    /// <summary>The connection manager (also for a new connection of a type); the connections to open, or null.</summary>
+    Task<NextCommander.App.Views.Connections.ConnectionManagerResult?> ShowConnectionManagerAsync(NextCommander.App.Views.Connections.ConnectionManagerRequest request);
 
-    /// <summary>A new connection of <paramref name="protocol"/> (Network > New connection); null when cancelled.</summary>
-    Task<RemoteConnection?> ShowNewConnectionAsync(RemoteProtocol protocol);
 
     /// <summary>Master password: (current when one is set, new or empty to remove).</summary>
     Task<(string? Current, string? New)?> ShowMasterPasswordDialogAsync(bool hasMaster);

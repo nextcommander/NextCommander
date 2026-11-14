@@ -33,34 +33,18 @@ public sealed class ScpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBas
 
     protected override async Task<ScpSession> ConnectAsync(RemoteConnection connection, string? password, string? trustedFingerprint, CancellationToken cancellationToken)
     {
-        var keys = new List<IDisposable>();
-        try
-        {
-            var info = SshLogin.Create(connection, password, keys);
-            var shell = new SshClient(info);
-            // paths go to the remote shell in single quotes (no command injection through file names)
-            var copy = new ScpClient(info, RemotePathTransformation.ShellQuote) { OperationTimeout = TimeSpan.FromMinutes(2) };
-            try
-            {
-                await SshLogin.ConnectAsync(shell, connection, trustedFingerprint, cancellationToken).ConfigureAwait(false);
-                await SshLogin.ConnectAsync(copy, connection, trustedFingerprint, cancellationToken).ConfigureAwait(false);
-                return new ScpSession(shell, copy);
-            }
-            catch
-            {
-                shell.Dispose();
-                copy.Dispose();
-                throw;
-            }
-        }
-        finally
-        {
-            foreach (var key in keys)
-            {
-                key.Dispose();
-            }
-        }
+        // the shell first, then SCP for the data (paths go to the remote shell in single quotes: no command injection)
+        var made = 0;
+        var clients = await SshLogin.ConnectAsync<BaseClient>(connection, password, trustedFingerprint, Hooks,
+            info => made++ == 0
+                ? new SshClient(info)
+                : new ScpClient(info, RemotePathTransformation.ShellQuote) { OperationTimeout = SftpFileSystemProvider.OperationTimeoutOf(connection) },
+            2, cancellationToken).ConfigureAwait(false);
+        return new ScpSession((SshClient)clients[0], (ScpClient)clients[1]);
     }
+
+    /// <summary>No password with the SSH agent or a key file (asked only when they are refused).</summary>
+    protected override bool NeedsPassword(RemoteConnection connection) => string.IsNullOrEmpty(connection.KeyFile) && !connection.UseSshAgent;
 
     protected override bool IsAlive(ScpSession client) => client.IsConnected;
 
@@ -76,6 +60,7 @@ public sealed class ScpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBas
             // already gone
         }
         client.Dispose();
+        SshLogin.Release(client.Shell); // the jump host it went through
         return ValueTask.CompletedTask;
     }
 
