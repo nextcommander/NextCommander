@@ -192,24 +192,11 @@ public sealed class DialogService : IDialogService
         return dialog.Result;
     }
 
-    public async Task<RemoteConnection?> ShowConnectionManagerAsync(List<RemoteConnection> connections, Func<RemoteConnection, Task> forgetPassword)
+    public async Task<NextCommander.App.Views.Connections.ConnectionManagerResult?> ShowConnectionManagerAsync(NextCommander.App.Views.Connections.ConnectionManagerRequest request)
     {
-        var owner = RequireOwner();
-        var dialog = new ConnectionManagerDialog(connections, async existing =>
-        {
-            var edit = new ConnectionEditDialog(existing, () => PickOpenFileAsync("Private key file"));
-            await edit.ShowDialog(owner);
-            return edit.Result;
-        }, forgetPassword);
-        await dialog.ShowDialog(owner);
-        return dialog.Result;
-    }
-
-    public async Task<RemoteConnection?> ShowNewConnectionAsync(RemoteProtocol protocol)
-    {
-        var edit = new ConnectionEditDialog(null, () => PickOpenFileAsync("Private key file"), protocol);
-        await edit.ShowDialog(RequireOwner());
-        return edit.Result;
+        var window = new NextCommander.App.Views.Connections.ConnectionManagerWindow(request);
+        await window.ShowDialog(RequireOwner());
+        return window.Result;
     }
 
     public async Task<(string? Current, string? New)?> ShowMasterPasswordDialogAsync(bool hasMaster)

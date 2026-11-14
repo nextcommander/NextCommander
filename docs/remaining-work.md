@@ -142,6 +142,10 @@ Since 7 November 2026 colors come only from theme files (default: system colors,
 - [x] Box (box://): OAuth (client id and secret), upload sessions for big files, times given with the upload. Tested against a fake API; to be tried with a real account.
 - [x] Azure Files (azfile://): shares, folders, ranges, renames on the server, SMB times. Tested against a fake API; to be tried with a real account.
 - [x] Android over ADB (adb://serial/sdcard): phones as drives (the ADB server's device list, watched with the drives), toybox shell, exec-out / push, free space. Tested with a fake adb over a real shell; to be tried with a phone.
+- [x] Connection manager in two panes (folders with color labels, search and filter chips, drag and drop, F2 / Del / Ctrl+D / Ctrl+Z, favorites, connection state; the editor with General / Login / Advanced tabs, the choice of the type as cards or a pasted address, test, connect, connect to a whole folder). The separate connection editor dialog is gone (Net > New connection opens the manager).
+- [x] SSH agent login for SFTP / SCP (Windows OpenSSH agent, Pageant, SSH_AUTH_SOCK) and jump hosts (a tunnel through another SSH server); tried against an asyncssh server (tests/servers/sftp_server.py with an authorized_keys file).
+- [x] Connection timeout, FTP file name encoding, S3 server-side encryption (SSE-S3, SSE-KMS), AWS SSO profiles (device sign-in, the AWS CLI's token cache), Azure Entra ID sign-in (Blob and Files). SSO and Entra ID are tested against fakes; to be tried with real accounts.
+- [x] Importing FileZilla (sitemanager.xml) and WinSCP (WinSCP.ini or the registry) sites with folders, key files, tunnels and saved passwords.
 - [x] rclone remotes (rclone://remote/path; Net > rclone remotes): rclone rcd on 127.0.0.1 with a random password, copyfile through temporary files. Tested against a fake rc API; to be tried with a real rclone (FM_TEST_RCLONE=remote runs the test against it).
 
 ## Internal terminal

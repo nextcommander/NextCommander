@@ -273,8 +273,29 @@ internal sealed class FakeDialogs : IDialogService
 
     public Task<bool> ConfirmFingerprintAsync(string host, string fingerprint, string description, bool changed) => Task.FromResult(TrustFingerprints);
 
-    public Task<RemoteConnection?> ShowConnectionManagerAsync(List<RemoteConnection> connections, Func<RemoteConnection, Task> forgetPassword) =>
-        Task.FromResult(NextConnection);
+    /// <summary>The last connection manager opened.</summary>
+    public NextCommander.App.Views.Connections.ConnectionManagerRequest? LastManager { get; private set; }
+
+    /// <summary>
+    /// The connection manager: for Network > New connection the type is noted and <see cref="NextNewConnection"/> is
+    /// "entered" (added and saved); otherwise <see cref="NextConnection"/> is chosen.
+    /// </summary>
+    public Task<NextCommander.App.Views.Connections.ConnectionManagerResult?> ShowConnectionManagerAsync(NextCommander.App.Views.Connections.ConnectionManagerRequest request)
+    {
+        LastManager = request;
+        if (request.NewProtocol is { } protocol)
+        {
+            LastNewConnection = protocol;
+            if (NextNewConnection is not { } created)
+            {
+                return Task.FromResult<NextCommander.App.Views.Connections.ConnectionManagerResult?>(null);
+            }
+            request.Settings.Connections.Add(created);
+            request.Save();
+            return Task.FromResult<NextCommander.App.Views.Connections.ConnectionManagerResult?>(new([created], false));
+        }
+        return Task.FromResult(NextConnection is { } chosen ? new NextCommander.App.Views.Connections.ConnectionManagerResult([chosen], false) : null);
+    }
 
     public Task<(string? Current, string? New)?> ShowMasterPasswordDialogAsync(bool hasMaster) => Task.FromResult(NextMasterPassword);
 
@@ -324,12 +345,6 @@ internal sealed class FakeDialogs : IDialogService
     public RemoteConnection? NextNewConnection { get; set; }
 
     public RemoteProtocol? LastNewConnection { get; private set; }
-
-    public Task<RemoteConnection?> ShowNewConnectionAsync(RemoteProtocol protocol)
-    {
-        LastNewConnection = protocol;
-        return Task.FromResult(NextNewConnection);
-    }
 
     public DuplicatesRequest? LastDuplicates { get; private set; }
 
