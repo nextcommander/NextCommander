@@ -3916,23 +3916,40 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// The panel's view edits the name in the file list (true) and commits it with <see cref="RenameEntryAsync"/>; without
+    /// one (false: no cell to edit in) the name is asked in a dialog.
+    /// </summary>
+    public Func<PanelViewModel, FileItemViewModel, bool, bool>? BeginInlineRename { get; set; }
+
     private async Task RenameAsync()
     {
         var panel = ActivePanel;
-        if (panel.CursorItem?.Entry is not { } entry || entry.Path.Parent is not { } parent)
+        if (panel.CursorItem is not { Entry: { } entry } item || entry.Path.Parent is null)
         {
             return;
         }
-        var newName = await _dialogs.PromptAsync("Rename", "New name:", entry.Name, selectBaseName: !entry.IsDirectory && _settings.RenameSelectsNameOnly);
-        if (string.IsNullOrWhiteSpace(newName) || newName == entry.Name)
+        var selectBaseName = !entry.IsDirectory && _settings.RenameSelectsNameOnly;
+        if (BeginInlineRename?.Invoke(panel, item, selectBaseName) == true)
         {
-            return;
+            return; // the name is typed in the list
+        }
+        var newName = await _dialogs.PromptAsync("Rename", "New name:", entry.Name, selectBaseName);
+        await RenameEntryAsync(panel, entry, newName);
+    }
+
+    /// <summary>Renames a file or folder of a panel (false: nothing renamed; the reason was shown).</summary>
+    public async Task<bool> RenameEntryAsync(PanelViewModel panel, VfsEntry entry, string? newName)
+    {
+        if (string.IsNullOrWhiteSpace(newName) || newName.Trim() == entry.Name || entry.Path.Parent is not { } parent)
+        {
+            return false;
         }
         newName = newName.Trim();
         if (newName.IndexOfAny(['/', '\\']) >= 0)
         {
             await _dialogs.ShowMessageAsync("Rename", "The name cannot contain a folder separator. Use F6 to move.");
-            return;
+            return false;
         }
         var destination = parent.Combine(newName);
         var provider = _registry.Resolve(entry.Path);
@@ -3940,7 +3957,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         if (!caseOnly && await provider.GetEntryAsync(destination, CancellationToken.None) is not null)
         {
             await _dialogs.ShowMessageAsync("Rename", $"\"{newName}\" already exists.");
-            return;
+            return false;
         }
         try
         {
@@ -3954,11 +3971,11 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             {
                 Services.OperationLog.Single(_settings, Services.OperationLog.Kind.Rename, "Rename", $"{entry.Path.ToDisplayString()} -> {newName} (administrator)");
                 await panel.NavigateAsync(parent, focusName: newName, recordHistory: false);
-                return;
+                return true;
             }
             Services.OperationLog.Single(_settings, Services.OperationLog.Kind.Rename, "Rename", $"{entry.Path.ToDisplayString()}: {ex.Message}", failed: true);
             await _dialogs.ShowMessageAsync("Rename", ex.Message);
-            return;
+            return false;
         }
         Services.OperationLog.Single(_settings, Services.OperationLog.Kind.Rename, "Rename", $"{entry.Path.ToDisplayString()} -> {newName}");
         if (_settings.CopyCommentsWithFiles && parent.IsLocal)
@@ -3969,9 +3986,10 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         if (panel.IsVirtual)
         {
             await panel.RefreshAsync();
-            return;
+            return true;
         }
         await panel.NavigateAsync(parent, focusName: newName, recordHistory: false);
+        return true;
     }
 
     /// <summary>F7 (active panel) / Shift+F7 (target panel). Supports a/b/c, a|b and dir&lt;1-10&gt;.</summary>

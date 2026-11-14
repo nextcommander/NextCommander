@@ -26,6 +26,7 @@ public partial class PathBarView : UserControl
         SubfoldersButton.Click += OnPathButtonClick;
         HotlistButton.Click += OnPathButtonClick;
         HistoryButton.Click += OnPathButtonClick;
+        DisconnectButton.Click += OnPathButtonClick;
     }
 
     private IDisposable? _hoverTimer;
@@ -63,7 +64,7 @@ public partial class PathBarView : UserControl
             {
                 window.HotlistAnchor = button; // the menu opens below the button
             }
-            await main.ExecuteAsync(button == HotlistButton ? "nc_DirectoryHotlist" : "nc_DirectoryHistory");
+            await main.ExecuteAsync(button == HotlistButton ? "nc_DirectoryHotlist" : button == DisconnectButton ? "nc_FtpDisconnect" : "nc_DirectoryHistory");
         }
     }
 

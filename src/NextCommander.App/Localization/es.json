@@ -2408,5 +2408,10 @@
   "WpdInterop.PortableDeviceError0x": "Error del dispositivo portátil 0x{0}.",
   "WpdInterop.TheDeviceConnectionWasReset": "La conexión con el dispositivo se restableció; se vuelve a abrir.",
   "WpdInterop.TheDeviceIsFull": "El dispositivo está lleno.",
-  "WpdInterop.TheDeviceWasDisconnected": "El dispositivo se desconectó."
+  "WpdInterop.TheDeviceWasDisconnected": "El dispositivo se desconectó.",
+  "RemoteDialogs.CloseEsc": "Cerrar (Esc)",
+  "PathBar.Disconnect": "Desconectar (Ctrl+Mayús+F)",
+  "ButtonDefinition.InternalTerminalMaximized": "Terminal interno, maximizado",
+  "ButtonDefinition.ConnectionManagerCtrlF": "Administrador de conexiones (Ctrl+F)",
+  "ButtonDefinition.TerminalCtrlAltT": "Terminal (Ctrl+Alt+T)"
 }

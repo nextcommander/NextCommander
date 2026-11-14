@@ -136,7 +136,7 @@
 
       <Grid x:Name="Body" ColumnDefinitions="Auto,Auto,*">
         <!-- Directory tree pane (Ctrl+F8) -->
-        <views:DirectoryTreeView x:Name="TreePane" Grid.Column="0" Width="220" IsVisible="False" />
+        <views:DirectoryTreeView x:Name="TreePane" Grid.Column="0" MinWidth="80" IsVisible="False" />
         <GridSplitter x:Name="TreeSplitter" Grid.Column="1" Width="4" ResizeDirection="Columns" IsVisible="False" Background="Transparent" />
 
         <Panel x:Name="ContentHost" Grid.Column="2">

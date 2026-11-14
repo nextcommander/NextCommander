@@ -194,9 +194,9 @@ public sealed class DialogService : IDialogService
 
     public async Task<NextCommander.App.Views.Connections.ConnectionManagerResult?> ShowConnectionManagerAsync(NextCommander.App.Views.Connections.ConnectionManagerRequest request)
     {
-        var window = new NextCommander.App.Views.Connections.ConnectionManagerWindow(request);
-        await window.ShowDialog(RequireOwner());
-        return window.Result;
+        // in place of the active file panel (not a window of its own)
+        var view = new NextCommander.App.Views.Connections.ConnectionManagerView(request);
+        return RequireOwner() is NextCommander.App.Views.MainWindow main ? await main.ShowConnectionManagerAsync(view) : null;
     }
 
     public async Task<(string? Current, string? New)?> ShowMasterPasswordDialogAsync(bool hasMaster)

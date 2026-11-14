@@ -1,5 +1,7 @@
+using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.VisualTree;
 using NextCommander.App.Services;
 using NextCommander.App.ViewModels;
 using NextCommander.Core.Config;
@@ -108,10 +110,16 @@ public sealed class Phase6Tests : IDisposable
         await WaitUntilAsync(() => vm.Right.Items.Any(i => i.FullName == "b.log"), 15000);
         Assert.Equal(2, vm.Right.Items.Single(i => i.FullName == "b.log").Entry!.Size);
 
-        // Disconnect, then connect again: the saved password is used without asking.
-        vm.Activate(vm.Right);
-        Press(w, Key.F, RawInputModifiers.Control | RawInputModifiers.Shift);
+        // Disconnect with the path line's button (it shows the connection's name), then connect again: the saved password
+        // is used without asking.
+        Assert.True(vm.Right.IsRemoteConnection);
+        Assert.Equal("test", vm.Right.ConnectionName);
+        var disconnect = w.RightPanel.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "DisconnectButton");
+        Assert.True(disconnect.IsEffectivelyVisible);
+        Assert.False(w.LeftPanel.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "DisconnectButton").IsEffectivelyVisible);
+        disconnect.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
         await WaitUntilAsync(() => vm.Right.CurrentPath!.IsLocal);
+        Assert.False(vm.Right.IsRemoteConnection);
         Assert.True(vm.Right.CurrentPath!.IsLocal);
         await vm.Right.NavigateAsync(remote);
         Assert.Contains(vm.Right.Items, i => i.FullName == "b.log");

@@ -2408,5 +2408,10 @@
   "WpdInterop.PortableDeviceError0x": "Erreur de l'appareil portable 0x{0}.",
   "WpdInterop.TheDeviceConnectionWasReset": "La connexion à l'appareil a été réinitialisée ; elle est rouverte.",
   "WpdInterop.TheDeviceIsFull": "L'appareil est plein.",
-  "WpdInterop.TheDeviceWasDisconnected": "L'appareil a été déconnecté."
+  "WpdInterop.TheDeviceWasDisconnected": "L'appareil a été déconnecté.",
+  "RemoteDialogs.CloseEsc": "Fermer (Échap)",
+  "PathBar.Disconnect": "Déconnecter (Ctrl+Maj+F)",
+  "ButtonDefinition.InternalTerminalMaximized": "Terminal interne, agrandi",
+  "ButtonDefinition.ConnectionManagerCtrlF": "Gestionnaire de connexions (Ctrl+F)",
+  "ButtonDefinition.TerminalCtrlAltT": "Terminal (Ctrl+Alt+T)"
 }

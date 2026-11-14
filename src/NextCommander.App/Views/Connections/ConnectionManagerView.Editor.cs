@@ -11,7 +11,7 @@ using NextCommander.Vfs.Remote;
 
 namespace NextCommander.App.Views.Connections;
 
-public sealed partial class ConnectionManagerWindow
+public sealed partial class ConnectionManagerView
 {
     /// <summary>The connection types: their name, a line about them and their group in the type choice.</summary>
     private static readonly (RemoteProtocol Protocol, string Name, string Description, string Group)[] s_types =
@@ -39,6 +39,9 @@ public sealed partial class ConnectionManagerWindow
     ];
 
     public static string TypeName(RemoteProtocol protocol) => s_types.First(t => t.Protocol == protocol).Name;
+
+    /// <summary>The width of the footer buttons (Test, Duplicate, Delete, Save, Connect).</summary>
+    public const double FooterButtonWidth = 96;
 
     private TextBox? _nameBox;
     private TextBlock? _address;
@@ -69,9 +72,8 @@ public sealed partial class ConnectionManagerWindow
     private void ShowDetail()
     {
         _problem = NewProblem();
-        _detailFooter.Children.Clear();
-        _detailFooter.Children.Add(_toast);
-        DockPanel.SetDock(_toast, Dock.Left);
+        _footerLeft.Children.Clear();
+        _footerRight.Children.Clear();
         switch (Selected)
         {
             case null:
@@ -124,7 +126,12 @@ public sealed partial class ConnectionManagerWindow
 
     private Button FooterButton(string text, Action click, bool accent = false, bool right = false)
     {
-        var button = new Button { Content = text, Margin = new Thickness(right ? 8 : 0, 0, right ? 0 : 8, 0) };
+        // the footer buttons are one width (a longer text such as "Connect to all (12)" grows)
+        var button = new Button
+        {
+            Content = text, MinWidth = FooterButtonWidth, HorizontalContentAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(right ? 8 : 0, 0, right ? 0 : 8, 6),
+        };
         if (accent)
         {
             button.Classes.Add("accent");
@@ -133,10 +140,17 @@ public sealed partial class ConnectionManagerWindow
         return button;
     }
 
+    /// <summary>A footer button: left ones in order, right ones from the right edge inwards (the first added is rightmost).</summary>
     private void AddFooter(Button button, bool right)
     {
-        DockPanel.SetDock(button, right ? Dock.Right : Dock.Left);
-        _detailFooter.Children.Insert(right ? _detailFooter.Children.Count : Math.Max(0, _detailFooter.Children.Count - 1), button);
+        if (right)
+        {
+            _footerRight.Children.Insert(0, button);
+        }
+        else
+        {
+            _footerLeft.Children.Add(button);
+        }
     }
 
     // ---------------------------------------------------------------- folder
@@ -311,7 +325,7 @@ public sealed partial class ConnectionManagerWindow
             });
         }
         var tabs = new TabControl();
-        TabItem Tab(string header, Control content) => new() { Header = header, Content = content, FontSize = 14, MinHeight = 32, Padding = new Thickness(12, 4) };
+        TabItem Tab(string header, Control content) => new() { Header = header, Content = content, FontSize = 13, MinHeight = 30, Padding = new Thickness(10, 3) };
         tabs.Items.Add(Tab("General", General(c)));
         tabs.Items.Add(Tab("Login", Login(c)));
         tabs.Items.Add(Tab("Advanced", Advanced(c)));
@@ -357,9 +371,10 @@ public sealed partial class ConnectionManagerWindow
     }
 
     /// <summary>Fields in two columns (a null starts a new row; a field alone in its row takes it whole).</summary>
-    private static Grid Fields(params Control?[] fields)
+    private Grid Fields(params Control?[] fields)
     {
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*"), Margin = new Thickness(0, 12, 0, 0) };
+        var columns = _narrow ? 1 : 2;
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions(_narrow ? "*" : "*,*"), Margin = new Thickness(0, 12, 0, 0) };
         var row = 0;
         var column = 0;
         var rows = new List<List<Control>> { new() };
@@ -370,7 +385,7 @@ public sealed partial class ConnectionManagerWindow
                 rows.Add([]);
                 continue;
             }
-            if (rows[^1].Count == 2)
+            if (rows[^1].Count == columns)
             {
                 rows.Add([]);
             }
@@ -384,7 +399,7 @@ public sealed partial class ConnectionManagerWindow
             {
                 Grid.SetRow(field, row);
                 Grid.SetColumn(field, column++);
-                Grid.SetColumnSpan(field, line.Count == 1 ? 2 : 1);
+                Grid.SetColumnSpan(field, line.Count == 1 ? columns : 1);
                 grid.Children.Add(field);
             }
             row++;
