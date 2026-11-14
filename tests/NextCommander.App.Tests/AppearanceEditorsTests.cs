@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 using NextCommander.App.Services;
 using NextCommander.App.Services.Icons;
 using NextCommander.App.Views.Dialogs;
@@ -58,12 +59,87 @@ public sealed class AppearanceEditorsTests : IDisposable
         Assert.Null(dialog.Result); // no name
         dialog.ThemeName = "Deniz";
         dialog.Picker("FileList.Text")!.Color = Color.Parse("#123456");
+        Assert.Equal("#123456", dialog.EditedTheme.Colors["FileList.Text"]);
+
+        // the accent in one click; a color left out follows the look again
+        dialog.SetAccent("#30D158");
+        Assert.Equal("#30D158", dialog.EditedTheme.Colors["Accent"]);
+        dialog.EditedTheme.Colors.Remove("Menu.Text");
+        Assert.True(dialog.ContrastChecks.Total > 0);
+        if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir2)
+        {
+            Directory.CreateDirectory(dir2);
+            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(dialog)!.SavePng(Path.Combine(dir2, "theme-editor.png"));
+        }
         dialog.Save();
         Assert.NotNull(dialog.Result);
         var saved = ColorThemes.Find(dialog.Result!.Id)!;
         Assert.Equal("Deniz", saved.Name);
         Assert.Equal("#123456", saved.Colors["FileList.Text"]);
         Assert.StartsWith(dir, saved.FilePath, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [AvaloniaFact]
+    public async Task The_theme_preview_follows_the_colors()
+    {
+        var dialog = _fx.Track(new ThemeEditorDialog(ColorThemes.Capture(Application.Current!, "Preview")));
+        dialog.Show();
+        await SettleAsync(4);
+        Color Background(string text) =>
+            ((ISolidColorBrush)Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(dialog).OfType<TextBlock>()
+                .First(t => t.Text == text && t.Parent is Border).Parent!.GetValue(Border.BackgroundProperty)!).Color;
+
+        // the accent circles and a picker: the preview shows the new colors
+        dialog.SetAccent("#FF375F");
+        await SettleAsync(4);
+        Assert.Equal(Color.Parse("#FF375F"), Background("Copy"));
+        dialog.Picker("Controls.DisabledBackground")!.Color = Color.Parse("#112233");
+        await SettleAsync(4);
+        Assert.Equal(Color.Parse("#112233"), Background("Queue"));
+
+        // a color chosen in the picker's own drop-down (as the user does)
+        var picker = dialog.Picker("Controls.HoverBackground")!;
+        var drop = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(picker).OfType<DropDownButton>().First();
+        drop.Flyout!.ShowAt(drop);
+        await SettleAsync(4);
+        var view = ((Avalonia.Controls.Primitives.PopupFlyoutBase)drop.Flyout).GetType().GetProperty("Content")?.GetValue(drop.Flyout) as Control;
+        // the drop-down's spectrum (the user drags in it): bound to the picker's own color
+        var spectrum = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view!).OfType<Avalonia.Controls.Primitives.ColorSpectrum>().FirstOrDefault()
+            ?? throw new InvalidOperationException("no spectrum in " + string.Join(",", Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(view!).Select(c => c.GetType().Name).Distinct()));
+        spectrum.Color = Color.Parse("#445566");
+        await SettleAsync(4);
+        Assert.Equal("#445566", dialog.EditedTheme.Colors["Controls.HoverBackground"]);
+        Assert.Equal(Color.Parse("#445566"), Background("Cancel"));
+        drop.Flyout.Hide();
+
+        // a color left to the look stays so (the pickers shown again do not set it)
+        var before = dialog.EditedTheme.Colors.Count;
+        dialog.EditedTheme.Colors.Remove("Menu.Text");
+        dialog.SetAccent("#30D158");
+        await SettleAsync(6);
+        Assert.False(dialog.EditedTheme.Colors.ContainsKey("Menu.Text"));
+        Assert.Equal(before - 1, dialog.EditedTheme.Colors.Count);
+
+        // a new theme from the system colors keeps only what differs from the look: switching the look changes the window
+        var fresh = _fx.Track(new ThemeEditorDialog(ColorThemes.Capture(Application.Current!, "Fresh")));
+        fresh.Show();
+        await SettleAsync(4);
+        Assert.False(fresh.EditedTheme.Colors.ContainsKey("Window.Background"));
+        Color FreshBackground() => ((ISolidColorBrush)Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(fresh).OfType<TextBlock>()
+            .First(t => t.Text == "Copy 3 files").FindAncestorOfType<StackPanel>()!.Parent!.GetValue(Border.BackgroundProperty)!).Color;
+        var lightBack = FreshBackground();
+        fresh.SetLook(dark: !fresh.EditedTheme.IsDark);
+        await SettleAsync(4);
+        Assert.NotEqual(lightBack, FreshBackground());
+
+        // the look: a light theme with a dark look shows the dark defaults where it sets nothing
+        dialog.EditedTheme.Colors.Remove("Controls.DisabledBackground");
+        dialog.SetLook(dark: true);
+        await SettleAsync(4);
+        var dark = Background("Queue");
+        dialog.SetLook(dark: false);
+        await SettleAsync(4);
+        Assert.NotEqual(dark, Background("Queue"));
     }
 
     [AvaloniaFact]

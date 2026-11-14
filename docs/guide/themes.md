@@ -30,9 +30,15 @@ Open *Configuration > Options > Display > Color* and pick a **Color theme**, or 
 
 1. On the *Display > Color* page, choose the theme closest to what you want.
 2. Click **New theme...** to start from the colors in effect, or **Edit theme...** to change the chosen theme.
-3. In the theme editor, give the theme a name and choose its look (**Light** or **Dark**). Every part of the window
-   has a row with a color picker; type in **Search** to find a part quickly. **Default** leaves a part to the light
-   or dark look.
+3. In the theme editor, give the theme a name and choose its look (**Light** or **Dark**).
+   - The parts of the window are listed in groups (window, controls, menus, file list ...). Each row has the color
+     (a picker and its `#RRGGBB` value), what it colors and its key. A dot marks a color the theme sets;
+     **Default** leaves the part to the light or dark look again.
+   - Where text is read on a color, the row shows the contrast (green, or red with "low" when it is below the
+     usual minimum: 4.5:1 for text, 3:1 for the accent and marked files).
+   - On the right, the **live preview** shows a dialog and a file panel in the colors; click a part of it to find its
+     row. Under it, one click sets an **accent** color, and **Readability** counts the contrast checks that pass.
+   - **Search colors** (Ctrl+F) finds a part by its name or key; **Reset all** leaves every part to the look.
 4. Click **Save**. The theme is chosen in the list; click Apply or OK.
 
 Your themes are saved in the `themes` folder of the [settings folder](settings-folder.md). Editing a theme that
