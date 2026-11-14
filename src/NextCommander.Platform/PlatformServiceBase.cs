@@ -11,7 +11,31 @@ public abstract class PlatformServiceBase : IPlatformService
     public abstract Task MoveToTrashAsync(string nativePath, CancellationToken cancellationToken);
 
     /// <summary>The drives of the system, then the phones connected over ADB (<c>adb://serial/sdcard</c>).</summary>
-    public IReadOnlyList<DriveItem> GetDrives() => [.. GetSystemDrives(), .. AdbDrives()];
+    public IReadOnlyList<DriveItem> GetDrives()
+    {
+        var system = GetSystemDrives();
+        return [.. system, .. WithoutMtpTwins(AdbDrives(), system)];
+    }
+
+    /// <summary>
+    /// A phone with USB debugging on is there twice: over MTP and over ADB. Its ADB drive is left out when the system
+    /// shows the phone already (the same USB serial: Windows' device id, the serial in Linux' gvfs folder name); it is
+    /// still reachable at adb:///.
+    /// </summary>
+    internal static IEnumerable<DriveItem> WithoutMtpTwins(IEnumerable<DriveItem> adb, IReadOnlyList<DriveItem> system)
+    {
+        var phones = system.Where(d => d.Kind == DriveKind.Phone).ToList();
+        return adb.Where(drive =>
+        {
+            var serial = VfsPathAuthority(drive.RootPath);
+            return serial.Length == 0 || !phones.Any(p => string.Equals(p.UsbSerial, serial, StringComparison.OrdinalIgnoreCase)
+                || p.RootPath.Contains(serial, StringComparison.OrdinalIgnoreCase));
+        });
+    }
+
+    /// <summary>"adb://serial/sdcard" → "serial".</summary>
+    private static string VfsPathAuthority(string rootPath) =>
+        NextCommander.Core.Vfs.VfsPath.TryParse(rootPath, out var path) && path is not null ? path.Authority : string.Empty;
 
     /// <summary>The drives, devices and mount points of the system.</summary>
     protected abstract IReadOnlyList<DriveItem> GetSystemDrives();

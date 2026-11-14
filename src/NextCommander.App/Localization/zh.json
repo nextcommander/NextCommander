@@ -2269,3 +2269,4 @@
   "WpdInterop.TheDeviceIsFull": "设备已满。",
   "WpdInterop.TheDeviceWasDisconnected": "设备已断开连接。"
 }
+  "WpdInterop.TheDeviceConnectionWasReset": "设备连接已重置；正在重新打开。",

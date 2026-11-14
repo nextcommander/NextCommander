@@ -2269,3 +2269,4 @@
   "WpdInterop.TheDeviceIsFull": "The device is full.",
   "WpdInterop.TheDeviceWasDisconnected": "The device was disconnected."
 }
+  "WpdInterop.TheDeviceConnectionWasReset": "The device connection was reset; it is opened again.",

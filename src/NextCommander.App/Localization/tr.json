@@ -2269,3 +2269,4 @@
   "WpdInterop.TheDeviceIsFull": "Aygıt dolu.",
   "WpdInterop.TheDeviceWasDisconnected": "Aygıtın bağlantısı kesildi."
 }
+  "WpdInterop.TheDeviceConnectionWasReset": "Aygıt bağlantısı sıfırlandı; yeniden açılıyor.",

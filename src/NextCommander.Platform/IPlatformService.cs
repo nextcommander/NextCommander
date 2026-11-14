@@ -58,6 +58,9 @@ public sealed record DriveItem(string Name, string RootPath, string? Label, long
     /// <summary>Linux: the device of a partition that is not mounted yet (<see cref="RootPath"/> is empty until it is).</summary>
     public string? Device { get; init; }
 
+    /// <summary>A phone over MTP: the USB serial number (the same phone over ADB has it as its serial).</summary>
+    public string? UsbSerial { get; init; }
+
     /// <summary>A partition that is mounted when it is chosen.</summary>
     public bool NeedsMount => Device is not null && string.IsNullOrEmpty(RootPath);
 
