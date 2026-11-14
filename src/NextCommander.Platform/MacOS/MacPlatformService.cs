@@ -25,7 +25,7 @@ internal sealed class MacPlatformService : PlatformServiceBase, IPlatformService
         }
     }, cancellationToken);
 
-    public override IReadOnlyList<DriveItem> GetDrives()
+    protected override IReadOnlyList<DriveItem> GetSystemDrives()
     {
         var result = new List<DriveItem>
         {

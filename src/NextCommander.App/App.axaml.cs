@@ -72,10 +72,14 @@ public partial class App : Application
                 Services.GetRequiredService<NextCommander.Vfs.Remote.WebDavFileSystemProvider>().DisposeAsync().AsTask().GetAwaiter().GetResult();
                 Services.GetRequiredService<NextCommander.Vfs.Remote.S3FileSystemProvider>().DisposeAsync().AsTask().GetAwaiter().GetResult();
                 Services.GetRequiredService<NextCommander.Vfs.Remote.AzureBlobFileSystemProvider>().DisposeAsync().AsTask().GetAwaiter().GetResult();
+                Services.GetRequiredService<NextCommander.Vfs.Remote.AzureFilesFileSystemProvider>().DisposeAsync().AsTask().GetAwaiter().GetResult();
                 Services.GetRequiredService<NextCommander.Vfs.Remote.Cloud.GoogleDriveFileSystemProvider>().DisposeAsync().AsTask().GetAwaiter().GetResult();
                 Services.GetRequiredService<NextCommander.Vfs.Remote.Cloud.OneDriveFileSystemProvider>().DisposeAsync().AsTask().GetAwaiter().GetResult();
                 Services.GetRequiredService<NextCommander.Vfs.Remote.Cloud.DropboxFileSystemProvider>().DisposeAsync().AsTask().GetAwaiter().GetResult();
+                Services.GetRequiredService<NextCommander.Vfs.Remote.Cloud.BoxFileSystemProvider>().DisposeAsync().AsTask().GetAwaiter().GetResult();
                 Services.GetRequiredService<NextCommander.Vfs.Remote.SmbFileSystemProvider>().DisposeAsync().AsTask().GetAwaiter().GetResult();
+                Services.GetRequiredService<NextCommander.Vfs.Remote.ScpFileSystemProvider>().DisposeAsync().AsTask().GetAwaiter().GetResult();
+                Services.GetRequiredService<NextCommander.Vfs.Remote.RcloneFileSystemProvider>().Dispose(); // stops rclone's API server
                 s_listen.Cancel();
                 NextCommander.App.Services.FileIndexService.Stop();
                 Log.CloseAndFlush();
@@ -308,12 +312,18 @@ public partial class App : Application
         services.AddSingleton<IFileSystemProvider>(sp => new NetworkFileSystemProvider(sp.GetRequiredService<IPlatformService>(), () => settings.ShowAdminShares));
         services.AddSingleton(sp => new NextCommander.Platform.Mtp.MtpFileSystemProvider(sp.GetRequiredService<IPlatformService>().PortableDevices));
         services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Platform.Mtp.MtpFileSystemProvider>());
+        services.AddSingleton<IFileSystemProvider>(_ => new NextCommander.Platform.Adb.AdbFileSystemProvider(NextCommander.Platform.Adb.AdbBridge.Shared));
         services.AddSingleton<IFileSystemProvider>(sp => new NextCommander.Platform.Trash.TrashFileSystemProvider(sp.GetRequiredService<IPlatformService>().TrashStore));
         services.AddSingleton(_ => new SecretStore(store.Directory));
         services.AddSingleton<RemoteSession>();
         services.AddSingleton(sp => new NextCommander.Vfs.Remote.SftpFileSystemProvider(sp.GetRequiredService<RemoteSession>().Hooks));
         services.AddSingleton(sp => new NextCommander.Vfs.Remote.FtpFileSystemProvider(sp.GetRequiredService<RemoteSession>().Hooks) { ShowHidden = settings.FtpShowHidden });
         services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Vfs.Remote.SftpFileSystemProvider>());
+        services.AddSingleton(sp => new NextCommander.Vfs.Remote.ScpFileSystemProvider(sp.GetRequiredService<RemoteSession>().Hooks));
+        services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Vfs.Remote.ScpFileSystemProvider>());
+        services.AddSingleton<IFileSystemProvider>(_ => new NextCommander.Vfs.Remote.HttpListingFileSystemProvider()); // http(s):// folder listings
+        services.AddSingleton(_ => new NextCommander.Vfs.Remote.RcloneFileSystemProvider(NextCommander.Vfs.Remote.RcloneFileSystemProvider.FindTool()));
+        services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Vfs.Remote.RcloneFileSystemProvider>());
         services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Vfs.Remote.FtpFileSystemProvider>());
         services.AddSingleton(sp => new NextCommander.Vfs.Remote.WebDavFileSystemProvider(sp.GetRequiredService<RemoteSession>().Hooks));
         services.AddSingleton(sp => new NextCommander.Vfs.Remote.S3FileSystemProvider(sp.GetRequiredService<RemoteSession>().Hooks));
@@ -321,6 +331,8 @@ public partial class App : Application
         services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Vfs.Remote.S3FileSystemProvider>());
         services.AddSingleton(sp => new NextCommander.Vfs.Remote.AzureBlobFileSystemProvider(sp.GetRequiredService<RemoteSession>().Hooks));
         services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Vfs.Remote.AzureBlobFileSystemProvider>());
+        services.AddSingleton(sp => new NextCommander.Vfs.Remote.AzureFilesFileSystemProvider(sp.GetRequiredService<RemoteSession>().Hooks));
+        services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Vfs.Remote.AzureFilesFileSystemProvider>());
         services.AddSingleton(sp => new NextCommander.Vfs.Remote.SmbFileSystemProvider(sp.GetRequiredService<RemoteSession>().Hooks));
         services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Vfs.Remote.SmbFileSystemProvider>());
         services.AddSingleton(sp => new NextCommander.Vfs.Remote.Cloud.GoogleDriveFileSystemProvider(sp.GetRequiredService<RemoteSession>().Hooks));
@@ -329,6 +341,8 @@ public partial class App : Application
         services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Vfs.Remote.Cloud.OneDriveFileSystemProvider>());
         services.AddSingleton(sp => new NextCommander.Vfs.Remote.Cloud.DropboxFileSystemProvider(sp.GetRequiredService<RemoteSession>().Hooks));
         services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Vfs.Remote.Cloud.DropboxFileSystemProvider>());
+        services.AddSingleton(sp => new NextCommander.Vfs.Remote.Cloud.BoxFileSystemProvider(sp.GetRequiredService<RemoteSession>().Hooks));
+        services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Vfs.Remote.Cloud.BoxFileSystemProvider>());
         services.AddSingleton<NextCommander.Vfs.Archive.ArchiveFileSystemProvider>();
         services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Vfs.Archive.ArchiveFileSystemProvider>());
         services.AddSingleton(sp =>

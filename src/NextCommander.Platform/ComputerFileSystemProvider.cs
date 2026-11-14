@@ -7,12 +7,16 @@ namespace NextCommander.Platform;
 /// capacity). Opening one goes to the drive's root (<see cref="LocalRootOf"/>). Read only: nothing can be copied, moved or
 /// deleted here, so a drive can never be deleted as a whole by mistake.
 /// </summary>
-public sealed class ComputerFileSystemProvider(Func<IReadOnlyList<DriveItem>> drives) : IFileSystemProvider
+/// <param name="shortcuts">Cloud sync folders and WSL distributions, listed after the drives; none when null.</param>
+public sealed class ComputerFileSystemProvider(Func<IReadOnlyList<DriveItem>> drives, Func<IReadOnlyList<DriveItem>>? shortcuts = null) : IFileSystemProvider
 {
     public ComputerFileSystemProvider(IPlatformService platform)
-        : this(platform.GetDrives)
+        : this(platform.GetDrives, platform.GetShortcutFolders)
     {
     }
+
+    /// <summary>Everything the overview lists: the drives, the sync folders and WSL, the trash.</summary>
+    private IEnumerable<DriveItem> Everything() => [.. Ordered(drives()), .. shortcuts?.Invoke() ?? [], DriveItem.TrashEntry];
 
     public const string ComputerScheme = "computer";
 
@@ -33,6 +37,14 @@ public sealed class ComputerFileSystemProvider(Func<IReadOnlyList<DriveItem>> dr
         {
             return NextCommander.Core.Localization.Localizer.T(OperatingSystem.IsWindows() ? "Recycle Bin" : "Trash");
         }
+        if (drive.Kind is DriveKind.CloudFolder or DriveKind.Wsl)
+        {
+            return $"{drive.Name} ({NextCommander.Core.Localization.Localizer.T(drive.KindText)})"; // "OneDrive (Cloud folder)", "Ubuntu (WSL)"
+        }
+        if (drive.Kind is DriveKind.CloudFolder or DriveKind.Wsl)
+        {
+            return $"{drive.Name} ({NextCommander.Core.Localization.Localizer.T(drive.KindText)})"; // "OneDrive (Cloud folder)", "Ubuntu (WSL)"
+        }
         var name = drive.Name.TrimEnd('\\') is { Length: > 0 } trimmed ? trimmed : drive.Name;
         return $"{(drive.HasLabel ? drive.Label : NextCommander.Core.Localization.Localizer.T(drive.KindText))} ({name})";
     }
@@ -52,13 +64,13 @@ public sealed class ComputerFileSystemProvider(Func<IReadOnlyList<DriveItem>> dr
         {
             throw new UnauthorizedAccessException("The Computer view shows the drives only: open a drive to work in it.");
         }
-        IReadOnlyList<VfsEntry> entries = [.. Ordered(drives()).Select(EntryOf), EntryOf(DriveItem.TrashEntry)];
+        IReadOnlyList<VfsEntry> entries = [.. Everything().Select(EntryOf)];
         return Task.FromResult(entries);
     }
 
     /// <summary>
     /// The drives as the overview lists them: the system's drives in their order (drive letters on Windows), then
-    /// external (removable) disks, then phones and cameras.
+    /// external (removable) disks, then phones and cameras (the sync folders, WSL and the trash follow them).
     /// </summary>
     public static IEnumerable<DriveItem> Ordered(IEnumerable<DriveItem> drives) =>
         drives.Where(d => d.IsReady).OrderBy(d => d.Kind switch { DriveKind.Removable => 1, DriveKind.Phone => 2, _ => 0 }); // stable: keeps the letter order
@@ -69,7 +81,7 @@ public sealed class ComputerFileSystemProvider(Func<IReadOnlyList<DriveItem>> dr
         {
             return Task.FromResult<VfsEntry?>(new VfsEntry { Name = "Computer", Path = Root, IsDirectory = true, LastWriteTime = DateTime.MinValue });
         }
-        var drive = drives().Append(DriveItem.TrashEntry).FirstOrDefault(d => string.Equals(d.RootPath, root, StringComparison.OrdinalIgnoreCase));
+        var drive = Everything().FirstOrDefault(d => string.Equals(d.RootPath, root, StringComparison.OrdinalIgnoreCase));
         return Task.FromResult(drive is null ? null : EntryOf(drive));
     }
 

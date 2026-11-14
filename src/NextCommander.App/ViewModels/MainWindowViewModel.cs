@@ -671,11 +671,28 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             {
                 await tab.NavigateAsync(VfsPath.Local(_platform.HomeDirectory), recordHistory: false); // the phone was unplugged
             }
-            else if (tab.CurrentPath is { } listing && (listing == ComputerFileSystemProvider.Root || listing == NextCommander.Platform.Mtp.MtpFileSystemProvider.Root))
+            else if (tab.CurrentPath is { Scheme: NextCommander.Platform.Adb.AdbFileSystemProvider.AdbScheme } phone && phone.Authority.Length > 0
+                && !phones.Contains(NextCommander.Platform.Adb.AdbFileSystemProvider.DeviceRoot(phone.Authority).ToString()))
+            {
+                await tab.NavigateAsync(VfsPath.Local(_platform.HomeDirectory), recordHistory: false); // the phone was unplugged (ADB)
+            }
+            else if (tab.CurrentPath is { } listing && (listing == ComputerFileSystemProvider.Root || listing == NextCommander.Platform.Mtp.MtpFileSystemProvider.Root
+                || listing == NextCommander.Platform.Adb.AdbFileSystemProvider.Root))
             {
                 await tab.RefreshAsync(); // the drive overview (or the device list) shows the drives themselves
             }
         }
+    }
+
+    /// <summary>The remotes of the installed rclone in the active panel; without rclone, how to get it.</summary>
+    private async Task RcloneRemotesAsync()
+    {
+        if (_registry.Providers.OfType<NextCommander.Vfs.Remote.RcloneFileSystemProvider>().FirstOrDefault() is not { IsInstalled: true })
+        {
+            await _dialogs.ShowMessageAsync("rclone remotes", "rclone is not installed. Install it from rclone.org/downloads (or set FM_RCLONE to its path), set up your remotes with \"rclone config\", then open this again.");
+            return;
+        }
+        await ActivePanel.NavigateAsync(NextCommander.Vfs.Remote.RcloneFileSystemProvider.Root);
     }
 
     /// <summary>The folder itself when it exists, else its nearest existing parent, else the home folder.</summary>
@@ -982,6 +999,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         c.Register("nc_SysInfo", "System information", _ => SystemInfoAsync());
         c.Register("nc_OpenDesktop", "Open Desktop folder", _ => OpenDesktopAsync());
         c.Register("nc_OpenNetwork", "Network: the machines of the local network", _ => ActivePanel.NavigateAsync(NextCommander.Platform.NetworkFileSystemProvider.Root));
+        c.Register("nc_RcloneRemotes", "rclone remotes (set up with \"rclone config\")", _ => RcloneRemotesAsync());
         c.Register("nc_BackgroundTransfers", "Background transfer manager", () => _dialogs.ShowTransferManager(_jobs));
         c.Register("nc_MatchSrc", "Target = Source", _ => MatchSourceAsync());
         c.Register("nc_Properties", "Properties (Alt+Enter)", _ => PropertiesAsync());
@@ -1001,8 +1019,8 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         c.Register("nc_EditColumnSets", "Edit column sets", _ => EditColumnSetsAsync());
         c.Register("nc_OpenWith", "Open with (internal associations)", _ => OpenWithAsync());
         c.Register("nc_Plugins", "Loaded plugins", _ => ShowPluginsAsync());
-        c.Register("nc_FtpConnect", "Connection manager: FTP, SFTP, WebDAV, SMB, S3, Azure, Google Drive, OneDrive, Dropbox (Ctrl+F)", _ => ConnectAsync());
-        c.Register("nc_NewConnection", "New connection (parameter: sftp, ftp, ftps, davs, dav, smb, s3, azblob, gdrive, onedrive, dropbox)", p => NewConnectionAsync(p));
+        c.Register("nc_FtpConnect", "Connection manager: FTP, SFTP, SCP, WebDAV, SMB, S3, Azure, Google Drive, OneDrive, Dropbox, Box (Ctrl+F)", _ => ConnectAsync());
+        c.Register("nc_NewConnection", "New connection (parameter: sftp, scp, ftp, ftps, davs, dav, smb, s3, azblob, azfile, gdrive, onedrive, dropbox, box)", p => NewConnectionAsync(p));
         c.Register("nc_OpenConnection", "Open a saved connection (parameter: the connection's name)", p => OpenConnectionAsync(p));
         c.Register("nc_FtpDisconnect", "Disconnect from server (Ctrl+Shift+F)", _ => DisconnectAsync());
         c.Register("nc_MasterPassword", "Set / change master password", _ => MasterPasswordAsync());
@@ -2657,11 +2675,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     /// </summary>
     private async Task NewConnectionAsync(string? scheme)
     {
-        var protocol = string.IsNullOrWhiteSpace(scheme) ? RemoteProtocol.Sftp : RemoteConnection.FromAuthority(scheme.Trim().ToLowerInvariant(), "x").Protocol;
-        if (scheme?.Trim().ToLowerInvariant() is "ftps")
-        {
-            protocol = RemoteProtocol.FtpsExplicit;
-        }
+        var protocol = RemoteProtocols.FromScheme(scheme?.Trim())?.Protocol ?? RemoteProtocol.Sftp;
         if (await _dialogs.ShowNewConnectionAsync(protocol) is not { } connection)
         {
             return;

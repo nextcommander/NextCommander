@@ -40,6 +40,8 @@ public sealed class DriveIconConverter : IValueConverter
         DriveKind.UserHome => "MiHome",
         DriveKind.Phone => "MiPhone",
         DriveKind.Trash => "MiTrash",
+        DriveKind.CloudFolder => "MiGlobe",
+        DriveKind.Wsl => "MiTerminal",
         _ => "MiDrive",
     };
 
@@ -56,6 +58,7 @@ public sealed class DriveIconConverter : IValueConverter
         DriveKind.Computer => ThisPc,
         DriveKind.NetworkPlaces => "::{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}",
         DriveKind.Phone when drive.Device is { Length: > 0 } device && drive.RootPath.Contains("://", StringComparison.Ordinal) => ThisPc + "\\" + device,
+        DriveKind.Wsl => null, // asking the shell about \\wsl.localhost\name would start the distribution
         _ when drive.NeedsMount || drive.RootPath.Length == 0 || drive.RootPath.Contains("://", StringComparison.Ordinal) => null,
         _ => drive.RootPath,
     };
@@ -132,6 +135,8 @@ public sealed class DriveIconConverter : IValueConverter
         DriveKind.Computer => ["computer"],
         DriveKind.NetworkPlaces => ["network-workgroup", "network-server"],
         DriveKind.Trash => ["user-trash"],
+        DriveKind.CloudFolder => ["folder-cloud", "folder-remote"],
+        DriveKind.Wsl => ["utilities-terminal"],
         _ => ["drive-harddisk"],
     };
 

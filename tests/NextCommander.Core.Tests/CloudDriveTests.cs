@@ -53,6 +53,11 @@ public sealed class CloudDriveTests : IDisposable
                 HandlerFactory = () => fake, ServiceOverride = FakeCloud.Auth, ApiBase = "https://api.dbx.test/2", ContentBase = "https://content.dbx.test/2",
                 SimpleUploadLimit = 1000, ChunkSize = 300,
             },
+            RemoteProtocol.Box => new BoxFileSystemProvider(hooks)
+            {
+                HandlerFactory = () => fake, ServiceOverride = FakeCloud.Auth, ApiBase = "https://box.test/2.0", UploadBase = "https://upload.box.test/api/2.0",
+                SimpleUploadLimit = 1000, CommitRetryDelay = TimeSpan.Zero,
+            },
             _ => new GoogleDriveFileSystemProvider(hooks)
             {
                 HandlerFactory = () => fake, ServiceOverride = FakeCloud.Auth, ApiBase = "https://g.test/drive/v3", UploadBase = "https://g.test/upload/drive/v3",
@@ -81,6 +86,7 @@ public sealed class CloudDriveTests : IDisposable
     [InlineData(RemoteProtocol.OneDrive)]
     [InlineData(RemoteProtocol.Dropbox)]
     [InlineData(RemoteProtocol.GoogleDrive)]
+    [InlineData(RemoteProtocol.Box)]
     public async Task Files_and_folders_round_trip(RemoteProtocol protocol)
     {
         var s = Create(protocol, savedToken: "rt-saved");
@@ -156,7 +162,7 @@ public sealed class CloudDriveTests : IDisposable
     {
         var local = new LocalFileSystemProvider();
         var file = _dir.Write("kaynak.txt", "içerik", new DateTime(2020, 2, 3, 4, 5, 6));
-        foreach (var protocol in new[] { RemoteProtocol.OneDrive, RemoteProtocol.Dropbox, RemoteProtocol.GoogleDrive })
+        foreach (var protocol in new[] { RemoteProtocol.OneDrive, RemoteProtocol.Dropbox, RemoteProtocol.GoogleDrive, RemoteProtocol.Box })
         {
             var s = Create(protocol, "rt-saved");
             var registry = new ProviderRegistry([local, s.Provider]);

@@ -7,7 +7,7 @@ using NextCommander.Vfs.Remote.Cloud;
 namespace NextCommander.Core.Tests;
 
 /// <summary>
-/// An in-memory stand-in for the Google Drive, OneDrive and Dropbox APIs (only what the providers use), with a token
+/// An in-memory stand-in for the Google Drive, OneDrive, Dropbox and Box APIs (only what the providers use), with a token
 /// endpoint. Lists come in pages of two to exercise paging.
 /// </summary>
 internal sealed partial class FakeCloud : HttpMessageHandler
@@ -194,6 +194,7 @@ internal sealed partial class FakeCloud : HttpMessageHandler
             "graph.test" or "upload.test" => OneDrive(request, url, body),
             "api.dbx.test" or "content.dbx.test" => Dropbox(request, url, body),
             "g.test" => Google(request, url, body),
+            "box.test" or "upload.box.test" => await Box(request, url, body),
             _ => new HttpResponseMessage(HttpStatusCode.NotFound),
         };
     }
@@ -600,6 +601,211 @@ internal sealed partial class FakeCloud : HttpMessageHandler
                 item.ParentId = add;
             }
             return Json(new JsonObject { ["id"] = item.Id });
+        }
+        return new HttpResponseMessage(HttpStatusCode.BadRequest);
+    }
+
+    // ---------------------------------------------------------------- Box (box.test/2.0, upload.box.test/api/2.0)
+
+    /// <summary>Box: the part size an upload session asks for.</summary>
+    public const int BoxPartSize = 1000;
+
+    /// <summary>Box: the first commit of a session answers 202 (the parts are still being put together).</summary>
+    private bool _boxCommitPending = true;
+
+    private static string BoxId(Node n) => n.Id == "root" ? "0" : n.Id;
+
+    private Node? BoxNode(string id) => _nodes.TryGetValue(id == "0" ? "root" : id, out var n) && !n.Trashed ? n : null;
+
+    private static JsonObject BoxItem(Node n)
+    {
+        var item = new JsonObject
+        {
+            ["type"] = n.IsFolder ? "folder" : "file", ["id"] = BoxId(n), ["name"] = n.Name, ["size"] = n.Data.LongLength,
+            ["modified_at"] = Iso(DateTime.UtcNow),
+        };
+        if (!n.IsFolder)
+        {
+            item["content_modified_at"] = Iso(n.Modified);
+        }
+        return item;
+    }
+
+    private static HttpResponseMessage BoxError(HttpStatusCode status, string code) =>
+        Json(new JsonObject { ["type"] = "error", ["status"] = (int)status, ["code"] = code, ["message"] = code }, status);
+
+    private bool BoxNameTaken(Node folder, string name, Node? except = null) =>
+        Children(folder).Any(c => c != except && string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase));
+
+    private static void BoxTime(Node node, JsonNode? attributes)
+    {
+        node.Modified = attributes?["content_modified_at"]?.GetValue<string>() is { } time
+            ? DateTime.Parse(time, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AdjustToUniversal)
+            : DateTime.UtcNow;
+    }
+
+#pragma warning disable CA5350 // Box's digest header is SHA-1
+    private static string Sha1(byte[] data) => "sha=" + Convert.ToBase64String(System.Security.Cryptography.SHA1.HashData(data));
+#pragma warning restore CA5350
+
+    /// <summary>Stores an upload: a new file in a folder, or a new version of a file.</summary>
+    private HttpResponseMessage BoxStore(string? fileId, string? folderId, string? name, JsonNode? attributes, byte[] data)
+    {
+        Node node;
+        if (fileId is not null)
+        {
+            node = BoxNode(fileId) ?? throw new InvalidOperationException(fileId);
+            node.Data = data;
+        }
+        else
+        {
+            var folder = BoxNode(folderId!)!;
+            if (BoxNameTaken(folder, name!))
+            {
+                return BoxError(HttpStatusCode.Conflict, "item_name_in_use");
+            }
+            node = new Node { Id = NewId(), Name = name!, ParentId = folder.Id, Data = data };
+            _nodes[node.Id] = node;
+        }
+        BoxTime(node, attributes);
+        return Json(new JsonObject { ["total_count"] = 1, ["entries"] = new JsonArray(BoxItem(node)) }, HttpStatusCode.Created);
+    }
+
+    private static string PartName(HttpContent part) => part.Headers.ContentDisposition!.Name!.Trim('"');
+
+    private async Task<HttpResponseMessage> Box(HttpRequestMessage request, Uri url, byte[] body)
+    {
+        var path = Uri.UnescapeDataString(url.AbsolutePath);
+        var query = url.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Select(p => p.Split('=', 2)).ToDictionary(p => p[0], p => p.Length > 1 ? Uri.UnescapeDataString(p[1]) : string.Empty);
+        var method = request.Method.Method;
+        if (url.Host == "upload.box.test")
+        {
+            return await BoxUpload(request, path["/api/2.0".Length..], method, body);
+        }
+        path = path["/2.0".Length..];
+        if (path == "/users/me")
+        {
+            return Json(new JsonObject { ["type"] = "user", ["id"] = "u1" });
+        }
+        if (method == "GET" && Regex.Match(path, "^/folders/([^/]+)/items$") is { Success: true } items)
+        {
+            if (BoxNode(items.Groups[1].Value) is not { IsFolder: true } folder)
+            {
+                return BoxError(HttpStatusCode.NotFound, "not_found");
+            }
+            Assert.Contains("content_modified_at", query["fields"], StringComparison.Ordinal);
+            var offset = int.Parse(query["offset"], System.Globalization.CultureInfo.InvariantCulture);
+            // a web link (not a file) is part of the listing and the count
+            var all = Children(folder).Select(n => (JsonNode)BoxItem(n))
+                .Append(new JsonObject { ["type"] = "web_link", ["id"] = "w1", ["name"] = "link" }).ToList();
+            return Json(new JsonObject
+            {
+                ["total_count"] = all.Count, ["offset"] = offset, ["limit"] = PageSize,
+                ["entries"] = new JsonArray(all.Skip(offset).Take(PageSize).ToArray()),
+            });
+        }
+        if (method == "POST" && path == "/folders")
+        {
+            var json = JsonNode.Parse(body)!;
+            var parent = BoxNode(json["parent"]!["id"]!.GetValue<string>())!;
+            var name = json["name"]!.GetValue<string>();
+            if (BoxNameTaken(parent, name))
+            {
+                return BoxError(HttpStatusCode.Conflict, "item_name_in_use");
+            }
+            var folder = new Node { Id = NewId(), Name = name, ParentId = parent.Id, IsFolder = true };
+            _nodes[folder.Id] = folder;
+            return Json(BoxItem(folder), HttpStatusCode.Created);
+        }
+        var match = Regex.Match(path, "^/(files|folders)/([^/]+)(/content)?$");
+        if (!match.Success || BoxNode(match.Groups[2].Value) is not { } node || node.IsFolder != (match.Groups[1].Value == "folders"))
+        {
+            return BoxError(HttpStatusCode.NotFound, "not_found");
+        }
+        switch (method)
+        {
+            case "GET" when match.Groups[3].Success:
+                return Bytes(node.Data);
+            case "GET":
+                return Json(BoxItem(node));
+            case "DELETE":
+                if (node.IsFolder && Children(node).Any() && query.GetValueOrDefault("recursive") != "true")
+                {
+                    return BoxError(HttpStatusCode.BadRequest, "folder_not_empty");
+                }
+                node.Trashed = true;
+                return new HttpResponseMessage(HttpStatusCode.NoContent);
+            case "PUT":
+                var update = JsonNode.Parse(body)!;
+                var target = update["parent"]?["id"]?.GetValue<string>() is { } parentId ? BoxNode(parentId)! : _nodes[node.ParentId!];
+                var newName = update["name"]?.GetValue<string>() ?? node.Name;
+                if (BoxNameTaken(target, newName, except: node))
+                {
+                    return BoxError(HttpStatusCode.Conflict, "item_name_in_use");
+                }
+                (node.ParentId, node.Name) = (target.Id, newName);
+                return Json(BoxItem(node));
+        }
+        return new HttpResponseMessage(HttpStatusCode.BadRequest);
+    }
+
+    private async Task<HttpResponseMessage> BoxUpload(HttpRequestMessage request, string path, string method, byte[] body)
+    {
+        if (method == "POST" && Regex.Match(path, "^/files(?:/([^/]+))?/content$") is { Success: true } upload)
+        {
+            var form = Assert.IsType<MultipartFormDataContent>(request.Content);
+            var parts = form.ToList();
+            Assert.Equal("attributes", PartName(parts[0])); // the attributes first
+            var attributes = JsonNode.Parse(await parts[0].ReadAsStringAsync());
+            var data = await parts.Single(p => PartName(p) == "file").ReadAsByteArrayAsync();
+            return upload.Groups[1].Success
+                ? BoxStore(upload.Groups[1].Value, null, null, attributes, data)
+                : BoxStore(null, attributes!["parent"]!["id"]!.GetValue<string>(), attributes["name"]!.GetValue<string>(), attributes, data);
+        }
+        if (method == "POST" && Regex.Match(path, "^/files(?:/([^/]+))?/upload_sessions$") is { Success: true } start)
+        {
+            var json = JsonNode.Parse(body)!;
+            if (!start.Groups[1].Success && BoxNameTaken(BoxNode(json["folder_id"]!.GetValue<string>())!, json["file_name"]!.GetValue<string>()))
+            {
+                return BoxError(HttpStatusCode.Conflict, "item_name_in_use");
+            }
+            var id = "s" + NewId();
+            var meta = new JsonObject
+            {
+                ["file_id"] = start.Groups[1].Success ? start.Groups[1].Value : null,
+                ["folder_id"] = json["folder_id"]?.GetValue<string>(), ["file_name"] = json["file_name"]?.GetValue<string>(),
+                ["file_size"] = json["file_size"]!.GetValue<long>(),
+            };
+            _sessions[id] = (null, null, new MemoryStream(), meta);
+            return Json(new JsonObject { ["id"] = id, ["part_size"] = BoxPartSize }, HttpStatusCode.Created);
+        }
+        if (Regex.Match(path, "^/files/upload_sessions/([^/]+)(/commit)?$") is { Success: true } inSession)
+        {
+            var session = _sessions[inSession.Groups[1].Value];
+            if (method == "PUT")
+            {
+                var range = request.Content!.Headers.ContentRange!;
+                Assert.Equal(session.Data.Length, range.From);
+                Assert.Equal(session.Meta!["file_size"]!.GetValue<long>(), range.Length);
+                Assert.True(body.Length == BoxPartSize || range.To == range.Length - 1, "parts are of the session's size");
+                Assert.Equal(Sha1(body), request.Headers.GetValues("Digest").Single());
+                session.Data.Write(body);
+                return Json(new JsonObject { ["part"] = new JsonObject { ["part_id"] = "p" + range.From, ["offset"] = range.From, ["size"] = body.Length } });
+            }
+            var data = session.Data.ToArray();
+            Assert.Equal(Sha1(data), request.Headers.GetValues("Digest").Single());
+            var commit = JsonNode.Parse(body)!;
+            Assert.Equal((data.Length + BoxPartSize - 1) / BoxPartSize, commit["parts"]!.AsArray().Count);
+            if (_boxCommitPending)
+            {
+                _boxCommitPending = false;
+                var pending = new HttpResponseMessage(HttpStatusCode.Accepted);
+                pending.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(TimeSpan.Zero);
+                return pending;
+            }
+            var meta = session.Meta!;
+            return BoxStore(meta["file_id"]?.GetValue<string>(), meta["folder_id"]?.GetValue<string>(), meta["file_name"]?.GetValue<string>(), commit["attributes"], data);
         }
         return new HttpResponseMessage(HttpStatusCode.BadRequest);
     }

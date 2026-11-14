@@ -10,14 +10,20 @@ Supported types:
 | Type | For |
 |---|---|
 | SFTP (SSH) | Linux and Unix servers, NAS devices |
+| SCP (SSH without SFTP) | SSH servers without the SFTP subsystem (routers, small devices) |
 | FTP / FTPS | FTP servers, with or without encryption (explicit or implicit TLS) |
 | WebDAV | Nextcloud, ownCloud, SharePoint, IIS, Apache, NAS devices |
 | SMB (Windows share) | Windows shares, Samba, NAS devices; also on Linux and macOS without mounting |
 | Amazon S3 / compatible | Amazon S3, MinIO, Cloudflare R2, Wasabi, Backblaze B2, DigitalOcean Spaces |
 | Azure Blob Storage | Azure storage accounts |
+| Azure Files | The file shares of an Azure storage account |
 | Google Drive | Your Drive, "Shared with me" and shared drives |
 | OneDrive | Personal and work / school OneDrive, optionally SharePoint sites |
 | Dropbox | Your Dropbox |
+| Box | Your Box account |
+| Web server folder listings | `http://` and `https://` folders with an index page (Apache, nginx, IIS ...); read only |
+| Android over ADB | Phones with USB debugging on; also on macOS, where MTP is not available |
+| rclone remotes | Every remote you set up with `rclone config` (70+ services) |
 
 ## The Net menu
 
@@ -33,6 +39,7 @@ Supported types:
 - **Download from URL...** and **Download the addresses of a list...**: download files from the web.
 - **Show hidden files on FTP**.
 - **Master password...**: see [Saved passwords](#saved-passwords-and-the-master-password).
+- **rclone remotes**: see [rclone remotes](#rclone-remotes).
 
 ## The connection manager
 
@@ -45,6 +52,11 @@ Each connection is shown with its type's icon. **New...** creates a connection, 
 A connection has a protocol, a server, a port, a user and a start folder, plus options that depend on the type.
 The dialog shows hints for each type.
 
+For S3 and WebDAV, the **Service** list fills in the server, port, region and start folder of well-known services:
+Amazon S3, Google Cloud Storage, Cloudflare R2, Backblaze B2, Wasabi, DigitalOcean Spaces, Hetzner and MinIO;
+Nextcloud / ownCloud, Yandex Disk, pCloud and Koofr. A part of the server name in capitals (such as `ACCOUNT_ID`
+or `REGION`) is yours to replace; the note under the fields says how.
+
 ## Typing an address
 
 You can also type an address straight into the path line (Alt+D) or into *Connect by address...*:
@@ -56,12 +68,22 @@ You can also type an address straight into the path line (Alt+D) or into *Connec
 | WebDAV | `davs://user@cloud.example.com/remote.php/dav/files/user` (`dav://` without encryption) |
 | SMB | `smb://DOMAIN;user@server/share` |
 | S3 | `s3://ACCESS_KEY@s3.eu-central-1.amazonaws.com/bucket/folder` |
+| SCP | `scp://user@router.example.com/etc` |
 | Azure Blob | `azblob://account@account.blob.core.windows.net/container` |
+| Azure Files | `azfile://account@account.file.core.windows.net/share/folder` |
+| Web server folder | `https://archive.apache.org/dist/` |
+| Android over ADB | `adb://SERIAL/sdcard/DCIM` |
+| rclone | `rclone://remote/folder` (`rclone:///` lists the remotes) |
 
 ## Notes per type
 
 ### SFTP
 Log in with a password or with a private key file (which may have its own passphrase).
+
+### SCP
+For SSH servers that have no SFTP subsystem. The login (password or key file) is the same as for SFTP. Folders are
+listed and changed with shell commands on the server (`stat`, `mkdir`, `mv`, `rm`, `touch`), so the server needs a
+POSIX shell; files are sent with SCP.
 
 ### FTP / FTPS
 Choose plain FTP, FTPS with explicit TLS, or FTPS with implicit TLS (port 990), and passive or active mode.
@@ -87,7 +109,11 @@ shares.
 ### Azure Blob Storage
 The user is the storage account; the password is the account key or a SAS token. The root lists the containers.
 
-### Google Drive, OneDrive and Dropbox
+### Azure Files
+The user is the storage account; the password is the account key or a SAS token. The root lists the file shares
+(F7 there creates a share). Moves inside a share are renames on the server; file times are kept.
+
+### Google Drive, OneDrive, Dropbox and Box
 - The first time you connect, your browser opens the service's own sign-in page. With
   **Remember the sign-in** on, you only sign in once.
 - The **account name** is just a label (for example `personal` or `work`) to tell several accounts of the same
@@ -104,12 +130,35 @@ The user is the storage account; the password is the account key or a SAS token.
   - **Dropbox:** in the Dropbox App Console, create an app with *Scoped access* and *Full Dropbox*, allow the
     `files.metadata.read/write` and `files.content.read/write` permissions, and add the redirect address
     `http://localhost:53682/`. Enter the app key.
+  - **Box:** in the Box developer console, create a *Platform App* with *User Authentication (OAuth 2.0)*, add the
+    redirect address `http://localhost:53682/` and the scope to read and write all files and folders. Enter the
+    client id and the client secret.
 - Deleted files go to the service's own trash.
 - **Google Drive:** the root shows My Drive plus the folders **Shared with me** and **Shared drives**.
   Google Docs, Sheets and Slides appear as `.docx`, `.xlsx` and `.pptx` files (Drawings as `.pdf`) and are
   converted when you copy or view them; they are read-only.
 - **OneDrive:** with *Show SharePoint sites too* (work or school accounts), a `SharePoint` folder at the root
   lists your organization's sites and their document libraries.
+
+- **Dropbox and Box** take a file's time only with the upload; a copy sends it then, so times are kept.
+
+### Web server folder listings
+An `http://` or `https://` address of a folder that the server shows as a list of links (Apache, nginx, IIS,
+lighttpd, Python's http.server ...) opens like a folder. Sizes and dates are read from the page where it shows them.
+The listing is read only: copy files out of it.
+
+### Android phones over ADB
+With *USB debugging* on (Developer options) and the installed `adb` (Android SDK platform-tools; found on the PATH,
+in the SDK folder, or through the `FM_ADB` environment variable), connected phones appear as drives named
+"*Model* (ADB)", next to the MTP ones. They open at `/sdcard` (the shared storage); going up shows the rest of the
+phone as far as Android allows. The first time, allow the computer on the phone. Copies keep file times; the panel
+footer shows the free space.
+
+### rclone remotes
+With [rclone](https://rclone.org/downloads) installed (on the PATH or through `FM_RCLONE`), **Net > rclone remotes**
+lists the remotes of your rclone configuration; set them up with `rclone config`. Their passwords and tokens stay
+with rclone. NextCommander starts rclone once as a local API server (only on 127.0.0.1, with a random password) and
+stops it when it closes. Files are transferred through temporary files and keep their times where the service can.
 
 ## Security
 

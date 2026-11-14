@@ -265,10 +265,10 @@ public sealed class MenuTests : IDisposable
         var (w, vm) = await _fx.OpenAsync();
         Assert.Equal(["Connection manager...", "New connection", "Saved connections", "Connect by address...", "Disconnect",
             "Network (machines of the local network)", "Map network drive...", "Disconnect network drives...", "Share current directory...", "Unshare directory...",
-            "Show admin shares", "Download from URL...", "Download the addresses of a list...", "Show hidden files on FTP", "Master password..."],
+            "Show admin shares", "Download from URL...", "Download the addresses of a list...", "Show hidden files on FTP", "Master password...", "rclone remotes"],
             Headers(w, "_Net"));
-        Assert.Equal(["SFTP (SSH)...", "FTP / FTPS...", "WebDAV...", "SMB (Windows share)...", "Amazon S3 / compatible...", "Azure Blob Storage...",
-            "Google Drive...", "OneDrive...", "Dropbox..."], Headers(w, "New connection"));
+        Assert.Equal(["SFTP (SSH)...", "SCP (SSH without SFTP)...", "FTP / FTPS...", "WebDAV...", "SMB (Windows share)...", "Amazon S3 / compatible...", "Azure Blob Storage...", "Azure Files...",
+            "Google Drive...", "OneDrive...", "Dropbox...", "Box..."], Headers(w, "New connection"));
         var drive = w.GetLogicalDescendants().OfType<MenuItem>().First(m => m.Header as string == "Google Drive...");
         Assert.NotNull(drive.Icon);
         Assert.Equal(6, ((Avalonia.Controls.Canvas)((Viewbox)((Border)drive.Icon!).Child!).Child!).Children.Count); // the six parts of the Drive mark

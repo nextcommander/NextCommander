@@ -24,6 +24,12 @@ public enum RemoteProtocol
     OneDrive,
     /// <summary>Dropbox (dropbox://), signed in in the browser (OAuth).</summary>
     Dropbox,
+    /// <summary>SCP over SSH (scp://): servers without the SFTP subsystem; listing and changes through shell commands.</summary>
+    Scp,
+    /// <summary>Box (box://), signed in in the browser (OAuth; the application's client secret is needed too).</summary>
+    Box,
+    /// <summary>Azure Files (azfile://): SMB file shares of a storage account over REST; the user is the account, the secret its key or a SAS token.</summary>
+    AzureFiles,
 }
 
 /// <summary>
@@ -88,52 +94,25 @@ public sealed class RemoteConnection
     /// <summary>Simultaneous connections (listing while copying).</summary>
     public int MaxConnections { get; set; } = 3;
 
-    public int EffectivePort => Port > 0 ? Port : Protocol is RemoteProtocol.S3 or RemoteProtocol.AzureBlob && PlainHttp ? 80 : DefaultPort(Protocol);
+    public int EffectivePort => Port > 0 ? Port : Protocol is RemoteProtocol.S3 or RemoteProtocol.AzureBlob or RemoteProtocol.AzureFiles && PlainHttp ? 80 : DefaultPort(Protocol);
 
-    public static int DefaultPort(RemoteProtocol protocol) => protocol switch
-    {
-        RemoteProtocol.Sftp => 22,
-        RemoteProtocol.FtpsImplicit => 990,
-        RemoteProtocol.Smb => 445,
-        RemoteProtocol.WebDav => 80,
-        RemoteProtocol.WebDavs or RemoteProtocol.S3 or RemoteProtocol.AzureBlob or RemoteProtocol.GoogleDrive or RemoteProtocol.OneDrive or RemoteProtocol.Dropbox => 443,
-        _ => 21,
-    };
+    public static int DefaultPort(RemoteProtocol protocol) => RemoteProtocols.Of(protocol).DefaultPort;
 
     public string Scheme => SchemeOf(Protocol);
 
-    public static string SchemeOf(RemoteProtocol protocol) => protocol switch
-    {
-        RemoteProtocol.Sftp => "sftp",
-        RemoteProtocol.Ftp => "ftp",
-        RemoteProtocol.WebDav => "dav",
-        RemoteProtocol.WebDavs => "davs",
-        RemoteProtocol.S3 => "s3",
-        RemoteProtocol.AzureBlob => "azblob",
-        RemoteProtocol.Smb => "smb",
-        RemoteProtocol.GoogleDrive => "gdrive",
-        RemoteProtocol.OneDrive => "onedrive",
-        RemoteProtocol.Dropbox => "dropbox",
-        _ => "ftps",
-    };
+    public static string SchemeOf(RemoteProtocol protocol) => RemoteProtocols.Of(protocol).Scheme;
 
-    /// <summary>Google Drive, OneDrive, Dropbox: signed in in the browser; the user is only a name for the account.</summary>
-    public bool IsCloudDrive => Protocol is RemoteProtocol.GoogleDrive or RemoteProtocol.OneDrive or RemoteProtocol.Dropbox;
+    /// <summary>A cloud drive (Google Drive, OneDrive, Dropbox ...): signed in in the browser; the user is only a name for the account.</summary>
+    public bool IsCloudDrive => RemoteProtocols.Of(Protocol).IsCloudDrive;
 
     /// <summary>The fixed "host" of a cloud drive (part of the path: account@host).</summary>
-    public static string CloudHost(RemoteProtocol protocol) => protocol switch
-    {
-        RemoteProtocol.GoogleDrive => "drive.google.com",
-        RemoteProtocol.OneDrive => "onedrive.live.com",
-        RemoteProtocol.Dropbox => "dropbox.com",
-        _ => string.Empty,
-    };
+    public static string CloudHost(RemoteProtocol protocol) => RemoteProtocols.Of(protocol).CloudHost ?? string.Empty;
 
     /// <summary>WebDAV or S3 (HTTP based).</summary>
-    public bool IsHttp => Protocol is RemoteProtocol.WebDav or RemoteProtocol.WebDavs or RemoteProtocol.S3 or RemoteProtocol.AzureBlob;
+    public bool IsHttp => Protocol is RemoteProtocol.WebDav or RemoteProtocol.WebDavs or RemoteProtocol.S3 or RemoteProtocol.AzureBlob or RemoteProtocol.AzureFiles;
 
-    /// <summary>S3 and Azure: object storage with buckets / containers at the root.</summary>
-    public bool IsObjectStorage => Protocol is RemoteProtocol.S3 or RemoteProtocol.AzureBlob;
+    /// <summary>S3 and Azure: object storage with buckets / containers (Azure Files: shares) at the root.</summary>
+    public bool IsObjectStorage => RemoteProtocols.Of(Protocol).IsObjectStorage;
 
     /// <summary>Path authority: user@host:port (the port only when it is not the default).</summary>
     public string Authority =>
@@ -147,20 +126,7 @@ public sealed class RemoteConnection
     {
         var connection = new RemoteConnection
         {
-            Protocol = scheme switch
-            {
-                "sftp" => RemoteProtocol.Sftp,
-                "ftps" => RemoteProtocol.FtpsExplicit,
-                "dav" or "webdav" => RemoteProtocol.WebDav,
-                "davs" or "webdavs" => RemoteProtocol.WebDavs,
-                "s3" => RemoteProtocol.S3,
-                "azblob" => RemoteProtocol.AzureBlob,
-                "smb" or "cifs" => RemoteProtocol.Smb,
-                "gdrive" => RemoteProtocol.GoogleDrive,
-                "onedrive" => RemoteProtocol.OneDrive,
-                "dropbox" => RemoteProtocol.Dropbox,
-                _ => RemoteProtocol.Ftp,
-            },
+            Protocol = RemoteProtocols.FromScheme(scheme)?.Protocol ?? RemoteProtocol.Ftp,
         };
         var at = authority.LastIndexOf('@');
         if (at >= 0)
