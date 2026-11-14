@@ -2169,6 +2169,7 @@
   "AdbFileSystemProvider.ADBThePhoneIsNot": "ADB：手机未连接：{0}",
   "AdbFileSystemProvider.AndroidDevices": "Android 设备",
   "AdbFileSystemProvider.MovingBetweenDevicesIsDone": "在设备之间移动通过复制完成。",
+  "ArchiveContainer.ASplitArchiveIsRead": "{0}：分卷压缩包为只读。",
   "AzureFilesFileSystemProvider.AzureFilesAreWrittenInto": "Azure：文件写入共享中。",
   "AzureFilesFileSystemProvider.AzureSharesCannotBeRenamed": "Azure：共享无法重命名。",
   "BoxFileSystemProvider.BoxAPartWasNot": "Box：有一部分未被接受：{0}",

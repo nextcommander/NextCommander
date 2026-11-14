@@ -225,9 +225,9 @@ public sealed class ArchiveFileSystemProvider : IFileSystemProvider, IContainerP
     public async Task<Stream> OpenWriteAsync(VfsPath path, bool overwrite, CancellationToken cancellationToken)
     {
         var container = ContainerOf(path);
-        if (!ArchiveFormats.IsWritable(container.Kind))
+        if (container.ReadOnlyReason is { } reason)
         {
-            throw new NotSupportedException($"{container.File.Name}: this archive format is read-only (writable format: zip).");
+            throw new NotSupportedException(reason);
         }
         var existing = await container.WithIndexAsync(index => index.Get(path.Path), cancellationToken).ConfigureAwait(false);
         if (existing is { IsDirectory: true } || (existing is not null && !overwrite))
@@ -341,7 +341,7 @@ public sealed class ArchiveFileSystemProvider : IFileSystemProvider, IContainerP
             return Task.CompletedTask;
         }
         var container = ContainerOf(path);
-        if (!ArchiveFormats.IsWritable(container.Kind))
+        if (container.ReadOnlyReason is not null)
         {
             return Task.CompletedTask;
         }

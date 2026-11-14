@@ -2169,6 +2169,7 @@
   "AdbFileSystemProvider.ADBThePhoneIsNot": "ADB: telefon bağlı değil: {0}",
   "AdbFileSystemProvider.AndroidDevices": "Android aygıtları",
   "AdbFileSystemProvider.MovingBetweenDevicesIsDone": "Aygıtlar arasında taşıma kopyalayarak yapılır.",
+  "ArchiveContainer.ASplitArchiveIsRead": "{0}: bölünmüş bir arşiv salt okunurdur.",
   "AzureFilesFileSystemProvider.AzureFilesAreWrittenInto": "Azure: dosyalar bir paylaşıma yazılır.",
   "AzureFilesFileSystemProvider.AzureSharesCannotBeRenamed": "Azure: paylaşımlar yeniden adlandırılamaz.",
   "BoxFileSystemProvider.BoxAPartWasNot": "Box: bir parça alınmadı: {0}",

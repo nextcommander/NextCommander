@@ -404,6 +404,15 @@ public sealed class ArchiveTests : IAsyncLifetime
         Assert.True(new FileInfo(target + ".001").Length <= 128 * 1024);
         // 7-Zip opens the set from its first volume and finds it whole
         Assert.Equal(0, RunSevenZip("t", target + ".001"));
+        // and so does the panel: the first volume opens like the whole archive
+        var split = Root(target + ".001");
+        Assert.Equal(["noise.bin"], await Names(split.Combine("data")));
+        await using (var read = await _registry.Resolve(split).OpenReadAsync(split.Combine("data").Combine("noise.bin"), CancellationToken.None))
+        {
+            using var copy = new MemoryStream();
+            await read.CopyToAsync(copy);
+            Assert.Equal(noise, copy.ToArray());
+        }
 
         if (SevenZipCli.SfxModule is null)
         {
@@ -421,6 +430,80 @@ public sealed class ArchiveTests : IAsyncLifetime
         Assert.Equal("MZ"u8.ToArray(), head); // a program (the SFX module) with the archive behind it
         Assert.Empty(PackJob.VolumesOf(exe)); // not split
         Assert.Equal(0, RunSevenZip("t", exe));
+    }
+
+    /// <summary>Cuts a file into volumes of <paramref name="size"/> bytes (name.001, .002 ...) as 7-Zip's -v or a splitter does.</summary>
+    private static List<string> Split(string file, int size)
+    {
+        var data = File.ReadAllBytes(file);
+        var volumes = new List<string>();
+        for (var offset = 0; offset < data.Length; offset += size)
+        {
+            var volume = file + "." + (volumes.Count + 1).ToString("D3", System.Globalization.CultureInfo.InvariantCulture);
+            File.WriteAllBytes(volume, data[offset..Math.Min(data.Length, offset + size)]);
+            volumes.Add(volume);
+        }
+        File.Delete(file);
+        return volumes;
+    }
+
+    [Fact]
+    public async Task A_split_archive_opens_from_its_first_volume()
+    {
+        var big = string.Concat(Enumerable.Range(0, 3000).Select(i => i.ToString(System.Globalization.CultureInfo.InvariantCulture) + ","));
+        var zip = MakeZip("parts.zip", ("readme.txt", "hi"), ("data/big.txt", big), ("data/çağrı.txt", "türkçe"));
+        var volumes = Split(zip, 700);
+        Assert.True(volumes.Count >= 3);
+        Assert.Equal(ArchiveKind.Zip, ArchiveFormats.Detect("parts.zip.001"));
+        Assert.Null(ArchiveFormats.Detect("parts.zip.002")); // later volumes do not open by themselves
+        Assert.Null(ArchiveFormats.Detect("notes.001")); // a split file that is no archive
+        Assert.False(_archives.CanOpen(new VfsEntry { Name = "parts.zip.002", Path = VfsPath.Local(volumes[1]) }, force: true));
+
+        var root = Root(volumes[0]);
+        Assert.Equal(["data/", "readme.txt"], await Names(root));
+        Assert.Equal(big, await ReadText(root.Combine("data").Combine("big.txt")));
+        Assert.Equal("türkçe", await ReadText(root.Combine("data").Combine("çağrı.txt")));
+
+        // read-only: nothing is written into the volumes
+        var error = await Assert.ThrowsAsync<NotSupportedException>(() => _registry.Resolve(root).CreateDirectoryAsync(root.Combine("new"), CancellationToken.None));
+        Assert.Contains("split archive", error.Message, StringComparison.Ordinal);
+
+        // a split archive inside another archive (not a local file): its volumes are joined
+        var outer = Path.Combine(_dir.Root, "outer.zip");
+        using (var archive = ZipFile.Open(outer, ZipArchiveMode.Create))
+        {
+            foreach (var volume in volumes)
+            {
+                archive.CreateEntryFromFile(volume, "set/" + Path.GetFileName(volume));
+            }
+        }
+        var inner = _archives.GetRoot(Root(outer).Combine("set").Combine("parts.zip.001"));
+        Assert.Equal(big, await ReadText(inner.Combine("data").Combine("big.txt")));
+    }
+
+    [Fact]
+    public void Volumes_read_as_one_stream()
+    {
+        var data = Enumerable.Range(0, 1000).Select(i => (byte)(i * 7)).ToArray();
+        var file = Path.Combine(_dir.Root, "v.bin");
+        File.WriteAllBytes(file, data);
+        var volumes = Split(file, 300);
+        File.WriteAllBytes(file + ".005", []); // an empty last volume
+        volumes.Add(file + ".005");
+        using var stream = new VolumeStream(volumes);
+        Assert.Equal(1000, stream.Length);
+        var buffer = new byte[200];
+        foreach (var position in new[] { 0, 250, 299, 300, 599, 900, 999 })
+        {
+            stream.Position = position;
+            var read = stream.ReadAtLeast(buffer, Math.Min(buffer.Length, 1000 - position), throwOnEndOfStream: true);
+            Assert.Equal(data[position..(position + read)], buffer[..read]);
+        }
+        stream.Position = 1000;
+        Assert.Equal(0, stream.Read(buffer));
+        Assert.Equal(["v.bin.001", "v.bin.002", "v.bin.003", "v.bin.004", "v.bin.005"], ArchiveContainer.LocalVolumes(file + ".001").Select(Path.GetFileName));
+        File.Delete(file + ".003");
+        Assert.Equal(["v.bin.001", "v.bin.002"], ArchiveContainer.LocalVolumes(file + ".001").Select(Path.GetFileName)); // a gap ends the set
     }
 
     private static int RunSevenZip(params string[] args)
