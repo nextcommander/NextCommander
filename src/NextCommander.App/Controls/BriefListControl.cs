@@ -132,6 +132,22 @@ public sealed class BriefListControl : Control
         return index < items.Count ? items[index] : null;
     }
 
+    /// <summary>Where the name of an item is drawn (control coordinates); null when it is not in view.</summary>
+    public Rect? NameRect(FileItemViewModel item)
+    {
+        if (Items is not { } items || IndexOf(items, item) is var index && index < 0)
+        {
+            return null;
+        }
+        var column = (index / RowsPerColumn) - FirstColumn;
+        if (column < 0 || column >= FullyVisibleColumns + 1)
+        {
+            return null;
+        }
+        var x = column * ColumnWidth;
+        return new Rect(x + 8 + IconSize, (index % RowsPerColumn) * RowHeight, Math.Max(40, ColumnWidth - 12 - IconSize), RowHeight);
+    }
+
     public void ScrollIntoView(FileItemViewModel? item)
     {
         if (item is null || Items is not { } items)

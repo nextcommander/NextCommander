@@ -2408,5 +2408,10 @@
   "WpdInterop.PortableDeviceError0x": "Taşınabilir aygıt hatası 0x{0}.",
   "WpdInterop.TheDeviceConnectionWasReset": "Aygıt bağlantısı sıfırlandı; yeniden açılıyor.",
   "WpdInterop.TheDeviceIsFull": "Aygıt dolu.",
-  "WpdInterop.TheDeviceWasDisconnected": "Aygıtın bağlantısı kesildi."
+  "WpdInterop.TheDeviceWasDisconnected": "Aygıtın bağlantısı kesildi.",
+  "RemoteDialogs.CloseEsc": "Kapat (Esc)",
+  "PathBar.Disconnect": "Bağlantıyı kes (Ctrl+Shift+F)",
+  "ButtonDefinition.InternalTerminalMaximized": "Dahili terminal, ekranı kaplar",
+  "ButtonDefinition.ConnectionManagerCtrlF": "Bağlantı yöneticisi (Ctrl+F)",
+  "ButtonDefinition.TerminalCtrlAltT": "Terminal (Ctrl+Alt+T)"
 }

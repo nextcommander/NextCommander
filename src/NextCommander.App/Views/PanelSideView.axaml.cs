@@ -82,6 +82,26 @@ public partial class PanelSideView : UserControl
 
     public FilePanelView Panel => FilePanel;
 
+    /// <summary>The tool shown in place of the file panel (null: the file panel).</summary>
+    public Control? Overlay => OverlayHost.Content as Control;
+
+    /// <summary>Shows a tool (the connection manager) in place of the file panel until <see cref="HideOverlay"/>.</summary>
+    public void ShowOverlay(Control content)
+    {
+        OverlayHost.Content = content;
+        OverlayHost.IsVisible = true;
+        FilePanel.IsVisible = false;
+    }
+
+    /// <summary>The file panel again (focused).</summary>
+    public void HideOverlay()
+    {
+        OverlayHost.Content = null;
+        OverlayHost.IsVisible = false;
+        FilePanel.IsVisible = true;
+        FilePanel.FocusList();
+    }
+
     private void OnSidePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(TabSideViewModel.TabsMultiline))

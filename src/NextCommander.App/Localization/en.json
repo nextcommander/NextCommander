@@ -2408,5 +2408,10 @@
   "WpdInterop.PortableDeviceError0x": "Portable device error 0x{0}.",
   "WpdInterop.TheDeviceConnectionWasReset": "The device connection was reset; it is opened again.",
   "WpdInterop.TheDeviceIsFull": "The device is full.",
-  "WpdInterop.TheDeviceWasDisconnected": "The device was disconnected."
+  "WpdInterop.TheDeviceWasDisconnected": "The device was disconnected.",
+  "RemoteDialogs.CloseEsc": "Close (Esc)",
+  "PathBar.Disconnect": "Disconnect (Ctrl+Shift+F)",
+  "ButtonDefinition.InternalTerminalMaximized": "Internal terminal, maximized",
+  "ButtonDefinition.ConnectionManagerCtrlF": "Connection manager (Ctrl+F)",
+  "ButtonDefinition.TerminalCtrlAltT": "Terminal (Ctrl+Alt+T)"
 }

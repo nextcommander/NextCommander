@@ -166,6 +166,36 @@ public partial class MainWindow : Window
 
     private FilePanelView ActiveView => _vm is not null && ReferenceEquals(_vm.ActiveSide, _vm.RightSide) ? RightPanel : LeftPanel;
 
+    private PanelSideView ActiveSideView => _vm is not null && ReferenceEquals(_vm.ActiveSide, _vm.RightSide) ? RightSideView : LeftSideView;
+
+    /// <summary>
+    /// The connection manager in place of the active file panel; the panel comes back when it closes (connecting,
+    /// Esc or its close button). A manager already open is closed first.
+    /// </summary>
+    public async Task<Connections.ConnectionManagerResult?> ShowConnectionManagerAsync(Connections.ConnectionManagerView view)
+    {
+        foreach (var side in new[] { LeftSideView, RightSideView })
+        {
+            if (side.Overlay is Connections.ConnectionManagerView open)
+            {
+                open.Close();
+            }
+        }
+        var host = ActiveSideView;
+        host.ShowOverlay(view);
+        try
+        {
+            return await view.Done;
+        }
+        finally
+        {
+            if (ReferenceEquals(host.Overlay, view))
+            {
+                host.HideOverlay();
+            }
+        }
+    }
+
     private void MarkSharedDrive() => DriveBarMarks.Mark(SharedDriveBar, _vm?.ActivePanel.SelectedDrive);
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -193,6 +223,13 @@ public partial class MainWindow : Window
         _vm.TerminalToggleRequested += (_, _) => ToggleTerminal();
         _vm.TerminalMaximizeRequested += (_, _) => ToggleTerminalMaximized();
         _vm.EditPathRequested += (_, _) => ActiveView.BeginEditPath();
+        // Shift+F6: the name is typed in the list of the panel (the dialog only where no name cell can be edited)
+        var main = _vm;
+        _vm.BeginInlineRename = (panel, item, selectBaseName) =>
+        {
+            var view = ReferenceEquals(panel, main.LeftSide.ActiveTab) ? LeftPanel : ReferenceEquals(panel, main.RightSide.ActiveTab) ? RightPanel : null;
+            return view?.BeginRename(item, selectBaseName, (renamed, name) => main.RenameEntryAsync(panel, renamed.Entry!, name)) == true;
+        };
         _vm.QuickSearchRequested += (_, filter) => ActiveView.BeginQuickSearch(null, filter);
         _vm.ButtonBarFocusRequested += (_, _) => _topBar.FocusFirst();
         _vm.HotlistMenuRequested += (_, _) => ShowHotlistMenu();
@@ -810,6 +847,18 @@ public partial class MainWindow : Window
         }
         var focused = FocusManager?.GetFocusedElement();
         var inTextBox = focused is TextBox;
+
+        // the name typed in the file list (Shift+F6) takes every key: ↑ ↓ go on to the next file, F keys run nothing
+        if (focused is TextBox renaming && renaming.Classes.Contains("renamebox"))
+        {
+            return;
+        }
+
+        // the connection manager in a panel takes its keys (Ctrl+F, Ctrl+N, Ctrl+D, Delete, Esc ...)
+        if (focused is Avalonia.Visual inside && Avalonia.VisualTree.VisualExtensions.FindAncestorOfType<Connections.ConnectionManagerView>(inside, includeSelf: true) is not null)
+        {
+            return;
+        }
 
         // the terminal screen takes every key (F keys, Tab, Ctrl+letters go to the shell); only the terminal key hides it
         if (focused is TerminalScreen)

@@ -28,12 +28,11 @@ Supported types:
 ## The Net menu
 
 - **Connection manager...** (Ctrl+F): your saved connections.
-- **New connection:** a submenu with every connection type: the connection manager opens with a new connection of
-  that type.
 - **Saved connections:** opens a saved connection directly.
 - **Connect by address...** (Ctrl+N): type an address and connect without saving.
 - **Disconnect** (Ctrl+Shift+F): closes the connection of the active panel; the panel goes back to the last local
-  folder.
+  folder. While a panel shows a connection, its path line has a red button with the connection's name that does the
+  same.
 - **Network (machines of the local network)**: see [Network neighborhood](#network-neighborhood).
 - **Map network drive...**, **Disconnect network drives...**, **Share current directory...**,
   **Unshare directory...**: the Windows network drive and sharing dialogs (Windows).
@@ -46,7 +45,9 @@ Supported types:
 
 ![The connection manager](../screenshots/connections.png)
 
-The connections are on the left, in folders; the selected connection or folder is on the right.
+The manager opens in place of the active file panel (the other panel stays usable); ✕ or Esc closes it and brings
+the file panel back. The connections are on the left, in folders; the selected connection or folder is on the right.
+New connections start from the **New connection** button below the list.
 
 - **Folders** can be nested and have a color label (for example red for production). Drag connections and folders
   to move them. An empty folder stays until you delete it.

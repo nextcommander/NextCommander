@@ -8,6 +8,15 @@
   <Border Classes="pathline" Classes.active="{Binding IsActive}">
     <DockPanel>
       <Button x:Name="SubfoldersButton" DockPanel.Dock="Left" Classes="pathbtn" Content="▾" Focusable="False" ToolTip.Tip="Subfolders" />
+      <!-- a server or cloud connection: the button closes it (the panel goes back to the last local folder) -->
+      <Button x:Name="DisconnectButton" DockPanel.Dock="Left" Classes="pathbtn" Focusable="False" IsVisible="{Binding IsRemoteConnection}"
+              ToolTip.Tip="Disconnect (Ctrl+Shift+F)" Padding="4,0" Margin="0,0,2,0">
+        <StackPanel Orientation="Horizontal" Spacing="4">
+          <PathIcon Width="11" Height="11" Data="{StaticResource MiPlug}" Foreground="#ED4245" />
+          <TextBlock Classes="noloc" Text="{Binding ConnectionName}" FontSize="11" VerticalAlignment="Center" MaxWidth="160" TextTrimming="CharacterEllipsis" />
+          <TextBlock Text="✕" FontSize="10" VerticalAlignment="Center" Opacity="0.7" />
+        </StackPanel>
+      </Button>
       <Button x:Name="HistoryButton" DockPanel.Dock="Right" Classes="pathbtn" Content="▾" Focusable="False" ToolTip.Tip="Folder history (Alt+↓)"
               IsVisible="{Binding ShowPathButtons}" />
       <Button x:Name="HotlistButton" DockPanel.Dock="Right" Classes="pathbtn" Content="*" Focusable="False" ToolTip.Tip="Hotlist (Ctrl+D)"
