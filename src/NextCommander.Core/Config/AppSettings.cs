@@ -424,8 +424,9 @@ public sealed class AppSettings
     public int SettingsVersion { get; set; } = CurrentSettingsVersion;
 
     /// <summary>2: right button marks by default. 3: dark mode and Office schemes became the "koyu" theme file.
-    /// 4: the "koyu" theme file is "dark" now.</summary>
-    public const int CurrentSettingsVersion = 4;
+    /// 4: the "koyu" theme file is "dark" now. 5: the button bar got the internal terminal, the connection manager and
+    /// the settings.</summary>
+    public const int CurrentSettingsVersion = 5;
 
     /// <summary>Default changes for files written by older versions.</summary>
     public void Upgrade()
@@ -434,7 +435,31 @@ public sealed class AppSettings
         {
             RightButtonSelects = true;
         }
+        if (SettingsVersion < 5)
+        {
+            AddNewButtons();
+        }
         SettingsVersion = CurrentSettingsVersion;
+    }
+
+    /// <summary>The buttons added in version 5, into a bar the user may have changed: only those it does not have yet.</summary>
+    private void AddNewButtons()
+    {
+        bool Has(string command) => ButtonBar.Exists(b => string.Equals(b.Command, command, StringComparison.OrdinalIgnoreCase));
+        if (!Has("nc_MaximizeTerminal"))
+        {
+            var terminal = ButtonBar.FindIndex(b => string.Equals(b.Command, "nc_ExecuteTerminal", StringComparison.OrdinalIgnoreCase));
+            ButtonBar.Insert(terminal < 0 ? ButtonBar.Count : terminal + 1, ButtonDefinition.InternalTerminal());
+        }
+        var missing = ButtonDefinition.WindowsAtTheEnd().Where(b => !Has(b.Command)).ToList();
+        if (missing.Count > 0)
+        {
+            if (ButtonBar.Count > 0 && !ButtonBar[^1].IsSeparator)
+            {
+                ButtonBar.Add(ButtonDefinition.Separator());
+            }
+            ButtonBar.AddRange(missing);
+        }
     }
 
     /// <summary>

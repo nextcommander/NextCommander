@@ -62,7 +62,20 @@ public sealed class ButtonDefinition
         Separator(),
         new() { Command = "nc_SwitchHidSys", Icon = "hidden", Tooltip = "Hidden files (Ctrl+H)" },
         new() { Command = "nc_ExecuteTerminal", Icon = "terminal", Tooltip = "Terminal (Ctrl+Alt+T)" },
+        InternalTerminal(),
         new() { Command = "nc_CommandBrowser", Icon = "commands", Tooltip = "Commands and shortcuts" },
+        Separator(),
+        .. WindowsAtTheEnd(),
+    ];
+
+    /// <summary>The internal terminal, opened maximized (in place of the panels).</summary>
+    public static ButtonDefinition InternalTerminal() => new() { Command = "nc_MaximizeTerminal", Tooltip = "Internal terminal, maximized" };
+
+    /// <summary>The buttons at the end of the bar: the connection manager and the settings.</summary>
+    public static List<ButtonDefinition> WindowsAtTheEnd() =>
+    [
+        new() { Command = "nc_FtpConnect", Tooltip = "Connection manager (Ctrl+F)" },
+        new() { Command = "nc_Config", Tooltip = "Settings" },
     ];
 
     /// <summary>The default buttons of the vertical button bar.</summary>
