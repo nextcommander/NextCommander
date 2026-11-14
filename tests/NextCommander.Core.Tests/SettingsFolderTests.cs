@@ -40,13 +40,13 @@ public sealed class SettingsFolderTests : IDisposable
             { "SettingsVersion": 4, "ButtonBar": [ { "Command": "nc_Copy" }, { "Command": "nc_ExecuteTerminal" }, { "Command": "notepad.exe" } ] }
             """);
         var bar = new SettingsStore(Path.Combine(_dir.Root, "c")).Load().ButtonBar.Select(b => b.Command).ToList();
-        Assert.Equal(["nc_Copy", "nc_ExecuteTerminal", "nc_MaximizeTerminal", "notepad.exe", "-", "nc_FtpConnect", "nc_Config"], bar);
+        Assert.Equal(["nc_Copy", "nc_ExecuteTerminal", "nc_MaximizeTerminal", "notepad.exe", "-", "nc_RemoteConnection", "nc_Config"], bar);
 
         // a bar that has them already is left alone
         _dir.Write(Path.Combine("d", "settings.json"), """
-            { "SettingsVersion": 4, "ButtonBar": [ { "Command": "nc_Config" }, { "Command": "nc_FtpConnect" }, { "Command": "nc_MaximizeTerminal" } ] }
+            { "SettingsVersion": 4, "ButtonBar": [ { "Command": "nc_Config" }, { "Command": "nc_RemoteConnection" }, { "Command": "nc_MaximizeTerminal" } ] }
             """);
-        Assert.Equal(["nc_Config", "nc_FtpConnect", "nc_MaximizeTerminal"], new SettingsStore(Path.Combine(_dir.Root, "d")).Load().ButtonBar.Select(b => b.Command));
+        Assert.Equal(["nc_Config", "nc_RemoteConnection", "nc_MaximizeTerminal"], new SettingsStore(Path.Combine(_dir.Root, "d")).Load().ButtonBar.Select(b => b.Command));
     }
 
     [Fact]

@@ -30,6 +30,28 @@ public sealed class LegacyNamesTests : IDisposable
     }
 
     [Fact]
+    public async Task Renamed_commands_still_run_and_are_converted_in_the_settings()
+    {
+        var registry = new CommandRegistry();
+        var ran = 0;
+        registry.Register("nc_RemoteConnection", "Connection manager", () => ran++);
+        Assert.True(await registry.ExecuteAsync("nc_FtpConnect"));
+        Assert.True(await registry.ExecuteAsync("cm_FtpConnect"));
+        Assert.Equal(2, ran);
+        Assert.Equal("nc_RemoteConnection", LegacyNames.Command("NC_FTPCONNECT"));
+
+        File.WriteAllText(Path.Combine(_dir.Root, "settings.json"), """
+            {
+              "ButtonBar": [ { "Command": "nc_FtpConnect" }, { "Command": "*cm_FtpConnect" }, { "Command": "nc_FtpConnectX" }, { "Command": "C:\\x\\nc_FtpConnect" } ],
+              "UserCommands": { "uc_net": { "Command": "nc_GoToRoot,nc_FtpConnect" } }
+            }
+            """);
+        var settings = new SettingsStore(_dir.Root).Load();
+        Assert.Equal(["nc_RemoteConnection", "*nc_RemoteConnection", "nc_FtpConnectX", @"C:\x\nc_FtpConnect"], settings.ButtonBar.Take(4).Select(b => b.Command));
+        Assert.Equal("nc_GoToRoot,nc_RemoteConnection", settings.UserCommands["uc_net"].Command);
+    }
+
+    [Fact]
     public void Settings_of_earlier_versions_are_converted_when_read()
     {
         var file = Path.Combine(_dir.Root, "settings.json");

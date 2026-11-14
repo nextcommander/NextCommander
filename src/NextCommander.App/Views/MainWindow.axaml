@@ -125,7 +125,7 @@
         <MenuItem Header="Folder sizes..." Command="{Binding RunCommandCommand}" CommandParameter="nc_DiskUsage" />
       </MenuItem>
       <MenuItem Header="_Net">
-        <MenuItem Header="Connection manager..." InputGesture="Ctrl+F" Command="{Binding RunCommandCommand}" CommandParameter="nc_FtpConnect" />
+        <MenuItem Header="Connection manager..." InputGesture="Ctrl+F" Command="{Binding RunCommandCommand}" CommandParameter="nc_RemoteConnection" />
         <MenuItem x:Name="SavedConnectionsMenu" Header="Saved connections">
           <MenuItem Header="(none)" IsEnabled="False" />
         </MenuItem>
