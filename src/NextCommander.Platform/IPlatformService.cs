@@ -34,6 +34,12 @@ public enum DriveKind
 
     /// <summary>Drive box / drive bar entry: the trash / Recycle Bin (trash:///).</summary>
     Trash,
+
+    /// <summary>The local folder of a cloud sync client (OneDrive, iCloud Drive, Dropbox ...): Computer view, drive bar shortcut.</summary>
+    CloudFolder,
+
+    /// <summary>A Linux distribution of the Windows Subsystem for Linux (\\wsl.localhost\Ubuntu).</summary>
+    Wsl,
 }
 
 /// <summary>A shared folder of a machine on the network: its path is \\host\name.</summary>
@@ -76,6 +82,8 @@ public sealed record DriveItem(string Name, string RootPath, string? Label, long
         DriveKind.Network => "Network Drive",
         DriveKind.Phone => "Phone",
         DriveKind.Home => "Home folder",
+        DriveKind.CloudFolder => "Cloud folder",
+        DriveKind.Wsl => "WSL",
         _ => "Disk",
     };
 
@@ -133,6 +141,12 @@ public interface IPlatformService : ITrashService
 
     /// <summary>Drives (Windows) or relevant mount points (Linux/macOS), with the home folder first on Unix.</summary>
     IReadOnlyList<DriveItem> GetDrives();
+
+    /// <summary>
+    /// Folders shown next to the drives: the local folders of cloud sync clients (<see cref="DriveKind.CloudFolder"/>) and,
+    /// on Windows, the WSL distributions (<see cref="DriveKind.Wsl"/>). Read again at most every few seconds.
+    /// </summary>
+    IReadOnlyList<DriveItem> GetShortcutFolders();
 
     /// <summary>
     /// Calls <paramref name="changed"/> (on a thread-pool thread) when drives appear or disappear: a USB disk or memory

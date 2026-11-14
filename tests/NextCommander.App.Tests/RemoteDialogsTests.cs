@@ -51,6 +51,47 @@ public sealed class RemoteDialogsTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task Services_fill_in_the_server()
+    {
+        // S3 compatible: Cloudflare R2 needs the account id in the server name
+        var dialog = _fx.Track(new ConnectionEditDialog(null, () => Task.FromResult<string?>(null), RemoteProtocol.S3));
+        dialog.Show();
+        await SettleAsync();
+        var boxes = dialog.GetVisualDescendants().OfType<TextBox>().ToList();
+        TextBox Box(string watermark) => boxes.First(b => b.PlaceholderText == watermark);
+        var host = Box("s3.eu-central-1.amazonaws.com");
+        dialog.SelectedService = "Cloudflare R2";
+        await SettleAsync();
+        Assert.Equal("ACCOUNT_ID.r2.cloudflarestorage.com", host.Text);
+        Assert.Equal("auto", Box("empty: from the server name or us-east-1").Text);
+        boxes[boxes.IndexOf(Box("default")) + 1].Text = "key";
+        void Save() => dialog.GetVisualDescendants().OfType<Button>().First(b => Equals(b.Content, "Save")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Save();
+        Assert.Null(dialog.Result); // the part in capitals is still there
+        host.Text = "0123abcd.r2.cloudflarestorage.com";
+        Save();
+        Assert.Equal(("0123abcd.r2.cloudflarestorage.com", "auto", "Cloudflare R2"), (dialog.Result!.Host, dialog.Result.Region, dialog.Result.Name));
+
+        // WebDAV: Nextcloud's start folder is the user's files
+        var dav = _fx.Track(new ConnectionEditDialog(null, () => Task.FromResult<string?>(null), RemoteProtocol.WebDavs));
+        dav.Show();
+        await SettleAsync();
+        var davBoxes = dav.GetVisualDescendants().OfType<TextBox>().ToList();
+        dav.SelectedService = "Nextcloud / ownCloud";
+        await SettleAsync();
+        davBoxes.First(b => b.PlaceholderText == "cloud.example.com").Text = "cloud.example.org";
+        davBoxes[davBoxes.IndexOf(davBoxes.First(b => b.PlaceholderText == "default")) + 1].Text = "ayşe";
+        dav.GetVisualDescendants().OfType<Button>().First(b => Equals(b.Content, "Save")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Assert.Equal("/remote.php/dav/files/ay%C5%9Fe", dav.Result!.InitialPath);
+
+        // no services for SFTP: the row is hidden
+        var sftp = _fx.Track(new ConnectionEditDialog(null, () => Task.FromResult<string?>(null), RemoteProtocol.Sftp));
+        sftp.Show();
+        await SettleAsync();
+        Assert.DoesNotContain(sftp.GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "Service:" && t.IsEffectivelyVisible);
+    }
+
+    [AvaloniaFact]
     public async Task Cloud_drives_ask_for_the_client_id_instead_of_a_server()
     {
         var dialog = _fx.Track(new ConnectionEditDialog(null, () => Task.FromResult<string?>(null)));
@@ -99,13 +140,14 @@ public sealed class RemoteDialogsTests : IDisposable
             (RemoteProtocol.Sftp, "server.example.com"), (RemoteProtocol.Ftp, "ftp.ornek.com"), (RemoteProtocol.WebDavs, "cloud.example.com"),
             (RemoteProtocol.Smb, "nas"), (RemoteProtocol.S3, "s3.amazonaws.com"), (RemoteProtocol.AzureBlob, "account.blob.core.windows.net"),
             (RemoteProtocol.GoogleDrive, "drive.google.com"), (RemoteProtocol.OneDrive, "onedrive.live.com"), (RemoteProtocol.Dropbox, "dropbox.com"),
+            (RemoteProtocol.Box, "box.com"),
         }.Select(c => new RemoteConnection { Name = c.Item1.ToString(), Protocol = c.Item1, Host = c.Item2, User = "ben" }).ToList();
         var dialog = _fx.Track(new ConnectionManagerDialog(connections, _ => Task.FromResult<RemoteConnection?>(null), _ => Task.CompletedTask));
         dialog.Show();
         await SettleAsync();
         var list = dialog.GetVisualDescendants().OfType<ListBox>().First();
-        Assert.Equal(9, list.GetVisualDescendants().OfType<ListBoxItem>().Count());
-        Assert.Equal(5, list.GetVisualDescendants().OfType<Viewbox>().Count(v => v.Child is Canvas)); // product marks: S3, Azure, Drive, OneDrive, Dropbox
+        Assert.Equal(10, list.GetVisualDescendants().OfType<ListBoxItem>().Count());
+        Assert.Equal(6, list.GetVisualDescendants().OfType<Viewbox>().Count(v => v.Child is Canvas)); // product marks: S3, Azure, Drive, OneDrive, Dropbox, Box
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
         {
             Directory.CreateDirectory(dir);

@@ -37,6 +37,11 @@ public sealed record OAuthService(
     public static OAuthService Dropbox { get; } = new("Dropbox",
         "https://www.dropbox.com/oauth2/authorize", "https://api.dropboxapi.com/oauth2/token",
         null, "localhost", "token_access_type=offline");
+
+    /// <summary>Box: the application's client secret is needed too; refresh tokens are used once (each refresh gives a new one).</summary>
+    public static OAuthService Box { get; } = new("Box",
+        "https://account.box.com/api/oauth2/authorize", "https://api.box.com/oauth2/token",
+        null, "localhost", string.Empty);
 }
 
 /// <summary>Tokens of a signed-in account.</summary>

@@ -77,7 +77,7 @@ internal sealed class LinuxPlatformService : PlatformServiceBase, IPlatformServi
         }
     }, cancellationToken);
 
-    public override IReadOnlyList<DriveItem> GetDrives()
+    protected override IReadOnlyList<DriveItem> GetSystemDrives()
     {
         var result = new List<DriveItem>
         {

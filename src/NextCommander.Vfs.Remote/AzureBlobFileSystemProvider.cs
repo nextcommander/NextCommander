@@ -87,11 +87,11 @@ public sealed class AzureBlobFileSystemProvider(RemoteHooks hooks) : RemoteProvi
 
     // ---------------------------------------------------------------- requests
 
-    private static string Query(params (string Name, string? Value)[] parameters) =>
+    internal static string Query(params (string Name, string? Value)[] parameters) =>
         string.Join("&", parameters.Where(p => p.Value is not null).Select(p => Uri.EscapeDataString(p.Name) + "=" + Uri.EscapeDataString(p.Value!)));
 
     /// <summary>The address of a container / blob (with the SAS token when there is one).</summary>
-    private static Uri UriOf(HttpRemoteClient client, string? container, string name, string? query)
+    internal static Uri UriOf(HttpRemoteClient client, string? container, string name, string? query)
     {
         var path = (IsPathStyle(client.Connection) ? "/" + client.Connection.User : string.Empty)
             + (string.IsNullOrEmpty(container) ? "/" : "/" + container + (name.Length > 0 ? "/" + name : string.Empty));
@@ -102,7 +102,7 @@ public sealed class AzureBlobFileSystemProvider(RemoteHooks hooks) : RemoteProvi
         return client.UriOf(path, query);
     }
 
-    private static async Task<HttpResponseMessage> SendAsync(HttpRemoteClient client, HttpMethod method, string? container, string name, string? query,
+    internal static async Task<HttpResponseMessage> SendAsync(HttpRemoteClient client, HttpMethod method, string? container, string name, string? query,
         CancellationToken ct, Func<HttpContent?>? content = null, Action<HttpRequestMessage>? configure = null, bool headersOnly = false)
     {
         var request = new HttpRequestMessage(method, UriOf(client, container, name, query)) { Content = content?.Invoke() };
@@ -115,7 +115,7 @@ public sealed class AzureBlobFileSystemProvider(RemoteHooks hooks) : RemoteProvi
         return await client.SendAsync(request, ct, headersOnly).ConfigureAwait(false);
     }
 
-    private static async Task<HttpStatusException> ErrorOf(HttpResponseMessage response, string path)
+    internal static async Task<HttpStatusException> ErrorOf(HttpResponseMessage response, string path)
     {
         var code = response.Headers.TryGetValues("x-ms-error-code", out var values) ? values.FirstOrDefault() : null;
         string? message = null;
@@ -132,11 +132,11 @@ public sealed class AzureBlobFileSystemProvider(RemoteHooks hooks) : RemoteProvi
         catch (System.Xml.XmlException)
         {
         }
-        var status = code is "BlobNotFound" or "ContainerNotFound" ? HttpStatusCode.NotFound : response.StatusCode;
+        var status = code is "BlobNotFound" or "ContainerNotFound" or "ResourceNotFound" or "ShareNotFound" or "ParentNotFound" ? HttpStatusCode.NotFound : response.StatusCode;
         return new HttpStatusException(status, $"{path}: {(int)response.StatusCode} {code} {message}".Trim(), code);
     }
 
-    private static async Task EnsureSuccessAsync(HttpResponseMessage response, string path)
+    internal static async Task EnsureSuccessAsync(HttpResponseMessage response, string path)
     {
         if (!response.IsSuccessStatusCode)
         {
@@ -144,12 +144,12 @@ public sealed class AzureBlobFileSystemProvider(RemoteHooks hooks) : RemoteProvi
         }
     }
 
-    private static XElement? Child(XElement? parent, string name) => parent?.Elements().FirstOrDefault(e => e.Name.LocalName == name);
+    internal static XElement? Child(XElement? parent, string name) => parent?.Elements().FirstOrDefault(e => e.Name.LocalName == name);
 
-    private static IEnumerable<XElement> Children(XElement? parent, string name) =>
+    internal static IEnumerable<XElement> Children(XElement? parent, string name) =>
         parent?.Elements().Where(e => e.Name.LocalName == name) ?? [];
 
-    private static DateTime TimeOf(string? text) =>
+    internal static DateTime TimeOf(string? text) =>
         DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var t) ? t.LocalDateTime : DateTime.MinValue;
 
     /// <summary>The kept modification time (Unix seconds, as S3 / rclone); null when there is none.</summary>
@@ -509,7 +509,7 @@ public sealed class AzureBlobFileSystemProvider(RemoteHooks hooks) : RemoteProvi
     }
 
     /// <summary>Request bodies must not close the upload buffer.</summary>
-    private sealed class NonClosingStream(Stream inner) : Stream
+    internal sealed class NonClosingStream(Stream inner) : Stream
     {
         public override bool CanRead => true;
 
