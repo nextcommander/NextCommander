@@ -46,7 +46,7 @@ there are some it is a drop-down (▾): **Connection manager...** first, then th
 (the command `nc_ConnectionsMenu` opens the same menu).
 
 The **Plugins** button next to it (`nc_PluginsMenu`) lists the places the plugins offer (such as rclone remotes) and
-the plugin list. It shows only while plugins are installed; Configuration > Layout > Button bars > *Plugins button*
+the plugin list. It shows only while plugins are installed; *Configuration > Options > Layout > Button bars > Plugins button*
 turns it off.
 
 ## The connection manager

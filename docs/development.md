@@ -130,6 +130,8 @@ Inside `NextCommander.App`:
 
 ## Plugins
 
+The full guide for using and writing plugins: [guide/plugins.md](guide/plugins.md). In short:
+
 - Location: `<settings folder>/plugins/<name>/plugin.json` or the `plugins` folder next to the program.
 - `plugin.json`: `Name`, `Assembly` (the main assembly, relative to the folder), optional `Description`,
   `Version`.

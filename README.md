@@ -82,6 +82,8 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
 - [Color themes](docs/guide/themes.md): choosing a theme and making your own.
 - [Icon packs](docs/guide/icon-packs.md): choosing an icon pack and making your own.
 - [Languages](docs/guide/languages.md): choosing the language and translating NextCommander.
+- [Plugins](docs/guide/plugins.md): installing and managing plugins, and writing your own (file systems, columns,
+  packers, viewers).
 - [Settings folder](docs/guide/settings-folder.md): where your settings live, and portable mode.
 
 ## Download and start
