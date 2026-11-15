@@ -17,7 +17,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-# YY.MM.build: year and month of the commit, the build number from the git commit count (NcVersion target in
+# YY.MM.NNNN: year and month of the commit, NNNN its number within the month from 0000 (NcVersion target in
 # Directory.Build.props). $version keeps the month with two digits (file names, setup); $numericVersion has no
 # leading zero (MSIX, macOS bundle versions).
 $versionJson = (dotnet msbuild "$root/src/NextCommander.App" -nologo -t:NcVersion -getProperty:Version -getProperty:NcNumericVersion | Out-String)

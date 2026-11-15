@@ -12,30 +12,21 @@
     <Product>NextCommander</Product>
     <Copyright>© 2026 NextCommander</Copyright>
     <!--
-      Version: YY.MM.build (e.g. 26.11.10). Year and month are those of the commit being built (the same commit
-      always gets the same version); without git, those of the build date. The build number counts the git commits:
-      NcBuildNumberStart at the commit number NcBuildNumberStartCommit (the commit that set it), one more with
-      every commit after it. Without git (a source copy) the build number is NcBuildNumberStart.
-      Version / InformationalVersion keep the month with two digits (26.01.10); the numeric versions (assembly,
-      file, MSIX) cannot have a leading zero: NcNumericVersion is 26.1.10.
+      Version: YY.MM.NNNN (e.g. 26.11.0071; user's request, 15 November 2026). Year and month are those of the commit
+      being built, so the same commit always gets the same version; NNNN is the number of that commit within its month,
+      four digits, starting at 0000 with the first commit of every new month (the commits of the history whose
+      commit date is in the same month, minus one). Without git (a source copy): the build date's month and 0000.
+      Version / InformationalVersion keep the leading zeros (26.01.0005); the numeric versions (assembly, file,
+      deb / rpm, macOS bundle) cannot have them: NcNumericVersion is 26.1.5.
       The NcVersion target sets them before the assembly attributes are written; build/publish.ps1 reads them with
       "dotnet msbuild -t:NcVersion -getProperty:Version -getProperty:NcNumericVersion".
     -->
-    <!-- restarted at 10 with the YY.MM versions (user's request, 15 November 2026); before: 1000 at commit 6 -->
-    <NcBuildNumberStart>10</NcBuildNumberStart>
-    <NcBuildNumberStartCommit>68</NcBuildNumberStartCommit>
-    <Version>$([System.DateTime]::Now.ToString('yy.MM')).$(NcBuildNumberStart)</Version>
+    <Version>$([System.DateTime]::Now.ToString('yy.MM')).0000</Version>
     <!-- no "+commit" suffix in the informational version: the app shows it as it is -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
   <Target Name="NcVersion" BeforeTargets="GetAssemblyVersion;GenerateAssemblyInfo;GetAssemblyAttributes">
-    <Exec Command="git rev-list --count HEAD" WorkingDirectory="$(MSBuildThisFileDirectory)" ConsoleToMSBuild="true"
-          IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" EchoOff="true"
-          StandardOutputImportance="low" StandardErrorImportance="low" ContinueOnError="true">
-      <Output TaskParameter="ConsoleOutput" PropertyName="_NcCommitCount" />
-      <Output TaskParameter="ExitCode" PropertyName="_NcGitExitCode" />
-    </Exec>
     <!-- year and month of the commit, "26.11" -->
     <Exec Command="git log -1 --format=%25%25cd --date=format:%25%25y.%25%25m" WorkingDirectory="$(MSBuildThisFileDirectory)" ConsoleToMSBuild="true"
           IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" EchoOff="true"
@@ -43,12 +34,23 @@
       <Output TaskParameter="ConsoleOutput" PropertyName="_NcCommitMonth" />
       <Output TaskParameter="ExitCode" PropertyName="_NcGitDateExitCode" />
     </Exec>
+    <!-- the month of every commit of the history ("26.11;26.11;26.10;..."): the commits of the same month are counted -->
+    <Exec Command="git log --format=%25%25cd --date=format:%25%25y.%25%25m HEAD" WorkingDirectory="$(MSBuildThisFileDirectory)" ConsoleToMSBuild="true"
+          IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" EchoOff="true"
+          StandardOutputImportance="low" StandardErrorImportance="low" ContinueOnError="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_NcMonths" />
+      <Output TaskParameter="ExitCode" PropertyName="_NcGitLogExitCode" />
+    </Exec>
     <PropertyGroup>
-      <_NcBuildNumber>$(NcBuildNumberStart)</_NcBuildNumber>
-      <_NcBuildNumber Condition="'$(_NcGitExitCode)' == '0' and $([System.Text.RegularExpressions.Regex]::IsMatch('$(_NcCommitCount)', '^\d+$'))">$([MSBuild]::Add($(NcBuildNumberStart), $([MSBuild]::Subtract($(_NcCommitCount), $(NcBuildNumberStartCommit)))))</_NcBuildNumber>
+      <_NcGit>false</_NcGit>
+      <_NcGit Condition="'$(_NcGitDateExitCode)' == '0' and '$(_NcGitLogExitCode)' == '0' and $([System.Text.RegularExpressions.Regex]::IsMatch('$(_NcCommitMonth)', '^\d\d\.\d\d$'))">true</_NcGit>
       <_NcYearMonth>$([System.DateTime]::Now.ToString('yy.MM'))</_NcYearMonth>
-      <_NcYearMonth Condition="'$(_NcGitDateExitCode)' == '0' and $([System.Text.RegularExpressions.Regex]::IsMatch('$(_NcCommitMonth)', '^\d\d\.\d\d$'))">$(_NcCommitMonth)</_NcYearMonth>
-      <Version>$(_NcYearMonth).$(_NcBuildNumber)</Version>
+      <_NcYearMonth Condition="$(_NcGit)">$(_NcCommitMonth)</_NcYearMonth>
+      <_NcBuildNumber>0</_NcBuildNumber>
+      <!-- occurrences of "yy.mm" in the list (each is five characters), minus one: the first commit of a month is 0000 -->
+      <_NcBuildNumber Condition="$(_NcGit)">$([MSBuild]::Subtract($([MSBuild]::Divide($([MSBuild]::Subtract($(_NcMonths.Length), $(_NcMonths.Replace($(_NcYearMonth), '').Length))), 5)), 1))</_NcBuildNumber>
+      <_NcBuildNumber>$([System.Int32]::Parse($(_NcBuildNumber)))</_NcBuildNumber>
+      <Version>$(_NcYearMonth).$(_NcBuildNumber.PadLeft(4, '0'))</Version>
       <NcNumericVersion>$([System.Int32]::Parse($(_NcYearMonth.Substring(0, 2)))).$([System.Int32]::Parse($(_NcYearMonth.Substring(3, 2)))).$(_NcBuildNumber)</NcNumericVersion>
       <AssemblyVersion>$(NcNumericVersion).0</AssemblyVersion>
       <FileVersion>$(NcNumericVersion).0</FileVersion>
