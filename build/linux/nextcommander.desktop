@@ -1,9 +1,22 @@
 [Desktop Entry]
 Type=Application
 Name=NextCommander
-Comment=Çift panelli dosya yöneticisi
+GenericName=File Manager
+GenericName[tr]=Dosya Yöneticisi
+GenericName[de]=Dateimanager
+GenericName[es]=Administrador de archivos
+GenericName[fr]=Gestionnaire de fichiers
+GenericName[zh_CN]=文件管理器
+Comment=Dual-pane file manager
+Comment[tr]=Çift panelli dosya yöneticisi
+Comment[de]=Zweispaltiger Dateimanager
+Comment[es]=Administrador de archivos de doble panel
+Comment[fr]=Gestionnaire de fichiers à deux panneaux
+Comment[zh_CN]=双面板文件管理器
 Exec=NextCommander %F
 Icon=nextcommander
 Terminal=false
-Categories=Utility;NextCommander;
+Categories=Utility;FileTools;FileManager;System;
+Keywords=files;folders;commander;ftp;sftp;archive;
 MimeType=inode/directory;
+StartupNotify=true

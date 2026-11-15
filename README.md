@@ -92,13 +92,15 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
 
 Packages are made for each platform; see the Releases page.
 
-- **Windows:** a setup program (`-setup.exe`), a zip, a portable zip and an MSIX package. The setup program
-  installs for your user without administrator rights (or for all users, if you choose), adds a Start menu entry,
-  optionally a desktop icon and "Open in NextCommander" in Explorer's folder menu, and can be removed in *Settings
-  > Apps*; your settings stay. You can also unpack the zip anywhere and start `NextCommander.exe`, or install the
-  MSIX package.
-- **Linux:** a `.tar.gz` package (an AppImage when available). Unpack it and start `NextCommander`.
-- **macOS:** `NextCommander.app` in a zip or a disk image. Drag it to Applications and open it.
+- **Windows:** a setup program (`-setup.exe`), a zip and a portable zip. The setup program installs for your user
+  without administrator rights (or for all users, if you choose), adds a Start menu entry, optionally a desktop icon
+  and "Open in NextCommander" in Explorer's folder menu, and can be removed in *Settings > Apps*; your settings
+  stay. You can also unpack the zip anywhere and start `NextCommander.exe`.
+- **Linux:** a `.deb` (Debian, Ubuntu, Mint ...) and an `.rpm` package (Fedora, RHEL, openSUSE ...): install it
+  with `sudo apt install ./NextCommander-<version>-linux-x64.deb` or `sudo dnf install ./NextCommander-<version>-linux-x64.rpm`;
+  NextCommander is then in the applications menu and `nextcommander` starts it from a terminal. There is also a
+  `.tar.gz` (unpack it and start `NextCommander`) and, when available, an AppImage.
+- **macOS:** `NextCommander.app`, also in a zip or a disk image. Drag it to Applications and open it.
   A copy that is not signed by a registered developer may first need *System Settings > Privacy & Security >
   Open Anyway*.
 

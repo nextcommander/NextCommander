@@ -34,12 +34,12 @@ dotnet run --project src/NextCommander.App
 
 | Command | Purpose |
 |---|---|
-| `./build/publish.ps1 -Rid win-x64` | zip, portable zip, `.msix` and the setup program (`-setup.exe`, Inno Setup) under `dist/` |
-| `./build/publish.ps1 -Rid linux-x64` | `.tar.gz` (with `.desktop` file and icons); an AppImage if `appimagetool` is present |
-| `./build/publish.ps1 -Rid osx-arm64` | zip containing `NextCommander.app`; on macOS also a `.dmg` |
-| `./build/windows/new-msix-certificate.ps1 -Trust` | MSIX signing certificate (`CN=NextCommander`, user store) and trusting it on this machine (UAC) |
+| `./build/publish.ps1 -Rid win-x64` | zip, portable zip and the setup program (`-setup.exe`, Inno Setup) under `dist/` |
+| `./build/publish.ps1 -Rid linux-x64` | `.deb` and `.rpm` (nfpm), `.tar.gz` (with `.desktop` file and icons); an AppImage if `appimagetool` is present |
+| `./build/publish.ps1 -Rid osx-arm64` | `NextCommander.app` (in `dist/<name>/`) and a zip of it; on macOS also a `.dmg` |
+| `./build/windows/new-signing-certificate.ps1 -Trust` | code signing certificate for the setup program (`CN=NextCommander`, user store) and trusting it on this machine (UAC) |
 | `./tests/servers/run-integration-tests.ps1` | remote tests against local FTP / SFTP / WebDAV / S3 / SMB servers (+ Azurite if Node.js is installed); needs Python |
-| `python build/make_icons.py` | application icons (Assets) and MSIX logos from the design files in `build/icons` |
+| `python build/make_icons.py` | application icons (Assets) from the design files in `build/icons` |
 | `python build/make_menu_icons.py src/NextCommander.App/Styles/MenuIcons.axaml` | menu glyphs |
 | `python build/extract_strings.py missing.json` | UI texts of the code missing from en.json, with suggested keys (and literals still holding Turkish letters) |
 
@@ -52,7 +52,8 @@ Environment variables used by tests and tools:
 | `FM_TEST_FTP`, `FM_TEST_SFTP`, `FM_TEST_WEBDAV`, `FM_TEST_S3`, `FM_TEST_SMB`, `FM_TEST_AZURE` | Enable the remote integration tests (`scheme://user:pass@host:port/dir`; WebDAV `dav://`, S3 `s3://key:secret@host:port/bucket`, SMB `smb://...:4445/TEST`, Azure `azblob://account:key@host:port/container`). Otherwise they are skipped. |
 | `FM_7Z` | Path of the 7-Zip program. |
 | `FM_LIBVLC` | Path of LibVLC (VLC is not bundled). |
-| `MSIX_CERT`, `MSIX_PUBLISHER` | A `.pfx` and publisher for signing the MSIX instead of the local certificate. |
+| `SIGN_CERT`, `SIGN_CERT_PASSWORD`, `SIGN_PUBLISHER` | A `.pfx` (and its password) for signing the setup program, or the subject of the certificate to take from the user store (default `CN=NextCommander`). The former `MSIX_*` names work too. |
+| `PACKAGE_MAINTAINER` | The maintainer written into the `.deb` / `.rpm` (`Name <mail>`; default `NextCommander`). |
 | `MACOS_SIGN_IDENTITY`, `MACOS_NOTARY_PROFILE` | macOS signing and notarization. |
 
 GitHub Actions (`.github/workflows/ci.yml`) builds and tests on the three platforms and uploads the packages.
@@ -208,16 +209,6 @@ The outputs of `build/publish.ps1` are single-file, self-contained .NET applicat
 needed on the target. The portable zip contains `portable.json`: settings, passwords and logs stay in the
 program's folder.
 
-### Windows (MSIX)
-
-`makeappx` / `signtool` come from an installed Windows SDK, or else from the `Microsoft.Windows.SDK.BuildTools`
-NuGet package (downloaded once under `artifacts/tools`; no installation or administrator rights needed).
-`build/windows/new-msix-certificate.ps1` creates a self-signed `CN=NextCommander` code signing certificate in the
-user store (no password, no .pfx), and `publish.ps1` signs the package with it. `-Trust` adds the certificate to
-the machine's Trusted People store (administrator rights once); after that the `.msix` installs with a double
-click or `Add-AppxPackage`. On another machine `dist/NextCommander-msix.cer` must be trusted too. Alternatively
-set `MSIX_CERT` (.pfx) / `MSIX_PUBLISHER`.
-
 ### Windows (setup program)
 
 `build/windows/NextCommander.iss` is an Inno Setup 7 script (Inno Setup 6 cannot compile it); `publish.ps1` compiles
@@ -228,7 +219,12 @@ The setup installs per user by default (`{autopf}` = `%LOCALAPPDATA%\Programs`, 
 users" can be chosen), in English, Turkish, German, Spanish, French or Simplified Chinese, with a Start menu entry and the optional tasks desktop icon and
 "Open in NextCommander" (folders, folder background, drives; `HKA\Software\Classes`). A running NextCommander is
 closed through the Restart Manager before its files are replaced. Uninstalling keeps the settings folder. The
-setup is signed with the same certificate as the MSIX when there is one. Silent use:
+setup is signed when a certificate is there: `build/windows/new-signing-certificate.ps1` creates a self-signed
+`CN=NextCommander` code signing certificate in the user store (no password, no .pfx; `-Trust` also trusts it on this
+machine), or `SIGN_CERT` names a `.pfx`. `signtool` comes from an installed Windows SDK, or else from the
+`Microsoft.Windows.SDK.BuildTools` NuGet package (downloaded once under `artifacts/tools`, only when there is
+something to sign). The MSIX package was dropped on 15 November 2026 (user's request): the setup program covers it.
+Silent use:
 `NextCommander-<ver>-win-x64-setup.exe /VERYSILENT /CURRENTUSER [/DIR=...] [/TASKS=desktopicon,explorermenu]`.
 
 ### macOS
@@ -247,6 +243,23 @@ identity and notarized still needs *Privacy & Security > Open Anyway*. With `MAC
 
 ### Linux
 
+The `.deb` and `.rpm` are made by [nfpm](https://nfpm.goreleaser.com) from `build/linux/nfpm.yaml`: an installed
+`nfpm`, or else its release 2.48.0 for the machine that packs (Windows, Linux or macOS; downloaded once under
+`artifacts/tools` and checked against the release's `checksums.txt`). So both packages are made on Windows too,
+without `dpkg-deb` or `rpmbuild`. They install:
+
+| Path | |
+|---|---|
+| `/opt/nextcommander/` | The program (`NextCommander`, languages, themes, icon packs, `plugins/`). |
+| `/usr/bin/nextcommander` | A link to the program. |
+| `/usr/share/applications/nextcommander.desktop` | The menu entry (`Exec=nextcommander %F`). |
+| `/usr/share/icons/hicolor/<size>/apps/nextcommander.png`, `scalable/apps/nextcommander.svg` | The icons. |
+
+The package scripts (`build/linux/postinstall.sh`, `postremove.sh`) refresh the desktop database and the icon cache;
+`.gitattributes` keeps them with LF line ends, and `publish.ps1` converts them again before packing. The dependencies
+are ICU, fontconfig and X11 (Debian / Ubuntu names in the `.deb`, Fedora / RHEL names in the `.rpm`); the program is
+self-contained otherwise. The settings in `~/.config/NextCommander` stay when the package is removed.
+
 The `.tar.gz` contains a `.desktop` file and the `icons/hicolor/<size>/apps/nextcommander.png` and
 `hicolor/scalable/apps/nextcommander.svg` icon theme (`usr/share/icons` in the AppImage).
 
@@ -255,7 +268,7 @@ The `.tar.gz` contains a `.desktop` file and the `icons/hicolor/<size>/apps/next
 The design files are in `build/icons`: `nextcommander.ico` (Windows, 16–256 px), `nextcommander.icns` (macOS,
 16–1024 px, including Retina), `png/<size>.png` (16–1024 px) and `nextcommander.svg` (scalable Linux icon).
 `python build/make_icons.py` puts them into `src/NextCommander.App/Assets` (exe icon, window icon, macOS bundle)
-and produces the MSIX logos. When the icon changes, update `build/icons` and run the script again.
+When the icon changes, update `build/icons` and run the script again.
 
 ## Roadmap
 

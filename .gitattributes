@@ -1,0 +1,2 @@
+# Shell scripts run on Linux / macOS (package scripts of the .deb / .rpm): always LF, also in a Windows checkout
+*.sh text eol=lf

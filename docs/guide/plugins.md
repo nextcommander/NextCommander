@@ -414,7 +414,7 @@ Plugins that come with the program live in `src/Plugins/<Project>` and are built
 
    The application does not reference the assembly. The build copies it with the `plugin.json` of the project
    folder to `plugins/hello` next to the program, in the build output and in the publish folder (outside the single
-   file), so the zip, the setup and the MSIX package contain it.
+   file), so the zip, the setup and the Linux and macOS packages contain it.
 3. Texts the user sees (`EntryName`, `Unavailable`, error messages) are written in English; add them to the
    language files like the program's own texts ([Languages](languages.md)) so that they are translated.
 4. Add tests to `tests/NextCommander.Core.Tests` (reference the plugin project there).

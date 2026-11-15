@@ -1,0 +1,55 @@
+# nfpm configuration of the .deb and .rpm packages, filled in by build/publish.ps1 -Rid linux-x64 / linux-arm64:
+# $ARCH (amd64 / arm64; nfpm writes x86_64 / aarch64 into the rpm), $VERSION (YY.M.build), $MAINTAINER
+# ($env:PACKAGE_MAINTAINER, "Name <mail>"), $SCRIPTS (the folder of the copies of postinstall.sh / postremove.sh with LF line ends). publish.ps1 appends "contents:" with the program
+# files (/opt/nextcommander), the /usr/bin/nextcommander link, the .desktop file and the icons.
+name: nextcommander
+arch: $ARCH
+platform: linux
+version: $VERSION
+version_schema: none
+release: 1
+section: utils
+priority: optional
+maintainer: $MAINTAINER
+vendor: NextCommander
+homepage: https://github.com/nextcommander/nextcommander
+license: Proprietary
+description: |-
+  Dual-pane file manager
+  A keyboard-driven dual-pane file manager: archives, FTP / SFTP / SMB / WebDAV / S3 / cloud drives, a built-in
+  viewer, editor and terminal, search, synchronize and multi-rename. Self-contained: no .NET installation needed.
+
+# The program is self-contained (.NET inside); it needs ICU (cultures, sorting), fontconfig and X11 (the window).
+overrides:
+  deb:
+    depends:
+      - libc6
+      - libgcc-s1 | libgcc1
+      - libstdc++6
+      - zlib1g
+      - libicu80 | libicu79 | libicu78 | libicu77 | libicu76 | libicu75 | libicu74 | libicu73 | libicu72 | libicu71 | libicu70 | libicu67 | libicu66
+      - libfontconfig1
+      - libx11-6
+      - libice6
+      - libsm6
+    recommends:
+      - xdg-utils
+  rpm:
+    depends:
+      - libicu
+      - fontconfig
+      - libX11
+      - libICE
+      - libSM
+      - zlib
+      - libstdc++
+
+scripts:
+  postinstall: $SCRIPTS/postinstall.sh
+  postremove: $SCRIPTS/postremove.sh
+
+deb:
+  compression: xz
+rpm:
+  compression: xz
+  group: Applications/File

@@ -23,11 +23,13 @@ This file gathers what is needed to continue the project on another machine or i
 dotnet build                                   # warnings are errors (TreatWarningsAsErrors)
 dotnet test                                    # Core ~290, App ~280 tests (xunit v3 through VSTest); App tests are headless Avalonia
 dotnet run --project src/NextCommander.App
-./build/publish.ps1 -Rid win-x64               # zip, portable zip, .msix and -setup.exe (Inno Setup 7, build/windows/NextCommander.iss) under dist/
-                                               # (without the SDK / Inno Setup, makeappx and ISCC come from NuGet: BuildTools, Tools.InnoSetup)
-./build/windows/new-msix-certificate.ps1 -Trust # MSIX signing certificate (CN=NextCommander, user store) + trust it on this machine (UAC)
+./build/publish.ps1 -Rid win-x64               # zip, portable zip and -setup.exe (Inno Setup 7, build/windows/NextCommander.iss) under dist/ (no MSIX since 15 November 2026)
+                                               # (without the SDK / Inno Setup, signtool and ISCC come from NuGet: BuildTools, Tools.InnoSetup)
+./build/publish.ps1 -Rid linux-x64             # .deb + .rpm (nfpm 2.48.0, build/linux/nfpm.yaml; downloaded and checksum-checked when not installed), .tar.gz
+./build/publish.ps1 -Rid osx-arm64             # dist/<name>/NextCommander.app + zip (+ .dmg on a Mac)
+./build/windows/new-signing-certificate.ps1 -Trust # setup signing certificate (CN=NextCommander, user store) + trust it on this machine (UAC)
 ./tests/servers/run-integration-tests.ps1      # remote tests against local FTP/SFTP/WebDAV/S3/SMB (+ Azurite if Node is there) servers (needs Python)
-python build/make_icons.py                     # application icons (Assets) + MSIX logos from the design files in build/icons
+python build/make_icons.py                     # application icons (Assets) from the design files in build/icons
 python build/make_menu_icons.py src/NextCommander.App/Styles/MenuIcons.axaml   # menu glyphs
 python build/extract_strings.py missing.json   # UI texts of the code missing from en.json, with suggested keys (and literals still holding Turkish letters)
 ```
