@@ -194,8 +194,11 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     /// <summary>The view should show the hotlist menu (Ctrl+D) for the active panel.</summary>
     public event EventHandler? HotlistMenuRequested;
 
-    /// <summary>The view should show the connections menu (nc_ConnectionsMenu): saved connections by type, plugin entry points.</summary>
-    public event EventHandler? ConnectionsMenuRequested;
+    /// <summary>
+    /// The view should show the menu of a button bar button: the connection manager's (nc_ConnectionsMenu: saved
+    /// connections by type) or the plugins' (nc_PluginsMenu).
+    /// </summary>
+    public event EventHandler<Controls.DropDown>? DropDownMenuRequested;
 
     /// <summary>Button bars changed (edited, shown/hidden).</summary>
     public event EventHandler? ButtonBarsChanged;
@@ -1029,7 +1032,8 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         c.Register("nc_RemoteConnection", "Connection manager: FTP, SFTP, SCP, WebDAV, SMB, S3, Azure, Google Drive, OneDrive, Dropbox, Box (Ctrl+F)", _ => ConnectAsync());
         c.Register("nc_NewConnection", "New connection (parameter: sftp, scp, ftp, ftps, davs, dav, smb, s3, azblob, azfile, gdrive, onedrive, dropbox, box)", p => NewConnectionAsync(p));
         c.Register("nc_OpenConnection", "Open a saved connection (parameter: the connection's name)", p => OpenConnectionAsync(p));
-        c.Register("nc_ConnectionsMenu", "Saved connections menu, grouped by type", () => ConnectionsMenuRequested?.Invoke(this, EventArgs.Empty));
+        c.Register("nc_ConnectionsMenu", "Saved connections menu, grouped by type", () => DropDownMenuRequested?.Invoke(this, Controls.DropDown.Connections));
+        c.Register("nc_PluginsMenu", "Plugins menu: the places of the plugins (rclone remotes ...)", () => DropDownMenuRequested?.Invoke(this, Controls.DropDown.Plugins));
         c.Register("nc_FtpDisconnect", "Disconnect from server (Ctrl+Shift+F)", _ => DisconnectAsync());
         c.Register("nc_MasterPassword", "Set / change master password", _ => MasterPasswordAsync());
         c.Register("nc_ExportSettings", "Export settings (options, connections, Hotlist, own themes ...) to a file for another installation", _ => ExportSettingsAsync());
@@ -2365,6 +2369,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             Services.UiFonts.Apply(app, _settings);
         }
         OnPropertyChanged(nameof(MainFont));
+        OnPropertyChanged(nameof(HasPluginMenu)); // the "plugins button" setting
         Left.RefreshDrives();  // drive icons follow Icons > system drive icons
         Right.RefreshDrives();
         foreach (var tab in LeftSide.Tabs.Concat(RightSide.Tabs))
@@ -2749,8 +2754,11 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     /// <summary>Saved connections (Network > Saved connections).</summary>
     public IReadOnlyList<RemoteConnection> SavedConnections => _settings.Connections;
 
-    /// <summary>Whether the connections menu has something to offer: the button of the button bar is shown only then.</summary>
-    public bool HasConnectionMenuEntries => _settings.Connections.Count > 0 || PluginEntryPoints.Count > 0;
+    /// <summary>Whether there are saved connections: the connection manager's button then opens a menu with them.</summary>
+    public bool HasConnectionMenuEntries => _settings.Connections.Count > 0;
+
+    /// <summary>The plugins' button of the button bar: shown while plugins are loaded (without errors) and the setting is on.</summary>
+    public bool HasPluginMenu => _settings.ShowPluginsButton && Plugins.Exists(p => p.Error is null);
 
     /// <summary>Closes the connection of the active panel's server and goes back to the last local folder.</summary>
     private async Task DisconnectAsync()

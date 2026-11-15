@@ -68,17 +68,20 @@ public sealed class ButtonDefinition
         .. WindowsAtTheEnd(),
     ];
 
-    /// <summary>The saved connections as a drop-down menu grouped by type (shown only when there are connections).</summary>
-    public static ButtonDefinition ConnectionsMenu() => new() { Command = "nc_ConnectionsMenu", Tooltip = "Saved connections" };
+    /// <summary>The plugins' drop-down menu (shown only while plugins are loaded and the setting is on).</summary>
+    public static ButtonDefinition PluginsMenu() => new() { Command = "nc_PluginsMenu", Tooltip = "Plugins" };
 
     /// <summary>The internal terminal, opened maximized (in place of the panels).</summary>
     public static ButtonDefinition InternalTerminal() => new() { Command = "nc_MaximizeTerminal", Tooltip = "Internal terminal, maximized" };
 
-    /// <summary>The buttons at the end of the bar: the connection manager, the saved connections menu and the settings.</summary>
+    /// <summary>
+    /// The buttons at the end of the bar: the connection manager (a menu with the saved connections by type when
+    /// there are some), the plugins and the settings.
+    /// </summary>
     public static List<ButtonDefinition> WindowsAtTheEnd() =>
     [
         new() { Command = "nc_RemoteConnection", Tooltip = "Connection manager (Ctrl+F)" },
-        ConnectionsMenu(),
+        PluginsMenu(),
         new() { Command = "nc_Config", Tooltip = "Settings" },
     ];
 

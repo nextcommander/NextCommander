@@ -1921,6 +1921,8 @@ public sealed class SettingsView : UserControl
             ButtonBarItem(layout, "Button bars", "Button bar buttons", "Add, remove, move and change buttons (command, parameters, icon, tooltip) in the button bar editor.",
                 vertical: false),
             ButtonBarItem(layout, "Button bars", "Vertical button bar buttons", "The bar between the panels.", vertical: true),
+            Bool(layout, "Button bars", "Plugins button", "A menu of the loaded plugins and their places (rclone remotes ...) in the button bar; shown only when plugins are installed.",
+                s => s.ShowPluginsButton, (s, v) => s.ShowPluginsButton = v),
 
             // Display
             Bool(display, "File display", "Show hidden files", "Can also be changed with Ctrl+H.", s => s.ShowHidden, (s, v) => s.ShowHidden = v),

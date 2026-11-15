@@ -12,17 +12,18 @@
     <Product>NextCommander</Product>
     <Copyright>© 2026 NextCommander</Copyright>
     <!--
-      Version: YY.MM.build (e.g. 26.11.1060). Year and month are those of the commit being built (the same commit
+      Version: YY.MM.build (e.g. 26.11.10). Year and month are those of the commit being built (the same commit
       always gets the same version); without git, those of the build date. The build number counts the git commits:
-      NcBuildNumberStart at the commit number NcBuildNumberStartCommit (the commit that introduced it), one more with
+      NcBuildNumberStart at the commit number NcBuildNumberStartCommit (the commit that set it), one more with
       every commit after it. Without git (a source copy) the build number is NcBuildNumberStart.
-      Version / InformationalVersion keep the month with two digits (26.01.1060); the numeric versions (assembly,
-      file, MSIX) cannot have a leading zero: NcNumericVersion is 26.1.1060.
+      Version / InformationalVersion keep the month with two digits (26.01.10); the numeric versions (assembly,
+      file, MSIX) cannot have a leading zero: NcNumericVersion is 26.1.10.
       The NcVersion target sets them before the assembly attributes are written; build/publish.ps1 reads them with
       "dotnet msbuild -t:NcVersion -getProperty:Version -getProperty:NcNumericVersion".
     -->
-    <NcBuildNumberStart>1000</NcBuildNumberStart>
-    <NcBuildNumberStartCommit>6</NcBuildNumberStartCommit>
+    <!-- restarted at 10 with the YY.MM versions (user's request, 15 November 2026); before: 1000 at commit 6 -->
+    <NcBuildNumberStart>10</NcBuildNumberStart>
+    <NcBuildNumberStartCommit>68</NcBuildNumberStartCommit>
     <Version>$([System.DateTime]::Now.ToString('yy.MM')).$(NcBuildNumberStart)</Version>
     <!-- no "+commit" suffix in the informational version: the app shows it as it is -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>

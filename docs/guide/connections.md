@@ -29,7 +29,7 @@ Supported types:
 
 - **Connection manager...** (Ctrl+F): your saved connections.
 - **Saved connections:** opens a saved connection directly; the connections are grouped by type (SFTP, FTP,
-  Amazon S3, Google Drive ...), the places of file system plugins (rclone remotes) follow under their own group.
+  Amazon S3, Google Drive ...).
 - **Connect by address...** (Ctrl+N): type an address and connect without saving.
 - **Disconnect** (Ctrl+Shift+F): closes the connection of the active panel; the panel goes back to the last local
   folder. While a panel shows a connection, its path line has a red button with the connection's name that does the
@@ -41,14 +41,19 @@ Supported types:
 - **Show hidden files on FTP**.
 - **Master password...**: see [Saved passwords](#saved-passwords-and-the-master-password).
 
-The button bar has the same list as a drop-down next to the connection manager's button (▾, the command
-`nc_ConnectionsMenu`); the button appears once there is a saved connection (or a plugin place such as rclone).
+In the button bar, the connection manager's button opens the manager while there is no saved connection; once
+there are some it is a drop-down (▾): **Connection manager...** first, then the saved connections grouped by type
+(the command `nc_ConnectionsMenu` opens the same menu).
+
+The **Plugins** button next to it (`nc_PluginsMenu`) lists the places the plugins offer (such as rclone remotes) and
+the plugin list. It shows only while plugins are installed; Configuration > Layout > Button bars > *Plugins button*
+turns it off.
 
 ## The connection manager
 
 ![The connection manager](../screenshots/connections.png)
 
-The manager opens in place of the right file panel, whichever panel is active (the left panel stays usable); ✕ or
+The manager opens in place of the left file panel, whichever panel is active (the right panel stays usable); ✕ or
 Esc closes it and brings the file panel back. The connections are on the left, in folders; the selected connection or folder is on the right.
 New connections start from the **New connection** button below the list.
 
@@ -194,8 +199,7 @@ footer shows the free space.
 ### rclone remotes
 rclone support is a plugin shipped with the program (`plugins/rclone` next to it; Configuration > Plugins can turn it
 off). With [rclone](https://rclone.org/downloads) installed (on the PATH or through `FM_RCLONE`), **rclone remotes**
-in the connections menu of the button bar (or Net > Saved connections > rclone) lists the remotes of your rclone
-configuration; set them up with `rclone config`. Their passwords and tokens stay
+in the Plugins menu of the button bar lists the remotes of your rclone configuration; set them up with `rclone config`. Their passwords and tokens stay
 with rclone. NextCommander starts rclone once as a local API server (only on 127.0.0.1, with a random password) and
 stops it when it closes. Files are transferred through temporary files and keep their times where the service can.
 

@@ -169,32 +169,31 @@ public partial class MainWindow : Window
     private PanelSideView ActiveSideView => _vm is not null && ReferenceEquals(_vm.ActiveSide, _vm.RightSide) ? RightSideView : LeftSideView;
 
     /// <summary>
-    /// The connections menu (nc_ConnectionsMenu) below its button in a button bar, or over the file list when no bar
-    /// shows the button.
+    /// The connection manager's menu (nc_ConnectionsMenu) or the plugins' menu (nc_PluginsMenu) below its button in a
+    /// button bar, or over the file list when no bar shows the button.
     /// </summary>
-    private void ShowConnectionsMenu()
+    private void ShowDropDownMenu(Controls.DropDown kind)
     {
         if (_vm is null)
         {
             return;
         }
-        if (_topBar.IsEffectivelyVisible && _topBar.ConnectionsMenuButton is { } top)
+        var (anchor, below) = _topBar.IsEffectivelyVisible && _topBar.DropDownButton(kind) is { } top ? (top, true)
+            : _verticalBar.IsEffectivelyVisible && _verticalBar.DropDownButton(kind) is { } side ? (side, false)
+            : ((Control)ActiveView.ListArea, false);
+        if (kind == Controls.DropDown.Plugins)
         {
-            Services.ConnectionMenus.Show(_vm, top, belowButton: true);
-        }
-        else if (_verticalBar.IsEffectivelyVisible && _verticalBar.ConnectionsMenuButton is { } side)
-        {
-            Services.ConnectionMenus.Show(_vm, side, belowButton: false);
+            Services.PluginMenus.Show(_vm, anchor, below);
         }
         else
         {
-            Services.ConnectionMenus.Show(_vm, ActiveView.ListArea, belowButton: false);
+            Services.ConnectionMenus.Show(_vm, anchor, below);
         }
     }
 
     /// <summary>
-    /// The connection manager in place of the right file panel, whichever panel is active (user's request); the panel
-    /// comes back when it closes (connecting, Esc or its close button). A manager already open is closed first.
+    /// The connection manager in place of the left file panel, whichever panel is active (user's request, 15 November
+    /// 2026); the panel comes back when it closes (connecting, Esc or its close button). A manager already open is closed first.
     /// </summary>
     public async Task<Connections.ConnectionManagerResult?> ShowConnectionManagerAsync(Connections.ConnectionManagerView view)
     {
@@ -205,7 +204,7 @@ public partial class MainWindow : Window
                 open.Close();
             }
         }
-        var host = RightSideView;
+        var host = LeftSideView;
         host.ShowOverlay(view);
         try
         {
@@ -284,7 +283,7 @@ public partial class MainWindow : Window
         };
         _vm.QuickSearchRequested += (_, filter) => ActiveView.BeginQuickSearch(null, filter);
         _vm.ButtonBarFocusRequested += (_, _) => _topBar.FocusFirst();
-        _vm.ConnectionsMenuRequested += (_, _) => ShowConnectionsMenu();
+        _vm.DropDownMenuRequested += (_, kind) => ShowDropDownMenu(kind);
         _vm.HotlistMenuRequested += (_, _) => ShowHotlistMenu();
         _vm.ButtonBarsChanged += (_, _) => UpdateButtonBars();
         _vm.TreeChanged += (_, path) =>

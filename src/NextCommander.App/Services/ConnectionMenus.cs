@@ -8,13 +8,12 @@ namespace NextCommander.App.Services;
 
 /// <summary>
 /// The saved connections as a menu, grouped by their type (SFTP, FTP, Amazon S3, Google Drive ...) in the order of
-/// the connection manager's type list, then the entry points of the file system plugins (e.g. "rclone remotes")
-/// under their own group. Used by the connections button of the button bar (nc_ConnectionsMenu) and by
-/// Net > Saved connections.
+/// the connection manager's type list. Used by the connection manager's button of the button bar (a drop-down when
+/// there are saved connections; nc_ConnectionsMenu opens it too) and by Net > Saved connections.
 /// </summary>
 public static class ConnectionMenus
 {
-    /// <summary>One submenu per type with the connections in it (by name); the plugin groups after them.</summary>
+    /// <summary>One submenu per type with the connections in it (by name).</summary>
     public static List<Control> Items(MainWindowViewModel vm)
     {
         var items = new List<Control>();
@@ -45,13 +44,54 @@ public static class ConnectionMenus
             }
             items.Add(menu);
         }
+        return items;
+    }
+
+    /// <summary>
+    /// The connection manager's menu: the manager first, then the saved connections by type; below its button of the
+    /// button bar, or at the top left of the file list when it is called without one (command line, shortcut).
+    /// </summary>
+    public static MenuFlyout Show(MainWindowViewModel vm, Control anchor, bool belowButton)
+    {
+        var flyout = NewFlyout(belowButton);
+        var manager = new MenuItem { Header = "Connection manager...", Icon = MenuIcons.Create("nc_RemoteConnection"), InputGesture = new KeyGesture(Key.F, KeyModifiers.Control) };
+        manager.Click += (_, _) => _ = vm.ExecuteAsync("nc_RemoteConnection");
+        flyout.Items.Add(manager);
+        var groups = Items(vm);
+        if (groups.Count > 0)
+        {
+            flyout.Items.Add(new Separator());
+            foreach (var item in groups)
+            {
+                flyout.Items.Add(item);
+            }
+        }
+        flyout.ShowAt(anchor);
+        return flyout;
+    }
+
+    /// <summary>A menu below a button of the top bar, or opening down and to the right from the anchor's corner.</summary>
+    internal static MenuFlyout NewFlyout(bool belowButton) => new()
+    {
+        Placement = belowButton ? PlacementMode.BottomEdgeAlignedLeft : PlacementMode.AnchorAndGravity,
+        PlacementAnchor = PopupAnchor.TopLeft,
+        PlacementGravity = PopupGravity.BottomRight,
+    };
+}
+
+/// <summary>
+/// The plugins' menu (nc_PluginsMenu, a button of the button bar shown while plugins are loaded and the setting
+/// <see cref="Core.Config.AppSettings.ShowPluginsButton"/> is on): the places the file system plugins offer
+/// (e.g. rclone remotes) grouped by plugin, then the list of the loaded plugins.
+/// </summary>
+public static class PluginMenus
+{
+    public static List<Control> Items(MainWindowViewModel vm)
+    {
+        var items = new List<Control>();
         foreach (var group in vm.PluginEntryPoints.GroupBy(e => e.EntryGroup, StringComparer.CurrentCultureIgnoreCase))
         {
-            if (items.Count > 0 && items[^1] is not Separator)
-            {
-                items.Add(new Separator());
-            }
-            var menu = new MenuItem { Header = group.Key, Icon = MenuIcons.Create("nc_Plugins"), Classes = { "noloc" }, Tag = "connections.plugin" };
+            var menu = new MenuItem { Header = group.Key, Icon = MenuIcons.Create("nc_Plugins"), Classes = { "noloc" }, Tag = "plugins.group" };
             foreach (var entry in group)
             {
                 var item = new MenuItem { Header = entry.EntryName, Icon = MenuIcons.Create("nc_Plugins") };
@@ -64,30 +104,20 @@ public static class ConnectionMenus
         return items;
     }
 
-    /// <summary>
-    /// The connections menu (nc_ConnectionsMenu): below its button of the button bar, or at the top left of the file
-    /// list when it is called without one (command line, shortcut); the connection manager at the end.
-    /// </summary>
     public static MenuFlyout Show(MainWindowViewModel vm, Control anchor, bool belowButton)
     {
-        var flyout = new MenuFlyout
-        {
-            Placement = belowButton ? PlacementMode.BottomEdgeAlignedLeft : PlacementMode.AnchorAndGravity,
-            PlacementAnchor = PopupAnchor.TopLeft,
-            PlacementGravity = PopupGravity.BottomRight,
-        };
+        var flyout = ConnectionMenus.NewFlyout(belowButton);
         foreach (var item in Items(vm))
         {
             flyout.Items.Add(item);
         }
-        if (flyout.Items.Count == 0)
+        if (flyout.Items.Count > 0)
         {
-            flyout.Items.Add(new MenuItem { Header = "(none)", IsEnabled = false });
+            flyout.Items.Add(new Separator());
         }
-        flyout.Items.Add(new Separator());
-        var manager = new MenuItem { Header = "Connection manager...", Icon = MenuIcons.Create("nc_RemoteConnection"), InputGesture = new KeyGesture(Key.F, KeyModifiers.Control) };
-        manager.Click += (_, _) => _ = vm.ExecuteAsync("nc_RemoteConnection");
-        flyout.Items.Add(manager);
+        var list = new MenuItem { Header = "Plugins...", Icon = MenuIcons.Create("nc_Plugins") };
+        list.Click += (_, _) => _ = vm.ExecuteAsync("nc_Plugins");
+        flyout.Items.Add(list);
         flyout.ShowAt(anchor);
         return flyout;
     }

@@ -146,7 +146,7 @@ Since 7 November 2026 colors come only from theme files (default: system colors,
 - [x] SSH agent login for SFTP / SCP (Windows OpenSSH agent, Pageant, SSH_AUTH_SOCK) and jump hosts (a tunnel through another SSH server); tried against an asyncssh server (tests/servers/sftp_server.py with an authorized_keys file).
 - [x] Connection timeout, FTP file name encoding, S3 server-side encryption (SSE-S3, SSE-KMS), AWS SSO profiles (device sign-in, the AWS CLI's token cache), Azure Entra ID sign-in (Blob and Files). SSO and Entra ID are tested against fakes; to be tried with real accounts.
 - [x] Importing FileZilla (sitemanager.xml) and WinSCP (WinSCP.ini or the registry) sites with folders, key files, tunnels and saved passwords.
-- [x] rclone remotes (rclone://remote/path; a plugin shipped with the program since 15 November 2026, its entry point in the connections menu): rclone rcd on 127.0.0.1 with a random password, copyfile through temporary files. Tested against a fake rc API; to be tried with a real rclone (FM_TEST_RCLONE=remote runs the test against it).
+- [x] rclone remotes (rclone://remote/path; a plugin shipped with the program since 15 November 2026, its entry point in the Plugins menu of the button bar): rclone rcd on 127.0.0.1 with a random password, copyfile through temporary files. Tested against a fake rc API; to be tried with a real rclone (FM_TEST_RCLONE=remote runs the test against it).
 
 ## Internal terminal
 - [x] Terminal at the bottom of the window via the button at the end of the command line / Ctrl+` (cmd.exe or $SHELL, redirected input/output). Commands are typed after the prompt, inside the output area.

@@ -40,33 +40,35 @@ public sealed class SettingsFolderTests : IDisposable
             { "SettingsVersion": 4, "ButtonBar": [ { "Command": "nc_Copy" }, { "Command": "nc_ExecuteTerminal" }, { "Command": "notepad.exe" } ] }
             """);
         var bar = new SettingsStore(Path.Combine(_dir.Root, "c")).Load().ButtonBar.Select(b => b.Command).ToList();
-        Assert.Equal(["nc_Copy", "nc_ExecuteTerminal", "nc_MaximizeTerminal", "notepad.exe", "-", "nc_RemoteConnection", "nc_ConnectionsMenu", "nc_Config"], bar);
+        Assert.Equal(["nc_Copy", "nc_ExecuteTerminal", "nc_MaximizeTerminal", "notepad.exe", "-", "nc_RemoteConnection", "nc_PluginsMenu", "nc_Config"], bar);
 
-        // a bar that has them already keeps its order; the connections menu goes next to the connection manager
+        // a bar that has them already keeps its order; the plugins' button goes next to the connection manager
         _dir.Write(Path.Combine("d", "settings.json"), """
             { "SettingsVersion": 4, "ButtonBar": [ { "Command": "nc_Config" }, { "Command": "nc_RemoteConnection" }, { "Command": "nc_MaximizeTerminal" } ] }
             """);
-        Assert.Equal(["nc_Config", "nc_RemoteConnection", "nc_ConnectionsMenu", "nc_MaximizeTerminal"],
+        Assert.Equal(["nc_Config", "nc_RemoteConnection", "nc_PluginsMenu", "nc_MaximizeTerminal"],
             new SettingsStore(Path.Combine(_dir.Root, "d")).Load().ButtonBar.Select(b => b.Command));
     }
 
     [Fact]
-    public void Version_5_button_bars_get_the_connections_menu_next_to_the_connection_manager()
+    public void Older_button_bars_get_the_plugins_button_next_to_the_connection_manager()
     {
-        _dir.Write(Path.Combine("e", "settings.json"), """
-            { "SettingsVersion": 5, "ButtonBar": [ { "Command": "nc_RemoteConnection" }, { "Command": "nc_Config" } ] }
-            """);
-        Assert.Equal(["nc_RemoteConnection", "nc_ConnectionsMenu", "nc_Config"], new SettingsStore(Path.Combine(_dir.Root, "e")).Load().ButtonBar.Select(b => b.Command));
+        List<string?> Bar(string folder, string json)
+        {
+            _dir.Write(Path.Combine(folder, "settings.json"), json);
+            return [.. new SettingsStore(Path.Combine(_dir.Root, folder)).Load().ButtonBar.Select(b => b.Command)];
+        }
+        Assert.Equal(["nc_RemoteConnection", "nc_PluginsMenu", "nc_Config"],
+            Bar("e", """{ "SettingsVersion": 5, "ButtonBar": [ { "Command": "nc_RemoteConnection" }, { "Command": "nc_Config" } ] }"""));
 
-        // without the manager's button: at the end; a bar that has the menu (moved by the user) is left alone
-        _dir.Write(Path.Combine("f", "settings.json"), """
-            { "SettingsVersion": 5, "ButtonBar": [ { "Command": "nc_Copy" } ] }
-            """);
-        Assert.Equal(["nc_Copy", "nc_ConnectionsMenu"], new SettingsStore(Path.Combine(_dir.Root, "f")).Load().ButtonBar.Select(b => b.Command));
-        _dir.Write(Path.Combine("g", "settings.json"), """
-            { "SettingsVersion": 5, "ButtonBar": [ { "Command": "nc_ConnectionsMenu" }, { "Command": "nc_RemoteConnection" } ] }
-            """);
-        Assert.Equal(["nc_ConnectionsMenu", "nc_RemoteConnection"], new SettingsStore(Path.Combine(_dir.Root, "g")).Load().ButtonBar.Select(b => b.Command));
+        // version 6: the separate connections menu goes, the connection manager's button has the connections now
+        Assert.Equal(["nc_RemoteConnection", "nc_PluginsMenu", "nc_Config"],
+            Bar("h", """{ "SettingsVersion": 6, "ButtonBar": [ { "Command": "nc_RemoteConnection" }, { "Command": "nc_ConnectionsMenu" }, { "Command": "nc_Config" } ] }"""));
+
+        // without the manager's button: at the end; a bar that has the plugins' button (moved by the user) keeps its place
+        Assert.Equal(["nc_Copy", "nc_PluginsMenu"], Bar("f", """{ "SettingsVersion": 5, "ButtonBar": [ { "Command": "nc_Copy" } ] }"""));
+        Assert.Equal(["nc_PluginsMenu", "nc_RemoteConnection"],
+            Bar("g", """{ "SettingsVersion": 6, "ButtonBar": [ { "Command": "nc_PluginsMenu" }, { "Command": "nc_ConnectionsMenu" }, { "Command": "nc_RemoteConnection" } ] }"""));
     }
 
     [Fact]

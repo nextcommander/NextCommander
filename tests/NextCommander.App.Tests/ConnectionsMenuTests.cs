@@ -10,68 +10,98 @@ using static NextCommander.App.Tests.UiFixture;
 
 namespace NextCommander.App.Tests;
 
-/// <summary>The saved connections as a drop-down of the button bar (next to the connection manager), grouped by type.</summary>
+/// <summary>
+/// The menus of the button bar: the connection manager's button with the saved connections grouped by type, and the
+/// plugins' button (only while plugins are loaded and the setting shows it).
+/// </summary>
+[Collection("Appearance")] // ApplySettings applies the (application-wide) appearance again
 public sealed class ConnectionsMenuTests : IDisposable
 {
     private readonly UiFixture _fx = new();
 
     public void Dispose() => _fx.Dispose();
 
-    private static Button ConnectionsButton(Views.MainWindow w) =>
+    private static Button BarButton(Views.MainWindow w, string command) =>
         w.GetVisualDescendants().OfType<ButtonBarControl>().Single(b => !b.IsVertical)
-            .GetVisualDescendants().OfType<Button>().Single(b => b.Tag is ButtonDefinition { Command: "nc_ConnectionsMenu" });
+            .GetVisualDescendants().OfType<Button>().Single(b => b.Tag is ButtonDefinition d && d.Command == command);
+
+    private static void Click(Avalonia.Interactivity.Interactive control, Avalonia.Interactivity.RoutedEvent click) =>
+        control.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(click));
 
     [AvaloniaFact]
-    public async Task The_button_shows_only_with_saved_connections_and_lists_them_by_type()
+    public async Task The_connection_manager_button_lists_the_saved_connections_by_type()
     {
         var (w, vm) = await _fx.OpenAsync(new FakeEntryPoint("s3")); // the S3 connection opens without a server
-        var button = ConnectionsButton(w);
-        Assert.False(button.IsVisible); // nothing to offer yet
+        Assert.DoesNotContain(vm.Settings.ButtonBar, b => b.Command == "nc_ConnectionsMenu"); // no separate button any more
+        var button = BarButton(w, "nc_RemoteConnection");
+        Assert.DoesNotContain(button.GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "▾");
+
+        // without saved connections the button opens the manager at once
+        Click(button, Button.ClickEvent);
+        await WaitUntilAsync(() => _fx.Dialogs.LastManager is not null);
 
         vm.Settings.Connections.Add(new RemoteConnection { Name = "web", Protocol = RemoteProtocol.Sftp, Host = "web.example.com" });
         vm.Settings.Connections.Add(new RemoteConnection { Name = "backup", Protocol = RemoteProtocol.S3, Host = "s3.example.com" });
         vm.Settings.Connections.Add(new RemoteConnection { Name = "api", Protocol = RemoteProtocol.Sftp, Host = "api.example.com" });
         vm.SaveSettings();
         await SettleAsync();
-        Assert.True(button.IsVisible);
+        button = BarButton(w, "nc_RemoteConnection");
+        Assert.Contains(button.GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "▾"); // a drop-down now
 
-        // one submenu per type, in the order of the connection manager's type list; the names sorted in each
-        var groups = ConnectionMenus.Items(vm).OfType<MenuItem>().ToList();
-        Assert.Equal(["SFTP (2)", "Amazon S3 (1)"], groups.Select(g => (string)g.Header!));
-        Assert.Equal(["api", "web"], groups[0].Items.OfType<MenuItem>().Select(i => (string)i.Header!));
+        // the manager first, then one submenu per type in the order of the manager's type list; the names sorted in each
+        var menu = ConnectionMenus.Show(vm, button, belowButton: true);
+        await SettleAsync();
+        var items = menu.Items.OfType<MenuItem>().ToList();
+        Assert.Equal(["Connection manager...", "SFTP (2)", "Amazon S3 (1)"], items.Select(g => (string)g.Header!));
+        Assert.Equal(["api", "web"], items[1].Items.OfType<MenuItem>().Select(i => (string)i.Header!));
+        menu.Hide();
 
         // a connection chosen opens in the active panel
-        groups[1].Items.OfType<MenuItem>().Single().RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
+        Click(items[2].Items.OfType<MenuItem>().Single(), MenuItem.ClickEvent);
         await WaitUntilAsync(() => vm.ActivePanel.CurrentPath?.Scheme == "s3");
 
-        vm.Settings.Connections.Clear();
-        vm.SaveSettings();
+        // the command (shortcut, command line) shows the same menu
+        await vm.ExecuteAsync("nc_ConnectionsMenu");
         await SettleAsync();
-        Assert.False(button.IsVisible);
     }
 
     [AvaloniaFact]
-    public async Task Plugin_entry_points_have_their_own_group_and_say_why_they_cannot_open()
+    public async Task The_plugins_button_shows_while_plugins_are_loaded_and_the_setting_is_on()
     {
         var (w, vm) = await _fx.OpenAsync();
+        var button = BarButton(w, "nc_PluginsMenu");
+        Assert.False(button.IsVisible); // no plugins
+
         var plugin = new LoadedPlugin { Folder = Path.Combine(_fx.Root, "plugins", "fake") };
         var entry = new FakeEntryPoint("fake");
         plugin.FileSystems.Add(entry);
         vm.Plugins.Add(plugin);
-        Assert.True(vm.HasConnectionMenuEntries); // a plugin alone is enough for the button
+        vm.ApplySettings();
+        await SettleAsync();
+        button = BarButton(w, "nc_PluginsMenu");
+        Assert.True(button.IsVisible);
+        Assert.Empty(ConnectionMenus.Items(vm)); // the plugins are not among the connections
 
-        var group = Assert.IsType<MenuItem>(Assert.Single(ConnectionMenus.Items(vm)));
-        Assert.Equal("fake", group.Header);
-        var item = Assert.IsType<MenuItem>(Assert.Single(group.Items));
-        Assert.Equal("fake places", item.Header);
+        // a group per plugin with its places, then the plugin list
+        var menu = PluginMenus.Show(vm, button, belowButton: true);
+        await SettleAsync();
+        var items = menu.Items.OfType<MenuItem>().ToList();
+        Assert.Equal(["fake", "Plugins..."], items.Select(i => (string)i.Header!));
+        var place = Assert.IsType<MenuItem>(Assert.Single(items[0].Items));
+        Assert.Equal("fake places", place.Header);
+        menu.Hide();
 
-        item.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
+        // a place that cannot open says why
+        Click(place, MenuItem.ClickEvent);
         await WaitUntilAsync(() => _fx.Dialogs.Messages.Count > 0);
         Assert.Contains("not installed", _fx.Dialogs.Messages[^1]);
 
-        // the command (shortcut, command line) opens the menu over the file list when no bar shows the button
-        await vm.ExecuteAsync("nc_ConnectionsMenu");
+        // the setting hides it
+        vm.Settings.ShowPluginsButton = false;
+        vm.ApplySettings();
         await SettleAsync();
+        Assert.False(BarButton(w, "nc_PluginsMenu").IsVisible); // (the bar may have been built again)
+        Assert.False(vm.HasPluginMenu);
     }
 
     /// <summary>A plugin file system with an entry point whose program is missing.</summary>

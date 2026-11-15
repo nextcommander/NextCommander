@@ -47,8 +47,8 @@ public sealed class LegacyNamesTests : IDisposable
             }
             """);
         var settings = new SettingsStore(_dir.Root).Load();
-        // (the upgrade to settings version 6 puts the connections menu next to the first connection manager button)
-        Assert.Equal(["nc_RemoteConnection", "nc_ConnectionsMenu", "*nc_RemoteConnection", "nc_FtpConnectX", @"C:\x\nc_FtpConnect"],
+        // (the upgrade to settings version 7 puts the plugins' button next to the first connection manager button)
+        Assert.Equal(["nc_RemoteConnection", "nc_PluginsMenu", "*nc_RemoteConnection", "nc_FtpConnectX", @"C:\x\nc_FtpConnect"],
             settings.ButtonBar.Take(5).Select(b => b.Command));
         Assert.Equal("nc_GoToRoot,nc_RemoteConnection", settings.UserCommands["uc_net"].Command);
     }

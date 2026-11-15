@@ -15,6 +15,18 @@ namespace NextCommander.App.Controls;
 /// Button bar (horizontal, wrapping into several rows) or vertical bar between the panels.
 /// Buttons run internal commands or programs; right-click edits; dropping a file adds a program button.
 /// </summary>
+/// <summary>The menu a button of the button bar opens below it (<see cref="ButtonBarControl.DropDownOf"/>).</summary>
+public enum DropDown
+{
+    None,
+
+    /// <summary>The connection manager's button: the manager and the saved connections by type.</summary>
+    Connections,
+
+    /// <summary>The plugins' button: their places (rclone remotes ...) and the list of plugins.</summary>
+    Plugins,
+}
+
 public sealed class ButtonBarControl : UserControl
 {
     private static readonly Dictionary<string, string> s_builtInIcons = new(StringComparer.OrdinalIgnoreCase)
@@ -132,22 +144,54 @@ public sealed class ButtonBarControl : UserControl
 
     private static bool IsForward(ButtonDefinition definition) => string.Equals(definition.Command, "nc_GoForward", StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>The connections button (nc_ConnectionsMenu): a drop-down menu rather than a command.</summary>
-    public static bool IsConnectionsMenu(ButtonDefinition definition) =>
-        string.Equals(definition.Command.TrimStart('*'), "nc_ConnectionsMenu", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(definition.Parameters);
+    /// <summary>
+    /// The buttons that open a menu below them: the connection manager (nc_RemoteConnection: the manager and the saved
+    /// connections by type, when there are some) and the plugins (nc_PluginsMenu).
+    /// </summary>
+    public static DropDown DropDownOf(ButtonDefinition definition)
+    {
+        if (!string.IsNullOrWhiteSpace(definition.Parameters))
+        {
+            return DropDown.None;
+        }
+        return definition.Command.TrimStart('*') switch
+        {
+            var c when string.Equals(c, "nc_RemoteConnection", StringComparison.OrdinalIgnoreCase) => DropDown.Connections,
+            var c when string.Equals(c, "nc_PluginsMenu", StringComparison.OrdinalIgnoreCase) => DropDown.Plugins,
+            _ => DropDown.None,
+        };
+    }
 
-    /// <summary>The visible connections button of this bar (null: none).</summary>
-    public Button? ConnectionsMenuButton =>
-        _panel.Children.OfType<Button>().FirstOrDefault(b => b.IsVisible && b.Tag is ButtonDefinition d && IsConnectionsMenu(d));
+    /// <summary>The visible button of this bar with that menu (null: none).</summary>
+    public Button? DropDownButton(DropDown kind) =>
+        _panel.Children.OfType<Button>().FirstOrDefault(b => b.IsVisible && b.Tag is ButtonDefinition d && DropDownOf(d) == kind);
+
+    /// <summary>Whether the button opens its menu now: the connection manager only with saved connections.</summary>
+    private bool OpensMenu(DropDown kind) => kind switch
+    {
+        DropDown.Connections => _vm?.HasConnectionMenuEntries == true,
+        DropDown.Plugins => true,
+        _ => false,
+    };
+
+    /// <summary>The plugins button only while plugins are loaded and the setting shows it; the ▾ of the connection manager.</summary>
+    private void UpdateDropDowns()
+    {
+        foreach (var button in _panel.Children.OfType<Button>())
+        {
+            if (button.Tag is ButtonDefinition definition && DropDownOf(definition) is var kind and not DropDown.None)
+            {
+                button.IsVisible = kind != DropDown.Plugins || _vm?.HasPluginMenu == true;
+                button.Content = CreateContent(definition);
+            }
+        }
+    }
 
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(MainWindowViewModel.HasConnectionMenuEntries))
+        if (e.PropertyName is nameof(MainWindowViewModel.HasConnectionMenuEntries) or nameof(MainWindowViewModel.HasPluginMenu))
         {
-            foreach (var button in _panel.Children.OfType<Button>().Where(b => b.Tag is ButtonDefinition d && IsConnectionsMenu(d)))
-            {
-                button.IsVisible = _vm?.HasConnectionMenuEntries == true;
-            }
+            UpdateDropDowns();
         }
         if (e.PropertyName == nameof(MainWindowViewModel.ActivePanel))
         {
@@ -311,15 +355,28 @@ public sealed class ButtonBarControl : UserControl
         {
             button.Flyout = BuildMenu(definition.Menu!);
         }
-        else if (IsConnectionsMenu(definition))
+        else if (DropDownOf(definition) is var kind and not DropDown.None)
         {
-            // the saved connections by type: a drop-down below the button, shown only when there are connections
-            button.IsVisible = _vm?.HasConnectionMenuEntries == true;
-            button.Click += (_, _) =>
+            // a menu below the button: the connection manager with the saved connections by type (without saved
+            // connections the manager opens at once), the plugins (the button only while there are plugins)
+            button.IsVisible = kind != DropDown.Plugins || _vm?.HasPluginMenu == true;
+            button.Click += async (_, _) =>
             {
-                if (_vm is not null)
+                if (_vm is null)
+                {
+                    return;
+                }
+                if (!OpensMenu(kind))
+                {
+                    await _vm.ExecuteButtonAsync(definition);
+                }
+                else if (kind == DropDown.Connections)
                 {
                     Services.ConnectionMenus.Show(_vm, button, belowButton: !_vertical);
+                }
+                else
+                {
+                    Services.PluginMenus.Show(_vm, button, belowButton: !_vertical);
                 }
             };
         }
@@ -415,7 +472,7 @@ public sealed class ButtonBarControl : UserControl
         {
             stack.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center });
         }
-        if (IsConnectionsMenu(definition))
+        if (DropDownOf(definition) is var kind and not DropDown.None && OpensMenu(kind))
         {
             // a drop-down: the arrow says so
             stack.Spacing = 1;

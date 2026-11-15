@@ -137,8 +137,8 @@ Inside `NextCommander.App`:
   (`IColumnProvider`), archive formats for Alt+F5 (`IPackerPlugin`) and Lister views (`IViewerPlugin`: HTML,
   text or its own control).
 - A file system plugin can offer a place to start (`IPluginEntryPoint`: name, group, root folder, why it cannot
-  open now): it is listed with the saved connections (the connections menu of the button bar, Net > Saved
-  connections) under its group. Plugin file systems that are `IDisposable` are disposed when the program ends.
+  open now): it is listed in the Plugins menu of the button bar (`nc_PluginsMenu`, `Services/ConnectionMenus.cs`
+  `PluginMenus`) under its group. Plugin file systems that are `IDisposable` are disposed when the program ends.
 - Each plugin is loaded in its own load context and cannot load assemblies outside its folder.
 - *Configuration > Plugins...* lists the loaded plugins and errors; the `DisabledPlugins` setting turns one off.
 - Example: `tests/SamplePlugin` (a column and a `hello://` file system).
