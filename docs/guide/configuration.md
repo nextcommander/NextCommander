@@ -3,9 +3,10 @@
 [Back to the README](../../README.md)
 
 Most settings of NextCommander are in the Configuration. Open it with *Configuration > Options...*, Ctrl+Alt+S or
-the settings button at the end of the button bar. It opens inside the main window, in place of the two panels (like
-the maximized internal terminal); OK, Cancel or Esc bring the panels back. Opened from another dialog (for example
-*Configure...* in the pack dialog) it is a window of its own.
+the settings button at the end of the button bar. It opens inside the main window, in place of the two panels, as a
+page of its own: a tab strip appears above the panels with the files tab and an **Options** tab, so you can go back to
+the files and return to the options without closing them. OK, Cancel, Esc or the tab's `×` close it. Opened from
+another dialog (for example *Configure...* in the pack dialog) it is a window of its own.
 
 ![The Configuration window, Layout page](../screenshots/configuration.png)
 

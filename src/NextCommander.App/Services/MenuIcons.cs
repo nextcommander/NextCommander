@@ -268,6 +268,7 @@ public static class MenuIcons
         ["nc_ExecuteTerminal"] = new("MiTerminal", Gray),
         ["nc_ToggleTerminal"] = new("MiTerminal", Blue),
         ["nc_MaximizeTerminal"] = new("MiTerminal", Blue),
+        ["nc_SwitchWorkspaceTab"] = new("FmBarTab", Blue),
         ["nc_OpenDesktop"] = new("MiDesktop", Blue),
         ["nc_BackgroundTransfers"] = new("MiTransfer", Green),
         ["nc_MatchSrc"] = new("MiEquals", Blue),

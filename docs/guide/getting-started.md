@@ -15,6 +15,10 @@ From top to bottom:
 - **Button bar:** one-click buttons for common commands (next to the system terminal, the internal terminal opens
   maximized; at the end, the connection manager and the settings). Right click it to add, change or remove buttons,
   or use *Configuration > Button bar...*. A second, vertical button bar sits between the two panels.
+- **Page tabs:** while the options or a maximized internal terminal are open next to the file panels, a tab strip
+  shows the pages: the files tab (the folder of the active panel, with the icon of its place: a user folder such as
+  Downloads with the system's icon, a drive, a server's product mark, an archive ...), **Options** and **Terminal**.
+  A click switches; `nc_SwitchWorkspaceTab` goes to the next page.
 - **Drive buttons:** one button per drive. At the right end there are shortcuts to your home folder,
   Documents and Downloads (Desktop can be turned on in *Configuration > Options > Layout*). When you plug in or
   remove a USB disk, a memory card or a phone, the drives update by themselves within a second or two;

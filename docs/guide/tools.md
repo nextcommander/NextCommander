@@ -232,7 +232,10 @@ open a terminal at the bottom of the window. Press it again to hide it; the shel
   clears the screen, **Stop** restarts the shell.
 - **Tabs:** `+` opens another terminal, `▾` lists the installed shells (on Windows cmd, Windows PowerShell,
   PowerShell 7, Git Bash and WSL; elsewhere your shells). `exit` or the tab's `×` closes it.
-- Drag its top edge to change its height.
+- Drag its top edge to change its height. The □ button (or a double click on its title, or the internal terminal
+  button of the button bar) maximizes it: it becomes a page of its own with a **Terminal** tab next to the files tab,
+  and the files tab takes you back to the panels while its shells keep running. The tab's `×` (or ❐) puts it back
+  below the panels.
 - While the terminal has the focus, all keys go to the shell; only Ctrl+` returns. Ctrl+Shift+C / Ctrl+Shift+V
   copy and paste, and a right click copies the selection or pastes. The mouse wheel and Shift+Page Up / Page Down
   scroll back.

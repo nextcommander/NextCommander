@@ -33,8 +33,12 @@ public sealed class TerminalMaximizeTests : IDisposable
         await SettleAsync();
         Assert.True(terminal.IsMaximized);
         Assert.False(panels.IsVisible);
-        // the terminal's frame starts at the top of the panels
-        Assert.Equal(panelsTop, host.TranslatePoint(new Avalonia.Point(0, 0), w)!.Value.Y, 1);
+        // a page of its own: the page tabs take the top of the panels, the terminal's frame starts right below them
+        var tabs = w.FindControl<Border>("WorkspaceTabsHost")!;
+        Assert.True(tabs.IsVisible);
+        Assert.Equal(panelsTop, tabs.TranslatePoint(new Avalonia.Point(0, 0), w)!.Value.Y, 1);
+        double BelowTabs() => tabs.TranslatePoint(new Avalonia.Point(0, tabs.Bounds.Height), w)!.Value.Y;
+        Assert.Equal(BelowTabs(), host.TranslatePoint(new Avalonia.Point(0, 0), w)!.Value.Y, 1);
         Assert.True(terminal.Bounds.Height > normalHeight);
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
         {
@@ -42,10 +46,10 @@ public sealed class TerminalMaximizeTests : IDisposable
             w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "terminal-maximized.png"));
         }
 
-        // a taller window: the terminal still reaches the top of the panels
+        // a taller window: the terminal still reaches the tabs
         w.Height += 100;
         await SettleAsync();
-        Assert.Equal(panelsTop, host.TranslatePoint(new Avalonia.Point(0, 0), w)!.Value.Y, 1);
+        Assert.Equal(BelowTabs(), host.TranslatePoint(new Avalonia.Point(0, 0), w)!.Value.Y, 1);
 
         // the button in the title bar restores the size and the panels
         var button = terminal.GetVisualDescendants().OfType<Button>().Single(b => b.Tag as string == "maximize");
@@ -54,6 +58,7 @@ public sealed class TerminalMaximizeTests : IDisposable
         await SettleAsync();
         Assert.False(terminal.IsMaximized);
         Assert.True(panels.IsVisible);
+        Assert.False(tabs.IsVisible); // the files alone: no tabs
         Assert.Equal("□", button.Content);
         Assert.True(terminal.Bounds.Height < w.Bounds.Height * 0.9);
 

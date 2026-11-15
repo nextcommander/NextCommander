@@ -200,6 +200,9 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     /// </summary>
     public event EventHandler<Controls.DropDown>? DropDownMenuRequested;
 
+    /// <summary>The view should show its next page (files, options, maximized terminal: nc_SwitchWorkspaceTab).</summary>
+    public event EventHandler? NextPageRequested;
+
     /// <summary>Button bars changed (edited, shown/hidden).</summary>
     public event EventHandler? ButtonBarsChanged;
 
@@ -1033,6 +1036,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         c.Register("nc_NewConnection", "New connection (parameter: sftp, scp, ftp, ftps, davs, dav, smb, s3, azblob, azfile, gdrive, onedrive, dropbox, box)", p => NewConnectionAsync(p));
         c.Register("nc_OpenConnection", "Open a saved connection (parameter: the connection's name)", p => OpenConnectionAsync(p));
         c.Register("nc_ConnectionsMenu", "Saved connections menu, grouped by type", () => DropDownMenuRequested?.Invoke(this, Controls.DropDown.Connections));
+        c.Register("nc_SwitchWorkspaceTab", "Next page of the window: files, options, maximized terminal", () => NextPageRequested?.Invoke(this, EventArgs.Empty));
         c.Register("nc_PluginsMenu", "Plugins menu: the places of the plugins (rclone remotes ...)", () => DropDownMenuRequested?.Invoke(this, Controls.DropDown.Plugins));
         c.Register("nc_FtpDisconnect", "Disconnect from server (Ctrl+Shift+F)", _ => DisconnectAsync());
         c.Register("nc_MasterPassword", "Set / change master password", _ => MasterPasswordAsync());

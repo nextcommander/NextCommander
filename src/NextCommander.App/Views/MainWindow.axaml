@@ -278,6 +278,12 @@
     <!-- Button bar -->
     <Border x:Name="TopBarHost" DockPanel.Dock="Top" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource FmPanelHeaderBrush}" Background="{DynamicResource FmToolBarBrush}" Padding="2,1" />
 
+    <!-- the pages of the window (files, options, maximized terminal): tabs while more than one is open (MainWindow.Workspace.cs) -->
+    <Border x:Name="WorkspaceTabsHost" DockPanel.Dock="Top" IsVisible="False" Background="{DynamicResource FmTabStripBrush}"
+            BorderThickness="0,0,0,1" BorderBrush="{DynamicResource FmPanelHeaderBrush}">
+      <StackPanel x:Name="WorkspaceTabs" Orientation="Horizontal" />
+    </Border>
+
     <!-- Layout > one drive button bar (instead of one per panel): drives of the active panel -->
     <DockPanel x:Name="SharedDriveBarHost" DockPanel.Dock="Top" IsVisible="{Binding ShowSharedDriveBar}" Background="{DynamicResource FmToolBarBrush}">
       <ItemsControl x:Name="SharedShortcutBar" DockPanel.Dock="Right" ItemsSource="{Binding Left.FolderShortcutItems}" Classes.raised="{Binding !FlatDriveButtons}">

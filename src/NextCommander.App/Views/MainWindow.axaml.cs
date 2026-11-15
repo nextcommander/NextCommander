@@ -223,15 +223,14 @@ public partial class MainWindow : Window
     public Dialogs.SettingsView? Settings => SettingsHost.Child as Dialogs.SettingsView;
 
     /// <summary>
-    /// The configuration in place of both panels, like the maximized internal terminal (a maximized terminal goes back to
-    /// its own height first); the panels come back when it closes (OK, Cancel, Esc). One already open is closed first.
+    /// The configuration in place of both panels, as a page of its own (the "Options" tab next to the files and a
+    /// maximized terminal); the page goes when it closes (OK, Cancel, Esc). One already open is closed first.
     /// </summary>
     public async Task ShowSettingsAsync(Dialogs.SettingsView view)
     {
         Settings?.Close();
-        RestoreTerminalSize();
         SettingsHost.Child = view;
-        SettingsHost.IsVisible = true;
+        SelectPage(WorkspacePage.Options);
         try
         {
             await view.Done;
@@ -241,8 +240,12 @@ public partial class MainWindow : Window
             if (ReferenceEquals(SettingsHost.Child, view))
             {
                 SettingsHost.Child = null;
-                SettingsHost.IsVisible = false;
-                ActiveView.FocusList();
+                var wasShown = _page == WorkspacePage.Options;
+                ApplyPage();
+                if (wasShown)
+                {
+                    ActiveView.FocusList();
+                }
             }
         }
     }
@@ -284,6 +287,7 @@ public partial class MainWindow : Window
         _vm.QuickSearchRequested += (_, filter) => ActiveView.BeginQuickSearch(null, filter);
         _vm.ButtonBarFocusRequested += (_, _) => _topBar.FocusFirst();
         _vm.DropDownMenuRequested += (_, kind) => ShowDropDownMenu(kind);
+        _vm.NextPageRequested += (_, _) => SelectNextPage();
         _vm.HotlistMenuRequested += (_, _) => ShowHotlistMenu();
         _vm.ButtonBarsChanged += (_, _) => UpdateButtonBars();
         _vm.TreeChanged += (_, path) =>
@@ -542,6 +546,7 @@ public partial class MainWindow : Window
         {
             case nameof(MainWindowViewModel.ActiveSide):
                 MarkSharedDrive();
+                UpdateWorkspaceTabs(); // the files tab shows the active panel's folder
                 if (!CommandLine.IsKeyboardFocusWithin)
                 {
                     ActiveView.FocusList();
@@ -1144,6 +1149,11 @@ public partial class MainWindow : Window
                 }
             };
         }
+        if (IsTerminalMaximizedPage && _page != WorkspacePage.Terminal)
+        {
+            SelectPage(WorkspacePage.Terminal); // maximized behind another page: its tab
+            return;
+        }
         if (TerminalHost.IsVisible && _terminal.IsKeyboardFocusWithin)
         {
             HideTerminal(); // the shells keep running
@@ -1171,6 +1181,11 @@ public partial class MainWindow : Window
         {
             return;
         }
+        if (IsTerminalMaximizedPage && _page != WorkspacePage.Terminal)
+        {
+            SelectPage(WorkspacePage.Terminal); // maximized behind another page: its tab
+            return;
+        }
         if (_terminal is null || !TerminalHost.IsVisible)
         {
             ToggleTerminal();
@@ -1184,20 +1199,20 @@ public partial class MainWindow : Window
             RestoreTerminalSize();
             return;
         }
-        // from the top of the panels to the bottom of the terminal (inside its frame line)
+        // a page of its own: from below the bars at the top to the bottom of the terminal (inside its frame line)
         UpdateLayout();
-        var height = PanelsGrid.Bounds.Height + TerminalHost.Bounds.Height - TerminalHost.BorderThickness.Top;
-        PanelsGrid.IsVisible = false;
-        _terminal.SetMaximized(height);
-        _terminal.Activate();
+        _terminal.SetMaximized(PanelsGrid.Bounds.Height + TerminalHost.Bounds.Height - TerminalHost.BorderThickness.Top);
+        SelectPage(WorkspacePage.Terminal);
     }
 
+    /// <summary>The maximized terminal goes back to its own height below the panels; its page goes.</summary>
     private void RestoreTerminalSize()
     {
         if (_terminal is { IsMaximized: true })
         {
-            PanelsGrid.IsVisible = true;
             _terminal.SetMaximized(null, Bounds.Height);
+            TerminalHost.IsVisible = _vm?.IsTerminalOpen == true;
+            ApplyPage();
         }
     }
 
