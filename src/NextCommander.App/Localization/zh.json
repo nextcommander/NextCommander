@@ -2574,5 +2574,22 @@
   "Settings.Link.AllowedComputers": "已允许的计算机",
   "Settings.Link.AllowedComputers.Description": "这些计算机无需代码即可连接。忘记某台计算机后将再次询问。",
   "Settings.Link.Forget": "忘记",
-  "LinkService.StatusNotFindable": "共享文件夹：{0}；计算机名：{1}；端口：{2}；地址：{3}；连接：{4}；不会出现在其他计算机的列表中（请在那里输入地址）：{5}"
+  "LinkService.StatusNotFindable": "共享文件夹：{0}；计算机名：{1}；端口：{2}；地址：{3}；连接：{4}；不会出现在其他计算机的列表中（请在那里输入地址）：{5}",
+  "CompareWindow.Original": "原始",
+  "CompareWindow.Current": "当前",
+  "CompareWindow.SideBySide": "并排",
+  "CompareWindow.Inline": "内联",
+  "CompareWindow.EditBothFiles": "编辑两个文件",
+  "CompareWindow.DifferenceOverview": "差异概览",
+  "CompareWindow.Next": "下一个",
+  "CompareWindow.Previous": "上一个",
+  "CompareWindow.CompareKey": "比较",
+  "CompareWindow.OneChange": "1 处更改",
+  "CompareWindow.ComparedFilesMatch": "已比较 · 文件相同",
+  "CompareWindow.ComparedOne": "已比较 · 1 处差异",
+  "CompareWindow.ComparedMany": "已比较 · {0} 处差异",
+  "CompareWindow.Summary": "{0} 行 → {1} 行 · 新增 {2}，删除 {3}",
+  "CompareWindow.DifferentBytes": "{0} 个不同字节",
+  "CompareWindow.BothEmpty": "两个文件都为空。使用“编辑”粘贴内容以进行比较。",
+  "CompareWindow.NoDifferences": "没有差异。在当前选项下两个文件相同。"
 }

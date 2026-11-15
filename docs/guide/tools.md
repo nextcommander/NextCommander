@@ -151,10 +151,20 @@ two panels.
 
 ![Compare by content](../screenshots/compare.png)
 
-- The lines are shown side by side and scroll together. Changed, added and deleted lines have different colors;
-  the changed characters inside a line are highlighted too.
-- F2 / Shift+F2 jump to the next / previous difference.
-- Options to ignore case and whitespace.
+- The bar shows the file, how many differences there are and how many lines were added (+) and removed (−).
+- **Split** shows the two files side by side (they scroll together); **Inline** shows one column, the removed lines
+  of each difference above the added ones. The left file is tagged *Original*, the right one *Current*.
+- Each line has its number in its file and a − / + sign; removed lines are red, added lines green, the changed
+  characters inside a line are marked, a missing line on one side is hatched. The code keeps its syntax colors.
+- The current difference is framed; the counter shows which one it is (2 / 5). F2 / Shift+F2 (or j / k, or the
+  arrows) go to the next / previous one, around from the last to the first. A click on a line of a difference makes
+  it the current one.
+- The strip on the right edge shows every difference in its place in the file (green added, red removed, amber
+  changed); a click goes there.
+- **Ignore case** and **Ignore whitespace** compare again at once.
+- **Edit** opens both files as text: change them and press **Edit** or **Compare** again to compare the edited
+  texts (the files themselves are not changed). **Compare** (F5) otherwise reads the files again.
+- The status line shows the number of lines of both files, the language and the encoding. Esc closes the window.
 - Binary files show a list of the differing bytes.
 
 ## Duplicate files

@@ -2574,5 +2574,22 @@
   "Settings.Link.AllowedComputers": "Allowed computers",
   "Settings.Link.AllowedComputers.Description": "These computers connect without the code. Forget one to be asked again.",
   "Settings.Link.Forget": "Forget",
-  "LinkService.StatusNotFindable": "Shared folders: {0}; computer name: {1}; port: {2}; addresses: {3}; connections: {4}; not in the list of the other computers (type the address there): {5}"
+  "LinkService.StatusNotFindable": "Shared folders: {0}; computer name: {1}; port: {2}; addresses: {3}; connections: {4}; not in the list of the other computers (type the address there): {5}",
+  "CompareWindow.Original": "Original",
+  "CompareWindow.Current": "Current",
+  "CompareWindow.SideBySide": "Side by side",
+  "CompareWindow.Inline": "Inline",
+  "CompareWindow.EditBothFiles": "Edit both files",
+  "CompareWindow.DifferenceOverview": "Difference overview",
+  "CompareWindow.Next": "next",
+  "CompareWindow.Previous": "previous",
+  "CompareWindow.CompareKey": "compare",
+  "CompareWindow.OneChange": "1 change",
+  "CompareWindow.ComparedFilesMatch": "Compared · files match",
+  "CompareWindow.ComparedOne": "Compared · 1 difference",
+  "CompareWindow.ComparedMany": "Compared · {0} differences",
+  "CompareWindow.Summary": "{0} lines → {1} lines · {2} added, {3} removed",
+  "CompareWindow.DifferentBytes": "{0} different bytes",
+  "CompareWindow.BothEmpty": "Both files are empty. Paste content with Edit to compare.",
+  "CompareWindow.NoDifferences": "No differences. The two files match with the current options."
 }

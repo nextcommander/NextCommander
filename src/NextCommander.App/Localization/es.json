@@ -2574,5 +2574,22 @@
   "Settings.Link.AllowedComputers": "Equipos permitidos",
   "Settings.Link.AllowedComputers.Description": "Estos equipos se conectan sin el código. Olvide uno para que se vuelva a preguntar.",
   "Settings.Link.Forget": "Olvidar",
-  "LinkService.StatusNotFindable": "Carpetas compartidas: {0}; nombre del equipo: {1}; puerto: {2}; direcciones: {3}; conexiones: {4}; no aparece en la lista de los otros equipos (escriba allí la dirección): {5}"
+  "LinkService.StatusNotFindable": "Carpetas compartidas: {0}; nombre del equipo: {1}; puerto: {2}; direcciones: {3}; conexiones: {4}; no aparece en la lista de los otros equipos (escriba allí la dirección): {5}",
+  "CompareWindow.Original": "Original",
+  "CompareWindow.Current": "Actual",
+  "CompareWindow.SideBySide": "En paralelo",
+  "CompareWindow.Inline": "En línea",
+  "CompareWindow.EditBothFiles": "Editar ambos archivos",
+  "CompareWindow.DifferenceOverview": "Vista general de diferencias",
+  "CompareWindow.Next": "siguiente",
+  "CompareWindow.Previous": "anterior",
+  "CompareWindow.CompareKey": "comparar",
+  "CompareWindow.OneChange": "1 cambio",
+  "CompareWindow.ComparedFilesMatch": "Comparado · los archivos coinciden",
+  "CompareWindow.ComparedOne": "Comparado · 1 diferencia",
+  "CompareWindow.ComparedMany": "Comparado · {0} diferencias",
+  "CompareWindow.Summary": "{0} líneas → {1} líneas · {2} añadidas, {3} eliminadas",
+  "CompareWindow.DifferentBytes": "{0} bytes diferentes",
+  "CompareWindow.BothEmpty": "Ambos archivos están vacíos. Pegue contenido con Editar para comparar.",
+  "CompareWindow.NoDifferences": "Sin diferencias. Los dos archivos coinciden con las opciones actuales."
 }

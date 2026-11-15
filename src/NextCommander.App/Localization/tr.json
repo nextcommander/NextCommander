@@ -2574,5 +2574,22 @@
   "Settings.Link.AllowedComputers": "İzin verilen bilgisayarlar",
   "Settings.Link.AllowedComputers.Description": "Bu bilgisayarlar kod sorulmadan bağlanır. Yeniden sorulması için birini unutun.",
   "Settings.Link.Forget": "Unut",
-  "LinkService.StatusNotFindable": "Paylaşılan klasörler: {0}; bilgisayar adı: {1}; bağlantı noktası: {2}; adresler: {3}; bağlantılar: {4}; diğer bilgisayarların listesinde görünmez (orada adresi yazın): {5}"
+  "LinkService.StatusNotFindable": "Paylaşılan klasörler: {0}; bilgisayar adı: {1}; bağlantı noktası: {2}; adresler: {3}; bağlantılar: {4}; diğer bilgisayarların listesinde görünmez (orada adresi yazın): {5}",
+  "CompareWindow.Original": "Asıl",
+  "CompareWindow.Current": "Güncel",
+  "CompareWindow.SideBySide": "Yan yana",
+  "CompareWindow.Inline": "Tek sütun",
+  "CompareWindow.EditBothFiles": "İki dosyayı düzenle",
+  "CompareWindow.DifferenceOverview": "Farklara genel bakış",
+  "CompareWindow.Next": "sonraki",
+  "CompareWindow.Previous": "önceki",
+  "CompareWindow.CompareKey": "karşılaştır",
+  "CompareWindow.OneChange": "1 değişiklik",
+  "CompareWindow.ComparedFilesMatch": "Karşılaştırıldı · dosyalar aynı",
+  "CompareWindow.ComparedOne": "Karşılaştırıldı · 1 fark",
+  "CompareWindow.ComparedMany": "Karşılaştırıldı · {0} fark",
+  "CompareWindow.Summary": "{0} satır → {1} satır · {2} eklendi, {3} silindi",
+  "CompareWindow.DifferentBytes": "{0} farklı bayt",
+  "CompareWindow.BothEmpty": "İki dosya da boş. Karşılaştırmak için Düzenle ile içerik yapıştırın.",
+  "CompareWindow.NoDifferences": "Fark yok. Geçerli seçeneklerle iki dosya aynı."
 }

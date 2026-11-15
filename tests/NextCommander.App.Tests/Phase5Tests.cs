@@ -112,7 +112,7 @@ public sealed class Phase5Tests : IDisposable
         Assert.Equal([DiffKind.Equal, DiffKind.Changed, DiffKind.Equal, DiffKind.Changed, DiffKind.Added], window.Rows.Select(r => r.Kind));
         window.MoveToBlock(+1);
         Assert.Equal(1, window.CurrentBlock);
-        Assert.Contains("Difference 2/2", window.StatusText, StringComparison.Ordinal);
+        Assert.Equal("2 / 2", window.CounterText);
 
         File.WriteAllBytes(_fx.L("a.bin"), [0, 1, 2, 3]);
         File.WriteAllBytes(_fx.L("b.bin"), [0, 9, 2, 3, 4]);

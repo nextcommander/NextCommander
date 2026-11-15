@@ -2574,5 +2574,22 @@
   "Settings.Link.AllowedComputers": "Ordinateurs autorisés",
   "Settings.Link.AllowedComputers.Description": "Ces ordinateurs se connectent sans le code. Oubliez-en un pour être de nouveau interrogé.",
   "Settings.Link.Forget": "Oublier",
-  "LinkService.StatusNotFindable": "Dossiers partagés : {0} ; nom de l’ordinateur : {1} ; port : {2} ; adresses : {3} ; connexions : {4} ; absent de la liste des autres ordinateurs (saisissez-y l’adresse) : {5}"
+  "LinkService.StatusNotFindable": "Dossiers partagés : {0} ; nom de l’ordinateur : {1} ; port : {2} ; adresses : {3} ; connexions : {4} ; absent de la liste des autres ordinateurs (saisissez-y l’adresse) : {5}",
+  "CompareWindow.Original": "Original",
+  "CompareWindow.Current": "Actuel",
+  "CompareWindow.SideBySide": "Côte à côte",
+  "CompareWindow.Inline": "En ligne",
+  "CompareWindow.EditBothFiles": "Modifier les deux fichiers",
+  "CompareWindow.DifferenceOverview": "Vue d’ensemble des différences",
+  "CompareWindow.Next": "suivant",
+  "CompareWindow.Previous": "précédent",
+  "CompareWindow.CompareKey": "comparer",
+  "CompareWindow.OneChange": "1 modification",
+  "CompareWindow.ComparedFilesMatch": "Comparé · les fichiers sont identiques",
+  "CompareWindow.ComparedOne": "Comparé · 1 différence",
+  "CompareWindow.ComparedMany": "Comparé · {0} différences",
+  "CompareWindow.Summary": "{0} lignes → {1} lignes · {2} ajoutées, {3} supprimées",
+  "CompareWindow.DifferentBytes": "{0} octets différents",
+  "CompareWindow.BothEmpty": "Les deux fichiers sont vides. Collez du contenu avec Modifier pour comparer.",
+  "CompareWindow.NoDifferences": "Aucune différence. Les deux fichiers sont identiques avec les options actuelles."
 }
