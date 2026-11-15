@@ -555,8 +555,15 @@ public sealed class DocScreenshots
         });
 
         // synchronize and compare
-        var sync = new SyncDirsWindow(VfsPath.Local(site), VfsPath.Local(D("Backup", "Website 2026-10")), vm.Tools);
-        await Shot(sync, "synchronize.png", 1300, 800, () => sync.CompareAsync());
+        // a page of the main window with its own tab
+        var sync = new SyncDirsView(VfsPath.Local(site), VfsPath.Local(D("Backup", "Website 2026-10")), vm.Tools);
+        w.ShowSync(sync);
+        await SettleAsync(6);
+        await sync.CompareAsync();
+        await SettleAsync(8);
+        Save(w, "synchronize.png");
+        sync.Close();
+        await SettleAsync(3);
         var reader = new LocalEntryReader();
         var compare = new CompareWindow(reader.Read(D("Backup", "Website 2026-10", "src", "Program.cs")), reader.Read(code), vm.Tools);
         await Shot(compare, "compare.png", 1300, 800, async () => await WaitUntilAsync(() => compare.Comparing is { IsCompleted: true }));

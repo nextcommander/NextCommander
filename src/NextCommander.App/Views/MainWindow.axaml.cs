@@ -905,7 +905,8 @@ public partial class MainWindow : Window
 
         // the connection manager in a panel and the configuration take their keys (Ctrl+F, Ctrl+N, Delete, Esc ...)
         if (focused is Avalonia.Visual inside && (Avalonia.VisualTree.VisualExtensions.FindAncestorOfType<Connections.ConnectionManagerView>(inside, includeSelf: true) is not null
-            || Avalonia.VisualTree.VisualExtensions.FindAncestorOfType<Dialogs.SettingsView>(inside, includeSelf: true) is not null))
+            || Avalonia.VisualTree.VisualExtensions.FindAncestorOfType<Dialogs.SettingsView>(inside, includeSelf: true) is not null
+            || Avalonia.VisualTree.VisualExtensions.FindAncestorOfType<Tools.SyncDirsView>(inside, includeSelf: true) is not null))
         {
             return;
         }

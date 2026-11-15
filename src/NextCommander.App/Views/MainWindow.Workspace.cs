@@ -10,11 +10,12 @@ using NextCommander.Core.Vfs;
 
 namespace NextCommander.App.Views;
 
-/// <summary>A page of the main window: the two file panels, the options or the maximized internal terminal.</summary>
+/// <summary>A page of the main window: the two file panels, the options, synchronize directories or the maximized internal terminal.</summary>
 public enum WorkspacePage
 {
     Files,
     Options,
+    Sync,
     Terminal,
 }
 
@@ -42,6 +43,10 @@ public partial class MainWindow
             {
                 pages.Add(WorkspacePage.Options);
             }
+            if (Sync is not null)
+            {
+                pages.Add(WorkspacePage.Sync);
+            }
             if (IsTerminalMaximizedPage)
             {
                 pages.Add(WorkspacePage.Terminal);
@@ -62,6 +67,9 @@ public partial class MainWindow
         {
             case WorkspacePage.Options:
                 Settings?.Focus();
+                break;
+            case WorkspacePage.Sync:
+                Sync?.Focus();
                 break;
             case WorkspacePage.Terminal:
                 _terminal?.Activate();
@@ -92,6 +100,7 @@ public partial class MainWindow
         var terminalPage = _page == WorkspacePage.Terminal;
         PanelsGrid.IsVisible = !terminalPage;
         SettingsHost.IsVisible = _page == WorkspacePage.Options;
+        SyncHost.IsVisible = _page == WorkspacePage.Sync;
         if (IsTerminalMaximizedPage)
         {
             // the maximized terminal is shown on its own page only (the shells keep running)
@@ -147,6 +156,7 @@ public partial class MainWindow
         {
             WorkspacePage.Options => (MenuIcons.Create("nc_Config") ?? new Panel(), "Options", "Options", false),
             WorkspacePage.Terminal => (MenuIcons.Create("nc_MaximizeTerminal") ?? new Panel(), "Terminal", "Internal terminal", false),
+            WorkspacePage.Sync => (MenuIcons.Create("nc_SyncDirs") ?? new Panel(), "Synchronize", Tools.SyncDirsView.Title, false),
             _ => (LocationIcon(panel?.CurrentPath), panel?.Title ?? "?", panel?.CurrentPath?.ToDisplayString() ?? string.Empty, true),
         };
         icon.Width = 14;
@@ -167,7 +177,12 @@ public partial class MainWindow
                 Focusable = false,
                 Tag = page,
             };
-            ToolTip.SetTip(close, page == WorkspacePage.Options ? "Close the options (Esc)" : "Back to its place below the panels");
+            ToolTip.SetTip(close, page switch
+            {
+                WorkspacePage.Options => "Close the options (Esc)",
+                WorkspacePage.Sync => "Close (Esc)",
+                _ => "Back to its place below the panels",
+            });
             close.Click += (_, e) =>
             {
                 e.Handled = true;
@@ -201,11 +216,42 @@ public partial class MainWindow
             case WorkspacePage.Options:
                 Settings?.Close();
                 break;
+            case WorkspacePage.Sync:
+                Sync?.Close();
+                break;
             case WorkspacePage.Terminal:
                 RestoreTerminalSize();
                 ActiveView.FocusList();
                 break;
         }
+    }
+
+    /// <summary>Synchronize directories shown as a page (null: not open).</summary>
+    public Tools.SyncDirsView? Sync => SyncHost.Child as Tools.SyncDirsView;
+
+    /// <summary>
+    /// Synchronize directories in place of the panels, as a page of its own with a tab (like the options and the
+    /// maximized terminal); one already open is closed first. Its ×, its tab's × and Esc close it.
+    /// </summary>
+    public void ShowSync(Tools.SyncDirsView view)
+    {
+        Sync?.Close();
+        view.Closed += (_, _) =>
+        {
+            if (!ReferenceEquals(SyncHost.Child, view))
+            {
+                return;
+            }
+            SyncHost.Child = null;
+            var wasShown = _page == WorkspacePage.Sync;
+            ApplyPage();
+            if (wasShown)
+            {
+                ActiveView.FocusList();
+            }
+        };
+        SyncHost.Child = view;
+        SelectPage(WorkspacePage.Sync);
     }
 
     /// <summary>The files tab follows the folder of the active panel.</summary>

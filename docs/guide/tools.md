@@ -121,7 +121,9 @@ Renames many files at once. The list shows the old and new names live as you typ
 
 ## Synchronize directories
 
-*Commands > Synchronize directories...* compares two folders and makes them equal.
+*Commands > Synchronize directories...* compares two folders and makes them equal. It opens in place of the panels as a
+page of its own, with a **Synchronize** tab next to the files tab: the files tab takes you back to the panels while the
+comparison stays open; the tab's `×`, the `×` at its top right or Esc close it.
 
 ![Synchronize directories](../screenshots/synchronize.png)
 

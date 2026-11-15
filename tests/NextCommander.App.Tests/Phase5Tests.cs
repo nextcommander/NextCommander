@@ -67,8 +67,8 @@ public sealed class Phase5Tests : IDisposable
         await vm.ExecuteAsync("nc_SyncDirs");
         Assert.Equal(_fx.L(), _fx.Dialogs.LastSync!.Value.Left.Path);
 
-        var window = _fx.Track(new SyncDirsWindow(VfsPath.Local(_fx.L()), VfsPath.Local(_fx.R()), vm.Tools));
-        window.Show();
+        var window = new SyncDirsView(VfsPath.Local(_fx.L()), VfsPath.Local(_fx.R()), vm.Tools);
+        _fx.Track(new Avalonia.Controls.Window { Content = window, Width = 1180, Height = 780 }).Show();
         await window.CompareAsync();
         var a = window.AllRows.Single(r => r.Item.RelativePath == "a.txt");
         Assert.Equal(SyncStatus.LeftNewer, a.Item.Status);
@@ -186,9 +186,10 @@ public sealed class Phase5Tests : IDisposable
         await SettleAsync(4);
         rename.Apply(new MultiRenameOptions { NameMask = "[P]_[C]", CounterDigits = 3, Search = "txt", Replace = "md", SearchIncludesExtension = true });
         File.WriteAllText(_fx.R("a.txt"), "old");
-        var sync = _fx.Track(new SyncDirsWindow(VfsPath.Local(_fx.L()), VfsPath.Local(_fx.R()), vm.Tools));
+        var syncView = new SyncDirsView(VfsPath.Local(_fx.L()), VfsPath.Local(_fx.R()), vm.Tools);
+        var sync = _fx.Track(new Avalonia.Controls.Window { Content = syncView, Width = 1180, Height = 780 });
         sync.Show();
-        await sync.CompareAsync();
+        await syncView.CompareAsync();
         await SettleAsync();
 
         var dir = Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR");

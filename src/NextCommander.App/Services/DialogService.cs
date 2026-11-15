@@ -157,7 +157,14 @@ public sealed class DialogService : IDialogService
     public void ShowMultiRename(IReadOnlyList<VfsEntry> entries, ToolContext context, Func<Task> refresh) =>
         ShowTool(new Views.Tools.MultiRenameWindow(entries, context, refresh));
 
-    public void ShowSyncDirs(VfsPath left, VfsPath right, ToolContext context) => ShowTool(new Views.Tools.SyncDirsWindow(left, right, context));
+    /// <summary>Synchronize directories as a page (tab) of the main window.</summary>
+    public void ShowSyncDirs(VfsPath left, VfsPath right, ToolContext context)
+    {
+        if (RequireOwner() is Views.MainWindow main)
+        {
+            main.ShowSync(new Views.Tools.SyncDirsView(left, right, context));
+        }
+    }
 
     public void ShowDuplicates(DuplicatesRequest request) => ShowTool(new Views.Tools.DuplicatesWindow(request));
 

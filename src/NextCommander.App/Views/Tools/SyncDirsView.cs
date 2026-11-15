@@ -91,7 +91,7 @@ public sealed class SyncNode
 /// <item>Below: what will be copied and deleted, and Synchronize (a summary to confirm first).</item>
 /// </list>
 /// </summary>
-public sealed class SyncDirsWindow : Window
+public sealed class SyncDirsView : UserControl
 {
     private enum Look
     {
@@ -144,15 +144,10 @@ public sealed class SyncDirsWindow : Window
     /// <summary>The widths of the columns: check box, name, left size, left date, status, action, right size, right date.</summary>
     private const string Columns = "44,*,84,150,118,64,84,150";
 
-    public SyncDirsWindow(VfsPath left, VfsPath right, ToolContext context)
+    public SyncDirsView(VfsPath left, VfsPath right, ToolContext context)
     {
         _context = context;
-        Title = "Synchronize directories";
-        Width = 1180;
-        Height = 780;
-        MinWidth = 900;
-        MinHeight = 480;
-        WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        Focusable = true;
         _leftPath.Text = left.ToDisplayString();
         _rightPath.Text = right.ToDisplayString();
         var o = context.Settings.SyncOptions;
@@ -186,14 +181,43 @@ public sealed class SyncDirsWindow : Window
         _all.Click += (_, _) => SelectAll(_all2.Any(r => !r.Item.IsDirectory && !_selected.Contains(r)));
 
         Content = BuildLayout();
-        Opened += async (_, _) =>
+        AttachedToVisualTree += async (_, _) =>
         {
+            // the first time it is shown: compare at once
+            if (_started)
+            {
+                return;
+            }
+            _started = true;
             _leftPath.Focus();
             await CompareAsync();
         };
-        Closed += (_, _) => _cts?.Cancel();
         ActualThemeVariantChanged += (_, _) => Render();
         UpdatePlan();
+    }
+
+    private bool _started;
+
+    /// <summary>The name of its tab in the main window.</summary>
+    public static string Title => "Synchronize directories";
+
+    /// <summary>Closed (its tab's ×, its own ×, Esc): the main window removes its page.</summary>
+    public event EventHandler? Closed;
+
+    /// <summary>Whether <see cref="Close"/> was called.</summary>
+    public bool IsClosed { get; private set; }
+
+    /// <summary>Stops a running comparison and closes the page.</summary>
+    public void Close()
+    {
+        if (IsClosed)
+        {
+            return;
+        }
+        IsClosed = true;
+        _cts?.Cancel();
+        _confirmed?.TrySetResult(false);
+        Closed?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>The lines shown (the tree as filtered and opened).</summary>
@@ -245,8 +269,15 @@ public sealed class SyncDirsWindow : Window
         var options = new DockPanel();
         DockPanel.SetDock(compare, Dock.Right);
         options.Children.AddRange([compare, chips]);
+        var close = new Button { Content = "×", Classes = { "tabclose" }, FontSize = 18, Padding = new Thickness(8, 0), Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Top };
+        ToolTip.SetTip(close, "Close (Esc)");
+        Avalonia.Automation.AutomationProperties.SetName(close, "Close");
+        close.Click += (_, _) => Close();
+        var pathRow = new DockPanel();
+        DockPanel.SetDock(close, Dock.Right);
+        pathRow.Children.AddRange([close, paths]);
         var top = new StackPanel { Spacing = 12, Margin = new Thickness(18, 14, 18, 12) };
-        top.Children.AddRange([paths, options]);
+        top.Children.AddRange([pathRow, options]);
 
         // the filters and the name filter
         var filters = new WrapPanel { ItemSpacing = 8, LineSpacing = 8, VerticalAlignment = VerticalAlignment.Center };
@@ -368,8 +399,12 @@ public sealed class SyncDirsWindow : Window
 
     private async Task BrowseAsync(TextBox path)
     {
-        var start = Resolve(path.Text) is { IsLocal: true } local ? await StorageProvider.TryGetFolderFromPathAsync(local.Path) : null;
-        var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { SuggestedStartLocation = start, AllowMultiple = false });
+        if (TopLevel.GetTopLevel(this)?.StorageProvider is not { } storage)
+        {
+            return;
+        }
+        var start = Resolve(path.Text) is { IsLocal: true } local ? await storage.TryGetFolderFromPathAsync(local.Path) : null;
+        var folders = await storage.OpenFolderPickerAsync(new FolderPickerOpenOptions { SuggestedStartLocation = start, AllowMultiple = false });
         if (folders.Count > 0 && folders[0].TryGetLocalPath() is { } chosen)
         {
             path.Text = chosen;
@@ -1072,7 +1107,7 @@ public sealed class SyncDirsWindow : Window
     {
         if (_list.SelectedItem is SyncNode { Row.Item: { Left: { IsDirectory: false } l, Right: { IsDirectory: false } r } })
         {
-            new CompareWindow(l, r, _context).Show(this);
+            new CompareWindow(l, r, _context).Show((Window)TopLevel.GetTopLevel(this)!);
         }
     }
 
@@ -1236,7 +1271,7 @@ public sealed class SyncDirsWindow : Window
             _ = CompareAsync();
             e.Handled = true;
         }
-        else if (e.Key == Key.A && e.KeyModifiers == KeyModifiers.Control && FocusManager?.GetFocusedElement() is not TextBox)
+        else if (e.Key == Key.A && e.KeyModifiers == KeyModifiers.Control && TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is not TextBox)
         {
             SelectAll(_all2.Any(r => !r.Item.IsDirectory && !_selected.Contains(r)));
             e.Handled = true;

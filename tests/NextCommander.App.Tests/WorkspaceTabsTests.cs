@@ -133,6 +133,59 @@ public sealed class WorkspaceTabsTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task Synchronize_directories_is_a_page_with_a_tab_and_close_buttons()
+    {
+        var (w, vm) = await _fx.OpenAsync();
+        var panels = w.FindControl<Grid>("PanelsGrid")!;
+        var sync = new Views.Tools.SyncDirsView(VfsPath.Local(_fx.L()), VfsPath.Local(_fx.R()), vm.Tools);
+        w.ShowSync(sync);
+        await SettleAsync(4);
+        Assert.Equal([WorkspacePage.Files, WorkspacePage.Sync], w.OpenPages);
+        Assert.Equal(WorkspacePage.Sync, w.CurrentPage);
+        Assert.True(sync.IsEffectivelyVisible);
+        Assert.Contains(Tabs(w)[1].GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "Synchronize");
+        await sync.CompareAsync(); // compares at once like the window did
+        Assert.NotEmpty(sync.AllRows);
+        if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
+        {
+            Directory.CreateDirectory(dir);
+            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(w)!.SavePng(Path.Combine(dir, "sync-tab.png"));
+        }
+
+        // the files: the comparison stays behind its tab
+        Click(Tabs(w)[0]);
+        await SettleAsync();
+        Assert.True(panels.IsVisible);
+        Assert.False(sync.IsEffectivelyVisible);
+        Assert.Same(sync, w.Sync);
+
+        // the tab's ×
+        Click(Tabs(w)[1].GetVisualDescendants().OfType<Button>().Single(b => b.Classes.Contains("tabclose")));
+        await SettleAsync();
+        Assert.True(sync.IsClosed);
+        Assert.Null(w.Sync);
+        Assert.Equal([WorkspacePage.Files], w.OpenPages);
+
+        // its own × at the top right
+        var again = new Views.Tools.SyncDirsView(VfsPath.Local(_fx.L()), VfsPath.Local(_fx.R()), vm.Tools);
+        w.ShowSync(again);
+        await SettleAsync(4);
+        Click(again.GetVisualDescendants().OfType<Button>().Single(b => Equals(b.Content, "×")));
+        await SettleAsync();
+        Assert.Null(w.Sync);
+
+        // Esc in it (the main window's shortcuts leave its keys alone)
+        var third = new Views.Tools.SyncDirsView(VfsPath.Local(_fx.L()), VfsPath.Local(_fx.R()), vm.Tools);
+        w.ShowSync(third);
+        await SettleAsync(4);
+        third.Focus();
+        Press(w, Avalonia.Input.Key.Escape);
+        await SettleAsync();
+        Assert.Null(w.Sync);
+        Assert.Equal(WorkspacePage.Files, w.CurrentPage);
+    }
+
+    [AvaloniaFact]
     public void The_files_tab_shows_the_icon_of_the_place()
     {
         // a server: the product mark of the connection type; an archive: the archive icon; a plugin: the plugin icon
