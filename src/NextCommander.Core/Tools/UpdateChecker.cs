@@ -92,7 +92,7 @@ public static class UpdateChecker
     private static string? Text(JsonElement root, string name) =>
         root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
 
-    /// <summary>Version of the application as shown to the user: major.minor.build (e.g. 1.0.1000).</summary>
+    /// <summary>Version of the application as shown to the user: YY.MM.build (e.g. 26.11.1060).</summary>
     public static string DisplayVersion(System.Reflection.Assembly assembly) =>
         System.Reflection.CustomAttributeExtensions.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>(assembly)?.InformationalVersion.Split('+')[0]
         ?? assembly.GetName().Version?.ToString(3) ?? "?";

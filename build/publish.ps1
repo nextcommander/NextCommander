@@ -17,9 +17,15 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-# major.minor.build: the build number comes from the git commit count (NcVersion target in Directory.Build.props)
-$version = (dotnet msbuild "$root/src/NextCommander.App" -nologo -t:NcVersion -getProperty:Version | Out-String).Trim()
-if ($LASTEXITCODE -ne 0 -or $version -notmatch '^\d+\.\d+\.\d+$') { throw "Could not read the version: $version" }
+# YY.MM.build: year and month of the commit, the build number from the git commit count (NcVersion target in
+# Directory.Build.props). $version keeps the month with two digits (file names, setup); $numericVersion has no
+# leading zero (MSIX, macOS bundle versions).
+$versionJson = (dotnet msbuild "$root/src/NextCommander.App" -nologo -t:NcVersion -getProperty:Version -getProperty:NcNumericVersion | Out-String)
+if ($LASTEXITCODE -ne 0) { throw "Could not read the version: $versionJson" }
+$versionProps = ($versionJson | ConvertFrom-Json).Properties
+$version = $versionProps.Version
+$numericVersion = $versionProps.NcNumericVersion
+if ($version -notmatch '^\d\d\.\d\d\.\d+$' -or $numericVersion -notmatch '^\d+\.\d+\.\d+$') { throw "Could not read the version: $versionJson" }
 $out = Join-Path $root "artifacts/publish/$Rid"
 $dist = Join-Path $root 'dist'
 $name = "NextCommander-$version-$Rid"
@@ -100,7 +106,7 @@ switch -Wildcard ($Rid) {
             Copy-Item "$PSScriptRoot/windows/Assets/*" "$layout/Assets"
             $publisher = if ($env:MSIX_PUBLISHER) { $env:MSIX_PUBLISHER } else { 'CN=NextCommander' }
             $arch = if ($Rid -eq 'win-arm64') { 'arm64' } else { 'x64' }
-            $msixVersion = (($version -split '[-+]')[0] + '.0.0.0').Split('.')[0..3] -join '.'
+            $msixVersion = "$numericVersion.0"
             (Get-Content "$PSScriptRoot/windows/AppxManifest.xml" -Raw).Replace('$VERSION', $msixVersion).Replace('$ARCH', $arch).Replace('$PUBLISHER', $publisher) |
                 Set-Content -Encoding utf8 "$layout/AppxManifest.xml"
             & $makeappx pack /o /d $layout /p "$dist/$name.msix"
@@ -214,7 +220,7 @@ switch -Wildcard ($Rid) {
         New-Item -ItemType Directory -Force "$app/Contents/MacOS", "$app/Contents/Resources" | Out-Null
         Copy-Item "$out/*" "$app/Contents/MacOS" -Recurse
         Copy-Item "$root/src/NextCommander.App/Assets/NextCommander.icns" "$app/Contents/Resources/NextCommander.icns"
-        (Get-Content "$PSScriptRoot/macos/Info.plist" -Raw).Replace('$VERSION', $version) | Set-Content -NoNewline "$app/Contents/Info.plist"
+        (Get-Content "$PSScriptRoot/macos/Info.plist" -Raw).Replace('$VERSION', $numericVersion) | Set-Content -NoNewline "$app/Contents/Info.plist"
         if ($env:MACOS_SIGN_IDENTITY) {
             codesign --force --deep --options runtime --timestamp --entitlements "$PSScriptRoot/macos/entitlements.plist" -s $env:MACOS_SIGN_IDENTITY $app
         }
