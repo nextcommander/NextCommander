@@ -2350,6 +2350,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         Views.Dialogs.SettingsView.ButtonIcon = (button, size) => Controls.ButtonBarControl.CreateIcon(button, size, this);
         Views.Dialogs.SettingsView.PickProgram = _dialogs.PickOpenFileAsync;
         Views.Dialogs.SettingsView.PluginRoots = [Path.Combine(_store.Directory, "plugins"), Path.Combine(AppContext.BaseDirectory, "plugins")];
+        Views.Dialogs.SettingsView.LinkStatus = () => Link?.Status() ?? string.Empty;
         Views.Dialogs.SettingsView.ColumnFields = () => ColumnValues.Columns.AllFields.ToList();
         await _dialogs.ShowSettingsAsync(_settings, ApplySettings, extras, search);
         ApplySettings();
@@ -2374,6 +2375,8 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         }
         OnPropertyChanged(nameof(MainFont));
         OnPropertyChanged(nameof(HasPluginMenu)); // the "plugins button" setting
+        OnPropertyChanged(nameof(LinkSharing));
+        _ = Link?.ApplyAsync(); // PC link: sharing on / off, another port or name
         Left.RefreshDrives();  // drive icons follow Icons > system drive icons
         Right.RefreshDrives();
         foreach (var tab in LeftSide.Tabs.Concat(RightSide.Tabs))
@@ -2608,6 +2611,9 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     }
 
     private RemoteSession? _remote;
+
+    /// <summary>PC link sharing on this computer (null in tests without it).</summary>
+    public LinkService? Link { get; set; }
 
     /// <summary>The password of a manual proxy with a user, from the password store (asks for the master password when there is one).</summary>
     private async Task LoadProxyPasswordAsync()

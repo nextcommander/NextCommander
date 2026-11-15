@@ -67,6 +67,7 @@ public static class BrandIcons
     {
         RemoteProtocol.Sftp => ("MiKey", "#3BA54A"),
         RemoteProtocol.Smb => ("MiNetwork", "#2F7FE0"),
+        RemoteProtocol.Link => ("MiMonitor", "#1FA59C"),
         RemoteProtocol.WebDav or RemoteProtocol.WebDavs => ("MiGlobe", "#1FA59C"),
         _ => ("MiTransfer", "#2F7FE0"),
     };

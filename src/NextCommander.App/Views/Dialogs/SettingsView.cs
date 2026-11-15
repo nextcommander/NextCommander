@@ -42,7 +42,7 @@ public sealed class SettingsView : UserControl
         "Display", "Display/Icons", "Display/Font", "Display/Color", "Display/Data formats", "Display/Folder tabs", "Display/View modes",
         "Display/Language",
         "Operation", "Operation/Edit and view", "Operation/Copy and delete", "Operation/Quick search", "Operation/FTP", "Operation/Proxy", "Operation/Plugins", "Operation/Thumbnails",
-        "Operation/Associations", "Operation/File index",
+        "Operation/Associations", "Operation/File index", "Operation/PC link",
         "Packer", "Packer/Zip", "Packer/7-Zip",
         "Refresh", "Ignore list", "History", "Log file",
         "Misc.",
@@ -55,7 +55,7 @@ public sealed class SettingsView : UserControl
         ["Display/Data formats"] = "MiHash", ["Display/Folder tabs"] = "MiTabs", ["Display/View modes"] = "MiColumns", ["Display/Language"] = "MiGlobe",
         ["Operation"] = "MiGear", ["Operation/Edit and view"] = "MiPencil", ["Operation/Copy and delete"] = "MiCopy", ["Operation/Quick search"] = "MiSearch",
         ["Operation/FTP"] = "MiNetwork", ["Operation/Proxy"] = "MiPlug", ["Operation/Plugins"] = "MiChip", ["Operation/Thumbnails"] = "MiFullView",
-        ["Operation/Associations"] = "MiExchange", ["Operation/File index"] = "MiDrive", ["Packer"] = "MiStacked", ["Packer/Zip"] = "MiCombine",
+        ["Operation/Associations"] = "MiExchange", ["Operation/File index"] = "MiDrive", ["Operation/PC link"] = "MiMonitor", ["Packer"] = "MiStacked", ["Packer/Zip"] = "MiCombine",
         ["Packer/7-Zip"] = "MiSplit", ["Refresh"] = "MiRefresh", ["Ignore list"] = "MiFilter", ["History"] = "MiHistory", ["Log file"] = "MiDoc",
         ["Misc."] = "MiHammer",
     };
@@ -1037,6 +1037,76 @@ public sealed class SettingsView : UserControl
             return panel;
         }, (_, _) => { });
 
+    /// <summary>PC link: what the sharing does now (set by the main window; null in tests).</summary>
+    public static Func<string>? LinkStatus { get; set; }
+
+    /// <summary>PC link: a shared folder (name the other computer sees, folder, read only).</summary>
+    private static ListEditorOptions<LinkShare> LinkShareOptions() => new()
+    {
+        Create = () => new LinkShare { Name = "Shared" },
+        Clone = CloneEntry,
+        Summary = s => (string.IsNullOrWhiteSpace(s.Name) ? "(no name)" : s.Name) + " — " + (s.Path.Length > 0 ? s.Path : "(no folder)") + (s.ReadOnly ? " (read only)" : string.Empty),
+        Validate = s => s.Problem(),
+        AddText = "Add folder",
+        Fields =
+        [
+            new("Name", ListFieldKind.Text, s => s.Name, (s, v) => s.Name = v?.Trim() ?? string.Empty) { PlaceholderText = "e.g. Photos" },
+            new("Folder", ListFieldKind.Folder, s => s.Path, (s, v) => s.Path = v?.Trim() ?? string.Empty),
+            new("Read only", ListFieldKind.Bool, s => s.ReadOnly ? "True" : "False", (s, v) => s.ReadOnly = v == "True"),
+        ],
+    };
+
+    /// <summary>PC link: the state of sharing, renewed every second while the page is shown.</summary>
+    private static SettingItem LinkStatusItem(string page, string group) =>
+        new(page, group, "Status", null, (_, _) =>
+        {
+            var status = new TextBlock { TextWrapping = Avalonia.Media.TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
+            void Show() => status.Text = LinkStatus?.Invoke() ?? string.Empty;
+            var timer = new Avalonia.Threading.DispatcherTimer(TimeSpan.FromSeconds(1), Avalonia.Threading.DispatcherPriority.Background, (_, _) => Show());
+            status.AttachedToVisualTree += (_, _) => timer.Start();
+            status.DetachedFromVisualTree += (_, _) => timer.Stop();
+            Show();
+            return status;
+        }, (_, _) => { });
+
+    /// <summary>PC link: the computers allowed to connect without the code; "Forget" asks for the code again next time.</summary>
+    private static SettingItem LinkPeersItem(string page, string group) =>
+        new(page, group, "Allowed computers", "These computers connect without the code. Forget one to be asked again.", (s, changed) =>
+        {
+            var list = new StackPanel { Spacing = 4 };
+            void Fill()
+            {
+                list.Children.Clear();
+                if (s.LinkTrustedPeers.Count == 0)
+                {
+                    list.Children.Add(new TextBlock { Text = "(none)", Opacity = 0.7 });
+                }
+                foreach (var peer in s.LinkTrustedPeers.ToList())
+                {
+                    var row = new DockPanel();
+                    var forget = new Button { Content = "Forget", Margin = new Thickness(8, 0, 0, 0) };
+                    forget.Click += (_, _) =>
+                    {
+                        s.LinkTrustedPeers = [.. s.LinkTrustedPeers.Where(p => !ReferenceEquals(p, peer))];
+                        changed();
+                        Fill();
+                    };
+                    DockPanel.SetDock(forget, Dock.Right);
+                    row.Children.Add(forget);
+                    row.Children.Add(new TextBlock
+                    {
+                        Text = string.Format(CultureInfo.CurrentCulture, "{0} — {1:g}", peer.Name, peer.Allowed),
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Classes = { "noloc" },
+                    });
+                    ToolTip.SetTip(row, peer.Fingerprint);
+                    list.Children.Add(row);
+                }
+            }
+            Fill();
+            return list;
+        }, CopyList(s => s.LinkTrustedPeers, (s, v) => s.LinkTrustedPeers = v), FullWidth: true);
+
     /// <summary>A choice whose options are read each time the page is shown (theme and language files).</summary>
     private static SettingItem FileChoice(string page, string group, string label, string? description, Func<(string Text, string Value)[]> options,
         Func<AppSettings, string> get, Action<AppSettings, string> set, Func<string, Control?>? icon = null) =>
@@ -1872,6 +1942,7 @@ public sealed class SettingsView : UserControl
         const string thumbs = "Operation/Thumbnails";
         const string assoc = "Operation/Associations";
         const string index = "Operation/File index";
+        const string link = "Operation/PC link";
         const string packer = "Packer";
         const string sevenZip = "Packer/7-Zip";
         const string misc = "Misc.";
@@ -2151,6 +2222,19 @@ public sealed class SettingsView : UserControl
                 "Reads all folders again after this many hours (at start or while running), also those whose time did not change, so that sizes and times of files changed while the program was closed are corrected. Takes as long as the first scan. 0 = never.",
                 0, 8760, s => s.FileIndexFullCheckHours, (s, v) => s.FileIndexFullCheckHours = (int)v, 24),
             IndexStatus(index, "File index"),
+
+            // PC link: the folders this computer shares with other NextCommanders
+            Bool(link, "Sharing", "Share these folders with other computers",
+                "Another NextCommander connected by a cable (USB or Ethernet) or over the network opens them with Net > PC link. The first time, both screens show the same code and this computer allows the other one. Same as Net > Share with PC link.",
+                s => s.LinkSharing, (s, v) => s.LinkSharing = v),
+            ListItem(link, "Sharing", "Shared folders", "Only these folders can be reached; nothing above them. A read-only folder cannot be changed by the other computer.",
+                s => s.LinkShares, (s, v) => s.LinkShares = v, LinkShareOptions()),
+            LinkStatusItem(link, "Sharing"),
+            Text(link, "This computer", "Computer name", "The name the other computers see. Empty: the name of the machine.",
+                s => s.LinkComputerName, (s, v) => s.LinkComputerName = v?.Trim() ?? string.Empty, Environment.MachineName),
+            Number(link, "This computer", "Port", "TCP port of the link and UDP port of finding computers; the same on both computers.",
+                1024, 65535, s => s.LinkPort, (s, v) => s.LinkPort = (int)v),
+            LinkPeersItem(link, "Allowed computers"),
 
             ListItem(assoc, "Internal associations", "Internal associations (Enter)",
                 "Enter opens these file types with the command given: a program (with parameters), a nc_ command, Lister, the editor or the system's program. Shift+Enter: open together.",

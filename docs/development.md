@@ -70,6 +70,7 @@ GitHub Actions (`.github/workflows/ci.yml`) builds and tests on the three platfo
 | `NextCommander.App` | The Avalonia UI (MVVM). |
 | `tests/NextCommander.Core.Tests` | xUnit unit tests. |
 | `tests/NextCommander.App.Tests` | Avalonia.Headless UI tests. |
+| `src/NextCommander.Vfs.Remote/Link` | PC link: `LinkProtocol` (frames in TLS, the pairing code), `LinkIdentity` (the installation's self-signed certificate, kept in the secret store), `LinkServer` (the shared folders; refuses paths and links leading out of them), `LinkClient` + `LinkFileSystemProvider` (`link://computer/share/...` on `RemoteProviderBase`), `LinkDiscovery` / `LinkResponder` (UDP probe to every interface's broadcast address incl. 169.254.x.x and ff02::1). The App side is `Services/LinkService.cs`. |
 | `src/Plugins/NextCommander.Plugin.Rclone` | The rclone file system as a plugin shipped with the program: built with the application (not referenced) and copied with its `plugin.json` to `plugins/rclone` next to it, also in the publish folder (`NcShippedPlugin` items in `NextCommander.App.csproj`). |
 | `tests/SamplePlugin` | An example plugin. |
 | `tests/servers` | FTP, SFTP, WebDAV (wsgidav), S3 (moto) and SMB (impacket, port 4445) test servers; Azurite for Azure is installed into `node_modules`. |

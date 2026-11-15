@@ -24,6 +24,7 @@ public sealed partial class ConnectionManagerView
         (RemoteProtocol.WebDavs, "WebDAV", "Nextcloud, ownCloud, SharePoint, NAS (HTTPS)", "Servers"),
         (RemoteProtocol.WebDav, "WebDAV (HTTP)", "WebDAV without encryption", "Servers"),
         (RemoteProtocol.Smb, "SMB", "Windows shares, Samba, NAS", "Local network"),
+        (RemoteProtocol.Link, "PC link", "Another computer running NextCommander, over a cable (USB, Ethernet) or the network", "Local network"),
         (RemoteProtocol.S3, "Amazon S3", "S3 and compatible stores (MinIO, R2, Wasabi, B2 ...)", "Cloud storage"),
         (RemoteProtocol.AzureBlob, "Azure Blob", "Azure Blob Storage", "Cloud storage"),
         (RemoteProtocol.AzureFiles, "Azure Files", "The file shares of an Azure storage account", "Cloud storage"),
@@ -618,6 +619,16 @@ public sealed partial class ConnectionManagerView
             return box;
         }
         CheckBox Remember(string text) => Check(text, c.SavePassword, v => c.SavePassword = v);
+        if (c.Protocol == RemoteProtocol.Link)
+        {
+            fields.Add(new TextBlock
+            {
+                Text = "No user or password: the first time both screens show the same code, and the other computer allows this one.",
+                TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                Opacity = 0.8,
+            });
+            return fields;
+        }
         if (c.IsCloudDrive)
         {
             User("Account name", Core.Localization.Localizer.T("e.g. personal, work (tells several accounts apart)"));
@@ -776,7 +787,7 @@ public sealed partial class ConnectionManagerView
                 Changed(c);
             }));
         }
-        if (!c.IsCloudDrive && c.Protocol is not (RemoteProtocol.Sftp or RemoteProtocol.Scp or RemoteProtocol.Ftp or RemoteProtocol.WebDav or RemoteProtocol.Smb))
+        if (!c.IsCloudDrive && c.Protocol is not (RemoteProtocol.Sftp or RemoteProtocol.Scp or RemoteProtocol.Ftp or RemoteProtocol.WebDav or RemoteProtocol.Smb or RemoteProtocol.Link))
         {
             fields.Add(Check("Accept any certificate (not recommended)", c.AcceptAnyCertificate, v => c.AcceptAnyCertificate = v));
         }
@@ -803,6 +814,7 @@ public sealed partial class ConnectionManagerView
             RemoteProtocol.Dropbox => "On first use you sign in with your Dropbox account in the browser. For the application id: dropbox.com/developers/apps → Create app → Scoped access, Full Dropbox; Permissions: files.metadata.read/write, files.content.read/write; Settings → Redirect URIs: http://localhost:53682/. Enter the App key here.",
             RemoteProtocol.Box => "On first use you sign in with your Box account in the browser. For the application id: app.box.com/developers/console → Create Platform App → User Authentication (OAuth 2.0); Configuration: Redirect URI http://localhost:53682/, application scopes: read and write all files and folders. Enter the Client ID and Client Secret here.",
             RemoteProtocol.Smb => "SMB2/3 shares (Windows, Samba, NAS); they open without mounting on Linux and macOS too. User: DOMAIN\\user or user; empty for a guest login. The root lists the machine's shares; the start folder can be a share (e.g. /documents).",
+            RemoteProtocol.Link => "Another computer running NextCommander that shares folders (Net > Share with PC link there). Server: its computer name (as Net > PC link lists it) or its address, e.g. 169.254.12.34 on a direct cable. A USB-C / Thunderbolt cable or a USB link cable works when the system shows it as a network connection.",
             RemoteProtocol.AzureFiles => "Server: account.file.core.windows.net. The account key or a SAS token is asked as the password. The root lists the file shares; the start folder can be a share (e.g. /documents).",
             RemoteProtocol.AzureBlob => "Server: account.blob.core.windows.net (at another address, such as Azurite, requests go as server/account/container). The account key or a SAS token is asked as the password. The root lists the containers.",
             RemoteProtocol.S3 => "Server: the S3 endpoint (AWS, MinIO, R2 ...). User: the access key id; the secret key is asked as the password. With an AWS profile the keys (and the session token of temporary keys) are read from ~/.aws/credentials. The root lists the buckets; the start folder can be a bucket (e.g. /backups).",

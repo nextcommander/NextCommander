@@ -30,6 +30,8 @@ public enum RemoteProtocol
     Box,
     /// <summary>Azure Files (azfile://): SMB file shares of a storage account over REST; the user is the account, the secret its key or a SAS token.</summary>
     AzureFiles,
+    /// <summary>PC link (link://): another computer running NextCommander, over a cable or the network.</summary>
+    Link,
 }
 
 /// <summary>A folder of the connection manager: its path ("Work/Prod") and color label ("#ED4245"; empty: none).</summary>

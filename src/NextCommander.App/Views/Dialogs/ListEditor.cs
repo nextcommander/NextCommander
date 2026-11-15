@@ -27,6 +27,9 @@ public enum ListFieldKind
 
     /// <summary>One of <see cref="ListField{T}.Options"/> (value, shown text).</summary>
     Choice,
+
+    /// <summary>A folder path with a "..." button that opens the system's folder picker.</summary>
+    Folder,
 }
 
 /// <summary>A field of a list entry: label, kind and how its text is read and written.</summary>
@@ -427,6 +430,33 @@ public sealed class ListEditor<T> : UserControl where T : class
                     tools.Children.Add(quick);
                 }
                 line.Children.AddRange([tools, box]);
+                return line;
+            }
+            case ListFieldKind.Folder:
+            {
+                var box = new TextBox { Text = value, PlaceholderText = field.PlaceholderText, Classes = { "noloc" } };
+                box.TextChanged += (_, _) =>
+                {
+                    field.Set(entry, box.Text);
+                    FieldChanged();
+                };
+                var browse = new Button { Content = "...", Margin = new Thickness(6, 0, 0, 0) };
+                ToolTip.SetTip(browse, "Choose a folder");
+                browse.Click += async (_, _) =>
+                {
+                    if (TopLevel.GetTopLevel(this)?.StorageProvider is not { } storage)
+                    {
+                        return;
+                    }
+                    var folders = await storage.OpenFolderPickerAsync(new Avalonia.Platform.Storage.FolderPickerOpenOptions { Title = field.Label });
+                    if (folders.Count > 0 && Avalonia.Platform.Storage.StorageProviderExtensions.TryGetLocalPath(folders[0]) is { } path)
+                    {
+                        box.Text = path;
+                    }
+                };
+                var line = new DockPanel();
+                DockPanel.SetDock(browse, Dock.Right);
+                line.Children.AddRange([browse, box]);
                 return line;
             }
             default:

@@ -47,6 +47,8 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
 - Web server folder listings (`http://`, `https://`) open like folders; the remotes of an installed rclone too.
 - Android phones over ADB (USB debugging) as drives; shortcuts to the local folders of OneDrive, iCloud Drive,
   Dropbox, Google Drive ... and to WSL distributions.
+- PC link: two computers running NextCommander work on each other's shared folders over a USB or Ethernet cable
+  (or the network), encrypted, paired once with a code shown on both screens.
 - A connection manager, saved passwords protected by an optional master password, and a view of the
   machines on your local network.
 - Browse the trash / Recycle Bin in a panel: restore, copy out, delete for good, empty.

@@ -23,6 +23,7 @@ Supported types:
 | Box | Your Box account |
 | Web server folder listings | `http://` and `https://` folders with an index page (Apache, nginx, IIS ...); read only |
 | Android over ADB | Phones with USB debugging on; also on macOS, where MTP is not available |
+| PC link | Another computer running NextCommander, over a USB or Ethernet cable or the network: see [PC link](#pc-link) |
 | rclone remotes | Every remote you set up with `rclone config` (70+ services); the rclone plugin shipped with the program |
 
 ## The Net menu
@@ -195,6 +196,40 @@ in the SDK folder, or through the `FM_ADB` environment variable), connected phon
 "*Model* (ADB)", next to the MTP ones. They open at `/sdcard` (the shared storage); going up shows the rest of the
 phone as far as Android allows. The first time, allow the computer on the phone. Copies keep file times; the panel
 footer shows the free space.
+
+### PC link
+
+Two computers that both run NextCommander can work on each other's folders over a cable — like the "port
+connection" of older file managers — or over the network.
+
+**The cable.** Anything the operating system shows as a network connection works:
+- a direct **Ethernet** cable between the two computers (no router needed: both get an address such as
+  169.254.x.x by themselves, which takes up to a minute after plugging in);
+- **USB-C / Thunderbolt** between two computers (Thunderbolt networking on Windows and macOS);
+- a **USB link cable** ("USB 3.0 bridge" / "data transfer" cable) whose driver makes a network adapter;
+- both computers on the same Wi-Fi or LAN.
+
+Old transfer cables that only work with their own program (and no network adapter) are not supported.
+
+**On the computer that shares**
+1. *Configuration > Operation > PC link*: add the **shared folders** (a name the other computer sees, the folder,
+   and *Read only* if the other computer may not change it). Nothing outside these folders can be reached.
+2. **Net > Share with PC link** turns sharing on (a check mark); the same switch is on the page above, which also
+   shows the computer name, the port (47290) and this computer's addresses.
+3. The first time, Windows asks whether NextCommander may use the network: allow it. A direct cable is often a
+   "Public" network on Windows; allow public networks too, or set that network to "Private".
+
+**On the computer that connects**
+1. **Net > PC link...** lists the computers that share (they answer within a second or two). Open one: its shared
+   folders appear, and everything works as on a local disk — copy, move, delete, view, edit, file times.
+2. The first time, both screens show the **same six-digit code**: accept it here when it matches, and the other
+   computer's user clicks **Allow**. Both computers remember each other; the next connection asks nothing.
+   *Configuration > Operation > PC link > Allowed computers* forgets a computer.
+3. A computer that does not show up in the list can be typed: `link://169.254.12.34/` (its address, shown on its
+   settings page) or saved in the connection manager as a **PC link** connection.
+
+The connection is encrypted (TLS). Each installation has its own certificate; the code is made from both
+certificates, so a third computer in between would show a different code.
 
 ### rclone remotes
 rclone support is a plugin shipped with the program (`plugins/rclone` next to it; Configuration > Plugins can turn it

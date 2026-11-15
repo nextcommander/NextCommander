@@ -146,6 +146,10 @@
                   Command="{Binding RunCommandCommand}" CommandParameter="nc_FtpHiddenFiles" />
         <Separator />
         <MenuItem Header="Master password..." Command="{Binding RunCommandCommand}" CommandParameter="nc_MasterPassword" />
+        <Separator />
+        <MenuItem Header="PC link..." Command="{Binding RunCommandCommand}" CommandParameter="nc_LinkConnect" />
+        <MenuItem Header="Share with PC link" ToggleType="CheckBox" IsChecked="{Binding LinkSharing, Mode=OneWay}"
+                  Command="{Binding RunCommandCommand}" CommandParameter="nc_LinkShare" />
       </MenuItem>
       <MenuItem Header="_Show">
         <MenuItem Header="Display" Tag="nc_SrcLong">

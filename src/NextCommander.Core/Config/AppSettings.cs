@@ -1144,6 +1144,25 @@ public sealed class AppSettings
     /// <summary>Trusted server fingerprints: "sftp:host:22" → "SHA256:...".</summary>
     public Dictionary<string, string> KnownHosts { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
+    // ---- PC link: two NextCommanders over a cable or the network ----
+
+    /// <summary>This computer shares <see cref="LinkShares"/> with other NextCommanders (off by default; Net > Share with PC link).</summary>
+    public bool LinkSharing { get; set; }
+
+    /// <summary>The folders offered to the other computer.</summary>
+    public List<LinkShare> LinkShares { get; set; } = [];
+
+    /// <summary>TCP port of the link and UDP port of finding computers.</summary>
+    public int LinkPort { get; set; } = DefaultLinkPort;
+
+    public const int DefaultLinkPort = 47290;
+
+    /// <summary>The name the other computers see (empty: the machine name).</summary>
+    public string LinkComputerName { get; set; } = string.Empty;
+
+    /// <summary>Computers allowed to connect without asking again.</summary>
+    public List<LinkPeer> LinkTrustedPeers { get; set; } = [];
+
     // ---- Tools (phase 5) ----
     public Dictionary<string, Rename.MultiRenameOptions> RenamePresets
     {

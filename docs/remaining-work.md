@@ -166,6 +166,9 @@ Since 7 November 2026 colors come only from theme files (default: system colors,
 - [x] plocate tried in a real environment (WSL Ubuntu 24.04, plocate 1.1.19): indexed search results match a folder scan. With several masks (`*.bin *.txt`) nothing was returned because plocate combines patterns with AND; each pattern is now a separate query.
 - [x] The application's own file index (Settings > Operation > File index): fast search, duplicate files and folder size without Everything / plocate / Spotlight; search in ~1 million files takes 20–80 ms.
 - [x] MSIX package: if the Windows SDK is not installed, `makeappx` is taken from the SDK BuildTools package on NuGet; the package is produced (unsigned; installing needs a certificate).
+- [x] PC link: two NextCommanders over a USB or Ethernet cable or the network (Net > PC link, Net > Share with PC link): shared folders (read-only possible), TLS, pairing code, finding computers on link-local addresses. Tested with a real server and client on loopback.
+- [ ] PC link: to be tried with two computers on a direct Ethernet cable, a USB-C / Thunderbolt cable and a USB link cable (Windows, Linux, macOS).
+- [-] PC link over a raw USB cable without a network adapter (old "Easy Transfer" cables in their own mode): needs a USB driver of its own; out of scope.
 - [ ] Media playback with VLC, DMG packaging and mdfind (Spotlight) should be tried in a real environment.
 - [ ] System icons of the user folders (documents, downloads ...): tried on Windows and Linux (icon theme, SVG drawn with Svg.Skia; 14 November 2026); the macOS NSWorkspace icon should be tried on macOS.
 - [x] "Show admin shares": in the network view (drive box `\`) the SMB shares of the machines are listed (Windows); when on, admin shares such as C$, ADMIN$ too.

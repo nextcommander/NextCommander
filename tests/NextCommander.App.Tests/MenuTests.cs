@@ -265,7 +265,7 @@ public sealed class MenuTests : IDisposable
         var (w, vm) = await _fx.OpenAsync();
         Assert.Equal(["Connection manager...", "Saved connections", "Connect by address...", "Disconnect",
             "Network (machines of the local network)", "Map network drive...", "Disconnect network drives...", "Share current directory...", "Unshare directory...",
-            "Show admin shares", "Download from URL...", "Download the addresses of a list...", "Show hidden files on FTP", "Master password..."],
+            "Show admin shares", "Download from URL...", "Download the addresses of a list...", "Show hidden files on FTP", "Master password...", "PC link...", "Share with PC link"],
             Headers(w, "_Net"));
         // no "New connection" submenu: the connection manager makes new connections (nc_NewConnection still opens it on a type)
         Assert.DoesNotContain(w.GetLogicalDescendants().OfType<MenuItem>(), m => m.Header as string is "New connection" or "Google Drive...");

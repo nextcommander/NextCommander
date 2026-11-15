@@ -56,6 +56,10 @@ public partial class App : Application
 
             var vm = Services.GetRequiredService<MainWindowViewModel>();
             vm.Remote = Services.GetRequiredService<RemoteSession>();
+            var link = Services.GetRequiredService<NextCommander.App.Services.LinkService>();
+            vm.Link = link;
+            link.SaveSettings = vm.SaveSettings;
+            _ = link.ApplyAsync(); // sharing again when it was on at the last exit
             LoadPlugins(vm, Services.GetRequiredService<ProviderRegistry>(), store, settings);
             NextCommander.App.Services.FileIndexService.Apply(settings, store.Directory); // the own file index, in the background
             NextCommander.App.Services.MediaSupport.Positions = new NextCommander.App.Services.MediaPositions(Path.Combine(store.Directory, "media-positions.json"));
@@ -68,6 +72,8 @@ public partial class App : Application
                 // Write buffered archive changes and remove temp copies.
                 Services.GetRequiredService<NextCommander.Vfs.Archive.ArchiveFileSystemProvider>().DisposeAsync().AsTask().GetAwaiter().GetResult();
                 Services.GetRequiredService<NextCommander.Vfs.Remote.SftpFileSystemProvider>().DisposeAsync().AsTask().GetAwaiter().GetResult();
+                Services.GetRequiredService<NextCommander.Vfs.Remote.Link.LinkFileSystemProvider>().DisposeAsync().AsTask().GetAwaiter().GetResult();
+                Services.GetRequiredService<NextCommander.App.Services.LinkService>().Dispose(); // stops sharing
                 Services.GetRequiredService<NextCommander.Vfs.Remote.FtpFileSystemProvider>().DisposeAsync().AsTask().GetAwaiter().GetResult();
                 Services.GetRequiredService<NextCommander.Vfs.Remote.WebDavFileSystemProvider>().DisposeAsync().AsTask().GetAwaiter().GetResult();
                 Services.GetRequiredService<NextCommander.Vfs.Remote.S3FileSystemProvider>().DisposeAsync().AsTask().GetAwaiter().GetResult();
@@ -344,6 +350,15 @@ public partial class App : Application
         services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Vfs.Remote.Cloud.DropboxFileSystemProvider>());
         services.AddSingleton(sp => new NextCommander.Vfs.Remote.Cloud.BoxFileSystemProvider(sp.GetRequiredService<RemoteSession>().Hooks));
         services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Vfs.Remote.Cloud.BoxFileSystemProvider>());
+        // PC link: the sharing side (LinkService) and the connecting side (link://)
+        services.AddSingleton(sp => new NextCommander.App.Services.LinkService(settings, sp.GetRequiredService<SecretStore>(), sp.GetRequiredService<IDialogService>(),
+            new LocalFileSystemProvider()));
+        services.AddSingleton(sp =>
+        {
+            var link = sp.GetRequiredService<NextCommander.App.Services.LinkService>();
+            return new NextCommander.Vfs.Remote.Link.LinkFileSystemProvider(sp.GetRequiredService<RemoteSession>().Hooks, link.Discovery, link.IdentityAsync, () => link.ComputerName);
+        });
+        services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Vfs.Remote.Link.LinkFileSystemProvider>());
         services.AddSingleton<NextCommander.Vfs.Archive.ArchiveFileSystemProvider>();
         services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Vfs.Archive.ArchiveFileSystemProvider>());
         services.AddSingleton(sp =>

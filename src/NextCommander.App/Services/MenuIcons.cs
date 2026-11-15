@@ -242,6 +242,8 @@ public static class MenuIcons
         ["nc_FtpDisconnect"] = new("MiGlobe", Gray, "OvX", Red),
         ["nc_DownloadUrl"] = new("MiGlobe", Blue, "OvArrowDown", Green),
         ["nc_MasterPassword"] = new("MiKey", Yellow),
+        ["nc_LinkConnect"] = new("MiMonitor", Blue, "OvArrowRight", Green),
+        ["nc_LinkShare"] = new("MiMonitor", Teal, "OvArrowLeft", Green),
 
         // the connection manager's own menus
         ["connections.new"] = new("MiGlobe", Blue, "OvPlus", Green),

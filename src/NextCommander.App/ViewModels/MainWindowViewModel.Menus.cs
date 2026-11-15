@@ -63,6 +63,9 @@ public sealed partial class MainWindowViewModel
 
     public bool ShowAdminShares => _settings.ShowAdminShares;
 
+    /// <summary>PC link: this computer shares its folders (Net > Share with PC link, check mark).</summary>
+    public bool LinkSharing => _settings.LinkSharing;
+
     public bool ShowSharedDriveBar => _settings.ShowDriveButtons && !_settings.TwoDriveBars;
 
     /// <summary>Display > Show help texts (tool tips).</summary>
@@ -99,6 +102,9 @@ public sealed partial class MainWindowViewModel
             _settings.ShowAdminShares = !_settings.ShowAdminShares;
             OnPropertyChanged(nameof(ShowAdminShares));
         });
+        c.Register("nc_LinkConnect", "PC link: the computers connected by a cable or the network that share folders",
+            _ => ActivePanel.NavigateAsync(NextCommander.Vfs.Remote.Link.LinkFileSystemProvider.Root));
+        c.Register("nc_LinkShare", "PC link: share the folders of the settings with other computers (on / off)", _ => ToggleLinkSharingAsync());
         c.Register("nc_FtpNewConnection", "Connect by address (Ctrl+N)", _ => QuickConnectAsync());
         c.Register("nc_FtpHiddenFiles", "Show hidden files on FTP", ToggleFtpHidden);
         c.Register("nc_FtpDownloadList", "Download the addresses in the list", _ => DownloadFromListAsync());
@@ -159,6 +165,38 @@ public sealed partial class MainWindowViewModel
             _settings.LastTypeFilter = mask.Trim();
         }
         ActivePanel.TypeFilter = mask;
+    }
+
+    /// <summary>
+    /// nc_LinkShare: sharing on or off. Without a shared folder the configuration opens on its PC link page first (the
+    /// folders are chosen there); sharing goes on when one is set.
+    /// </summary>
+    private async Task ToggleLinkSharingAsync()
+    {
+        if (!_settings.LinkSharing && (Link?.UsableShares.Count ?? 0) == 0)
+        {
+            await _dialogs.ShowMessageAsync("PC link", "Choose the folders to share first (Configuration > Operation > PC link).");
+            await ShowSettingsAsync("PC link");
+            if ((Link?.UsableShares.Count ?? 0) == 0)
+            {
+                return;
+            }
+            _settings.LinkSharing = true; // folders chosen: what the command was for
+        }
+        else
+        {
+            _settings.LinkSharing = !_settings.LinkSharing;
+        }
+        OnPropertyChanged(nameof(LinkSharing));
+        if (Link is { } link)
+        {
+            await link.ApplyAsync();
+            if (link.Problem is { } problem)
+            {
+                await _dialogs.ShowMessageAsync("PC link", $"Sharing could not start: {problem}");
+            }
+        }
+        SaveSettings();
     }
 
     private async Task NetworkDialogAsync(bool connect)

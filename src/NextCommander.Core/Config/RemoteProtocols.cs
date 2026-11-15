@@ -44,6 +44,7 @@ public static class RemoteProtocols
         new(RemoteProtocol.AzureBlob, "azblob", 443, ProtocolKind.ObjectStorage, Http: true),
         new(RemoteProtocol.AzureFiles, "azfile", 443, ProtocolKind.ObjectStorage, Http: true),
         new(RemoteProtocol.Smb, "smb", 445, ProtocolKind.Server, Aliases: ["cifs"]),
+        new(RemoteProtocol.Link, "link", AppSettings.DefaultLinkPort, ProtocolKind.Server),
         new(RemoteProtocol.GoogleDrive, "gdrive", 443, ProtocolKind.CloudDrive, Http: true, CloudHost: "drive.google.com"),
         new(RemoteProtocol.OneDrive, "onedrive", 443, ProtocolKind.CloudDrive, Http: true, CloudHost: "onedrive.live.com"),
         new(RemoteProtocol.Dropbox, "dropbox", 443, ProtocolKind.CloudDrive, Http: true, CloudHost: "dropbox.com"),
