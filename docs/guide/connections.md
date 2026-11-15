@@ -23,12 +23,13 @@ Supported types:
 | Box | Your Box account |
 | Web server folder listings | `http://` and `https://` folders with an index page (Apache, nginx, IIS ...); read only |
 | Android over ADB | Phones with USB debugging on; also on macOS, where MTP is not available |
-| rclone remotes | Every remote you set up with `rclone config` (70+ services) |
+| rclone remotes | Every remote you set up with `rclone config` (70+ services); the rclone plugin shipped with the program |
 
 ## The Net menu
 
 - **Connection manager...** (Ctrl+F): your saved connections.
-- **Saved connections:** opens a saved connection directly.
+- **Saved connections:** opens a saved connection directly; the connections are grouped by type (SFTP, FTP,
+  Amazon S3, Google Drive ...), the places of file system plugins (rclone remotes) follow under their own group.
 - **Connect by address...** (Ctrl+N): type an address and connect without saving.
 - **Disconnect** (Ctrl+Shift+F): closes the connection of the active panel; the panel goes back to the last local
   folder. While a panel shows a connection, its path line has a red button with the connection's name that does the
@@ -39,14 +40,16 @@ Supported types:
 - **Download from URL...** and **Download the addresses of a list...**: download files from the web.
 - **Show hidden files on FTP**.
 - **Master password...**: see [Saved passwords](#saved-passwords-and-the-master-password).
-- **rclone remotes**: see [rclone remotes](#rclone-remotes).
+
+The button bar has the same list as a drop-down next to the connection manager's button (▾, the command
+`nc_ConnectionsMenu`); the button appears once there is a saved connection (or a plugin place such as rclone).
 
 ## The connection manager
 
 ![The connection manager](../screenshots/connections.png)
 
-The manager opens in place of the active file panel (the other panel stays usable); ✕ or Esc closes it and brings
-the file panel back. The connections are on the left, in folders; the selected connection or folder is on the right.
+The manager opens in place of the right file panel, whichever panel is active (the left panel stays usable); ✕ or
+Esc closes it and brings the file panel back. The connections are on the left, in folders; the selected connection or folder is on the right.
 New connections start from the **New connection** button below the list.
 
 - **Folders** can be nested and have a color label (for example red for production). Drag connections and folders
@@ -189,8 +192,10 @@ phone as far as Android allows. The first time, allow the computer on the phone.
 footer shows the free space.
 
 ### rclone remotes
-With [rclone](https://rclone.org/downloads) installed (on the PATH or through `FM_RCLONE`), **Net > rclone remotes**
-lists the remotes of your rclone configuration; set them up with `rclone config`. Their passwords and tokens stay
+rclone support is a plugin shipped with the program (`plugins/rclone` next to it; Configuration > Plugins can turn it
+off). With [rclone](https://rclone.org/downloads) installed (on the PATH or through `FM_RCLONE`), **rclone remotes**
+in the connections menu of the button bar (or Net > Saved connections > rclone) lists the remotes of your rclone
+configuration; set them up with `rclone config`. Their passwords and tokens stay
 with rclone. NextCommander starts rclone once as a local API server (only on 127.0.0.1, with a random password) and
 stops it when it closes. Files are transferred through temporary files and keep their times where the service can.
 

@@ -8,6 +8,9 @@
     <Project Path="src/NextCommander.Vfs.Local/NextCommander.Vfs.Local.csproj" />
     <Project Path="src/NextCommander.Vfs.Remote/NextCommander.Vfs.Remote.csproj" />
   </Folder>
+  <Folder Name="/src/Plugins/">
+    <Project Path="src/Plugins/NextCommander.Plugin.Rclone/NextCommander.Plugin.Rclone.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/NextCommander.App.Tests/NextCommander.App.Tests.csproj" />
     <Project Path="tests/NextCommander.Core.Tests/NextCommander.Core.Tests.csproj" />

@@ -48,6 +48,25 @@ public interface IViewerPlugin
     Task<ViewerContent> ViewAsync(Stream content, string fileName, bool dark, CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// A file system plugin's place to start, listed with the saved connections (the connections menu of the button bar,
+/// Net > Saved connections) under its own group. Implemented by the plugin's <see cref="Vfs.IFileSystemProvider"/>.
+/// </summary>
+public interface IPluginEntryPoint
+{
+    /// <summary>The menu entry, e.g. "rclone remotes".</summary>
+    string EntryName { get; }
+
+    /// <summary>The group the entry is listed under, e.g. "rclone".</summary>
+    string EntryGroup { get; }
+
+    /// <summary>The folder the entry opens.</summary>
+    Vfs.VfsPath EntryRoot { get; }
+
+    /// <summary>Why the entry cannot be opened now (shown instead of opening it), e.g. a missing program; null when it can.</summary>
+    string? Unavailable { get; }
+}
+
 /// <summary>Packer and viewer plugins loaded in this process (file systems and columns have their own registries).</summary>
 public static class PluginCatalog
 {

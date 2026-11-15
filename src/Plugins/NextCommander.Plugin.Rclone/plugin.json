@@ -1,0 +1,6 @@
+{
+  "Name": "rclone",
+  "Assembly": "NextCommander.Plugin.Rclone.dll",
+  "Description": "The remotes of the installed rclone (rclone://remote/folder): 70+ storage services set up with \"rclone config\".",
+  "Version": "1.0"
+}

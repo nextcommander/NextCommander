@@ -48,4 +48,33 @@
   <ItemGroup>
     <InternalsVisibleTo Include="NextCommander.App.Tests" />
   </ItemGroup>
+
+  <!--
+    Plugins shipped with the application: built with it but not referenced; their assembly and plugin.json go to
+    plugins/<folder> next to the program (also in the publish folder, outside the single file).
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Plugins\NextCommander.Plugin.Rclone\NextCommander.Plugin.Rclone.csproj"
+                      ReferenceOutputAssembly="false" OutputItemType="NcShippedPlugin" PluginFolder="rclone" />
+  </ItemGroup>
+  <Target Name="NcPluginFiles" DependsOnTargets="ResolveProjectReferences">
+    <ItemGroup>
+      <_NcPluginProject Include="@(NcShippedPlugin->'%(MSBuildSourceProjectFile)')" />
+      <_NcPluginFile Include="@(NcShippedPlugin->'%(FullPath)')" />
+      <!-- the manifest from the plugin's source folder -->
+      <_NcPluginFile Include="@(_NcPluginProject->'%(RootDir)%(Directory)plugin.json')" />
+      <_NcPluginFile Include="@(NcShippedPlugin->'%(RootDir)%(Directory)%(Filename).pdb')"
+                     Condition="Exists('%(RootDir)%(Directory)%(Filename).pdb') and '$(DebugType)' != 'none'" />
+      <_NcPluginFile Update="@(_NcPluginFile)" RelativePath="plugins\%(PluginFolder)\%(Filename)%(Extension)" />
+    </ItemGroup>
+  </Target>
+  <Target Name="NcCopyPlugins" AfterTargets="CopyFilesToOutputDirectory" DependsOnTargets="NcPluginFiles">
+    <Copy SourceFiles="@(_NcPluginFile)" DestinationFiles="@(_NcPluginFile->'$(OutDir)%(RelativePath)')" SkipUnchangedFiles="true" />
+  </Target>
+  <Target Name="NcPublishPlugins" AfterTargets="ComputeResolvedFilesToPublishList" DependsOnTargets="NcPluginFiles">
+    <ItemGroup>
+      <ResolvedFileToPublish Include="@(_NcPluginFile)" RelativePath="%(_NcPluginFile.RelativePath)"
+                             CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    </ItemGroup>
+  </Target>
 </Project>

@@ -236,11 +236,11 @@ public static class MenuIcons
         ["nc_RemoteConnection"] = new("MiGlobe", Blue),
         ["nc_NewConnection"] = new("MiGlobe", Blue, "OvPlus", Green),
         ["nc_OpenConnection"] = new("MiGlobe", Blue),
+        ["nc_ConnectionsMenu"] = new("MiPlug", Green),
         ["nc_OpenNetwork"] = new("MiNetwork", Blue),
         ["nc_FtpDisconnect"] = new("MiGlobe", Gray, "OvX", Red),
         ["nc_DownloadUrl"] = new("MiGlobe", Blue, "OvArrowDown", Green),
         ["nc_MasterPassword"] = new("MiKey", Yellow),
-        ["nc_RcloneRemotes"] = new("MiTransfer", Blue),
 
         // the connection manager's own menus
         ["connections.new"] = new("MiGlobe", Blue, "OvPlus", Green),

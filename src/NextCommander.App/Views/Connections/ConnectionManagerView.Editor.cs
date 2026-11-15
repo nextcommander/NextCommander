@@ -40,6 +40,9 @@ public sealed partial class ConnectionManagerView
 
     public static string TypeName(RemoteProtocol protocol) => s_types.First(t => t.Protocol == protocol).Name;
 
+    /// <summary>The place of a type in the type list (the order of the groups in the connections menu).</summary>
+    public static int TypeOrder(RemoteProtocol protocol) => Array.FindIndex(s_types, t => t.Protocol == protocol);
+
     /// <summary>The width of the footer buttons (Test, Duplicate, Delete, Save, Connect).</summary>
     public const double FooterButtonWidth = 96;
 

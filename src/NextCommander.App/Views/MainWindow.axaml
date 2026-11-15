@@ -146,7 +146,6 @@
                   Command="{Binding RunCommandCommand}" CommandParameter="nc_FtpHiddenFiles" />
         <Separator />
         <MenuItem Header="Master password..." Command="{Binding RunCommandCommand}" CommandParameter="nc_MasterPassword" />
-        <MenuItem Header="rclone remotes" Command="{Binding RunCommandCommand}" CommandParameter="nc_RcloneRemotes" />
       </MenuItem>
       <MenuItem Header="_Show">
         <MenuItem Header="Display" Tag="nc_SrcLong">

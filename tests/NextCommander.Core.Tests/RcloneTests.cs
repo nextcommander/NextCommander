@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using NextCommander.Core.Operations;
 using NextCommander.Core.Vfs;
 using NextCommander.Vfs.Local;
+using NextCommander.Plugin.Rclone;
 using NextCommander.Vfs.Remote;
 
 namespace NextCommander.Core.Tests;
@@ -231,6 +232,31 @@ public sealed class RcloneTests : IDisposable
         Assert.Equal(("gdrive:", "a b/c.txt"), (RcloneFileSystemProvider.FsOf(path), RcloneFileSystemProvider.RemoteOf(path)));
         Assert.Equal(string.Empty, RcloneFileSystemProvider.RemoteOf(VfsPath.Create("rclone", "gdrive", "/")));
     }
+
+    /// <summary>
+    /// rclone ships as a plugin: its folder (the assembly and the plugin.json of the source folder, as the application's
+    /// build lays it out) loads through the plugin loader and offers the "rclone remotes" entry point.
+    /// </summary>
+    [Fact]
+    public void Loads_as_a_plugin_with_its_entry_point()
+    {
+        var folder = Path.Combine(_dir.Root, "plugins", "rclone");
+        Directory.CreateDirectory(folder);
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "NextCommander.Plugin.Rclone.dll"), Path.Combine(folder, "NextCommander.Plugin.Rclone.dll"));
+        File.Copy(Path.Combine(SourceFolder(), "..", "..", "src", "Plugins", "NextCommander.Plugin.Rclone", "plugin.json"), Path.Combine(folder, "plugin.json"));
+
+        var plugin = Assert.Single(NextCommander.Core.Plugins.PluginLoader.LoadAll([Path.Combine(_dir.Root, "plugins")]));
+        Assert.Null(plugin.Error);
+        Assert.Equal("rclone", plugin.Name);
+        var fileSystem = Assert.Single(plugin.FileSystems);
+        Assert.Equal("rclone", fileSystem.Scheme);
+        var entry = Assert.IsAssignableFrom<NextCommander.Core.Plugins.IPluginEntryPoint>(fileSystem);
+        Assert.Equal(("rclone remotes", "rclone", RcloneFileSystemProvider.Root), (entry.EntryName, entry.EntryGroup, entry.EntryRoot));
+        Assert.Equal(RcloneFileSystemProvider.FindTool() is null, entry.Unavailable is not null);
+        (fileSystem as IDisposable)?.Dispose();
+    }
+
+    private static string SourceFolder([System.Runtime.CompilerServices.CallerFilePath] string file = "") => Path.GetDirectoryName(file)!;
 
     /// <summary>The real rclone: FM_TEST_RCLONE=remote (a test remote; a folder is made in it and deleted again).</summary>
     [Fact]

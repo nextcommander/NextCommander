@@ -425,8 +425,8 @@ public sealed class AppSettings
 
     /// <summary>2: right button marks by default. 3: dark mode and Office schemes became the "koyu" theme file.
     /// 4: the "koyu" theme file is "dark" now. 5: the button bar got the internal terminal, the connection manager and
-    /// the settings.</summary>
-    public const int CurrentSettingsVersion = 5;
+    /// the settings. 6: the saved connections menu next to the connection manager.</summary>
+    public const int CurrentSettingsVersion = 6;
 
     /// <summary>Default changes for files written by older versions.</summary>
     public void Upgrade()
@@ -438,6 +438,10 @@ public sealed class AppSettings
         if (SettingsVersion < 5)
         {
             AddNewButtons();
+        }
+        if (SettingsVersion < 6)
+        {
+            AddConnectionsMenuButton();
         }
         SettingsVersion = CurrentSettingsVersion;
     }
@@ -451,7 +455,8 @@ public sealed class AppSettings
             var terminal = ButtonBar.FindIndex(b => string.Equals(b.Command, "nc_ExecuteTerminal", StringComparison.OrdinalIgnoreCase));
             ButtonBar.Insert(terminal < 0 ? ButtonBar.Count : terminal + 1, ButtonDefinition.InternalTerminal());
         }
-        var missing = ButtonDefinition.WindowsAtTheEnd().Where(b => !Has(b.Command)).ToList();
+        // the connections menu is placed by AddConnectionsMenuButton (version 6), next to the connection manager
+        var missing = ButtonDefinition.WindowsAtTheEnd().Where(b => !Has(b.Command) && b.Command != "nc_ConnectionsMenu").ToList();
         if (missing.Count > 0)
         {
             if (ButtonBar.Count > 0 && !ButtonBar[^1].IsSeparator)
@@ -460,6 +465,17 @@ public sealed class AppSettings
             }
             ButtonBar.AddRange(missing);
         }
+    }
+
+    /// <summary>Version 6: the saved connections menu right after the connection manager's button (at the end without one).</summary>
+    private void AddConnectionsMenuButton()
+    {
+        if (ButtonBar.Exists(b => string.Equals(b.Command, "nc_ConnectionsMenu", StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+        var manager = ButtonBar.FindIndex(b => string.Equals(b.Command, "nc_RemoteConnection", StringComparison.OrdinalIgnoreCase));
+        ButtonBar.Insert(manager < 0 ? ButtonBar.Count : manager + 1, ButtonDefinition.ConnectionsMenu());
     }
 
     /// <summary>

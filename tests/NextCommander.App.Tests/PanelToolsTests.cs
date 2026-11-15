@@ -10,7 +10,7 @@ using static NextCommander.App.Tests.UiFixture;
 
 namespace NextCommander.App.Tests;
 
-/// <summary>What happens inside a file panel: the connection manager in place of the panel, and renaming in the list.</summary>
+/// <summary>What happens inside a file panel: the connection manager in place of the right panel, and renaming in the list.</summary>
 public sealed class PanelToolsTests : IDisposable
 {
     private readonly UiFixture _fx = new();
@@ -18,18 +18,19 @@ public sealed class PanelToolsTests : IDisposable
     public void Dispose() => _fx.Dispose();
 
     [AvaloniaFact]
-    public async Task The_connection_manager_opens_in_place_of_the_active_panel()
+    public async Task The_connection_manager_opens_in_place_of_the_right_panel()
     {
         var (w, vm) = await _fx.OpenAsync();
+        vm.ActivateSide(vm.LeftSide); // even when the left panel is the active one
         var settings = new AppSettings();
         var view = new ConnectionManagerView(new ConnectionManagerRequest(settings, () => { }, (_, _) => Task.FromResult(string.Empty), _ => false,
             _ => Task.CompletedTask, (_, _) => Task.CompletedTask, _ => Task.FromResult<string?>(null)));
         var shown = w.ShowConnectionManagerAsync(view);
         await SettleAsync();
         Assert.True(view.IsEffectivelyVisible);
-        Assert.False(w.LeftPanel.IsEffectivelyVisible); // the active panel's place
-        Assert.True(w.RightPanel.IsEffectivelyVisible);
-        Assert.Same(w.LeftPanel.FindAncestorOfType<Views.PanelSideView>(), view.FindAncestorOfType<Views.PanelSideView>());
+        Assert.False(w.RightPanel.IsEffectivelyVisible); // always the right panel's place
+        Assert.True(w.LeftPanel.IsEffectivelyVisible);
+        Assert.Same(w.RightPanel.FindAncestorOfType<Views.PanelSideView>(), view.FindAncestorOfType<Views.PanelSideView>());
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
         {
             settings.Connections.Add(new RemoteConnection { Name = "web", Host = "server.example.com", User = "deploy", Folder = "Work" });
@@ -52,7 +53,7 @@ public sealed class PanelToolsTests : IDisposable
         Press(w, Key.Escape);
         Assert.Null(await shown);
         await SettleAsync();
-        Assert.True(w.LeftPanel.IsEffectivelyVisible);
+        Assert.True(w.RightPanel.IsEffectivelyVisible);
         Assert.Empty(settings.Connections); // the new connection was never filled in
     }
 

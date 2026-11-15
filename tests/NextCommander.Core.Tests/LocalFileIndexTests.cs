@@ -5,6 +5,7 @@ using NextCommander.Vfs.Local;
 namespace NextCommander.Core.Tests;
 
 /// <summary>NextCommander's own file index: build, queries, folder sizes, saving and catching up, live changes.</summary>
+[Collection("FileIndex")] // FileIndexes.Override is global (FileIndexTests)
 public sealed class LocalFileIndexTests : IDisposable
 {
     private readonly TempDir _dir = new();

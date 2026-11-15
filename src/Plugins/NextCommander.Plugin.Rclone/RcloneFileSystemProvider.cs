@@ -8,17 +8,20 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using NextCommander.Core.Plugins;
 using NextCommander.Core.Vfs;
 
-namespace NextCommander.Vfs.Remote;
+namespace NextCommander.Plugin.Rclone;
 
 /// <summary>
 /// The remotes of the installed rclone (<c>rclone://remote/folder/file</c>; <c>rclone:///</c> lists them): the
 /// remotes the user set up with "rclone config" (70+ services), their secrets staying with rclone. rclone runs once as
 /// a local API server (rcd, on 127.0.0.1 with a random user and password); files go through local temporary files
 /// with operations/copyfile, which keeps their modification time where the service can.
+/// Shipped as a plugin (plugins/rclone next to the program); its entry point "rclone remotes" is listed with the
+/// saved connections.
 /// </summary>
-public sealed class RcloneFileSystemProvider : IFileSystemProvider, IUploadTimeSupport, IDisposable
+public sealed class RcloneFileSystemProvider : IFileSystemProvider, IUploadTimeSupport, IPluginEntryPoint, IDisposable
 {
     public const string RcloneScheme = "rclone";
 
@@ -31,8 +34,23 @@ public sealed class RcloneFileSystemProvider : IFileSystemProvider, IUploadTimeS
     private Process? _daemon;
     private HttpClient? _http;
 
+    /// <summary>The plugin loader's constructor: the installed rclone (<see cref="FindTool"/>).</summary>
+    public RcloneFileSystemProvider()
+        : this(FindTool())
+    {
+    }
+
     /// <param name="tool">The rclone program (null: not installed).</param>
     public RcloneFileSystemProvider(string? tool) => _tool = tool;
+
+    public string EntryName => "rclone remotes";
+
+    public string EntryGroup => "rclone";
+
+    public VfsPath EntryRoot => Root;
+
+    public string? Unavailable => IsInstalled ? null
+        : "rclone is not installed. Install it from rclone.org/downloads (or set FM_RCLONE to its path), set up your remotes with \"rclone config\", then open this again.";
 
     /// <summary>Tests: the HTTP handler of the API (a fake rclone); no process is started.</summary>
     public Func<HttpMessageHandler>? HandlerFactory { get; init; }

@@ -70,6 +70,7 @@ GitHub Actions (`.github/workflows/ci.yml`) builds and tests on the three platfo
 | `NextCommander.App` | The Avalonia UI (MVVM). |
 | `tests/NextCommander.Core.Tests` | xUnit unit tests. |
 | `tests/NextCommander.App.Tests` | Avalonia.Headless UI tests. |
+| `src/Plugins/NextCommander.Plugin.Rclone` | The rclone file system as a plugin shipped with the program: built with the application (not referenced) and copied with its `plugin.json` to `plugins/rclone` next to it, also in the publish folder (`NcShippedPlugin` items in `NextCommander.App.csproj`). |
 | `tests/SamplePlugin` | An example plugin. |
 | `tests/servers` | FTP, SFTP, WebDAV (wsgidav), S3 (moto) and SMB (impacket, port 4445) test servers; Azurite for Azure is installed into `node_modules`. |
 
@@ -135,6 +136,9 @@ Inside `NextCommander.App`:
 - Through the `NextCommander.Core` interfaces a plugin can add file systems (`IFileSystemProvider`), columns
   (`IColumnProvider`), archive formats for Alt+F5 (`IPackerPlugin`) and Lister views (`IViewerPlugin`: HTML,
   text or its own control).
+- A file system plugin can offer a place to start (`IPluginEntryPoint`: name, group, root folder, why it cannot
+  open now): it is listed with the saved connections (the connections menu of the button bar, Net > Saved
+  connections) under its group. Plugin file systems that are `IDisposable` are disposed when the program ends.
 - Each plugin is loaded in its own load context and cannot load assemblies outside its folder.
 - *Configuration > Plugins...* lists the loaded plugins and errors; the `DisabledPlugins` setting turns one off.
 - Example: `tests/SamplePlugin` (a column and a `hello://` file system).

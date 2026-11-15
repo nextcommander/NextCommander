@@ -26,5 +26,6 @@
     <ProjectReference Include="..\..\src\NextCommander.Platform\NextCommander.Platform.csproj" />
     <ProjectReference Include="..\..\src\NextCommander.Columns\NextCommander.Columns.csproj" />
     <ProjectReference Include="..\SamplePlugin\SamplePlugin.csproj" />
+    <ProjectReference Include="..\..\src\Plugins\NextCommander.Plugin.Rclone\NextCommander.Plugin.Rclone.csproj" />
   </ItemGroup>
 </Project>

@@ -132,8 +132,23 @@ public sealed class ButtonBarControl : UserControl
 
     private static bool IsForward(ButtonDefinition definition) => string.Equals(definition.Command, "nc_GoForward", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>The connections button (nc_ConnectionsMenu): a drop-down menu rather than a command.</summary>
+    public static bool IsConnectionsMenu(ButtonDefinition definition) =>
+        string.Equals(definition.Command.TrimStart('*'), "nc_ConnectionsMenu", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(definition.Parameters);
+
+    /// <summary>The visible connections button of this bar (null: none).</summary>
+    public Button? ConnectionsMenuButton =>
+        _panel.Children.OfType<Button>().FirstOrDefault(b => b.IsVisible && b.Tag is ButtonDefinition d && IsConnectionsMenu(d));
+
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(MainWindowViewModel.HasConnectionMenuEntries))
+        {
+            foreach (var button in _panel.Children.OfType<Button>().Where(b => b.Tag is ButtonDefinition d && IsConnectionsMenu(d)))
+            {
+                button.IsVisible = _vm?.HasConnectionMenuEntries == true;
+            }
+        }
         if (e.PropertyName == nameof(MainWindowViewModel.ActivePanel))
         {
             WatchActivePanel();
@@ -296,6 +311,18 @@ public sealed class ButtonBarControl : UserControl
         {
             button.Flyout = BuildMenu(definition.Menu!);
         }
+        else if (IsConnectionsMenu(definition))
+        {
+            // the saved connections by type: a drop-down below the button, shown only when there are connections
+            button.IsVisible = _vm?.HasConnectionMenuEntries == true;
+            button.Click += (_, _) =>
+            {
+                if (_vm is not null)
+                {
+                    Services.ConnectionMenus.Show(_vm, button, belowButton: !_vertical);
+                }
+            };
+        }
         else
         {
             button.Click += async (_, _) =>
@@ -387,6 +414,12 @@ public sealed class ButtonBarControl : UserControl
         if (!string.IsNullOrEmpty(text))
         {
             stack.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center });
+        }
+        if (IsConnectionsMenu(definition))
+        {
+            // a drop-down: the arrow says so
+            stack.Spacing = 1;
+            stack.Children.Add(new TextBlock { Text = "▾", FontSize = 10, VerticalAlignment = VerticalAlignment.Center, Opacity = 0.7, Classes = { "noloc" } });
         }
         return stack;
     }

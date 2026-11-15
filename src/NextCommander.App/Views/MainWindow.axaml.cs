@@ -169,8 +169,32 @@ public partial class MainWindow : Window
     private PanelSideView ActiveSideView => _vm is not null && ReferenceEquals(_vm.ActiveSide, _vm.RightSide) ? RightSideView : LeftSideView;
 
     /// <summary>
-    /// The connection manager in place of the active file panel; the panel comes back when it closes (connecting,
-    /// Esc or its close button). A manager already open is closed first.
+    /// The connections menu (nc_ConnectionsMenu) below its button in a button bar, or over the file list when no bar
+    /// shows the button.
+    /// </summary>
+    private void ShowConnectionsMenu()
+    {
+        if (_vm is null)
+        {
+            return;
+        }
+        if (_topBar.IsEffectivelyVisible && _topBar.ConnectionsMenuButton is { } top)
+        {
+            Services.ConnectionMenus.Show(_vm, top, belowButton: true);
+        }
+        else if (_verticalBar.IsEffectivelyVisible && _verticalBar.ConnectionsMenuButton is { } side)
+        {
+            Services.ConnectionMenus.Show(_vm, side, belowButton: false);
+        }
+        else
+        {
+            Services.ConnectionMenus.Show(_vm, ActiveView.ListArea, belowButton: false);
+        }
+    }
+
+    /// <summary>
+    /// The connection manager in place of the right file panel, whichever panel is active (user's request); the panel
+    /// comes back when it closes (connecting, Esc or its close button). A manager already open is closed first.
     /// </summary>
     public async Task<Connections.ConnectionManagerResult?> ShowConnectionManagerAsync(Connections.ConnectionManagerView view)
     {
@@ -181,7 +205,7 @@ public partial class MainWindow : Window
                 open.Close();
             }
         }
-        var host = ActiveSideView;
+        var host = RightSideView;
         host.ShowOverlay(view);
         try
         {
@@ -260,6 +284,7 @@ public partial class MainWindow : Window
         };
         _vm.QuickSearchRequested += (_, filter) => ActiveView.BeginQuickSearch(null, filter);
         _vm.ButtonBarFocusRequested += (_, _) => _topBar.FocusFirst();
+        _vm.ConnectionsMenuRequested += (_, _) => ShowConnectionsMenu();
         _vm.HotlistMenuRequested += (_, _) => ShowHotlistMenu();
         _vm.ButtonBarsChanged += (_, _) => UpdateButtonBars();
         _vm.TreeChanged += (_, path) =>
@@ -422,7 +447,7 @@ public partial class MainWindow : Window
         items.Add(edit);
     }
 
-    /// <summary>Network > Saved connections: the connection manager's list with the icons of their types.</summary>
+    /// <summary>Network > Saved connections: the connection manager's list grouped by type, the plugins' entry points.</summary>
     private void FillSavedConnectionsMenu()
     {
         if (_vm is null)
@@ -431,16 +456,8 @@ public partial class MainWindow : Window
         }
         var items = SavedConnectionsMenu.Items;
         items.Clear();
-        foreach (var connection in _vm.SavedConnections.OrderBy(c => c.Name, StringComparer.CurrentCultureIgnoreCase))
+        foreach (var item in Services.ConnectionMenus.Items(_vm))
         {
-            var item = new MenuItem
-            {
-                Header = connection.Name,
-                Icon = Services.Icons.BrandIcons.Create(connection.Protocol),
-                Classes = { "noloc" },
-            };
-            var name = connection.Name;
-            item.Click += (_, _) => _ = _vm.ExecuteAsync("nc_OpenConnection \"" + name + "\"");
             items.Add(item);
         }
         if (items.Count == 0)

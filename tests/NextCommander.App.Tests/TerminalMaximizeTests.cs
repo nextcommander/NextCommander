@@ -78,10 +78,10 @@ public sealed class TerminalMaximizeTests : IDisposable
         vm.Settings.TerminalTabs = [];
         var bar = w.GetVisualDescendants().OfType<NextCommander.App.Controls.ButtonBarControl>().Single(b => !b.IsVertical);
         var commands = bar.GetVisualDescendants().OfType<Button>().Select(b => (b.Tag as Core.Config.ButtonDefinition)?.Command).ToList();
-        // next to the system terminal; the connection manager and the settings at the end
+        // next to the system terminal; the connection manager, the connections menu and the settings at the end
         Assert.Equal(commands.IndexOf("nc_ExecuteTerminal") + 1, commands.IndexOf("nc_MaximizeTerminal"));
-        Assert.Equal(["nc_RemoteConnection", "nc_Config"], commands[^2..]);
-        Assert.True(vm.Settings.ButtonBar[^3].IsSeparator);
+        Assert.Equal(["nc_RemoteConnection", "nc_ConnectionsMenu", "nc_Config"], commands[^3..]);
+        Assert.True(vm.Settings.ButtonBar[^4].IsSeparator);
 
         var button = bar.GetVisualDescendants().OfType<Button>().Single(b => (b.Tag as Core.Config.ButtonDefinition)?.Command == "nc_MaximizeTerminal");
         button.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));

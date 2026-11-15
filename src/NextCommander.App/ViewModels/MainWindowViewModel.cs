@@ -194,6 +194,9 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     /// <summary>The view should show the hotlist menu (Ctrl+D) for the active panel.</summary>
     public event EventHandler? HotlistMenuRequested;
 
+    /// <summary>The view should show the connections menu (nc_ConnectionsMenu): saved connections by type, plugin entry points.</summary>
+    public event EventHandler? ConnectionsMenuRequested;
+
     /// <summary>Button bars changed (edited, shown/hidden).</summary>
     public event EventHandler? ButtonBarsChanged;
 
@@ -447,6 +450,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         {
             _settings.FrequentDirectories = frequent;
         }
+        OnPropertyChanged(nameof(HasConnectionMenuEntries)); // connections added or deleted (manager, import)
     }
 
     /// <summary>
@@ -684,15 +688,19 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>The remotes of the installed rclone in the active panel; without rclone, how to get it.</summary>
-    private async Task RcloneRemotesAsync()
+    /// <summary>The entry points of the loaded file system plugins (e.g. "rclone remotes"), listed with the saved connections.</summary>
+    public IReadOnlyList<NextCommander.Core.Plugins.IPluginEntryPoint> PluginEntryPoints =>
+        Plugins.SelectMany(p => p.FileSystems).OfType<NextCommander.Core.Plugins.IPluginEntryPoint>().ToList();
+
+    /// <summary>Opens a plugin's entry point in the active panel; when it cannot be used now, says why.</summary>
+    public async Task OpenPluginEntryAsync(NextCommander.Core.Plugins.IPluginEntryPoint entry)
     {
-        if (_registry.Providers.OfType<NextCommander.Vfs.Remote.RcloneFileSystemProvider>().FirstOrDefault() is not { IsInstalled: true })
+        if (entry.Unavailable is { } reason)
         {
-            await _dialogs.ShowMessageAsync("rclone remotes", "rclone is not installed. Install it from rclone.org/downloads (or set FM_RCLONE to its path), set up your remotes with \"rclone config\", then open this again.");
+            await _dialogs.ShowMessageAsync(entry.EntryName, reason);
             return;
         }
-        await ActivePanel.NavigateAsync(NextCommander.Vfs.Remote.RcloneFileSystemProvider.Root);
+        await ActivePanel.NavigateAsync(entry.EntryRoot);
     }
 
     /// <summary>The folder itself when it exists, else its nearest existing parent, else the home folder.</summary>
@@ -999,7 +1007,6 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         c.Register("nc_SysInfo", "System information", _ => SystemInfoAsync());
         c.Register("nc_OpenDesktop", "Open Desktop folder", _ => OpenDesktopAsync());
         c.Register("nc_OpenNetwork", "Network: the machines of the local network", _ => ActivePanel.NavigateAsync(NextCommander.Platform.NetworkFileSystemProvider.Root));
-        c.Register("nc_RcloneRemotes", "rclone remotes (set up with \"rclone config\")", _ => RcloneRemotesAsync());
         c.Register("nc_BackgroundTransfers", "Background transfer manager", () => _dialogs.ShowTransferManager(_jobs));
         c.Register("nc_MatchSrc", "Target = Source", _ => MatchSourceAsync());
         c.Register("nc_Properties", "Properties (Alt+Enter)", _ => PropertiesAsync());
@@ -1022,6 +1029,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         c.Register("nc_RemoteConnection", "Connection manager: FTP, SFTP, SCP, WebDAV, SMB, S3, Azure, Google Drive, OneDrive, Dropbox, Box (Ctrl+F)", _ => ConnectAsync());
         c.Register("nc_NewConnection", "New connection (parameter: sftp, scp, ftp, ftps, davs, dav, smb, s3, azblob, azfile, gdrive, onedrive, dropbox, box)", p => NewConnectionAsync(p));
         c.Register("nc_OpenConnection", "Open a saved connection (parameter: the connection's name)", p => OpenConnectionAsync(p));
+        c.Register("nc_ConnectionsMenu", "Saved connections menu, grouped by type", () => ConnectionsMenuRequested?.Invoke(this, EventArgs.Empty));
         c.Register("nc_FtpDisconnect", "Disconnect from server (Ctrl+Shift+F)", _ => DisconnectAsync());
         c.Register("nc_MasterPassword", "Set / change master password", _ => MasterPasswordAsync());
         c.Register("nc_ExportSettings", "Export settings (options, connections, Hotlist, own themes ...) to a file for another installation", _ => ExportSettingsAsync());
@@ -2686,7 +2694,9 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         {
             NewProtocol = newProtocol,
         };
-        if (await _dialogs.ShowConnectionManagerAsync(request) is not { } result)
+        var answer = await _dialogs.ShowConnectionManagerAsync(request);
+        OnPropertyChanged(nameof(HasConnectionMenuEntries)); // the connections button of the button bar
+        if (answer is not { } result)
         {
             return;
         }
@@ -2738,6 +2748,9 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
 
     /// <summary>Saved connections (Network > Saved connections).</summary>
     public IReadOnlyList<RemoteConnection> SavedConnections => _settings.Connections;
+
+    /// <summary>Whether the connections menu has something to offer: the button of the button bar is shown only then.</summary>
+    public bool HasConnectionMenuEntries => _settings.Connections.Count > 0 || PluginEntryPoints.Count > 0;
 
     /// <summary>Closes the connection of the active panel's server and goes back to the last local folder.</summary>
     private async Task DisconnectAsync()

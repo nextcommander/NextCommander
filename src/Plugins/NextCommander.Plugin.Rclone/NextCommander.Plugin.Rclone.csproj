@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The rclone file system as a plugin. The application builds it and copies it with plugin.json into
+    plugins/rclone next to the program (NextCommander.App.csproj); it shares NextCommander.Core with the application.
+  -->
+  <PropertyGroup>
+    <RootNamespace>NextCommander.Plugin.Rclone</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\NextCommander.Core\NextCommander.Core.csproj" Private="false" />
+  </ItemGroup>
+  <!-- plugin.json is taken from this folder by the application's build (not copied here: it would land next to the program too) -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="NextCommander.Core.Tests" />
+  </ItemGroup>
+</Project>

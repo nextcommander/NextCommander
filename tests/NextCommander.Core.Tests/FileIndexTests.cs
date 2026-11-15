@@ -74,7 +74,7 @@ public sealed class FileIndexTests : IDisposable
         options.MaxDepth = -1;
         hits.Clear();
         await new FileSearcher(_registry, options).RunAsync(e => hits.Add(e.Path.Path), CancellationToken.None);
-        Assert.Equal([a, deep], hits);
+        Assert.Equal([a, deep], hits.Order(StringComparer.Ordinal)); // files are read side by side: any order
     }
 
     [Fact]

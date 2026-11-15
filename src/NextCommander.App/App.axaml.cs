@@ -79,7 +79,10 @@ public partial class App : Application
                 Services.GetRequiredService<NextCommander.Vfs.Remote.Cloud.BoxFileSystemProvider>().DisposeAsync().AsTask().GetAwaiter().GetResult();
                 Services.GetRequiredService<NextCommander.Vfs.Remote.SmbFileSystemProvider>().DisposeAsync().AsTask().GetAwaiter().GetResult();
                 Services.GetRequiredService<NextCommander.Vfs.Remote.ScpFileSystemProvider>().DisposeAsync().AsTask().GetAwaiter().GetResult();
-                Services.GetRequiredService<NextCommander.Vfs.Remote.RcloneFileSystemProvider>().Dispose(); // stops rclone's API server
+                foreach (var disposable in vm.Plugins.SelectMany(p => p.FileSystems).OfType<IDisposable>())
+                {
+                    disposable.Dispose(); // e.g. the rclone plugin stops its API server
+                }
                 s_listen.Cancel();
                 NextCommander.App.Services.FileIndexService.Stop();
                 Log.CloseAndFlush();
@@ -322,8 +325,6 @@ public partial class App : Application
         services.AddSingleton(sp => new NextCommander.Vfs.Remote.ScpFileSystemProvider(sp.GetRequiredService<RemoteSession>().Hooks));
         services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Vfs.Remote.ScpFileSystemProvider>());
         services.AddSingleton<IFileSystemProvider>(_ => new NextCommander.Vfs.Remote.HttpListingFileSystemProvider()); // http(s):// folder listings
-        services.AddSingleton(_ => new NextCommander.Vfs.Remote.RcloneFileSystemProvider(NextCommander.Vfs.Remote.RcloneFileSystemProvider.FindTool()));
-        services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Vfs.Remote.RcloneFileSystemProvider>());
         services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Vfs.Remote.FtpFileSystemProvider>());
         services.AddSingleton(sp => new NextCommander.Vfs.Remote.WebDavFileSystemProvider(sp.GetRequiredService<RemoteSession>().Hooks));
         services.AddSingleton(sp => new NextCommander.Vfs.Remote.S3FileSystemProvider(sp.GetRequiredService<RemoteSession>().Hooks));
