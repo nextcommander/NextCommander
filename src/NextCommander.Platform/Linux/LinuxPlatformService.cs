@@ -9,6 +9,15 @@ internal sealed class LinuxPlatformService : PlatformServiceBase, IPlatformServi
 
     public override bool IsAvailable => true;
 
+    /// <summary>
+    /// Phones and cameras through libmtp (desktops without gvfs, e.g. KDE); a device gvfs has mounted already is left
+    /// out (its folder is a drive, and libmtp could not open it).
+    /// </summary>
+    private readonly Mtp.LibMtp.LibMtpDeviceSource _portableDevices = new(Mtp.LibMtp.NativeLibMtp.Instance, new Mtp.LibMtp.SysfsUsbDevices(),
+        serial => serial is not null && GvfsDevices().Any(d => d.Folder.Contains(serial, StringComparison.OrdinalIgnoreCase)));
+
+    public override Mtp.IMtpDeviceSource PortableDevices => _portableDevices;
+
     /// <summary>FreeDesktop.org Trash specification (home trash), falling back to <c>gio trash</c>.</summary>
     public override Task MoveToTrashAsync(string nativePath, CancellationToken cancellationToken) => Task.Run(() =>
     {
@@ -124,6 +133,7 @@ internal sealed class LinuxPlatformService : PlatformServiceBase, IPlatformServi
         {
             result.Add(new DriveItem(name, folder, null, 0, 0, DriveKind.Phone, true));
         }
+        result.AddRange(LibMtpDrives(_portableDevices));
         return result;
     }
 
@@ -166,7 +176,9 @@ internal sealed class LinuxPlatformService : PlatformServiceBase, IPlatformServi
         var mounts = File.ReadAllText("/proc/self/mounts");
         var blocks = Directory.Exists("/sys/block") ? string.Join('|', Directory.GetFileSystemEntries("/sys/block").Order(StringComparer.Ordinal)) : string.Empty;
         var phones = GvfsFolder() is { } gvfs && Directory.Exists(gvfs) ? string.Join('|', Directory.GetDirectories(gvfs).Order(StringComparer.Ordinal)) : string.Empty;
-        return mounts + "\n" + blocks + "\n" + phones;
+        // the MTP devices by name (libmtp searches only when the USB devices changed)
+        var mtp = string.Join('|', _portableDevices.GetDevices().Select(d => d.Name));
+        return mounts + "\n" + blocks + "\n" + phones + "\n" + mtp;
     }
 
     /// <summary>The file system type of a mount ("nfs4", "cifs", "autofs" ...); empty when it cannot be read.</summary>

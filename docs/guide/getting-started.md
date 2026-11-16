@@ -25,8 +25,11 @@ From top to bottom:
   a panel showing a removed drive moves to the nearest folder that still exists (on Windows, your home folder).
 - **Phones and cameras:** a phone connected over USB in "File transfer" mode (MTP) gets a drive button with a phone
   icon. Its first level is the phone's storages (internal storage, SD card); copy, move, new folder, rename and
-  delete work as on a disk. Unlock the phone and allow file transfer when it asks. On Linux the phone appears when the
-  desktop (GNOME) has mounted it.
+  delete work as on a disk. Unlock the phone and allow file transfer when it asks. On Linux the phone appears as the
+  folder the desktop (GNOME) mounts for it; on other desktops (KDE ...) and on macOS NextCommander talks to it itself
+  through libmtp (Linux: the package `libmtp`, installed with NextCommander's package; macOS: inside the app, or
+  `brew install libmtp`). On macOS close Photos, Image Capture and Android File Transfer first: the first program
+  that takes the phone keeps it.
 - **Drive box:** the current drive with its label and free space, plus the `\` (root) and `..` (parent folder)
   buttons. Alt+F1 and Alt+F2 open the drive list of the left and right panel. The list shows each drive's label, or
   what it is ("Local Disk", "Removable Disk", "Network Drive" ...). Below the drives: `+` Computer, `\` Network and

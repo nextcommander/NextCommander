@@ -22,7 +22,7 @@ Supported types:
 | Dropbox | Your Dropbox |
 | Box | Your Box account |
 | Web server folder listings | `http://` and `https://` folders with an index page (Apache, nginx, IIS ...); read only |
-| Android over ADB | Phones with USB debugging on; also on macOS, where MTP is not available |
+| Android over ADB | Phones with USB debugging on (also when MTP is not available) |
 | PC link | Another computer running NextCommander, over a USB or Ethernet cable or the network: see [PC link](#pc-link) |
 | rclone remotes | Every remote you set up with `rclone config` (70+ services); the rclone plugin shipped with the program |
 
