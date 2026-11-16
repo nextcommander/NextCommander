@@ -157,9 +157,18 @@ public sealed class AdbBridge(IAdbRunner? runner, Func<IReadOnlyList<AdbDevice>>
         using var tcp = new TcpClient();
         try
         {
-            if (!tcp.ConnectAsync(IPAddress.Loopback, port).Wait(300))
+            // at most 300 ms: the connect is cancelled and its end awaited (a connect left running and then closed
+            // with the socket ended as an unobserved "Operation canceled" exception on macOS)
+            using (var timeout = new CancellationTokenSource(TimeSpan.FromMilliseconds(300)))
             {
-                return null;
+                try
+                {
+                    tcp.ConnectAsync(IPAddress.Loopback, port, timeout.Token).AsTask().GetAwaiter().GetResult();
+                }
+                catch (OperationCanceledException)
+                {
+                    return null; // no ADB server answering
+                }
             }
             var stream = tcp.GetStream();
             stream.ReadTimeout = 2000;
