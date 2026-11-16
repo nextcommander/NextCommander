@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
+using NextCommander.Core.Tools;
 using System.Text.RegularExpressions;
 
 namespace NextCommander.Platform;
@@ -287,18 +288,23 @@ public static partial class NetworkScanner
     [GeneratedRegex(@"(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?![\d.])")]
     private static partial Regex Ipv4();
 
-    private static async Task<string?> ReverseLookupAsync(IPAddress address, CancellationToken cancellationToken)
+    /// <summary>
+    /// The DNS name of an address, null when it has none or the lookup takes longer than <paramref name="timeout"/>
+    /// (1.5 s). A lookup given up keeps running: its error (macOS: "nodename nor servname provided") is marked as seen.
+    /// </summary>
+    internal static async Task<string?> ReverseLookupAsync(IPAddress address, CancellationToken cancellationToken,
+        Func<string, CancellationToken, Task<IPHostEntry>>? resolve = null, TimeSpan? timeout = null)
     {
         try
         {
-            var lookup = Dns.GetHostEntryAsync(address.ToString(), cancellationToken);
-            var done = await Task.WhenAny(lookup, Task.Delay(1500, cancellationToken)).ConfigureAwait(false);
-            if (done == lookup && lookup.Result.HostName is { Length: > 0 } name && name != address.ToString())
+            var lookup = (resolve ?? Dns.GetHostEntryAsync)(address.ToString(), cancellationToken).Observe();
+            var entry = await lookup.WaitAsync(timeout ?? TimeSpan.FromMilliseconds(1500), cancellationToken).ConfigureAwait(false);
+            if (entry.HostName is { Length: > 0 } name && name != address.ToString())
             {
                 return name;
             }
         }
-        catch (Exception ex) when (ex is SocketException or ArgumentException or OperationCanceledException)
+        catch (Exception ex) when (ex is SocketException or ArgumentException or OperationCanceledException or TimeoutException)
         {
         }
         return null;
