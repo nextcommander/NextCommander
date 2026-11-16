@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using NextCommander.Core.Tools;
 
 namespace NextCommander.Core.Net;
 
@@ -195,7 +196,8 @@ public sealed class ProxyForwarder : IDisposable
                 await using var b = new NetworkStream(remote, ownsSocket: false);
                 try
                 {
-                    await Task.WhenAny(a.CopyToAsync(b, _stop.Token), b.CopyToAsync(a, _stop.Token)).ConfigureAwait(false);
+                    // when one side ends, the other copy fails as the streams close: its error is marked as seen
+                    await Task.WhenAny(a.CopyToAsync(b, _stop.Token).Observe(), b.CopyToAsync(a, _stop.Token).Observe()).ConfigureAwait(false);
                 }
                 catch (Exception ex) when (ex is IOException or SocketException or OperationCanceledException or ObjectDisposedException)
                 {

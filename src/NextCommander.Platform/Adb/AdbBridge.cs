@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using NextCommander.Core.Tools;
 
 namespace NextCommander.Platform.Adb;
 
@@ -258,8 +259,9 @@ public sealed class AdbProcessRunner(string tool) : IAdbRunner
         }
         using var process = Process.Start(Info(arguments)) ?? throw new IOException("ADB: adb could not be started.");
         process.StandardInput.Close();
-        var output = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
-        var error = process.StandardError.ReadToEndAsync(CancellationToken.None);
+        // not waited for after a while (see below): a read failing later is marked as seen
+        var output = process.StandardOutput.ReadToEndAsync(CancellationToken.None).Observe();
+        var error = process.StandardError.ReadToEndAsync(CancellationToken.None).Observe();
         try
         {
             await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
