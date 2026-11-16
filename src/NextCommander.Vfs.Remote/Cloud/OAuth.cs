@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
+using NextCommander.Core.Tools;
 using System.Text.Json;
 
 namespace NextCommander.Vfs.Remote.Cloud;
@@ -223,7 +224,8 @@ internal sealed class LoopbackReceiver : IDisposable
     public async Task<Dictionary<string, string>> WaitAsync(string state, CancellationToken cancellationToken)
     {
         using var registration = cancellationToken.Register(Dispose);
-        var pending = _listeners.Select(l => AcceptAsync(l, state, cancellationToken)).ToList();
+        // the listeners not answering fail when the receiver is closed: their errors are marked as seen
+        var pending = _listeners.Select(l => AcceptAsync(l, state, cancellationToken).Observe()).ToList();
         while (pending.Count > 0)
         {
             var done = await Task.WhenAny(pending).ConfigureAwait(false);
