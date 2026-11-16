@@ -145,9 +145,13 @@ internal sealed class FakeDialogs : IDialogService
 
     public int Confirmations { get; private set; }
 
+    /// <summary>The messages of the confirmations asked.</summary>
+    public List<string> ConfirmMessages { get; } = [];
+
     public Task<bool> ConfirmAsync(string title, string message, string okText = "OK")
     {
         Confirmations++;
+        ConfirmMessages.Add(message);
         return Task.FromResult(ConfirmAnswer);
     }
 

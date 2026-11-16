@@ -2591,5 +2591,8 @@
   "CompareWindow.Summary": "{0} lignes → {1} lignes · {2} ajoutées, {3} supprimées",
   "CompareWindow.DifferentBytes": "{0} octets différents",
   "CompareWindow.BothEmpty": "Les deux fichiers sont vides. Collez du contenu avec Modifier pour comparer.",
-  "CompareWindow.NoDifferences": "Aucune différence. Les deux fichiers sont identiques avec les options actuelles."
+  "CompareWindow.NoDifferences": "Aucune différence. Les deux fichiers sont identiques avec les options actuelles.",
+  "MainWindow.PermissionNeeded": "Autorisation nécessaire",
+  "MainWindow.OpenPrivacySettings": "Ouvrir les réglages de confidentialité",
+  "MainWindow.TurnNextCommanderOnThere": "{0}\n\nActivez-y NextCommander, puis redémarrez NextCommander."
 }

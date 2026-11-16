@@ -2591,5 +2591,8 @@
   "CompareWindow.Summary": "{0} lines → {1} lines · {2} added, {3} removed",
   "CompareWindow.DifferentBytes": "{0} different bytes",
   "CompareWindow.BothEmpty": "Both files are empty. Paste content with Edit to compare.",
-  "CompareWindow.NoDifferences": "No differences. The two files match with the current options."
+  "CompareWindow.NoDifferences": "No differences. The two files match with the current options.",
+  "MainWindow.PermissionNeeded": "Permission needed",
+  "MainWindow.OpenPrivacySettings": "Open privacy settings",
+  "MainWindow.TurnNextCommanderOnThere": "{0}\n\nTurn NextCommander on there, then start NextCommander again."
 }

@@ -308,6 +308,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         panel.ResolveNetworkTarget = ResolveNetworkTargetAsync;
         panel.PropertyChanged += OnPanelPropertyChanged;
         panel.ErrorOccurred += OnPanelError;
+        panel.PermissionNeeded += OnPermissionNeeded;
         panel.Navigated += OnPanelNavigated;
         panel.ViewModeSwitched += (_, e) =>
         {
@@ -636,6 +637,20 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
 
     private async void OnPanelError(object? sender, string message) =>
         await _dialogs.ShowMessageAsync("Error", message);
+
+    /// <summary>
+    /// A folder the system's privacy settings keep the application out of (the macOS Trash without Full Disk Access):
+    /// the reason and a button that opens that page of the settings.
+    /// </summary>
+    private async void OnPermissionNeeded(object? sender, NextCommander.Platform.PrivacyPermissionException permission)
+    {
+        var open = await _dialogs.ConfirmAsync("Permission needed",
+            $"{permission.Message}\n\nTurn NextCommander on there, then start NextCommander again.", "Open privacy settings");
+        if (open && permission.SettingsAddress.Length > 0)
+        {
+            _platform.OpenWithDefaultApp(permission.SettingsAddress);
+        }
+    }
 
     private IDisposable? _driveWatch;
 

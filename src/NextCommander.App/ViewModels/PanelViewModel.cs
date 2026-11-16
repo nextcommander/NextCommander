@@ -694,6 +694,9 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
     /// <summary>Navigation/listing errors to show to the user.</summary>
     public event EventHandler<string>? ErrorOccurred;
 
+    /// <summary>A folder the system's privacy settings keep the application out of (macOS Trash): offer to open them.</summary>
+    public event EventHandler<NextCommander.Platform.PrivacyPermissionException>? PermissionNeeded;
+
     public IFileSystemProvider? Provider => CurrentPath is null ? null : _registry.Resolve(CurrentPath);
 
     public void RequestDriveMenu() => DriveMenuRequested?.Invoke(this, EventArgs.Empty);
@@ -885,6 +888,11 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         {
             // The directory exists but cannot be read: show "<Read error!>" (Enter retries).
             Log.Information(ex, "Cannot read {Path}", path);
+            if (ex is NextCommander.Platform.PrivacyPermissionException permission && path != CurrentPath)
+            {
+                // the system's privacy settings keep the application out: offer them (on entering, not on every refresh)
+                PermissionNeeded?.Invoke(this, permission);
+            }
             provider = _registry.Resolve(path);
             list = [];
             readError = ex.Message;

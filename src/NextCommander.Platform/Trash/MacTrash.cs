@@ -22,10 +22,12 @@ public sealed class MacTrash(string folder) : ITrashStore
         {
             entries = Directory.Exists(folder) ? Directory.GetFileSystemEntries(folder) : [];
         }
-        catch (UnauthorizedAccessException)
+        catch (UnauthorizedAccessException ex)
         {
-            throw new UnauthorizedAccessException(
-                "macOS lets applications read the Trash only with Full Disk Access: System Settings > Privacy & Security > Full Disk Access.");
+            // the panel offers to open that page of the settings
+            throw new PrivacyPermissionException(
+                "macOS lets applications read the Trash only with Full Disk Access: System Settings > Privacy & Security > Full Disk Access.",
+                PrivacyPermissionException.MacFullDiskAccess, ex);
         }
         return entries
             .Where(e => Path.GetFileName(e) != ".DS_Store")

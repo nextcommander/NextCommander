@@ -2591,5 +2591,8 @@
   "CompareWindow.Summary": "{0} 行 → {1} 行 · 新增 {2}，删除 {3}",
   "CompareWindow.DifferentBytes": "{0} 个不同字节",
   "CompareWindow.BothEmpty": "两个文件都为空。使用“编辑”粘贴内容以进行比较。",
-  "CompareWindow.NoDifferences": "没有差异。在当前选项下两个文件相同。"
+  "CompareWindow.NoDifferences": "没有差异。在当前选项下两个文件相同。",
+  "MainWindow.PermissionNeeded": "需要权限",
+  "MainWindow.OpenPrivacySettings": "打开隐私设置",
+  "MainWindow.TurnNextCommanderOnThere": "{0}\n\n在那里开启 NextCommander，然后重新启动 NextCommander。"
 }

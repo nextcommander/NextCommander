@@ -2591,5 +2591,8 @@
   "CompareWindow.Summary": "{0} satır → {1} satır · {2} eklendi, {3} silindi",
   "CompareWindow.DifferentBytes": "{0} farklı bayt",
   "CompareWindow.BothEmpty": "İki dosya da boş. Karşılaştırmak için Düzenle ile içerik yapıştırın.",
-  "CompareWindow.NoDifferences": "Fark yok. Geçerli seçeneklerle iki dosya aynı."
+  "CompareWindow.NoDifferences": "Fark yok. Geçerli seçeneklerle iki dosya aynı.",
+  "MainWindow.PermissionNeeded": "İzin gerekiyor",
+  "MainWindow.OpenPrivacySettings": "Gizlilik ayarlarını aç",
+  "MainWindow.TurnNextCommanderOnThere": "{0}\n\nOrada NextCommander'ı açın, sonra NextCommander'ı yeniden başlatın."
 }
