@@ -4,6 +4,15 @@ internal sealed class MacPlatformService : PlatformServiceBase, IPlatformService
 {
     public override bool IsAvailable => true;
 
+    /// <summary>macOS has no MTP of its own: phones and cameras through libmtp (inside the bundle, or Homebrew's).</summary>
+    private readonly Mtp.LibMtp.LibMtpDeviceSource _portableDevices = new(Mtp.LibMtp.NativeLibMtp.Instance,
+        OperatingSystem.IsMacOS() ? new Mtp.LibMtp.MacUsbDevices() : new Mtp.LibMtp.SysfsUsbDevices());
+
+    public override Mtp.IMtpDeviceSource PortableDevices => _portableDevices;
+
+    /// <summary>The mount points and the MTP devices by name (libmtp searches only when the USB devices changed).</summary>
+    protected override string DriveSignature() => base.DriveSignature() + "\nmtp:" + string.Join('|', _portableDevices.GetDevices().Select(d => d.Name));
+
     /// <summary>Moves into ~/.Trash (no Finder "Put Back" metadata; avoids Automation permission prompts).</summary>
     public override Task MoveToTrashAsync(string nativePath, CancellationToken cancellationToken) => Task.Run(() =>
     {
@@ -43,6 +52,7 @@ internal sealed class MacPlatformService : PlatformServiceBase, IPlatformService
                 result.Add(ToDriveItem(d, Path.GetFileName(root)));
             }
         }
+        result.AddRange(LibMtpDrives(_portableDevices));
         return result;
     }
 

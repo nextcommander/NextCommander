@@ -29,7 +29,7 @@ public enum DriveKind
     /// <summary>Shortcut at the end of the drive bar: the user's home folder.</summary>
     UserHome,
 
-    /// <summary>A phone, camera or player connected over MTP / PTP (Windows: <c>mtp://name/</c>; Linux: a gvfs folder).</summary>
+    /// <summary>A phone, camera or player connected over MTP / PTP (<c>mtp://name/</c>; Linux: also a gvfs folder).</summary>
     Phone,
 
     /// <summary>Drive box / drive bar entry: the trash / Recycle Bin (trash:///).</summary>
@@ -158,8 +158,8 @@ public interface IPlatformService : ITrashService
     IDisposable WatchDrives(Action changed);
 
     /// <summary>
-    /// The MTP / PTP devices reached through the <c>mtp://</c> provider (Windows); none where the system mounts them as
-    /// folders itself (Linux gvfs) or has no MTP (macOS).
+    /// The MTP / PTP devices reached through the <c>mtp://</c> provider: Windows WPD; Linux and macOS libmtp when it is
+    /// installed (on Linux not the ones gvfs mounts as folders).
     /// </summary>
     NextCommander.Platform.Mtp.IMtpDeviceSource PortableDevices { get; }
 

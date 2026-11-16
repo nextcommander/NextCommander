@@ -32,9 +32,13 @@ overrides:
       - libx11-6
       - libice6
       - libsm6
+    # libmtp: phones and cameras over MTP on desktops without gvfs (and its udev rules give the user the device)
     recommends:
       - xdg-utils
+      - libmtp9t64 | libmtp9
   rpm:
+    recommends:
+      - libmtp
     depends:
       - libicu
       - fontconfig

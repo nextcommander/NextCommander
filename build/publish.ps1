@@ -295,6 +295,34 @@ switch -Wildcard ($Rid) {
         New-Item -ItemType Directory -Force "$app/Contents/MacOS", "$app/Contents/Resources" | Out-Null
         Copy-Item "$out/*" "$app/Contents/MacOS" -Recurse
         Copy-Item "$root/src/NextCommander.App/Assets/NextCommander.icns" "$app/Contents/Resources/NextCommander.icns"
+        # libmtp (LGPL, loaded dynamically) for phones and cameras over MTP: macOS has no MTP of its own. Taken from
+        # $env:MACOS_LIBMTP_DIR (libmtp.9.dylib and libusb-1.0.0.dylib, already pointing at each other with
+        # @loader_path) or, on a Mac, from Homebrew (brew install libmtp) of the same architecture; libmtp's reference to
+        # libusb is changed to the copy beside it. The codesign below signs them with the bundle. Without them the app
+        # still uses a libmtp installed with Homebrew, else it has no MTP.
+        $macOS = "$app/Contents/MacOS"
+        if ($env:MACOS_LIBMTP_DIR) {
+            Copy-Item "$env:MACOS_LIBMTP_DIR/libmtp.9.dylib", "$env:MACOS_LIBMTP_DIR/libusb-1.0.0.dylib" $macOS
+        }
+        elseif ((Get-Command brew -ErrorAction SilentlyContinue) -and (Get-Command install_name_tool -ErrorAction SilentlyContinue)) {
+            $libmtp = Join-Path (brew --prefix libmtp 2>$null) 'lib/libmtp.9.dylib'
+            $libusb = Join-Path (brew --prefix libusb 2>$null) 'lib/libusb-1.0.0.dylib'
+            $arch = if ($Rid -eq 'osx-arm64') { 'arm64' } else { 'x86_64' }
+            if ((Test-Path $libmtp) -and (Test-Path $libusb) -and ((lipo -archs $libmtp) -split ' ' -contains $arch)) {
+                Copy-Item $libmtp, $libusb $macOS
+                chmod u+w "$macOS/libmtp.9.dylib" "$macOS/libusb-1.0.0.dylib"
+                install_name_tool -id '@loader_path/libusb-1.0.0.dylib' "$macOS/libusb-1.0.0.dylib"
+                install_name_tool -id '@loader_path/libmtp.9.dylib' "$macOS/libmtp.9.dylib"
+                foreach ($line in otool -L "$macOS/libmtp.9.dylib") {
+                    if ($line -match '^\s+(\S*libusb-1\.0[^ ]*\.dylib)') {
+                        install_name_tool -change $Matches[1] '@loader_path/libusb-1.0.0.dylib' "$macOS/libmtp.9.dylib"
+                    }
+                }
+                Write-Host "libmtp bundled from Homebrew"
+            }
+            else { Write-Warning "libmtp not bundled: brew install libmtp (for $arch) or set MACOS_LIBMTP_DIR" }
+        }
+        else { Write-Warning "libmtp not bundled (no Homebrew here; MACOS_LIBMTP_DIR names a folder with libmtp.9.dylib and libusb-1.0.0.dylib)" }
         # UTF-8 without BOM (Windows PowerShell 5.1 reads and writes the ANSI code page by default)
         [IO.File]::WriteAllText("$app/Contents/Info.plist", [IO.File]::ReadAllText("$PSScriptRoot/macos/Info.plist", [Text.Encoding]::UTF8).Replace('$VERSION', $numericVersion).Replace("`r`n", "`n"), (New-Object System.Text.UTF8Encoding $false))
         if (-not $hostWindows) { chmod +x "$app/Contents/MacOS/NextCommander" }

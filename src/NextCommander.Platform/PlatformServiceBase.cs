@@ -84,6 +84,13 @@ public abstract class PlatformServiceBase : IPlatformService
 
     public virtual NextCommander.Platform.Mtp.IMtpDeviceSource PortableDevices => NextCommander.Platform.Mtp.NoMtpDevices.Instance;
 
+    /// <summary>Linux, macOS: the devices libmtp finds, as drives <c>mtp://name/</c> (none without libmtp).</summary>
+    protected static IEnumerable<DriveItem> LibMtpDrives(NextCommander.Platform.Mtp.LibMtp.LibMtpDeviceSource source) =>
+        source.GetDevices().Select(d => new DriveItem(d.Name, NextCommander.Platform.Mtp.MtpFileSystemProvider.DeviceRoot(d.Name).ToString(), null, 0, 0, DriveKind.Phone, true)
+        {
+            UsbSerial = source.SerialOf(d.Id), // to leave out the same phone over ADB
+        });
+
     /// <summary>Linux: the freedesktop.org trash; macOS and Windows override it.</summary>
     public virtual NextCommander.Platform.Trash.ITrashStore TrashStore { get; } = OperatingSystem.IsMacOS() ? new NextCommander.Platform.Trash.MacTrash() : new NextCommander.Platform.Trash.FreedesktopTrash();
 
