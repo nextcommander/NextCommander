@@ -371,13 +371,25 @@
           <ListBox x:Name="CommandHistoryList" Classes="noloc" MaxHeight="360" FontSize="12" />
         </Border>
       </Popup>
-      <TextBlock Grid.Column="2" Text="{Binding ModeText}" VerticalAlignment="Center" FontSize="12" Margin="8,0,0,0"
+      <!-- while background jobs run: their number; a click shows the transfers under the panels -->
+      <Button x:Name="TransfersButton" Grid.Column="2" Classes="cmdline" Focusable="False" Margin="4,0,0,0" IsVisible="{Binding HasBackgroundJobs}"
+              ToolTip.Tip="{Binding BackgroundJobsText}" AutomationProperties.Name="Background transfers">
+        <StackPanel Orientation="Horizontal" Spacing="4">
+          <PathIcon Width="14" Height="14" Data="M4,1 L7.5,5 L5,5 L5,10 L3,10 L3,5 L0.5,5 Z M12,15 L8.5,11 L11,11 L11,6 L13,6 L13,11 L15.5,11 Z"
+                    Foreground="{DynamicResource FmActiveAccentBrush}" />
+          <TextBlock Text="{Binding BackgroundJobCount}" FontSize="12" VerticalAlignment="Center" Classes="noloc" />
+        </StackPanel>
+      </Button>
+      <TextBlock Grid.Column="3" Text="{Binding ModeText}" VerticalAlignment="Center" FontSize="12" Margin="8,0,0,0"
                  Foreground="{DynamicResource FmActiveAccentBrush}" />
-      <TextBlock Grid.Column="3" Text="{Binding BackgroundJobsText}" VerticalAlignment="Center" FontSize="12" Margin="8,0,0,0" Opacity="0.8" />
     </Grid>
 
     <!-- Internal terminal (nc_ToggleTerminal, the button at the end of the command line) -->
     <Border x:Name="TerminalHost" DockPanel.Dock="Bottom" IsVisible="False" BorderThickness="0,1,0,0"
+            BorderBrush="{DynamicResource FmActiveAccentBrush}" />
+
+    <!-- Background transfers (the button beside the command line): under the panels -->
+    <Border x:Name="TransfersHost" DockPanel.Dock="Bottom" IsVisible="False" Height="220" BorderThickness="0,1,0,0"
             BorderBrush="{DynamicResource FmActiveAccentBrush}" />
 
     <!-- The two sides (tabs + panel) and between them a column as wide as the splitter and the vertical button bar: the

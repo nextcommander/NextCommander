@@ -361,6 +361,13 @@
     <Setter Property="HorizontalAlignment" Value="Right" />
     <Setter Property="Fill" Value="{DynamicResource NcOnAccentBrush}" />
   </Style>
+  <!-- mixed (several items differ): the knob in the middle -->
+  <Style Selector="CheckBox.nc-switch:indeterminate /template/ Border#PART_Track">
+    <Setter Property="Background" Value="{DynamicResource NcSurface3Brush}" />
+  </Style>
+  <Style Selector="CheckBox.nc-switch:indeterminate /template/ Ellipse#PART_Knob">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
   <Style Selector="CheckBox.nc-switch:focus-visible /template/ Border#PART_Track">
     <Setter Property="BorderThickness" Value="2" />
     <Setter Property="BorderBrush" Value="{DynamicResource NcAccentBrush}" />

@@ -1,3 +1,4 @@
+using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using NextCommander.App.Services;
 using NextCommander.App.Views.Dialogs;
@@ -89,6 +90,55 @@ public sealed class TemplateScreensTests : IDisposable
         {
             ColorThemes.Apply(app, null);
         }
+    }
+
+    [AvaloniaFact]
+    public async Task Change_attributes_follows_the_template()
+    {
+        var (_, vm) = await _fx.OpenAsync();
+        var folder = vm.Left.Items.Single(i => i.FullName == "sub").Entry!;
+        var dialog = _fx.Track(new AttributesDialog([folder]));
+        dialog.Show();
+        await SettleAsync();
+        Assert.False(dialog.CanApply);
+        Assert.Equal("No changes yet", dialog.SummaryText);
+
+        var hidden = dialog.SwitchOf(Core.Vfs.EntryAttributes.Hidden);
+        hidden.IsChecked = hidden.IsChecked != true;
+        Assert.True(dialog.CanApply);
+        Assert.Equal("1 change", dialog.SummaryText);
+        var recursive = Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(dialog).OfType<Avalonia.Controls.CheckBox>()
+            .Single(c => Avalonia.Automation.AutomationProperties.GetName(c) == "Also apply to everything in subfolders");
+        recursive.IsChecked = true;
+        Assert.Equal("1 change, also inside the folders", dialog.SummaryText);
+        await SettleAsync();
+        await DesignShots.CaptureAsync(dialog, "attributes");
+
+        var apply = Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(dialog).OfType<Avalonia.Controls.Button>()
+            .Single(b => NextCommander.App.Services.Design.Nc.TextOf(b) == "Apply");
+        apply.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Avalonia.Controls.Button.ClickEvent));
+        var result = dialog.Result!;
+        Assert.True(result.Recursive);
+        Assert.Equal(hidden.IsChecked == true ? Core.Vfs.EntryAttributes.Hidden : Core.Vfs.EntryAttributes.None, result.Set);
+    }
+
+    [AvaloniaFact]
+    public async Task The_transfers_button_shows_the_transfers_under_the_panels()
+    {
+        var (w, vm) = await _fx.OpenAsync();
+        var button = w.FindControl<Avalonia.Controls.Button>("TransfersButton")!;
+        Assert.False(button.IsVisible); // no background jobs
+        vm.BackgroundJobCount = 2;
+        await SettleAsync(2);
+        Assert.True(button.IsVisible);
+
+        button.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Avalonia.Controls.Button.ClickEvent));
+        await SettleAsync(2);
+        Assert.NotNull(w.TransfersView);
+        Assert.Equal("No running jobs.", w.TransfersView!.StatusText);
+        await DesignShots.CaptureAsync(w, "transfers-docked");
+        button.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Avalonia.Controls.Button.ClickEvent));
+        Assert.Null(w.TransfersView);
     }
 
     [AvaloniaFact]
