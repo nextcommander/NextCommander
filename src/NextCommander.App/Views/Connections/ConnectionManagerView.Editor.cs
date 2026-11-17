@@ -37,6 +37,7 @@ public sealed partial class ConnectionManagerView
         (RemoteProtocol.Ssh, "SSH", "A shell on a server in the internal terminal", "Remote sessions"),
         (RemoteProtocol.Vnc, "VNC", "The screen of another computer, in a VNC viewer", "Remote sessions"),
         (RemoteProtocol.Rsh, "rsh / rlogin", "Old Unix hosts without SSH, in the internal terminal (not encrypted)", "Remote sessions"),
+        (RemoteProtocol.Serial, "Serial port", "The console of a switch, router, server or board over a serial cable, in the internal terminal", "Remote sessions"),
     ];
 
     private static readonly (string Name, string Color)[] s_colors =
@@ -281,6 +282,11 @@ public sealed partial class ConnectionManagerView
     {
         c.Protocol = protocol;
         c.Name = $"New {TypeName(protocol)}";
+        if (protocol == RemoteProtocol.Serial)
+        {
+            c.TelnetEnter = TelnetEnter.Cr; // a device console wants a carriage return
+            c.Host = Services.Terminal.SerialTerminal.PortNames() is [var first, ..] ? first : string.Empty;
+        }
         _untyped.Remove(c);
         _tab = 0;
         RefreshTree();
@@ -519,6 +525,17 @@ public sealed partial class ConnectionManagerView
             })));
             fields.Add(null);
         }
+        if (c.Protocol == RemoteProtocol.Serial)
+        {
+            fields.Add(Field("Serial port", SerialPortBox(c), Core.Localization.Localizer.T("COM3 on Windows; /dev/ttyUSB0, /dev/ttyACM0 on Linux; /dev/cu.usbserial-... on macOS.")));
+            fields.Add(Field("Speed (bits per second)", Choice([.. s_baudRates.Select(b => b.ToString(CultureInfo.InvariantCulture))],
+                Math.Max(0, Array.IndexOf(s_baudRates, c.BaudRate)), i =>
+                {
+                    c.BaudRate = s_baudRates[i];
+                    Changed(c);
+                })));
+            return Fields([.. fields]);
+        }
         if (!c.IsCloudDrive)
         {
             host = Text(c.Host, v =>
@@ -643,6 +660,16 @@ public sealed partial class ConnectionManagerView
             {
                 Text = "No user or password: the first time both screens show the same code, and the other computer allows this one.",
                 TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                Opacity = 0.8,
+            });
+            return fields;
+        }
+        if (c.Protocol == RemoteProtocol.Serial)
+        {
+            fields.Add(new TextBlock
+            {
+                Text = "No login here: the device asks for its user and password in the terminal, if it has them.",
+                TextWrapping = TextWrapping.Wrap,
                 Opacity = 0.8,
             });
             return fields;
@@ -939,6 +966,10 @@ public sealed partial class ConnectionManagerView
                 c.Protocol == RemoteProtocol.Rsh ? Core.Localization.Localizer.T("With a command: rsh runs it and shows its output (port 514); without one: rlogin (port 513).") : null));
             TerminalFields(c, fields);
         }
+        if (c.Protocol == RemoteProtocol.Serial)
+        {
+            SerialFields(c, fields);
+        }
         if (c.Protocol == RemoteProtocol.Vnc)
         {
             fields.Add(null);
@@ -990,7 +1021,7 @@ public sealed partial class ConnectionManagerView
     private static bool HasFingerprint(RemoteConnection c) => IsSsh(c.Protocol) || HasTls(c);
 
     /// <summary>The types that can go through a proxy (RDP has its own client; PC link stays on the local network).</summary>
-    private static bool HasProxy(RemoteProtocol p) => p is not (RemoteProtocol.Rdp or RemoteProtocol.Vnc or RemoteProtocol.Link);
+    private static bool HasProxy(RemoteProtocol p) => p is not (RemoteProtocol.Rdp or RemoteProtocol.Vnc or RemoteProtocol.Link or RemoteProtocol.Serial);
 
     private void RdpFields(RemoteConnection c, List<Control?> fields)
     {
@@ -1036,6 +1067,47 @@ public sealed partial class ConnectionManagerView
         var encodings = Services.Terminal.TelnetTerminal.Encodings;
         fields.Add(Field("Character set", Choice([.. encodings.Select(e => e.Length == 0 ? "UTF-8" : e)],
             Math.Max(0, Array.IndexOf([.. encodings], c.TerminalEncoding ?? string.Empty)), i => c.TerminalEncoding = encodings[i].Length == 0 ? null : encodings[i])));
+    }
+
+    /// <summary>The speeds offered for a serial port.</summary>
+    private static readonly int[] s_baudRates = [300, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600];
+
+    /// <summary>The port name: typed, or chosen from the ports found on this computer.</summary>
+    private Control SerialPortBox(RemoteConnection c)
+    {
+        var box = new AutoCompleteBox
+        {
+            Text = c.Host,
+            ItemsSource = Services.Terminal.SerialTerminal.PortNames(),
+            MinimumPrefixLength = 0,
+            FilterMode = AutoCompleteFilterMode.StartsWithOrdinal,
+            PlaceholderText = OperatingSystem.IsWindows() ? "COM3" : "/dev/ttyUSB0",
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Classes = { "noloc" },
+        };
+        box.TextChanged += (_, _) =>
+        {
+            c.Host = box.Text?.Trim() ?? string.Empty;
+            Changed(c);
+        };
+        box.GotFocus += (_, _) => box.IsDropDownOpen = true; // the ports found, without typing
+        return box;
+    }
+
+    private void SerialFields(RemoteConnection c, List<Control?> fields)
+    {
+        fields.Add(null);
+        fields.Add(Field("Data bits", Choice(["8", "7", "6", "5"], 8 - c.DataBits, i => c.DataBits = 8 - i)));
+        fields.Add(Field("Parity", Choice(["None", "Odd", "Even", "Mark", "Space"], (int)c.Parity, i => c.Parity = (SerialParity)i)));
+        fields.Add(Field("Stop bits", Choice(["1", "1.5", "2"], (int)c.StopBits, i => c.StopBits = (SerialStopBits)i)));
+        fields.Add(Field("Flow control", Choice(["None", "XON / XOFF (software)", "RTS / CTS (hardware)"], (int)c.FlowControl, i => c.FlowControl = (SerialFlowControl)i)));
+        fields.Add(null);
+        fields.Add(Check("DTR on while connected (off for devices that reset on it)", c.SerialDtr, v => c.SerialDtr = v));
+        TerminalFields(c, fields);
+        fields.Add(Field("Backspace sends", Choice(["DEL (127)", "Ctrl+H (8)"], (int)c.TelnetBackspace, i => c.TelnetBackspace = (TelnetBackspace)i)));
+        var enters = new[] { TelnetEnter.Cr, TelnetEnter.CrLf, TelnetEnter.Lf };
+        fields.Add(Field("Enter sends", Choice(["CR", "CR LF", "LF"], Math.Max(0, Array.IndexOf(enters, c.TelnetEnter)), i => c.TelnetEnter = enters[i])));
+        fields.Add(Field("Local echo", Choice(["Off (the device echoes)", "On"], c.LocalEcho == LocalEcho.On ? 1 : 0, i => c.LocalEcho = i == 1 ? LocalEcho.On : LocalEcho.Off)));
     }
 
     private void TelnetFields(RemoteConnection c, List<Control?> fields)
@@ -1160,6 +1232,7 @@ public sealed partial class ConnectionManagerView
             RemoteProtocol.Ssh => "Opens a shell of the server in a tab of the internal terminal. It logs in as SFTP does: the password (asked, or saved), a key file or the SSH agent, through a jump host or a proxy when set; the server's key is the one trusted for SFTP.",
             RemoteProtocol.Vnc => "Opens in a VNC viewer of this computer: TigerVNC, RealVNC, TightVNC or UltraVNC; Screen Sharing on macOS; Remmina or KRDC on Linux. Port 5900 is display :0, 5901 display :1 ... The viewer asks for the password.",
             RemoteProtocol.Rsh => "For old Unix hosts that have no SSH. Nothing is encrypted, and the server trusts this computer by name. The connection comes from a port below 1024 when this computer allows it (servers usually want that; on Linux and macOS only as root).",
+            RemoteProtocol.Serial => "Opens the port in a tab of the internal terminal. The speed and the frame (usually 9600 or 115200, 8N1) must be those of the device. On Linux the user must be in the dialout group (uucp on some systems) to use the port; a USB serial adapter may need its driver on Windows and macOS.",
             RemoteProtocol.AzureFiles => "Server: account.file.core.windows.net. The account key or a SAS token is asked as the password. The root lists the file shares; the start folder can be a share (e.g. /documents).",
             RemoteProtocol.AzureBlob => "Server: account.blob.core.windows.net (at another address, such as Azurite, requests go as server/account/container). The account key or a SAS token is asked as the password. The root lists the containers.",
             RemoteProtocol.S3 => "Server: the S3 endpoint (AWS, MinIO, R2 ...). User: the access key id; the secret key is asked as the password. With an AWS profile the keys (and the session token of temporary keys) are read from ~/.aws/credentials. The root lists the buckets; the start folder can be a bucket (e.g. /backups).",

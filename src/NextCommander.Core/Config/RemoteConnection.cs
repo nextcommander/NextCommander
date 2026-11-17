@@ -42,6 +42,36 @@ public enum RemoteProtocol
     Vnc,
     /// <summary>rsh / rlogin (rsh://): a session or one command on an old Unix host in the built-in terminal (not encrypted).</summary>
     Rsh,
+    /// <summary>A serial port (serial://COM3, serial://ttyUSB0): the console of a device in the built-in terminal; the host is the port's name.</summary>
+    Serial,
+}
+
+/// <summary>The parity of a serial port.</summary>
+public enum SerialParity
+{
+    None,
+    Odd,
+    Even,
+    Mark,
+    Space,
+}
+
+/// <summary>The stop bits of a serial port.</summary>
+public enum SerialStopBits
+{
+    One,
+    OnePointFive,
+    Two,
+}
+
+/// <summary>The flow control of a serial port.</summary>
+public enum SerialFlowControl
+{
+    None,
+    /// <summary>XON / XOFF (software).</summary>
+    XOnXOff,
+    /// <summary>RTS / CTS (hardware).</summary>
+    RtsCts,
 }
 
 /// <summary>A folder of the connection manager: its path ("Work/Prod") and color label ("#ED4245"; empty: none).</summary>
@@ -123,6 +153,8 @@ public enum TelnetEnter
     CrNul,
     /// <summary>LF only.</summary>
     Lf,
+    /// <summary>CR only (serial consoles).</summary>
+    Cr,
 }
 
 /// <summary>Whether a Telnet session shows the typed text itself.</summary>
@@ -357,6 +389,24 @@ public sealed class RemoteConnection
     /// <summary>VNC: only watch the screen (no keys or mouse sent).</summary>
     public bool VncViewOnly { get; set; }
 
+    /// <summary>Serial: bits per second.</summary>
+    public int BaudRate { get; set; } = 9600;
+
+    /// <summary>Serial: data bits (5 to 8).</summary>
+    public int DataBits { get; set; } = 8;
+
+    /// <summary>Serial: the parity.</summary>
+    public SerialParity Parity { get; set; }
+
+    /// <summary>Serial: the stop bits.</summary>
+    public SerialStopBits StopBits { get; set; }
+
+    /// <summary>Serial: the flow control.</summary>
+    public SerialFlowControl FlowControl { get; set; }
+
+    /// <summary>Serial: DTR is set while the port is open (many devices want it; off for those that reset on it).</summary>
+    public bool SerialDtr { get; set; } = true;
+
     // ---------------------------------------------------------------- proxy
 
     /// <summary>The program's proxy setting, none, or the connection's own proxy below.</summary>
@@ -388,7 +438,7 @@ public sealed class RemoteConnection
     /// <summary>A cloud drive (Google Drive, OneDrive, Dropbox ...): signed in in the browser; the user is only a name for the account.</summary>
     public bool IsCloudDrive => RemoteProtocols.Of(Protocol).IsCloudDrive;
 
-    /// <summary>A remote session (RDP, VNC, Telnet, SSH, rsh): opened in a client or the terminal, not in a panel.</summary>
+    /// <summary>A remote session (RDP, VNC, Telnet, SSH, rsh, serial): opened in a client or the terminal, not in a panel.</summary>
     public bool IsSession => RemoteProtocols.Of(Protocol).IsSession;
 
     /// <summary>The fixed "host" of a cloud drive (part of the path: account@host).</summary>
@@ -428,6 +478,16 @@ public sealed class RemoteConnection
         }
         connection.Host = authority;
         connection.Name = connection.Host;
+        if (connection.Protocol == RemoteProtocol.Serial)
+        {
+            connection.TelnetEnter = TelnetEnter.Cr; // a device console wants a carriage return
+            if (connection.Port > 0)
+            {
+                // serial://COM3:115200: the number is the speed
+                connection.BaudRate = connection.Port;
+                connection.Port = 0;
+            }
+        }
         return connection;
     }
 

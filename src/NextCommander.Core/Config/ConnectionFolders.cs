@@ -131,6 +131,11 @@ public static class ConnectionChecks
             return null;
         }
         var host = connection.Host.Trim();
+        if (connection.Protocol == RemoteProtocol.Serial)
+        {
+            // a port name: COM3, /dev/ttyUSB0
+            return host.Length == 0 || host.Contains(' ', StringComparison.Ordinal) ? "Enter the serial port (e.g. COM3 or /dev/ttyUSB0)." : null;
+        }
         if (host.Length == 0 || host.Contains('/', StringComparison.Ordinal) || host.Contains(' ', StringComparison.Ordinal))
         {
             return "Enter a valid server name (e.g. server.example.com).";
@@ -177,6 +182,10 @@ public static class ConnectionChecks
         if (!string.IsNullOrWhiteSpace(connection.FtpActivePorts) && PortRange(connection.FtpActivePorts) is null)
         {
             return "Enter the active mode ports as a range, e.g. 50000-50100.";
+        }
+        if (connection.Protocol == RemoteProtocol.Serial && (connection.BaudRate is < 50 or > 4_000_000 || connection.DataBits is < 5 or > 8))
+        {
+            return "The speed must be between 50 and 4000000 bits per second, the data bits between 5 and 8.";
         }
         if (connection.RdpWidth < 0 || connection.RdpHeight < 0 || (connection.RdpWidth > 0) != (connection.RdpHeight > 0))
         {

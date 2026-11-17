@@ -252,6 +252,9 @@ public sealed class TelnetTerminal : PseudoTerminal
                         case TelnetEnter.Lf:
                             result.Add((byte)'\n');
                             break;
+                        case TelnetEnter.Cr:
+                            result.Add((byte)'\r');
+                            break;
                         case TelnetEnter.CrNul:
                             result.Add((byte)'\r');
                             result.Add(0);

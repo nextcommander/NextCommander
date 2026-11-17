@@ -60,6 +60,7 @@ public static class RemoteProtocols
         new(RemoteProtocol.Ssh, "ssh", 22, ProtocolKind.Session),
         new(RemoteProtocol.Vnc, "vnc", 5900, ProtocolKind.Session),
         new(RemoteProtocol.Rsh, "rsh", 514, ProtocolKind.Session, Aliases: ["rlogin"]),
+        new(RemoteProtocol.Serial, "serial", 0, ProtocolKind.Session, Aliases: ["com"]),
     ];
 
     public static ProtocolInfo Of(RemoteProtocol protocol) => All.First(p => p.Protocol == protocol);
