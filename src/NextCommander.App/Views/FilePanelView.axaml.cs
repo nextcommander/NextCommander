@@ -839,6 +839,7 @@ public partial class FilePanelView : UserControl
         }
         var point = e.GetCurrentPoint(Grid);
         var item = RowItem(e.Source);
+        NoteClickForRename(item, e);
         if (HandleMacContextClick(Grid, item, e))
         {
             Grid.Focus();
@@ -878,6 +879,7 @@ public partial class FilePanelView : UserControl
     /// <summary>Brief and thumbnail views draw their rows themselves: hit testing gives the item.</summary>
     private void OnDrawnListPointerPressed(Control list, FileItemViewModel? item, PointerPressedEventArgs e)
     {
+        NoteClickForRename(item, e); // before the focus and the cursor change
         Activated?.Invoke(this, EventArgs.Empty);
         _suppressContextMenu = false;
         list.Focus();
@@ -945,11 +947,13 @@ public partial class FilePanelView : UserControl
     {
         EndRubberBand(e);
         CancelDragCandidate();
+        ReleaseClickForRename(e);
     }
 
     private async void OnListKeyDown(object? sender, KeyEventArgs e)
     {
         LastKeyHandled = false;
+        CancelClickRename();
         var vm = _vm;
         if (vm is null)
         {
