@@ -51,8 +51,11 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
   sessions in a tab of the internal terminal.
 - PC link: two computers running NextCommander work on each other's shared folders over a USB or Ethernet cable
   (or the network), encrypted, paired once with a code shown on both screens.
-- A connection manager, saved passwords protected by an optional master password, and a view of the
-  machines on your local network.
+- A connection manager with the options of each type (keep-alive, pinned keys, TLS versions, S3 storage classes,
+  RDP screen and redirections, Telnet keys ...), saved passwords protected by an optional master password, and a
+  view of the machines on your local network.
+- Proxies: the system's, HTTP, HTTPS, SOCKS4 / 4a / 5, an SSH tunnel or a PAC script, for the whole program or
+  per connection.
 - Browse the trash / Recycle Bin in a panel: restore, copy out, delete for good, empty.
 - Phones, cameras and players connected over USB (MTP) appear as drives: copy photos off a phone, put files on it,
   make folders, rename and delete (Windows; Linux: the folders GNOME mounts for them, or through libmtp on other

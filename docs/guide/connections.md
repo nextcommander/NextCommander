@@ -262,6 +262,26 @@ connections*, `nc_OpenConnection name`) does not change the panel.
 
 *Test* in the connection manager checks that the server answers on the port.
 
+### Options of the Advanced tab
+
+Besides the timeout and the number of simultaneous connections, the **Advanced** tab of a connection has the
+options of its type:
+
+| Type | Options |
+| --- | --- |
+| SFTP, SCP | Jump host; keep-alive; request size (SFTP: larger requests are faster on far servers); pinned host key. |
+| FTP, FTPS | File name encoding; folder listing (MLSD when the server has it, or always LIST); the server's time zone (for servers that list local times); active mode ports of its own; keep-alive (NOOP); FTPS: encrypt the data connections too, TLS version, pinned certificate. |
+| WebDAV | Authentication (as the server asks, Basic, Digest, NTLM, Negotiate); HTTPS: TLS version, pinned certificate. |
+| Amazon S3 | Server-side encryption and KMS key; storage class of uploads (STANDARD_IA, GLACIER_IR, DEEP_ARCHIVE ...); ACL of uploads; part size of large uploads; requester pays; virtual-hosted addresses; plain HTTP; TLS version, pinned certificate. |
+| Azure | Access tier of uploaded blobs (Hot, Cool, Cold, Archive); plain HTTP; TLS version, pinned certificate. |
+| SMB | Show the hidden administrative shares (C$, ADMIN$). |
+| Google Drive, OneDrive, Box | Delete permanently instead of to the service's trash (OneDrive: work / school accounts; personal ones keep the recycle bin). Google Drive: Google documents as Office, OpenDocument or PDF files. |
+| Remote desktop | Full screen, all monitors, size in a window, colors, sound (here, on the remote computer, none), Remote Desktop Gateway, shared clipboard, drives and printers, administrative session. |
+| Telnet | Terminal type, character set, what Backspace (DEL or Ctrl+H) and Enter (CR LF, CR NUL, LF) send, local echo, keep-alive. |
+
+A **pinned** host key or certificate (`SHA256:...`) is the only one trusted for the connection: another one is
+refused without asking.
+
 ## Security
 
 The first time you connect to an SFTP server, or to a server using an encrypted (TLS) connection, NextCommander
@@ -300,17 +320,42 @@ go through the proxy chosen on the *Operation > Proxy* page of the [Configuratio
 - **Use the system's proxy** (default): the proxy of Windows' Internet settings, the macOS network settings, or the
   `http_proxy` / `https_proxy` / `no_proxy` variables on Linux.
 - **No proxy**: always directly, even when the system has a proxy.
-- **Use this proxy**: an HTTP or SOCKS5 proxy with its server and port (or a full address such as
-  `http://proxy:3128` or `socks5://proxy:1080`), a user name and password when the proxy asks for one (the password
+- **Use this proxy**: a proxy with its server and port (or a full address such as `http://proxy:3128`,
+  `socks4a://proxy:1080` or `ssh://bastion:22`), a user name and password when the proxy asks for one (the password
   is kept encrypted with your other saved passwords), and the addresses that go directly (`localhost; *.local;
-  10.*`; local names without a dot too, if you like). With **Also for FTP, SFTP and SMB connections** (on by
-  default) these go through it as well: FTP (also its data connections) and SFTP with their own proxy support, SMB
-  through a local port that leads to the proxy. An HTTP proxy has to allow CONNECT to their ports (21, 22, 445 ...);
-  a SOCKS5 proxy takes any connection.
+  10.*`; local names without a dot too, if you like). Its type:
+  - **HTTP**: an HTTP proxy (other connections through CONNECT).
+  - **HTTPS (TLS to the proxy)**: the same, reached over an encrypted connection; its certificate must be valid.
+  - **SOCKS5**, **SOCKS4a**, **SOCKS4**: SOCKS proxies (SOCKS5 with a user name and password; SOCKS4 sends the user
+    name as its user id; SOCKS4 needs an IPv4 address, which is looked up here, SOCKS4a sends the name).
+  - **SSH tunnel**: an SSH server, as `ssh -D`: every connection is a channel of one SSH session. It logs in with
+    the password or a private key file (its passphrase as the password); the server's key is checked and asked
+    for like any SSH server's.
+
+  With **Also for FTP, SFTP and SMB connections** (on by default) these go through it as well: FTP (also its data
+  connections), SFTP and SCP, SMB and Telnet. An HTTP proxy has to allow CONNECT to their ports (21, 22, 445 ...);
+  SOCKS and SSH proxies take any connection.
+- **Automatic configuration script (PAC)**: the address of a proxy auto-config script (`http://wpad.example.com/wpad.dat`,
+  or a file). Its `FindProxyForURL` chooses the way of every address: directly, or through the HTTP, HTTPS or
+  SOCKS proxy it names (the first one of its answer). The user name and password above are used for these proxies.
+  The script is read without a proxy and kept for half an hour; a script that cannot be read or fails sends the
+  connections directly.
 
 **Test** requests an address with the settings as they are in the window and tells whether it went through the
 proxy, the answer and how long it took. Connections that are already open keep their way until they connect again.
 The system's proxy is used for web requests only.
+
+### A connection's own proxy
+
+The **Proxy** tab of a connection in the connection manager chooses its way, whatever the program's setting is:
+
+- **The program's setting**: as above (the default).
+- **No proxy**: always directly.
+- **Its own proxy**: one of the types above with its server, port, user and password (an SSH tunnel also with a
+  private key). The password is kept in the password store when the connection is saved.
+
+Remote desktop (RDP) connections and PC link have no Proxy tab: the RDP client connects itself, and a PC link stays
+on the local network.
 
 ## Downloading from the web
 

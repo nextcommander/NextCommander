@@ -37,13 +37,44 @@ public sealed class GoogleDriveFileSystemProvider(RemoteHooks hooks) : CloudProv
 
     private const string Fields = "id,name,mimeType,size,modifiedTime,parents";
 
-    /// <summary>Google's own document types: shown with this extension, exported as this type when read.</summary>
-    public static readonly IReadOnlyDictionary<string, (string Extension, string ExportType)> Exports = new Dictionary<string, (string, string)>
+    /// <summary>Google's own document types: shown with this extension, exported as this type when read (Office formats).</summary>
+    public static readonly IReadOnlyDictionary<string, (string Extension, string ExportType)> Exports = ExportsFor(GoogleExport.Office);
+
+    private static readonly IReadOnlyDictionary<string, (string Extension, string ExportType)> s_openDocument = ExportsFor(GoogleExport.OpenDocument);
+    private static readonly IReadOnlyDictionary<string, (string Extension, string ExportType)> s_pdf = ExportsFor(GoogleExport.Pdf);
+
+    /// <summary>The extension and export type of each Google document type in a format (drawings are PDF in all of them).</summary>
+    public static IReadOnlyDictionary<string, (string Extension, string ExportType)> ExportsFor(GoogleExport format) => format switch
     {
-        ["application/vnd.google-apps.document"] = (".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
-        ["application/vnd.google-apps.spreadsheet"] = (".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
-        ["application/vnd.google-apps.presentation"] = (".pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"),
-        ["application/vnd.google-apps.drawing"] = (".pdf", "application/pdf"),
+        GoogleExport.OpenDocument => new Dictionary<string, (string, string)>
+        {
+            ["application/vnd.google-apps.document"] = (".odt", "application/vnd.oasis.opendocument.text"),
+            ["application/vnd.google-apps.spreadsheet"] = (".ods", "application/vnd.oasis.opendocument.spreadsheet"),
+            ["application/vnd.google-apps.presentation"] = (".odp", "application/vnd.oasis.opendocument.presentation"),
+            ["application/vnd.google-apps.drawing"] = (".pdf", "application/pdf"),
+        },
+        GoogleExport.Pdf => new Dictionary<string, (string, string)>
+        {
+            ["application/vnd.google-apps.document"] = (".pdf", "application/pdf"),
+            ["application/vnd.google-apps.spreadsheet"] = (".pdf", "application/pdf"),
+            ["application/vnd.google-apps.presentation"] = (".pdf", "application/pdf"),
+            ["application/vnd.google-apps.drawing"] = (".pdf", "application/pdf"),
+        },
+        _ => new Dictionary<string, (string, string)>
+        {
+            ["application/vnd.google-apps.document"] = (".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+            ["application/vnd.google-apps.spreadsheet"] = (".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+            ["application/vnd.google-apps.presentation"] = (".pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"),
+            ["application/vnd.google-apps.drawing"] = (".pdf", "application/pdf"),
+        },
+    };
+
+    /// <summary>The export formats of a client's connection.</summary>
+    private static IReadOnlyDictionary<string, (string Extension, string ExportType)> ExportsOf(CloudClient client) => client.Session.Connection.GoogleExport switch
+    {
+        GoogleExport.OpenDocument => s_openDocument,
+        GoogleExport.Pdf => s_pdf,
+        _ => Exports,
     };
 
     /// <summary>Path → file id, per account ("/" is "root").</summary>
@@ -59,8 +90,8 @@ public sealed class GoogleDriveFileSystemProvider(RemoteHooks hooks) : CloudProv
     public static string QueryString(string value) => "'" + value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("'", "\\'", StringComparison.Ordinal) + "'";
 
     /// <summary>The name shown for an item (Google documents get the extension of their export type).</summary>
-    public static string DisplayName(string name, string? mimeType) =>
-        mimeType is not null && Exports.TryGetValue(mimeType, out var export) && !name.EndsWith(export.Extension, StringComparison.OrdinalIgnoreCase)
+    public static string DisplayName(string name, string? mimeType, IReadOnlyDictionary<string, (string Extension, string ExportType)>? exports = null) =>
+        mimeType is not null && (exports ?? Exports).TryGetValue(mimeType, out var export) && !name.EndsWith(export.Extension, StringComparison.OrdinalIgnoreCase)
             ? name + export.Extension
             : name;
 
@@ -179,12 +210,12 @@ public sealed class GoogleDriveFileSystemProvider(RemoteHooks hooks) : CloudProv
                 continue;
             }
             // the name itself, or a Google document shown with an extension
-            var plain = Exports.Values.Select(e => e.Extension).FirstOrDefault(e => part.EndsWith(e, StringComparison.OrdinalIgnoreCase)) is { } ext
+            var plain = ExportsOf(client).Values.Select(e => e.Extension).FirstOrDefault(e => part.EndsWith(e, StringComparison.OrdinalIgnoreCase)) is { } ext
                 ? part[..^ext.Length] : null;
             var filter = plain is null ? $"name = {QueryString(part)}" : $"(name = {QueryString(part)} or name = {QueryString(plain)})";
             var match = (await ChildrenAsync(client, parentId, filter, ct).ConfigureAwait(false))
                 .FirstOrDefault(c => Shown(c["mimeType"]?.GetValue<string>())
-                    && DisplayName(c["name"]?.GetValue<string>() ?? string.Empty, c["mimeType"]?.GetValue<string>()) == part);
+                    && DisplayName(c["name"]?.GetValue<string>() ?? string.Empty, c["mimeType"]?.GetValue<string>(), ExportsOf(client)) == part);
             if (match?["id"]?.GetValue<string>() is not { } found)
             {
                 return null;
@@ -233,7 +264,7 @@ public sealed class GoogleDriveFileSystemProvider(RemoteHooks hooks) : CloudProv
                 {
                     continue;
                 }
-                var shown = DisplayName(name, mime);
+                var shown = DisplayName(name, mime, ExportsOf(client));
                 if (!seen.Add(shown))
                 {
                     continue; // a second file of the same name: only the first is reachable by path
@@ -290,7 +321,7 @@ public sealed class GoogleDriveFileSystemProvider(RemoteHooks hooks) : CloudProv
                 ?? throw new HttpStatusException(HttpStatusCode.NotFound, $"Not found: {path.Path}");
             var item = found.Item ?? await ItemAsync(client, found.Id, path.Path, cancellationToken).ConfigureAwait(false);
             var mime = item["mimeType"]?.GetValue<string>();
-            var url = mime is not null && Exports.TryGetValue(mime, out var export)
+            var url = mime is not null && ExportsOf(client).TryGetValue(mime, out var export)
                 ? ApiBase + "/files/" + Uri.EscapeDataString(found.Id) + "/export?mimeType=" + Uri.EscapeDataString(export.ExportType)
                 : ApiBase + "/files/" + Uri.EscapeDataString(found.Id) + "?alt=media&" + AllDrives;
             var response = await client.SendAsync(() => new HttpRequestMessage(HttpMethod.Get, url), cancellationToken, headersOnly: true).ConfigureAwait(false);
@@ -403,9 +434,11 @@ public sealed class GoogleDriveFileSystemProvider(RemoteHooks hooks) : CloudProv
         await UseAsync(path, async client =>
         {
             var id = await RequireIdAsync(client, path, cancellationToken).ConfigureAwait(false);
-            var body = new JsonObject { ["trashed"] = true };
-            using var response = await client.SendAsync(() => new HttpRequestMessage(HttpMethod.Patch, ApiBase + "/files/" + Uri.EscapeDataString(id) + "?fields=id&" + AllDrives)
-                { Content = JsonContent(body) }, cancellationToken).ConfigureAwait(false);
+            // to the Drive trash, or removed at once when the connection says so
+            using var response = client.Session.Connection.DeletePermanently
+                ? await client.SendAsync(() => new HttpRequestMessage(HttpMethod.Delete, ApiBase + "/files/" + Uri.EscapeDataString(id) + "?" + AllDrives), cancellationToken).ConfigureAwait(false)
+                : await client.SendAsync(() => new HttpRequestMessage(HttpMethod.Patch, ApiBase + "/files/" + Uri.EscapeDataString(id) + "?fields=id&" + AllDrives)
+                    { Content = JsonContent(new JsonObject { ["trashed"] = true }) }, cancellationToken).ConfigureAwait(false);
             await EnsureAsync(response, path.Path).ConfigureAwait(false);
         }, cancellationToken).ConfigureAwait(false);
         Forget(path);
@@ -436,7 +469,7 @@ public sealed class GoogleDriveFileSystemProvider(RemoteHooks hooks) : CloudProv
                 + (fromParent == toParent ? string.Empty : "&addParents=" + Uri.EscapeDataString(toParent) + "&removeParents=" + Uri.EscapeDataString(fromParent));
             var item = await ItemAsync(client, id, source.Path, cancellationToken).ConfigureAwait(false);
             // a Google document keeps its name without the export extension
-            var name = item["mimeType"]?.GetValue<string>() is { } mime && Exports.TryGetValue(mime, out var export)
+            var name = item["mimeType"]?.GetValue<string>() is { } mime && ExportsOf(client).TryGetValue(mime, out var export)
                 && destination.Name.EndsWith(export.Extension, StringComparison.OrdinalIgnoreCase)
                 ? destination.Name[..^export.Extension.Length] : destination.Name;
             var body = new JsonObject { ["name"] = name };

@@ -22,6 +22,9 @@ public sealed class SmbSession : IDisposable
     /// <summary>The local port leading through the proxy (Configuration > Proxy), when the session uses one.</summary>
     internal NextCommander.Core.Net.ProxyForwarder? Forwarder { get; }
 
+    /// <summary>The hidden administrative shares (C$, ADMIN$) are listed too (IPC$ never: it holds no files).</summary>
+    internal bool ShowHiddenShares { get; init; }
+
     internal Dictionary<string, ISMBFileStore> Shares { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     public void Dispose()
@@ -87,14 +90,14 @@ public sealed class SmbFileSystemProvider(RemoteHooks hooks) : RemoteProviderBas
 
     protected override async Task<SmbSession> ConnectAsync(RemoteConnection connection, string? password, string? trustedFingerprint, CancellationToken cancellationToken)
     {
-        // through the proxy (Configuration > Proxy): the SMB client cannot use one, so it talks to a local port that leads
+        // through its own proxy or the one of Configuration > Proxy: the SMB client cannot use one, so it talks to a local port that leads
         // there; the proxy resolves the server's name
         NextCommander.Core.Net.ProxyForwarder? forwarder = null;
         IPAddress address;
         var port = connection.EffectivePort;
-        if (NextCommander.Core.Net.WebProxyConfig.FileTransferProxy(connection.Host) is { } proxy)
+        if (NextCommander.Core.Net.WebProxyConfig.TunnelProxyOf(connection) is { } proxy)
         {
-            forwarder = new NextCommander.Core.Net.ProxyForwarder(proxy, NextCommander.Core.Net.WebProxyConfig.Password, connection.Host, connection.EffectivePort);
+            forwarder = new NextCommander.Core.Net.ProxyForwarder(proxy, NextCommander.Core.Net.WebProxyConfig.PasswordOf(proxy), connection.Host, connection.EffectivePort);
             address = forwarder.LocalEndPoint.Address;
             port = forwarder.LocalEndPoint.Port;
         }
@@ -123,7 +126,7 @@ public sealed class SmbFileSystemProvider(RemoteHooks hooks) : RemoteProviderBas
                 forwarder?.Dispose();
                 throw new SmbStatusException(status, $"{connection.Host}: login failed ({status}).");
             }
-            return new SmbSession(client, forwarder);
+            return new SmbSession(client, forwarder) { ShowHiddenShares = connection.SmbShowHiddenShares };
         }, cancellationToken).ConfigureAwait(false);
     }
 
@@ -218,7 +221,7 @@ public sealed class SmbFileSystemProvider(RemoteHooks hooks) : RemoteProviderBas
             {
                 var shares = session.Client.ListShares(out var status);
                 Check(status, "/");
-                foreach (var s in shares.Where(s => !s.EndsWith('$')).Order(StringComparer.OrdinalIgnoreCase))
+                foreach (var s in shares.Where(s => !s.EndsWith('$') || (session.ShowHiddenShares && !s.Equals("IPC$", StringComparison.OrdinalIgnoreCase))).Order(StringComparer.OrdinalIgnoreCase))
                 {
                     result.Add(ToEntry(directory, "/" + s, s, isDirectory: true, isLink: false, 0, DateTime.MinValue));
                 }

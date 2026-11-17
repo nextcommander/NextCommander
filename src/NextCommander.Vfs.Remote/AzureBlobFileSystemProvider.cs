@@ -340,8 +340,21 @@ public sealed class AzureBlobFileSystemProvider(RemoteHooks hooks) : RemoteProvi
             var content = new StreamContent(new NonClosingStream(data));
             content.Headers.ContentLength = data.Length;
             return content;
-        }, r => r.Headers.TryAddWithoutValidation("x-ms-blob-type", "BlockBlob")).ConfigureAwait(false);
+        }, r =>
+        {
+            r.Headers.TryAddWithoutValidation("x-ms-blob-type", "BlockBlob");
+            AddAccessTier(r, client.Connection);
+        }).ConfigureAwait(false);
         await EnsureSuccessAsync(response, "/" + container + "/" + name).ConfigureAwait(false);
+    }
+
+    /// <summary>The access tier the connection asks for a new blob (Hot, Cool, Cold, Archive; none: the account's default).</summary>
+    internal static void AddAccessTier(HttpRequestMessage request, RemoteConnection connection)
+    {
+        if (!string.IsNullOrWhiteSpace(connection.AzureAccessTier))
+        {
+            request.Headers.TryAddWithoutValidation("x-ms-access-tier", connection.AzureAccessTier.Trim());
+        }
     }
 
     /// <summary>Put Block for each <see cref="BlockSize"/> part, then Put Block List.</summary>
@@ -378,7 +391,8 @@ public sealed class AzureBlobFileSystemProvider(RemoteHooks hooks) : RemoteProvi
         }
         xml.Append("</BlockList>");
         var body = Encoding.UTF8.GetBytes(xml.ToString());
-        using var list = await SendAsync(client, HttpMethod.Put, container, name, "comp=blocklist", ct, () => new ByteArrayContent(body)).ConfigureAwait(false);
+        using var list = await SendAsync(client, HttpMethod.Put, container, name, "comp=blocklist", ct, () => new ByteArrayContent(body),
+            r => AddAccessTier(r, client.Connection)).ConfigureAwait(false);
         await EnsureSuccessAsync(list, "/" + container + "/" + name).ConfigureAwait(false);
     }
 

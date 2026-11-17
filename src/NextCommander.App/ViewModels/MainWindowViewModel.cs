@@ -476,7 +476,12 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     /// </summary>
     public void ApplyOperationSettings()
     {
-        NextCommander.Core.Net.WebProxyConfig.Current = _settings.GetProxyOptions();
+        var proxy = _settings.GetProxyOptions();
+        if (proxy != NextCommander.Core.Net.WebProxyConfig.Current)
+        {
+            NextCommander.Core.Net.PacScript.Forget(); // the script is read again (its address or the file may have changed)
+        }
+        NextCommander.Core.Net.WebProxyConfig.Current = proxy;
         if (_settings.ProxyPasswordChange is { } proxyPassword)
         {
             _settings.ProxyPasswordChange = null;
@@ -2646,8 +2651,9 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     /// <summary>The password of a manual proxy with a user, from the password store (asks for the master password when there is one).</summary>
     private async Task LoadProxyPasswordAsync()
     {
-        if (_remote?.Secrets is not { } secrets || _settings.ProxyMode != NextCommander.Core.Net.ProxyMode.Manual
-            || string.IsNullOrWhiteSpace(_settings.ProxyUser) || !secrets.Contains(NextCommander.Core.Net.WebProxyConfig.SecretId))
+        if (_remote?.Secrets is not { } secrets || _settings.ProxyMode is not (NextCommander.Core.Net.ProxyMode.Manual or NextCommander.Core.Net.ProxyMode.Pac)
+            || (string.IsNullOrWhiteSpace(_settings.ProxyUser) && string.IsNullOrWhiteSpace(_settings.ProxyKeyFile))
+            || !secrets.Contains(NextCommander.Core.Net.WebProxyConfig.SecretId))
         {
             return;
         }
@@ -2736,6 +2742,22 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             _dialogs.PickOpenFileAsync)
         {
             NewProtocol = newProtocol,
+            HasSecret = id => Remote?.Secrets.Contains(id) == true,
+            StoreSecret = async (id, value) =>
+            {
+                if (Remote?.Secrets is not { } secrets)
+                {
+                    return;
+                }
+                if (value.Length == 0)
+                {
+                    secrets.Remove(id);
+                }
+                else
+                {
+                    await secrets.SetAsync(id, value);
+                }
+            },
         };
         var answer = await _dialogs.ShowConnectionManagerAsync(request);
         OnPropertyChanged(nameof(HasConnectionMenuEntries)); // the connections button of the button bar

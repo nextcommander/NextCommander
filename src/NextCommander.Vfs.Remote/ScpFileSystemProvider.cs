@@ -37,8 +37,8 @@ public sealed class ScpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBas
         var made = 0;
         var clients = await SshLogin.ConnectAsync<BaseClient>(connection, password, trustedFingerprint, Hooks,
             info => made++ == 0
-                ? new SshClient(info)
-                : new ScpClient(info, RemotePathTransformation.ShellQuote) { OperationTimeout = SftpFileSystemProvider.OperationTimeoutOf(connection) },
+                ? SshLogin.KeepAlive(new SshClient(info), connection)
+                : SshLogin.KeepAlive(new ScpClient(info, RemotePathTransformation.ShellQuote) { OperationTimeout = SftpFileSystemProvider.OperationTimeoutOf(connection) }, connection),
             2, cancellationToken).ConfigureAwait(false);
         return new ScpSession((SshClient)clients[0], (ScpClient)clients[1]);
     }
