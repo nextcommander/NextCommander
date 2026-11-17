@@ -45,44 +45,117 @@ public sealed partial class FindFilesWindow
     /// <summary>The context menu of the result list (tests).</summary>
     public ContextMenu ResultMenu => _results.ContextMenu!;
 
-    /// <summary>A row: the icon of the file kind, the path, size and date.</summary>
-    private static Control ResultRow(SearchResultItem? item)
+    /// <summary>
+    /// A row of the table: the icon of the file kind and the name (the fixed parts of the pattern marked; the line of the
+    /// first content match below), the folder, size and date. A duplicate group's header spans the row.
+    /// </summary>
+    private static Control ResultRow(SearchResultItem? item, IReadOnlyList<string> highlight)
     {
         if (item is null)
         {
             return new Panel();
         }
-        var name = new TextBlock { Text = item.Display, FontWeight = item.Weight, TextTrimming = TextTrimming.LeadingCharacterEllipsis, Classes = { "noloc" } };
-        var detail = new TextBlock { Text = item.Detail, Opacity = 0.7, Margin = new Thickness(12, 0, 0, 0), FontSize = 12, Classes = { "noloc" } };
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto") };
+        if (item.IsHeader)
+        {
+            return new TextBlock { Text = item.Display, FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 6, 0, 2), Classes = { "noloc" } };
+        }
+        static TextBlock Cell(string text, bool mono = false, bool right = false)
+        {
+            var cell = new TextBlock
+            {
+                Text = text,
+                FontSize = mono ? 12 : 13,
+                VerticalAlignment = VerticalAlignment.Center,
+                TextAlignment = right ? TextAlignment.Right : TextAlignment.Left,
+                TextTrimming = mono ? TextTrimming.LeadingCharacterEllipsis : TextTrimming.CharacterEllipsis,
+                Padding = new Thickness(10, 0),
+                Classes = { "noloc" },
+            };
+            if (mono)
+            {
+                cell.Classes.Add("nc-mono");
+            }
+            cell[!TextBlock.ForegroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("NcMutedBrush");
+            return cell;
+        }
+
+        var nameCell = new DockPanel { Margin = new Thickness(0, 3) };
         if (item.Entry is { } entry && FileKinds.GeometryFor(FileKinds.Classify(entry)) is { } glyph)
         {
             var icon = new Viewbox
             {
-                Width = 16, Height = 16, Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center,
+                Width = 15, Height = 15, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center,
                 Child = IconPacks.Draw(glyph, FileKinds.BrushFor(FileKinds.Classify(entry))),
             };
-            grid.Children.Add(icon);
+            DockPanel.SetDock(icon, Dock.Left);
+            nameCell.Children.Add(icon);
         }
-        Grid.SetColumn(name, 1);
-        Grid.SetColumn(detail, 2);
-        grid.Children.AddRange([name, detail]);
+        var name = new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center, Classes = { "noloc" } };
+        Mark(name, item.Name, highlight);
         if (item.Hit.Length == 0)
         {
-            return grid;
+            nameCell.Children.Add(name);
         }
-        // a content search: the line of the first match under the name
-        grid.RowDefinitions = new RowDefinitions("Auto,Auto");
-        var hit = new TextBlock
+        else
         {
-            Text = item.Hit, Opacity = 0.75, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis, Classes = { "noloc" },
-            FontFamily = new FontFamily("Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, monospace"),
-        };
-        Grid.SetRow(hit, 1);
-        Grid.SetColumn(hit, 1);
-        Grid.SetColumnSpan(hit, 2);
-        grid.Children.Add(hit);
+            // a content search: the line of the first match under the name
+            var hit = new TextBlock { Text = item.Hit, FontSize = 11.5, TextTrimming = TextTrimming.CharacterEllipsis, Classes = { "noloc", "nc-mono" } };
+            hit[!TextBlock.ForegroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("NcFaintBrush");
+            nameCell.Children.Add(new StackPanel { VerticalAlignment = VerticalAlignment.Center, Children = { name, hit } });
+        }
+        nameCell.Margin = new Thickness(10, 3);
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions(RowColumns), MinHeight = 30 };
+        var folder = Cell(item.Folder, mono: true);
+        var size = Cell(item.SizeText, right: true);
+        var date = Cell(item.DateText);
+        Grid.SetColumn(folder, 1);
+        Grid.SetColumn(size, 2);
+        Grid.SetColumn(date, 3);
+        grid.Children.AddRange([nameCell, folder, size, date]);
+        ToolTip.SetTip(grid, item.Display);
         return grid;
+    }
+
+    /// <summary>The name with the parts of the pattern marked (accent tint), as the template marks them.</summary>
+    private static void Mark(TextBlock block, string name, IReadOnlyList<string> terms)
+    {
+        if (terms.Count == 0)
+        {
+            block.Text = name;
+            return;
+        }
+        var marks = new bool[name.Length];
+        foreach (var term in terms)
+        {
+            for (var at = name.IndexOf(term, StringComparison.OrdinalIgnoreCase); at >= 0; at = name.IndexOf(term, at + 1, StringComparison.OrdinalIgnoreCase))
+            {
+                for (var i = at; i < at + term.Length; i++)
+                {
+                    marks[i] = true;
+                }
+            }
+        }
+        if (!marks.Contains(true))
+        {
+            block.Text = name;
+            return;
+        }
+        block.Inlines ??= [];
+        var start = 0;
+        for (var i = 1; i <= name.Length; i++)
+        {
+            if (i == name.Length || marks[i] != marks[start])
+            {
+                var run = new Avalonia.Controls.Documents.Run(name[start..i]);
+                if (marks[start])
+                {
+                    run[!Avalonia.Controls.Documents.TextElement.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("NcAccentSoftBrush");
+                    run.FontWeight = FontWeight.SemiBold;
+                }
+                block.Inlines.Add(run);
+                start = i;
+            }
+        }
     }
 
     // ---------------------------------------------------------------- context menu

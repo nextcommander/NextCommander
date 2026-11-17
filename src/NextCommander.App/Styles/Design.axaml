@@ -478,6 +478,28 @@
   <Style Selector="Border.nc-count.bad"><Setter Property="Background" Value="{DynamicResource NcBadSoftBrush}" /></Style>
   <Style Selector="Border.nc-count.bad TextBlock"><Setter Property="Foreground" Value="{DynamicResource NcBadBrush}" /></Style>
 
+  <!-- A table of rows (results, preview): a line under each row, the selection in the accent tint -->
+  <Style Selector="ListBox.nc-table">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="ListBox.nc-table ListBoxItem">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcLineBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="ListBox.nc-table ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcSurface3Brush}" />
+  </Style>
+  <Style Selector="ListBox.nc-table ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter, ListBox.nc-table ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter, ListBox.nc-table ListBoxItem:selected:focus /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcAccentSoftBrush}" />
+  </Style>
+  <Style Selector="ListBox.nc-table ListBoxItem:selected">
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+
   <!-- Window bars -->
   <Style Selector="Border.nc-footer">
     <Setter Property="Padding" Value="24,14" />

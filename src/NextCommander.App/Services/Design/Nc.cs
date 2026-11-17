@@ -159,9 +159,9 @@ public static class Nc
     /// A field box: an icon on the left, the text box (made bare), then <paramref name="tail"/> controls (toggles, a
     /// drop-down button). The box is framed in the accent color while the text box has the focus.
     /// </summary>
-    public static Border Combo(TextBox box, string? icon, params Control[] tail)
+    public static Border Combo(Control box, string? icon, params Control[] tail)
     {
-        box.Classes.Add("nc-bare");
+        MakeBare(box);
         var dock = new DockPanel();
         if (icon is not null)
         {
@@ -171,7 +171,7 @@ public static class Nc
         }
         else
         {
-            box.Padding = new Thickness(10, 0, 6, 0);
+            box.Margin = new Thickness(10, 0, 0, 0);
         }
         for (var i = tail.Length - 1; i >= 0; i--)
         {
@@ -181,6 +181,33 @@ public static class Nc
         // the box in a panel of its own: path completion puts its popup next to it (a last child of the dock panel would fill it)
         dock.Children.Add(new Grid { Children = { box } });
         return new Border { Classes = { "nc-combo" }, Child = dock };
+    }
+
+    /// <summary>A text box (or the text box inside an auto-complete box) without its own frame, for a field box.</summary>
+    public static void MakeBare(Control box)
+    {
+        switch (box)
+        {
+            case TextBox text:
+                text.Classes.Add("nc-bare");
+                break;
+            case AutoCompleteBox auto:
+                auto.Background = Brushes.Transparent;
+                auto.BorderThickness = new Thickness(0);
+                auto.VerticalAlignment = VerticalAlignment.Center;
+                auto.TemplateApplied += (_, e) =>
+                {
+                    if (e.NameScope.Find<TextBox>("PART_TextBox") is { } inner)
+                    {
+                        inner.Classes.Add("nc-bare");
+                        foreach (var css in auto.Classes.Where(c => c.StartsWith("nc-", StringComparison.Ordinal)))
+                        {
+                            inner.Classes.Add(css);
+                        }
+                    }
+                };
+                break;
+        }
     }
 
     /// <summary>A label (and a hint on its right) above a field.</summary>
@@ -341,6 +368,99 @@ public static class Nc
         }
         dock.Children.Add(leftRow);
         return new Border { Classes = { "nc-footer" }, Child = dock };
+    }
+}
+
+/// <summary>A whole number field with − and + buttons (the templates' counter fields).</summary>
+public sealed class NcNumber : Border
+{
+    private readonly TextBox _box = new() { Classes = { "nc-mono", "noloc" }, HorizontalContentAlignment = HorizontalAlignment.Left };
+    private decimal? _value;
+
+    public NcNumber(decimal value, decimal minimum, decimal maximum)
+    {
+        Minimum = minimum;
+        Maximum = maximum;
+        _value = value;
+        _box.Text = value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        _box.TextChanged += (_, _) =>
+        {
+            if (decimal.TryParse(_box.Text, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+            {
+                SetValue(Math.Clamp(parsed, Minimum, Maximum), updateText: false);
+            }
+        };
+        _box.KeyDown += (_, e) =>
+        {
+            if (e.Key is Key.Up or Key.Down)
+            {
+                Value = (Value ?? 0) + (e.Key == Key.Up ? 1 : -1);
+                e.Handled = true;
+            }
+        };
+        Button Step(string text, int by, string name)
+        {
+            var button = new Avalonia.Controls.Button
+            {
+                Content = new TextBlock { Text = text, Classes = { "noloc" } },
+                Width = 30,
+                Padding = new Thickness(0),
+                CornerRadius = new CornerRadius(0),
+                BorderThickness = new Thickness(1, 0, 0, 0),
+                Background = Brushes.Transparent,
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                Focusable = false,
+            };
+            button[!Avalonia.Controls.Button.BorderBrushProperty] = new DynamicResourceExtension("NcLineBrush");
+            button[!Avalonia.Controls.Button.ForegroundProperty] = new DynamicResourceExtension("NcMutedBrush");
+            Avalonia.Automation.AutomationProperties.SetName(button, name);
+            button.Click += (_, _) => Value = (Value ?? 0) + by;
+            return button;
+        }
+        var minus = Step("−", -1, "Decrease");
+        var plus = Step("+", 1, "Increase");
+        var dock = new DockPanel();
+        DockPanel.SetDock(plus, Dock.Right);
+        DockPanel.SetDock(minus, Dock.Right);
+        dock.Children.AddRange([plus, minus]);
+        Nc.MakeBare(_box);
+        _box.Margin = new Thickness(10, 0, 0, 0);
+        dock.Children.Add(_box);
+        Classes.Add("nc-combo");
+        MinHeight = 38;
+        Child = dock;
+        ClipToBounds = true;
+    }
+
+    public decimal Minimum { get; set; }
+
+    public decimal Maximum { get; set; }
+
+    public decimal? Value
+    {
+        get => _value;
+        set => SetValue(value is null ? null : Math.Clamp(value.Value, Minimum, Maximum), updateText: true);
+    }
+
+    public event EventHandler? ValueChanged;
+
+    /// <summary>Styled as a Border (Border.nc-combo).</summary>
+    protected override Type StyleKeyOverride => typeof(Border);
+
+    private void SetValue(decimal? value, bool updateText)
+    {
+        var changed = value != _value;
+        _value = value;
+        if (updateText)
+        {
+            _box.Text = value?.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+        if (changed)
+        {
+            ValueChanged?.Invoke(this, EventArgs.Empty);
+        }
     }
 }
 
