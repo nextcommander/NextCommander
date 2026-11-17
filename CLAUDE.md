@@ -27,6 +27,7 @@ dotnet run --project src/NextCommander.App
                                                # (without the SDK / Inno Setup, signtool and ISCC come from NuGet: BuildTools, Tools.InnoSetup)
 ./build/publish.ps1 -Rid linux-x64             # .deb + .rpm (nfpm 2.48.0, build/linux/nfpm.yaml; downloaded and checksum-checked when not installed), .tar.gz
 ./build/publish.ps1 -Rid osx-arm64             # dist/<name>/NextCommander.app + zip (+ .dmg on a Mac)
+./build/publish.ps1 -Rid all                   # every RID in turn (win/linux/osx, x64 and arm64); a summary table, exit 1 when one failed
 ./build/windows/new-signing-certificate.ps1 -Trust # setup signing certificate (CN=NextCommander, user store) + trust it on this machine (UAC)
 ./tests/servers/run-integration-tests.ps1      # remote tests against local FTP/SFTP/WebDAV/S3/SMB (+ Azurite if Node is there) servers (needs Python)
 python build/make_icons.py                     # application icons (Assets) from the design files in build/icons

@@ -23,6 +23,7 @@ MH_MAGIC_64 = 0xFEEDFACF
 FAT_MAGIC = 0xCAFEBABE
 FAT_MAGIC_64 = 0xCAFEBABF
 LC_CODE_SIGNATURE = 0x1D
+CPU_TYPE_ARM64 = 0x0100000C
 LC_ID_DYLIB = 0xD
 DYLIB_COMMANDS = {0xC, 0x80000018, 0x8000001F, 0x20, 0x80000023}  # load, weak, reexport, lazy, upward
 CSMAGIC_EMBEDDED_SIGNATURE = 0xFADE0CC0
@@ -86,11 +87,18 @@ def rename(data, rewrite):
 
 
 def rehash(data):
-    """Computes the code page hashes of every code directory of the existing signature again."""
+    """
+    Computes the code page hashes of every code directory of the existing signature again. An Intel (x86_64) slice
+    may come without a signature (Homebrew's Intel bottles have none, and Intel Macs load unsigned libraries): it is
+    left as it is; an Apple silicon slice must have one.
+    """
     for base, size in slices(data):
         signature = [(o, s) for c, o, s in load_commands(data, base) if c == LC_CODE_SIGNATURE]
         if not signature:
-            raise ValueError('no code signature to update (macOS on Apple silicon needs one)')
+            cputype = struct.unpack_from('<I', data, base + 4)[0]
+            if cputype == CPU_TYPE_ARM64:
+                raise ValueError('no code signature to update (macOS on Apple silicon needs one)')
+            continue
         dataoff, _ = struct.unpack_from('<II', data, signature[0][0] + 8)
         blob = base + dataoff
         magic, _, count = struct.unpack_from('>III', data, blob)
