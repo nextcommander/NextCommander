@@ -32,6 +32,10 @@ public enum RemoteProtocol
     AzureFiles,
     /// <summary>PC link (link://): another computer running NextCommander, over a cable or the network.</summary>
     Link,
+    /// <summary>Remote desktop (rdp://): opened in the system's RDP client (Remote Desktop Connection, Windows App, FreeRDP / Remmina).</summary>
+    Rdp,
+    /// <summary>Telnet (telnet://): a text session in the built-in terminal.</summary>
+    Telnet,
 }
 
 /// <summary>A folder of the connection manager: its path ("Work/Prod") and color label ("#ED4245"; empty: none).</summary>
@@ -112,6 +116,9 @@ public sealed class RemoteConnection
     /// <summary>OneDrive (work / school account): a "SharePoint" folder at the root with the organization's sites and their document libraries.</summary>
     public bool IncludeSharePoint { get; set; }
 
+    /// <summary>RDP: the remote desktop opens full screen (otherwise in a window that follows its size).</summary>
+    public bool FullScreen { get; set; }
+
     /// <summary>Simultaneous connections (listing while copying).</summary>
     public int MaxConnections { get; set; } = 3;
 
@@ -162,6 +169,9 @@ public sealed class RemoteConnection
 
     /// <summary>A cloud drive (Google Drive, OneDrive, Dropbox ...): signed in in the browser; the user is only a name for the account.</summary>
     public bool IsCloudDrive => RemoteProtocols.Of(Protocol).IsCloudDrive;
+
+    /// <summary>A remote session (RDP, Telnet): opened in a client or the terminal, not in a panel.</summary>
+    public bool IsSession => RemoteProtocols.Of(Protocol).IsSession;
 
     /// <summary>The fixed "host" of a cloud drive (part of the path: account@host).</summary>
     public static string CloudHost(RemoteProtocol protocol) => RemoteProtocols.Of(protocol).CloudHost ?? string.Empty;

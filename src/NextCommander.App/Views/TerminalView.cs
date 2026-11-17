@@ -233,11 +233,12 @@ public sealed class TerminalView : DockPanel
     }
 
     /// <summary>A new tab with <paramref name="shell"/> (null: the default shell).</summary>
-    public TerminalTab NewTab(TerminalSession.ShellInfo? shell = null)
+    /// <remarks>With <paramref name="connect"/> the tab is a remote session (Telnet) on a terminal screen.</remarks>
+    public TerminalTab NewTab(TerminalSession.ShellInfo? shell = null, Func<int, int, Services.Terminal.PseudoTerminal>? connect = null)
     {
         shell ??= TerminalSession.ShellFor(Shell);
-        TerminalTab console = Emulation && Services.Terminal.PseudoTerminal.IsSupported
-            ? new EmulatedTerminal(shell, () => CurrentFolder?.Invoke())
+        TerminalTab console = connect is not null || (Emulation && Services.Terminal.PseudoTerminal.IsSupported)
+            ? new EmulatedTerminal(shell, () => CurrentFolder?.Invoke(), connect)
             : new TerminalConsole(shell, () => CurrentFolder?.Invoke());
         console.SetFont(_font.Family, _font.Size);
         console.ShellExited += (_, _) => CloseTab(console); // "exit" closes the tab like in VS Code
