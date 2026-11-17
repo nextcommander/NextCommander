@@ -2686,5 +2686,6 @@
   "AttributesDialog.FilesFolders": "{0} dosya, {1} klasör",
   "AttributesDialog.AttributesBeforeAndAfter": "Önceki ve sonraki öznitelikler",
   "AttributesDialog.NewModificationTime": "Yeni değiştirme zamanı",
-  "MainWindow.BackgroundTransfers": "Arka plan aktarımları"
+  "MainWindow.BackgroundTransfers": "Arka plan aktarımları",
+  "TransferManager.RunNext": "Sıradaki yap"
 }

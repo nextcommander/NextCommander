@@ -177,6 +177,12 @@
     <Setter Property="BorderBrush" Value="Transparent" />
     <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
   </Style>
+  <Style Selector=":is(Button).nc-icon:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource NcMutedBrush}" />
+    <Setter Property="Opacity" Value="0.35" />
+  </Style>
   <Style Selector="ToggleButton.nc-icon:checked /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.nc-icon:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource NcAccentSoftBrush}" />
     <Setter Property="BorderBrush" Value="Transparent" />

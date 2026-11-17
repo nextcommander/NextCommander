@@ -2686,5 +2686,6 @@
   "AttributesDialog.FilesFolders": "{0} Dateien, {1} Ordner",
   "AttributesDialog.AttributesBeforeAndAfter": "Attribute vorher und nachher",
   "AttributesDialog.NewModificationTime": "Neue Änderungszeit",
-  "MainWindow.BackgroundTransfers": "Hintergrundübertragungen"
+  "MainWindow.BackgroundTransfers": "Hintergrundübertragungen",
+  "TransferManager.RunNext": "Als Nächstes ausführen"
 }
