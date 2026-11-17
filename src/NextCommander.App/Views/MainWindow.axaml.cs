@@ -53,7 +53,12 @@ public partial class MainWindow : Window
         ColumnSetsMenu.SubmenuOpened += (_, _) => FillColumnSetsMenu();
         ColorThemeMenu.SubmenuOpened += (_, _) => FillColorThemeMenu();
         SavedConnectionsMenu.SubmenuOpened += (_, _) => FillSavedConnectionsMenu();
-        Activated += (_, _) => _ = _vm?.OnWindowActivatedAsync();
+        Activated += (_, _) =>
+        {
+            _ = _vm?.OnWindowActivatedAsync();
+            // after the system has given the focus back (a dialog closed, another program left)
+            Dispatcher.UIThread.Post(KeepFocusInPanel, DispatcherPriority.Background);
+        };
         // the shared drive bar marks the active panel's drive
         DriveBarMarks.Watch(SharedDriveBar);
         LeftPanel.CurrentDriveChanged += (_, _) => MarkSharedDrive();
@@ -1226,6 +1231,25 @@ public partial class MainWindow : Window
             _vm.IsTerminalOpen = false;
         }
         ActiveView.FocusList();
+    }
+
+    /// <summary>
+    /// When the window is active again, the focus belongs to the active panel if the system left it nowhere or on the
+    /// main menu: after a copy or rename the panel's row that had it was replaced by the refresh, Avalonia could not
+    /// give it back and the "File" menu was active. A text box (command line, path line), the terminal, an open menu
+    /// and the other pages keep their focus.
+    /// </summary>
+    internal void KeepFocusInPanel()
+    {
+        if (!IsActive || CurrentPage != WorkspacePage.Files || MainMenu.IsOpen)
+        {
+            return;
+        }
+        var focused = FocusManager?.GetFocusedElement();
+        if (focused is null || ReferenceEquals(focused, this) || (focused is Avalonia.Visual visual && Avalonia.VisualTree.VisualExtensions.IsVisualAncestorOf(MainMenu, visual)))
+        {
+            ActiveView.FocusList();
+        }
     }
 
     private void FocusCommandLine()
