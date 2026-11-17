@@ -2686,5 +2686,6 @@
   "AttributesDialog.FilesFolders": "{0} 个文件，{1} 个文件夹",
   "AttributesDialog.AttributesBeforeAndAfter": "更改前后的属性",
   "AttributesDialog.NewModificationTime": "新的修改时间",
-  "MainWindow.BackgroundTransfers": "后台传输"
+  "MainWindow.BackgroundTransfers": "后台传输",
+  "TransferManager.RunNext": "下一个运行"
 }

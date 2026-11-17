@@ -153,4 +153,51 @@ public sealed class CopyQueueTests : IDisposable
         Assert.False(File.Exists(Path.Combine(_tmp.Root, "dst", "two.txt")));
         Assert.Equal(JobState.Cancelled, two.State);
     }
+
+    [Fact]
+    public async Task Waiting_jobs_can_be_moved_and_run_in_the_new_order()
+    {
+        Directory.CreateDirectory(Path.Combine(_tmp.Root, "dst"));
+        await using var queue = new JobQueue();
+        queue.PauseQueue();
+        var jobs = new List<CopyMoveJob>();
+        foreach (var name in new[] { "a", "b", "c" })
+        {
+            _tmp.Write($"src/{name}.txt", name);
+            jobs.Add(new CopyMoveJob(_registry, [await Entry("src", name + ".txt")], _tmp.VPath("dst"), move: false));
+        }
+        var started = new List<CopyMoveJob>();
+        foreach (var job in jobs)
+        {
+            job.StateChanged += (_, _) =>
+            {
+                if (job.State == JobState.Running)
+                {
+                    lock (started)
+                    {
+                        started.Add(job);
+                    }
+                }
+            };
+            queue.Enqueue(job);
+        }
+        var (a, b, c) = (jobs[0], jobs[1], jobs[2]);
+        Assert.False(queue.CanMove(a, -1)); // already first
+        Assert.True(queue.CanMove(a, 1));
+        Assert.False(queue.CanMove(c, 1)); // already last
+
+        Assert.True(queue.MoveToFront(c)); // priority: c runs next
+        Assert.Equal([c, a, b], queue.QueuedJobs);
+        Assert.True(queue.Move(a, 1));
+        Assert.Equal([c, b, a], queue.QueuedJobs);
+        Assert.False(queue.Move(a, 1));
+
+        queue.ResumeQueue();
+        var until = DateTime.UtcNow.AddSeconds(10);
+        while (queue.QueuedJobs.Count > 0 && DateTime.UtcNow < until)
+        {
+            await Task.Delay(50);
+        }
+        Assert.Equal([c, b, a], started);
+    }
 }

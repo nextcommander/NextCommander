@@ -1270,7 +1270,10 @@ public partial class MainWindow : Window
                 TransfersHost.IsVisible = false;
                 ActiveView.FocusList();
             };
-            TransfersHost.Child = new Tools.TransferManagerView(_vm.Jobs, close);
+            var view = new Tools.TransferManagerView(_vm.Jobs, close);
+            // the last job is over: the transfers hide by themselves
+            view.Emptied += (_, _) => TransfersHost.IsVisible = false;
+            TransfersHost.Child = view;
         }
         TransfersHost.IsVisible = !TransfersHost.IsVisible;
         if (TransfersHost.IsVisible)
