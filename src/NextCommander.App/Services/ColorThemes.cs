@@ -200,6 +200,13 @@ public static class ColorThemes
     /// <summary>Applies a theme file by id; empty or unknown: the system colors.</summary>
     public static void Apply(Application app, string? themeId)
     {
+        ApplyTheme(app, themeId);
+        // the colors of the tool windows that are made from the theme's (accent tints, text on the accent)
+        Design.DesignColors.Update(app);
+    }
+
+    private static void ApplyTheme(Application app, string? themeId)
+    {
         // "system": light system colors or the dark theme, as the operating system is set (and again when it switches)
         FollowsSystem = string.Equals(themeId?.Trim(), ColorTheme.SystemThemeId, StringComparison.OrdinalIgnoreCase);
         if (FollowsSystem)

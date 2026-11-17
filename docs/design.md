@@ -7,7 +7,7 @@ shared look is code here, so the next windows can take it too.
 
 `Nc*Brush`, light and dark (theme dictionaries, switched with the color theme's variant): `NcSurface`, `NcSurface2`,
 `NcSurface3`, `NcField`, `NcLine`, `NcLineStrong`, `NcText`, `NcMuted`, `NcFaint`, `NcAccent`, `NcAccentHover`,
-`NcAccentSoft`, `NcOnAccent`, `NcFolder`, `NcOk` / `NcOkSoft`, `NcWarn` / `NcWarnSoft`, `NcBad` / `NcBadSoft`; the
+`NcAccentSoft`, `NcOnAccent`, `NcOk` / `NcOkSoft`, `NcWarn` / `NcWarnSoft`, `NcBad` / `NcBadSoft`; the
 focus rings `NcFocusRing` / `NcBadRing`; `NcMonoFont`. Use them with `DynamicResource` (in code:
 `this[!Prop] = new DynamicResourceExtension("NcTextBrush")`) so light / dark switch live; no hard-coded colors.
 

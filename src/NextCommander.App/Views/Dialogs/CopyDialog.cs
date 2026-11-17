@@ -134,7 +134,7 @@ public sealed class CopyDialog : DialogWindow
             VerticalAlignment = VerticalAlignment.Top,
             Child = new Avalonia.Controls.Shapes.Path { Data = Geometry.Parse(Services.Design.Nc.Icons.FolderFilled), Width = 26, Height = 26, Stretch = Stretch.Uniform },
         };
-        ((Avalonia.Controls.Shapes.Path)badge.Child)[!Avalonia.Controls.Shapes.Shape.FillProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("NcFolderBrush");
+        ((Avalonia.Controls.Shapes.Path)badge.Child)[!Avalonia.Controls.Shapes.Shape.FillProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("FmFolderBrush");
         _counts.Children.AddRange([
             Meta(Services.Design.Nc.Icons.Disk, _size, null),
             Meta(Services.Design.Nc.Icons.File, _files, "files"),
