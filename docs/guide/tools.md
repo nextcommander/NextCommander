@@ -27,7 +27,7 @@ Lister shows a file without changing it. The number keys switch between its view
 | 2 | Binary (fixed width) |
 | 3 | Hex |
 | 4 | Image: fit to the window or zoom, rotate with L / R, camera RAW previews |
-| 5 | Preview of HTML, Markdown and RTF files |
+| 5 | Preview of documents: PDF pages, Word / Excel / PowerPoint and OpenDocument files, HTML, Markdown, RTF |
 | 6 | A view added by a plugin |
 | 7 | Audio and video |
 
@@ -42,6 +42,19 @@ Lister shows a file without changing it. The number keys switch between its view
 - **W** turns word wrap on and off; Ctrl+mouse wheel changes the font size.
 - **F4** edits the file, **F2** reloads it. Lister also reloads by itself when the file changes.
 - **Previews** of HTML and Markdown do not load pictures from the internet; links open in your browser.
+- **Documents** open in the preview (also in the Quick View panel, Ctrl+Q):
+  - **PDF:** the pages one below the other; only the pages near the view are drawn, so big PDFs open at once.
+    Ctrl+mouse wheel (or Ctrl + / Ctrl -) zooms, Ctrl+0 fits the width again; the status line shows the page.
+    Protected PDFs say so.
+  - **Word, Excel, PowerPoint** (docx, xlsx, pptx and their macro / template kinds) and **OpenDocument** (odt, ods,
+    odp) are read without Office: text with headings, emphasis, lists, tables and pictures; every visible sheet of a
+    workbook as a table with column letters and row numbers (dates as dates); the slides with their titles and texts.
+    It is a preview of the content, not of the layout; long documents are cut (the end shows "(…)").
+  - **Other documents** (doc, xls, ppt, Visio, Publisher, WordPerfect, Keynote ...) are converted to PDF by
+    **LibreOffice** when it is installed (once: the PDF is kept in the temporary folder); otherwise they show as
+    binary.
+  - *Configuration > Edit and view > Open PDF, Office, HTML, Markdown and RTF files with preview* off opens them as
+    text / hex; key 5 still shows the preview.
 - **Audio and video** play with the VLC player installed on your computer (not included). Play and pause, jump
   10 or 60 seconds, change speed and volume, choose chapters, and continue where you left off.
 

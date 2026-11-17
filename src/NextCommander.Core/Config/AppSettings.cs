@@ -1094,7 +1094,7 @@ public sealed class AppSettings
     /// <summary>Last automatic update check (UTC).</summary>
     public DateTime? LastUpdateCheck { get; set; }
 
-    /// <summary>Open HTML, Markdown and RTF files in the rendered preview (key 5) instead of as text.</summary>
+    /// <summary>Open PDF, Office, HTML, Markdown and RTF files in the rendered preview (key 5) instead of as text.</summary>
     public bool ListerPreviewDocuments { get; set; } = true;
 
     /// <summary>Reload the Lister when the file changes on disk.</summary>

@@ -52,6 +52,8 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
   of the internal terminal.
 - PC link: two computers running NextCommander work on each other's shared folders over a USB or Ethernet cable
   (or the network), encrypted, paired once with a code shown on both screens.
+- Quick View and the Lister preview documents: PDF pages, Word / Excel / PowerPoint and OpenDocument files without
+  Office, HTML, Markdown, RTF; other documents (doc, xls, ppt, Visio ...) through LibreOffice when it is installed.
 - A connection manager with the options of each type (keep-alive, pinned keys, TLS versions, S3 storage classes,
   RDP screen and redirections, Telnet keys ...), saved passwords protected by an optional master password, and a
   view of the machines on your local network.

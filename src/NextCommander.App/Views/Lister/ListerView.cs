@@ -31,7 +31,7 @@ public enum ListerMode
     Binary,
     Hex,
     Image,
-    /// <summary>Rendered HTML, Markdown or RTF.</summary>
+    /// <summary>Rendered documents: PDF pages, Office / OpenDocument files, HTML, Markdown, RTF (others through LibreOffice).</summary>
     Preview,
     /// <summary>A viewer plugin (<see cref="Core.Plugins.IViewerPlugin"/>).</summary>
     Plugin,
@@ -43,7 +43,8 @@ public enum ListerMode
 
 /// <summary>
 /// The Lister (F3 window and Ctrl+Q quick view): text with highlighting (AvaloniaEdit) for normal sizes, a streaming
-/// text / binary / hex view for any size, images and an HTML / Markdown / RTF preview. Keys: 1-5 mode, W wrap, A/S/U/8 encoding, F7 find, F3 next,
+/// text / binary / hex view for any size, images, and a preview of documents: PDF pages (PDFium), Office / OpenDocument
+/// files as HTML, HTML / Markdown / RTF, other documents through LibreOffice when it is installed. Keys: 1-5 mode, W wrap, A/S/U/8 encoding, F7 find, F3 next,
 /// Ctrl+wheel zoom, L/R rotate, F fit.
 /// </summary>
 public sealed class ListerView : UserControl
@@ -57,6 +58,15 @@ public sealed class ListerView : UserControl
     private readonly TextBlock _info;
     private readonly TheArtOfDev.HtmlRenderer.Avalonia.HtmlPanel _preview;
     private string? _previewText;
+
+    /// <summary>The HTML body of an Office / OpenDocument preview (wrapped again when the theme changes).</summary>
+    private string? _officeBody;
+
+    /// <summary>The pages of a PDF (also of a document LibreOffice converted).</summary>
+    private PdfView? _pdf;
+
+    /// <summary>The most bytes of a PDF read for the preview.</summary>
+    private const long MaxPdfBytes = 1L << 30;
     private string? _pluginStatus;
     private MediaView? _mediaView;
     private readonly ContentControl _host;
@@ -154,7 +164,11 @@ public sealed class ListerView : UserControl
         };
         ActualThemeVariantChanged += (_, _) =>
         {
-            if (Mode == ListerMode.Preview && _previewText is not null && Entry is not null)
+            if (Mode == ListerMode.Preview && _officeBody is not null)
+            {
+                _preview.Text = DocumentPreview.Wrap(_officeBody, ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark);
+            }
+            else if (Mode == ListerMode.Preview && _previewText is not null && Entry is not null)
             {
                 _preview.Text = DocumentPreview.Build(Entry.Extension, _previewText, ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark);
             }
@@ -348,7 +362,7 @@ public sealed class ListerView : UserControl
         {
             return MediaSupport.IsAvailable ? ListerMode.Media : ListerMode.Info;
         }
-        if (DocumentPreview.Supports(entry.Extension) && _context.Settings.ListerPreviewDocuments)
+        if ((DocumentPreview.Supports(entry.Extension) || IsRenderedDocument(entry.Extension)) && _context.Settings.ListerPreviewDocuments)
         {
             return ListerMode.Preview;
         }
@@ -408,6 +422,36 @@ public sealed class ListerView : UserControl
                     _host.Content = _bytesHost;
                 }
                 break;
+            case ListerMode.Preview when IsPdf(Entry.Extension) || Core.Documents.LibreOffice.Supports(Entry.Extension):
+                if (!await ShowPdfAsync(cancellationToken))
+                {
+                    return;
+                }
+                break;
+            case ListerMode.Preview when Core.Documents.OfficeHtml.Supports(Entry.Extension):
+            {
+                var source = _source;
+                var extension = Entry.Extension;
+                var length = source.Length;
+                try
+                {
+                    var body = await Task.Run(() =>
+                    {
+                        using var stream = new MemoryStream(source.ReadBytes(0, (int)Math.Min(length, int.MaxValue)), writable: false);
+                        return Core.Documents.OfficeHtml.ToHtml(extension, stream);
+                    }, cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    _officeBody = body;
+                    _preview.Text = DocumentPreview.Wrap(body, ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark);
+                    _host.Content = _preview;
+                }
+                catch (Exception ex) when (ex is InvalidDataException or System.Xml.XmlException or IOException)
+                {
+                    ShowInfo(Entry, Core.Localization.Localizer.T("The document could not be read: {0}").Replace("{0}", ex.Message, StringComparison.Ordinal));
+                    return;
+                }
+                break;
+            }
             case ListerMode.Preview:
             {
                 var source = _source;
@@ -458,6 +502,76 @@ public sealed class ListerView : UserControl
         }
         UpdateStatus();
     }
+
+    private static bool IsPdf(string extension) => extension.Equals("pdf", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Documents the preview draws or converts: PDF (with PDFium), Office / OpenDocument, and through LibreOffice when installed.</summary>
+    public static bool IsRenderedDocument(string extension) =>
+        (IsPdf(extension) && Core.Documents.PdfDocument.IsAvailable) || Core.Documents.OfficeHtml.Supports(extension) || Core.Documents.LibreOffice.Supports(extension);
+
+    /// <summary>The pages of a PDF, or of a document LibreOffice turns into one; false when it cannot be shown (the details say why).</summary>
+    private async Task<bool> ShowPdfAsync(CancellationToken cancellationToken)
+    {
+        var entry = Entry!;
+        var source = _source!;
+        try
+        {
+            byte[] bytes;
+            if (IsPdf(entry.Extension))
+            {
+                if (source.Length > MaxPdfBytes)
+                {
+                    throw new IOException(Core.Localization.Localizer.T("The PDF is too large for the preview."));
+                }
+                bytes = await Task.Run(() => source.ReadBytes(0, (int)source.Length), cancellationToken);
+            }
+            else
+            {
+                _info.Text = Core.Localization.Localizer.T("Converting with LibreOffice...");
+                _host.Content = _info;
+                var file = entry.Path.IsLocal ? entry.Path.Path : await Task.Run(() =>
+                {
+                    // LibreOffice reads files: one from an archive or a server is put into the temporary folder first
+                    var folder = Path.Combine(Core.Documents.LibreOffice.CacheFolder, "sources", Guid.NewGuid().ToString("N")[..12]);
+                    Directory.CreateDirectory(folder);
+                    var copy = Path.Combine(folder, entry.Name);
+                    File.WriteAllBytes(copy, source.ReadBytes(0, (int)Math.Min(source.Length, int.MaxValue)));
+                    return copy;
+                }, cancellationToken);
+                var pdf = await Core.Documents.LibreOffice.ToPdfAsync(file, TimeSpan.FromMinutes(2), cancellationToken);
+                bytes = await File.ReadAllBytesAsync(pdf, cancellationToken);
+            }
+            var document = await Task.Run(() => Core.Documents.PdfDocument.Open(bytes), cancellationToken);
+            if (cancellationToken.IsCancellationRequested || Entry != entry)
+            {
+                document.Dispose();
+                return false;
+            }
+            if (_pdf is null)
+            {
+                _pdf = new PdfView();
+                _pdf.StatusChanged += (_, _) => UpdateStatus();
+            }
+            _pdf.Show(document);
+            _host.Content = _pdf;
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        {
+            ShowInfo(entry, ex.Message);
+            return false;
+        }
+    }
+
+    /// <summary>The PDF pages shown now (tests).</summary>
+    public PdfView? PdfView => _host.Content == _pdf ? _pdf : null;
+
+    /// <summary>The HTML of the preview shown now (tests).</summary>
+    public string? PreviewHtml => _host.Content == _preview ? _preview.Text : null;
 
     /// <summary>Lets a viewer plugin build the view: HTML (shown like the preview), text, or its own control.</summary>
     private async Task<bool> ShowPluginAsync(CancellationToken cancellationToken)
@@ -955,7 +1069,7 @@ public sealed class ListerView : UserControl
         ["Binary (fixed width)"] = "lister.binary",
         ["Hex"] = "lister.hex",
         ["Image"] = "lister.image",
-        ["Preview (HTML, Markdown, RTF)"] = "lister.preview",
+        ["Preview (PDF, Office, HTML, Markdown)"] = "lister.preview",
         ["Plugin viewer"] = "lister.plugin",
         ["Media (VLC)"] = "lister.media",
         ["Encoding"] = "lister.encoding",
@@ -1003,7 +1117,7 @@ public sealed class ListerView : UserControl
         menu.Items.Add(Item("Binary (fixed width)", () => _ = SetModeAsync(ListerMode.Binary), "D2"));
         menu.Items.Add(Item("Hex", () => _ = SetModeAsync(ListerMode.Hex), "D3"));
         menu.Items.Add(Item("Image", () => _ = SetModeAsync(ListerMode.Image), "D4"));
-        menu.Items.Add(Item("Preview (HTML, Markdown, RTF)", () => _ = SetModeAsync(ListerMode.Preview), "D5"));
+        menu.Items.Add(Item("Preview (PDF, Office, HTML, Markdown)", () => _ = SetModeAsync(ListerMode.Preview), "D5"));
         menu.Items.Add(Item("Plugin viewer", () => _ = SetModeAsync(ListerMode.Plugin), "D6"));
         menu.Items.Add(Item("Media (VLC)", () => _ = SetModeAsync(ListerMode.Media), "D7"));
         menu.Items.Add(new Separator());
@@ -1037,7 +1151,7 @@ public sealed class ListerView : UserControl
                     ListerMode.Binary => "Binary",
                     ListerMode.Hex => "Hex",
                     ListerMode.Image => "Image",
-                    ListerMode.Preview => "Preview",
+                    ListerMode.Preview => _host.Content == _pdf && _pdf is not null ? "PDF" : "Preview",
                     ListerMode.Plugin => "Plugin" + (_pluginStatus is { } ps ? $" ({ps})" : string.Empty),
                     ListerMode.Media => "Media " + _mediaView?.StatusText,
                     _ => "Info",
@@ -1060,6 +1174,10 @@ public sealed class ListerView : UserControl
                 case ListerMode.Hex:
                     parts.Add(string.Format(CultureInfo.InvariantCulture, "0x{0:X8}", _bytes.Position));
                     parts.Add(Percent());
+                    break;
+                case ListerMode.Preview when _host.Content == _pdf && _pdf is { PageCount: > 0 } pdf:
+                    parts.Add(string.Format(CultureInfo.CurrentCulture, "Page {0}/{1}", pdf.CurrentPage, pdf.PageCount));
+                    parts.Add($"{pdf.ZoomFactor:P0}");
                     break;
                 case ListerMode.Image when _image.Bitmap is { } bmp:
                     parts.Add($"{bmp.PixelSize.Width}×{bmp.PixelSize.Height}");
@@ -1140,6 +1258,8 @@ public sealed class ListerView : UserControl
         _bytes.SetSource(null, Encoding.UTF8, 0, ByteViewMode.Text);
         _source?.Dispose();
         _source = null;
+        _officeBody = null;
+        _pdf?.Dispose(); // the document's pages and their pictures
         var old = _image.Bitmap;
         _image.SetImage(null, 0);
         old?.Dispose();

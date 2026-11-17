@@ -154,7 +154,7 @@ Operation > Selection (with Num +)* > *Also select directories* makes them take 
 
 | Key | What it does |
 |---|---|
-| 1 … 7 | Text, binary, hex, image, preview (HTML / Markdown / RTF), plugin, media |
+| 1 … 7 | Text, binary, hex, image, preview (PDF / Office / HTML / Markdown / RTF), plugin, media |
 | W | Word wrap on / off |
 | A / S / U / 8 | Show as ANSI / DOS / UTF-16 / UTF-8 text |
 | L / R | Rotate an image left / right |
