@@ -56,17 +56,61 @@ function New-Zip([string]$Folder, [string]$Destination) {
 
 # Download of a build tool package. Windows PowerShell 5.1 may not offer TLS 1.2 by itself, and some networks only let
 # curl.exe through (it takes the system's proxy settings the same way as a browser): both are tried.
-function Get-Download([string]$Uri, [string]$Destination) {
+function Get-Download([string]$Uri, [string]$Destination, [hashtable]$Headers = @{}) {
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
-        Invoke-WebRequest $Uri -OutFile $Destination -UseBasicParsing
+        Invoke-WebRequest $Uri -OutFile $Destination -UseBasicParsing -Headers $Headers
     }
     catch {
         $curl = if (Get-Command curl.exe -ErrorAction SilentlyContinue) { 'curl.exe' } elseif (Get-Command curl -CommandType Application -ErrorAction SilentlyContinue) { 'curl' }
         if (-not $curl) { throw }
-        & $curl -sSfL -o $Destination $Uri
+        $headerArgs = @($Headers.GetEnumerator() | ForEach-Object { '-H'; "$($_.Key): $($_.Value)" })
+        & $curl -sSfL @headerArgs -o $Destination $Uri
         if ($LASTEXITCODE -ne 0) { throw "download failed: $Uri" }
     }
+}
+
+# Homebrew's bottles (built macOS libraries) of a formula and every formula it needs at run time, for one architecture
+# (arm64 / x86_64): the bottle of the oldest macOS Homebrew still builds for (it runs on that and later), else "all".
+# Downloaded once into $Folder (ghcr.io, anonymous; checked against the sha256 Homebrew publishes); bottles of other
+# versions are removed from there. Returns false when they could not be had.
+function Get-HomebrewBottles([string]$Formula, [string]$Arch, [string]$Folder) {
+    $order = 'big_sur', 'monterey', 'ventura', 'sonoma', 'sequoia', 'tahoe'
+    $tags = @($order | ForEach-Object { if ($Arch -eq 'arm64') { "arm64_$_" } else { $_ } }) + 'all'
+    New-Item -ItemType Directory -Force $Folder | Out-Null
+    $wanted = @{}
+    $queue = New-Object System.Collections.Queue
+    $queue.Enqueue($Formula)
+    try {
+        while ($queue.Count -gt 0) {
+            $name = $queue.Dequeue()
+            if ($wanted.ContainsKey($name)) { continue }
+            $info = Join-Path $Folder "$name.json"
+            Get-Download "https://formulae.brew.sh/api/formula/$name.json" $info
+            $formulaInfo = Get-Content $info -Raw | ConvertFrom-Json
+            Remove-Item $info
+            foreach ($dependency in $formulaInfo.dependencies) { $queue.Enqueue($dependency) }
+            $files = $formulaInfo.bottle.stable.files
+            $tag = $tags | Where-Object { $files.PSObject.Properties.Name -contains $_ } | Select-Object -First 1
+            if (-not $tag) { throw "Homebrew has no $Arch bottle of $name" }
+            $bottle = $files.$tag
+            $file = Join-Path $Folder "$name-$($formulaInfo.versions.stable)-$tag.tar.gz"
+            $wanted[$name] = Split-Path $file -Leaf
+            if ((Test-Path $file) -and (Get-FileHash $file -Algorithm SHA256).Hash -eq $bottle.sha256.ToUpperInvariant()) { continue }
+            Write-Host "Downloading the Homebrew bottle of $name $($formulaInfo.versions.stable) ($tag)..."
+            Get-Download $bottle.url $file @{ Authorization = 'Bearer QQ==' }
+            if ((Get-FileHash $file -Algorithm SHA256).Hash -ne $bottle.sha256.ToUpperInvariant()) {
+                Remove-Item $file
+                throw "checksum of the $name bottle does not match"
+            }
+        }
+    }
+    catch {
+        Write-Warning "Could not get the Homebrew bottles of ${Formula}: $($_.Exception.Message)"
+        return $false
+    }
+    Get-ChildItem $Folder -Filter *.tar.gz | Where-Object { $wanted.Values -notcontains $_.Name } | Remove-Item
+    return $true
 }
 
 # The machine the script runs on: Windows PowerShell 5.1 has no $IsWindows / $IsMacOS.
@@ -295,34 +339,27 @@ switch -Wildcard ($Rid) {
         New-Item -ItemType Directory -Force "$app/Contents/MacOS", "$app/Contents/Resources" | Out-Null
         Copy-Item "$out/*" "$app/Contents/MacOS" -Recurse
         Copy-Item "$root/src/NextCommander.App/Assets/NextCommander.icns" "$app/Contents/Resources/NextCommander.icns"
-        # libmtp (LGPL, loaded dynamically) for phones and cameras over MTP: macOS has no MTP of its own. Taken from
-        # $env:MACOS_LIBMTP_DIR (libmtp.9.dylib and libusb-1.0.0.dylib, already pointing at each other with
-        # @loader_path) or, on a Mac, from Homebrew (brew install libmtp) of the same architecture; libmtp's reference to
-        # libusb is changed to the copy beside it. The codesign below signs them with the bundle. Without them the app
-        # still uses a libmtp installed with Homebrew, else it has no MTP.
+        # libmtp (LGPL, loaded dynamically) for phones and cameras over MTP: macOS has no MTP of its own. From Homebrew's
+        # bottles of libmtp and what it needs (libusb ...), on any system: bundle_libmtp.py puts them into Contents/MacOS,
+        # pointing at each other with @loader_path, with their code signature hashes made right again (Apple silicon
+        # loads no code with a wrong signature). $env:MACOS_LIBMTP_DIR instead names a folder of ready libraries to copy.
+        # The codesign below (on a Mac) signs them with the bundle. Without them the app uses a libmtp installed with
+        # Homebrew, else it has no MTP.
         $macOS = "$app/Contents/MacOS"
+        $python = @('python3', 'python') | Where-Object { Get-Command $_ -CommandType Application -ErrorAction SilentlyContinue } | Select-Object -First 1
         if ($env:MACOS_LIBMTP_DIR) {
-            Copy-Item "$env:MACOS_LIBMTP_DIR/libmtp.9.dylib", "$env:MACOS_LIBMTP_DIR/libusb-1.0.0.dylib" $macOS
+            Copy-Item "$env:MACOS_LIBMTP_DIR/*.dylib" $macOS
         }
-        elseif ((Get-Command brew -ErrorAction SilentlyContinue) -and (Get-Command install_name_tool -ErrorAction SilentlyContinue)) {
-            $libmtp = Join-Path (brew --prefix libmtp 2>$null) 'lib/libmtp.9.dylib'
-            $libusb = Join-Path (brew --prefix libusb 2>$null) 'lib/libusb-1.0.0.dylib'
+        elseif (-not $python) { Write-Warning "libmtp not bundled: bundle_libmtp.py needs Python 3" }
+        else {
             $arch = if ($Rid -eq 'osx-arm64') { 'arm64' } else { 'x86_64' }
-            if ((Test-Path $libmtp) -and (Test-Path $libusb) -and ((lipo -archs $libmtp) -split ' ' -contains $arch)) {
-                Copy-Item $libmtp, $libusb $macOS
-                chmod u+w "$macOS/libmtp.9.dylib" "$macOS/libusb-1.0.0.dylib"
-                install_name_tool -id '@loader_path/libusb-1.0.0.dylib' "$macOS/libusb-1.0.0.dylib"
-                install_name_tool -id '@loader_path/libmtp.9.dylib' "$macOS/libmtp.9.dylib"
-                foreach ($line in otool -L "$macOS/libmtp.9.dylib") {
-                    if ($line -match '^\s+(\S*libusb-1\.0[^ ]*\.dylib)') {
-                        install_name_tool -change $Matches[1] '@loader_path/libusb-1.0.0.dylib' "$macOS/libmtp.9.dylib"
-                    }
-                }
-                Write-Host "libmtp bundled from Homebrew"
+            $bottles = Join-Path $root "artifacts/tools/libmtp-bottles-$arch"
+            if (Get-HomebrewBottles 'libmtp' $arch $bottles) {
+                & $python "$PSScriptRoot/macos/bundle_libmtp.py" --bottles $bottles --out $macOS
+                if ($LASTEXITCODE -ne 0) { throw "bundle_libmtp.py failed" }
             }
-            else { Write-Warning "libmtp not bundled: brew install libmtp (for $arch) or set MACOS_LIBMTP_DIR" }
+            else { Write-Warning "libmtp not bundled: the app uses Homebrew's (brew install libmtp) when there is one" }
         }
-        else { Write-Warning "libmtp not bundled (no Homebrew here; MACOS_LIBMTP_DIR names a folder with libmtp.9.dylib and libusb-1.0.0.dylib)" }
         # UTF-8 without BOM (Windows PowerShell 5.1 reads and writes the ANSI code page by default)
         [IO.File]::WriteAllText("$app/Contents/Info.plist", [IO.File]::ReadAllText("$PSScriptRoot/macos/Info.plist", [Text.Encoding]::UTF8).Replace('$VERSION', $numericVersion).Replace("`r`n", "`n"), (New-Object System.Text.UTF8Encoding $false))
         if (-not $hostWindows) { chmod +x "$app/Contents/MacOS/NextCommander" }
