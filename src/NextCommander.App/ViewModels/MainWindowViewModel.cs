@@ -2838,7 +2838,9 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         }
         try
         {
-            await NextCommander.Platform.RemoteDesktopLauncher.LaunchAsync(connection, password);
+            // the active panel's folder, when the connection shares it (a local folder only)
+            var folder = connection.RdpShareFolder && ActivePanel.CurrentPath is { IsLocal: true } here ? here.Path : null;
+            await NextCommander.Platform.RemoteDesktopLauncher.LaunchAsync(connection, password, folder);
         }
         catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception or IOException or UnauthorizedAccessException)
         {

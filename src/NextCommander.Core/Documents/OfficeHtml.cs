@@ -13,7 +13,7 @@ namespace NextCommander.Core.Documents;
 /// texts; PNG / JPEG / GIF / BMP pictures inline. Long documents are cut (the end says so). Not a faithful layout:
 /// fonts, positions and page breaks are left out.
 /// </summary>
-public static class OfficeHtml
+public static partial class OfficeHtml
 {
     private static readonly XNamespace W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
     private static readonly XNamespace R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
@@ -45,11 +45,15 @@ public static class OfficeHtml
 
     /// <summary>Whether a file of this extension can be shown.</summary>
     public static bool Supports(string extension) =>
-        s_word.Contains(extension) || s_excel.Contains(extension) || s_powerPoint.Contains(extension) || s_openDocument.Contains(extension);
+        IsLegacy(extension) || s_word.Contains(extension) || s_excel.Contains(extension) || s_powerPoint.Contains(extension) || s_openDocument.Contains(extension);
 
     /// <summary>The HTML body of a document (without html / head); an <see cref="InvalidDataException"/> when it is not one.</summary>
     public static string ToHtml(string extension, Stream stream)
     {
+        if (IsLegacy(extension))
+        {
+            return Legacy(extension, stream);
+        }
         using var zip = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true);
         var writer = new Writer(zip);
         if (s_word.Contains(extension))
@@ -74,12 +78,15 @@ public static class OfficeHtml
     // ---------------------------------------------------------------- shared
 
     /// <summary>The HTML being built, the pictures put in so far, and whether it was cut.</summary>
-    private sealed class Writer(ZipArchive zip)
+    private sealed class Writer(ZipArchive? zip)
     {
         private readonly StringBuilder _html = new();
         private long _pictures;
 
-        public ZipArchive Zip { get; } = zip;
+        /// <summary>The package of an Office Open XML / OpenDocument file (none for the old binary formats).</summary>
+        public ZipArchive Zip => Package!;
+
+        private ZipArchive? Package { get; } = zip;
 
         public bool Full => _html.Length > MaxHtml;
 
@@ -103,7 +110,7 @@ public static class OfficeHtml
         /// <summary>A picture of the package as an inline image (when it is a kind the renderer shows and there is room).</summary>
         public void Picture(string? path)
         {
-            if (path is null || Zip.GetEntry(path.TrimStart('/')) is not { } entry)
+            if (path is null || Package is null || Zip.GetEntry(path.TrimStart('/')) is not { } entry)
             {
                 return;
             }

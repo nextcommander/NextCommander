@@ -40,6 +40,21 @@ public sealed class ConnectionTypeOptionsTests
     }
 
     [Fact]
+    public void Rdp_shares_the_panels_folder()
+    {
+        var c = new RemoteConnection { Protocol = RemoteProtocol.Rdp, Host = "pc", RdpShareFolder = true };
+        Assert.Contains("drivestoredirect:s:D:\\;\r\n", RemoteDesktop.RdpFile(c, @"d:\Work\Reports"), StringComparison.Ordinal); // mstsc: the folder's drive
+        Assert.Contains("drivestoredirect:s:\r\n", RemoteDesktop.RdpFile(c, "/home/ali"), StringComparison.Ordinal); // not a drive letter: nothing
+        Assert.Contains("drivestoredirect:s:\r\n", RemoteDesktop.RdpFile(c), StringComparison.Ordinal); // no local folder in the panel
+        Assert.Contains("/drive:Reports,/home/ali/Reports/", RemoteDesktop.FreeRdpArguments(c, false, "/home/ali/Reports/"));
+
+        c.RdpDrives = true; // all drives already
+        Assert.Contains("drivestoredirect:s:*\r\n", RemoteDesktop.RdpFile(c, @"D:\x"), StringComparison.Ordinal);
+        c.RdpShareFolder = false;
+        Assert.DoesNotContain(RemoteDesktop.FreeRdpArguments(c, false, "/home/ali/Reports"), a => a.StartsWith("/drive:Reports", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void S3_uploads_carry_the_storage_class_acl_and_encryption()
     {
         var c = new RemoteConnection { Protocol = RemoteProtocol.S3, S3StorageClass = "STANDARD_IA", S3Acl = "bucket-owner-full-control", S3Encryption = S3Encryption.Aes256 };

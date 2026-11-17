@@ -22,4 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\NextCommander.App\NextCommander.App.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\TestDocuments.cs" Link="Shared\TestDocuments.cs" />
+  </ItemGroup>
 </Project>

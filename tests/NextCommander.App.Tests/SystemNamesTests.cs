@@ -1,3 +1,4 @@
+using Avalonia.Headless.XUnit;
 using NextCommander.App.Services;
 using NextCommander.Core.Localization;
 
@@ -9,7 +10,7 @@ public sealed class SystemNamesTests
 {
     private const string Resource = "@%SystemRoot%\\system32\\shell32.dll,-22022";
 
-    [Fact]
+    [AvaloniaFact] // UiLocalization registers Avalonia properties of TextBlock / Window: on the UI thread
     public void Windows_gives_the_command_prompt_name_in_the_asked_language()
     {
         if (!OperatingSystem.IsWindows())
@@ -26,7 +27,7 @@ public sealed class SystemNamesTests
         }
     }
 
-    [Fact]
+    [AvaloniaFact] // UiLocalization registers Avalonia properties of TextBlock / Window: on the UI thread
     public void Command_prompt_name_follows_the_application_language()
     {
         var before = Localizer.Current;

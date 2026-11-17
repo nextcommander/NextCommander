@@ -2,6 +2,13 @@ using System.Runtime.InteropServices;
 
 namespace NextCommander.Core.Documents;
 
+/// <summary>A PDF that needs a password (none was given, or the one given is wrong).</summary>
+public sealed class PdfPasswordException(bool wrong) : IOException(wrong ? "The password is not right." : "The PDF is protected by a password.")
+{
+    /// <summary>A password was given but it is not the right one.</summary>
+    public bool Wrong { get; } = wrong;
+}
+
 /// <summary>
 /// A PDF opened with PDFium (the bblanchon.PDFium packages: pdfium.dll / libpdfium.so / libpdfium.dylib for every
 /// platform): its pages, their sizes and a page drawn into BGRA pixels on white. PDFium is not for several threads: all
@@ -74,9 +81,12 @@ public sealed unsafe partial class PdfDocument : IDisposable
             {
                 var error = FPDF_GetLastError();
                 NativeMemory.Free(data);
+                if (error == 4)
+                {
+                    throw new PdfPasswordException(wrong: !string.IsNullOrEmpty(password));
+                }
                 throw new IOException(error switch
                 {
-                    4 => "The PDF is protected by a password.",
                     5 => "The PDF uses a security handler PDFium does not have.",
                     3 => "The file is not a PDF or it is damaged.",
                     6 => "A page of the PDF is damaged.",
@@ -134,6 +144,104 @@ public sealed unsafe partial class PdfDocument : IDisposable
             }
         }
         return pixels;
+    }
+
+    private readonly Dictionary<int, string> _texts = [];
+
+    /// <summary>The text of a page as PDFium reads it (one character per index of the page's characters).</summary>
+    public string PageText(int index)
+    {
+        lock (s_lock)
+        {
+            Check();
+            if (_texts.TryGetValue(index, out var cached))
+            {
+                return cached;
+            }
+            var text = WithTextPage(index, textPage =>
+            {
+                var count = FPDFText_CountChars(textPage);
+                if (count <= 0)
+                {
+                    return string.Empty;
+                }
+                var buffer = new char[count + 1];
+                fixed (char* chars = buffer)
+                {
+                    var written = FPDFText_GetText(textPage, 0, count, (ushort*)chars);
+                    return new string(buffer, 0, Math.Clamp(written - 1, 0, count));
+                }
+            });
+            _texts[index] = text;
+            return text;
+        }
+    }
+
+    /// <summary>
+    /// The rectangles that cover characters <paramref name="start"/> to <paramref name="start"/> + <paramref name="count"/> of a
+    /// page (one per line), in page points from the top left.
+    /// </summary>
+    public IReadOnlyList<(double Left, double Top, double Right, double Bottom)> TextRectangles(int index, int start, int count)
+    {
+        lock (s_lock)
+        {
+            Check();
+            var (_, pageHeight) = PageSize(index);
+            return WithTextPage(index, textPage =>
+            {
+                var result = new List<(double, double, double, double)>();
+                var rects = FPDFText_CountRects(textPage, start, count);
+                for (var i = 0; i < rects; i++)
+                {
+                    double left, top, right, bottom;
+                    if (FPDFText_GetRect(textPage, i, &left, &top, &right, &bottom) != 0)
+                    {
+                        result.Add((left, pageHeight - top, right, pageHeight - bottom)); // PDF points go up from the bottom
+                    }
+                }
+                return (IReadOnlyList<(double, double, double, double)>)result;
+            });
+        }
+    }
+
+    /// <summary>The character of a page at a point (page points from the top left), or -1 when none is near.</summary>
+    public int CharacterAt(int index, double x, double y, double tolerance = 4)
+    {
+        lock (s_lock)
+        {
+            Check();
+            var (_, pageHeight) = PageSize(index);
+            return WithTextPage(index, textPage => FPDFText_GetCharIndexAtPos(textPage, x, pageHeight - y, tolerance, tolerance));
+        }
+    }
+
+    private T WithTextPage<T>(int index, Func<IntPtr, T> use)
+    {
+        var page = FPDF_LoadPage(_document, index);
+        if (page == IntPtr.Zero)
+        {
+            throw new IOException($"Page {index + 1} of the PDF could not be read.");
+        }
+        try
+        {
+            var textPage = FPDFText_LoadPage(page);
+            if (textPage == IntPtr.Zero)
+            {
+                throw new IOException($"Page {index + 1} of the PDF could not be read.");
+            }
+            try
+            {
+                return use(textPage);
+            }
+            finally
+            {
+                FPDFText_ClosePage(textPage);
+            }
+        }
+        finally
+        {
+            FPDF_ClosePage(page);
+        }
     }
 
     private void Check() => ObjectDisposedException.ThrowIf(_document == IntPtr.Zero, this);
@@ -197,4 +305,25 @@ public sealed unsafe partial class PdfDocument : IDisposable
 
     [LibraryImport(Library)]
     private static partial void FPDFBitmap_Destroy(IntPtr bitmap);
+
+    [LibraryImport(Library)]
+    private static partial IntPtr FPDFText_LoadPage(IntPtr page);
+
+    [LibraryImport(Library)]
+    private static partial void FPDFText_ClosePage(IntPtr textPage);
+
+    [LibraryImport(Library)]
+    private static partial int FPDFText_CountChars(IntPtr textPage);
+
+    [LibraryImport(Library)]
+    private static partial int FPDFText_GetText(IntPtr textPage, int start, int count, ushort* result);
+
+    [LibraryImport(Library)]
+    private static partial int FPDFText_CountRects(IntPtr textPage, int start, int count);
+
+    [LibraryImport(Library)]
+    private static partial int FPDFText_GetRect(IntPtr textPage, int index, double* left, double* top, double* right, double* bottom);
+
+    [LibraryImport(Library)]
+    private static partial int FPDFText_GetCharIndexAtPos(IntPtr textPage, double x, double y, double xTolerance, double yTolerance);
 }

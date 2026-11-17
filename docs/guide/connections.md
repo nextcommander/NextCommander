@@ -263,6 +263,10 @@ connections*, `nc_OpenConnection name`) does not change the panel.
   reopened with the shells at the next start.
   Telnet is **not encrypted**: everything typed, the password too, can be read on the network. Prefer SSH where the
   device has it.
+- **Remote desktop extras:** *Share the active panel's folder* makes the folder of the active panel visible in the
+  session (FreeRDP shares that folder under its name; Remote Desktop Connection shares only whole drives, so it
+  shares the folder's drive). **Files (SMB)** in the connection manager opens the same computer's shares in the panel:
+  with a saved SMB connection to that server, else with the remote desktop's user.
 - **SSH** opens a shell of the server in a tab of the internal terminal. It logs in as SFTP does: the password
   (asked in a dialog, or saved), a private key file or the SSH agent; through a jump host or a proxy when they are
   set. The server's key is checked as for SFTP (a key trusted for SFTP on the same server is trusted here too; a
@@ -303,7 +307,7 @@ options of its type:
 | Azure | Access tier of uploaded blobs (Hot, Cool, Cold, Archive); plain HTTP; TLS version, pinned certificate. |
 | SMB | Show the hidden administrative shares (C$, ADMIN$). |
 | Google Drive, OneDrive, Box | Delete permanently instead of to the service's trash (OneDrive: work / school accounts; personal ones keep the recycle bin). Google Drive: Google documents as Office, OpenDocument or PDF files. |
-| Remote desktop | Full screen, all monitors, size in a window, colors, sound (here, on the remote computer, none), Remote Desktop Gateway, shared clipboard, drives and printers, administrative session. |
+| Remote desktop | Full screen, all monitors, size in a window, colors, sound (here, on the remote computer, none), Remote Desktop Gateway, shared clipboard, drives, printers and the active panel's folder, administrative session. |
 | Telnet | Terminal type, character set, what Backspace (DEL or Ctrl+H) and Enter (CR LF, CR NUL, LF) send, local echo, keep-alive. |
 | SSH | Jump host, keep-alive, pinned host key, command when it opens, terminal type, character set. |
 | VNC | Full screen, view only. |

@@ -2865,5 +2865,13 @@
   "LibreOffice.DidNotStart": "LibreOffice başlamadı.",
   "LibreOffice.NotInTime": "LibreOffice dosyayı zamanında dönüştürmedi.",
   "LibreOffice.CouldNotConvert": "LibreOffice dosyayı dönüştüremedi.",
-  "LibreOffice.CouldNotConvertBecause": "LibreOffice dosyayı dönüştüremedi: {0}"
+  "LibreOffice.CouldNotConvertBecause": "LibreOffice dosyayı dönüştüremedi: {0}",
+  "ListerView.PasswordWrongEnterAgain": "Parola doğru değil. Yeniden girin:",
+  "ListerView.PdfProtectedItsPassword": "PDF korumalı. Parolası:",
+  "PdfPasswordException.ThePasswordIsNotRight": "Parola doğru değil.",
+  "OfficeHtml.DocumentProtected": "Belge parolayla korunuyor.",
+  "OfficeHtml.WorkbookProtected": "Çalışma kitabı parolayla korunuyor.",
+  "ConnectionManagerWindow.ShareActivePanelFolderMstsc": "Etkin panelin klasörünü paylaş (Uzak Masaüstü Bağlantısı sürücüsünü paylaşır)",
+  "ConnectionManagerWindow.ShareActivePanelFolder": "Etkin panelin klasörünü paylaş",
+  "ConnectionManagerWindow.FilesSmb": "Dosyalar (SMB)"
 }

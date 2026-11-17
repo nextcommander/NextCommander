@@ -2,6 +2,7 @@ using System.Globalization;
 using System.IO.Compression;
 using System.Text;
 using NextCommander.Core.Documents;
+using NextCommander.Tests.Shared;
 
 namespace NextCommander.Core.Tests;
 
@@ -182,7 +183,82 @@ public sealed class DocumentPreviewTests : IDisposable
 
         Assert.Throws<InvalidDataException>(() => OfficeHtml.ToHtml("docx", new MemoryStream(Package(("x.xml", "<x/>")))));
         Assert.True(OfficeHtml.Supports("XLSM"));
-        Assert.False(OfficeHtml.Supports("doc"));
+        Assert.True(OfficeHtml.Supports("doc")); // the old binary formats too
+    }
+
+    [Fact]
+    public void A_protected_pdf_opens_with_its_password()
+    {
+        var bytes = TestDocuments.Pdf(2, password: "geheim");
+        var none = Assert.Throws<PdfPasswordException>(() => PdfDocument.Open(bytes));
+        Assert.False(none.Wrong);
+        Assert.True(Assert.Throws<PdfPasswordException>(() => PdfDocument.Open(bytes, "wrong")).Wrong);
+        using var pdf = PdfDocument.Open(bytes, "geheim");
+        Assert.Equal(2, pdf.PageCount);
+        Assert.Equal("Page 2", pdf.PageText(1).Trim());
+    }
+
+    [Fact]
+    public void The_text_of_a_page_its_boxes_and_the_character_at_a_point()
+    {
+        using var pdf = PdfDocument.Open(TestDocuments.Pdf(1, text: _ => "Invoice 42"));
+        var text = pdf.PageText(0);
+        Assert.Contains("Invoice 42", text, StringComparison.Ordinal);
+        var start = text.IndexOf("42", StringComparison.Ordinal);
+        var box = Assert.Single(pdf.TextRectangles(0, start, 2));
+        // the text starts at x 80, its baseline at 40 points from the top (60 from the bottom of a 100-point page)
+        Assert.InRange(box.Left, 80, 160);
+        Assert.InRange(box.Bottom, 35, 45);
+        Assert.True(box.Top < box.Bottom);
+        Assert.Equal(start, pdf.CharacterAt(0, (box.Left + box.Right) / 2 - 2, (box.Top + box.Bottom) / 2));
+        Assert.Equal(-1, pdf.CharacterAt(0, 190, 95, 1)); // nothing near the bottom right corner
+    }
+
+    [Fact]
+    public void Old_word_documents_show_their_text_without_field_codes()
+    {
+        var doc = TestDocuments.Doc("Quarterly report\rSee \u0013 HYPERLINK \"https://x\" \u0014the site\u0015 now.\rRegion\u0007Total\u0007\u0007\r");
+        var html = OfficeHtml.ToHtml("doc", new MemoryStream(doc));
+        Assert.Contains("<p>Quarterly report</p>", html, StringComparison.Ordinal);
+        Assert.Contains("<p>See the site now.</p>", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("HYPERLINK", html, StringComparison.Ordinal);
+        Assert.Contains("Region", html, StringComparison.Ordinal);
+        Assert.True(OfficeHtml.Supports("DOC"));
+    }
+
+    [Fact]
+    public void Old_workbooks_show_their_visible_sheets()
+    {
+        var html = OfficeHtml.ToHtml("xls", new MemoryStream(TestDocuments.Xls()));
+        Assert.Contains("<h3>Data</h3>", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Secret", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("hidden", html, StringComparison.Ordinal);
+        Assert.Contains("<td>Item</td>", html, StringComparison.Ordinal);
+        Assert.Contains(3.5.ToString("G15", CultureInfo.CurrentCulture), html, StringComparison.Ordinal);
+        Assert.Contains(">42</td>", html, StringComparison.Ordinal); // an RK number
+        Assert.Contains("Ünlü " + new string('x', 30), System.Net.WebUtility.HtmlDecode(html), StringComparison.Ordinal); // a shared string that goes on in a CONTINUE record
+        Assert.Contains(new DateTime(2025, 1, 1).ToString("d", CultureInfo.CurrentCulture), html, StringComparison.Ordinal);
+        Assert.Contains("<td>ok</td>", html, StringComparison.Ordinal); // a formula's text
+    }
+
+    [Fact]
+    public void Old_presentations_show_their_slides()
+    {
+        var html = OfficeHtml.ToHtml("ppt", new MemoryStream(TestDocuments.Ppt()));
+        Assert.Contains("1. Agenda</h3>", html, StringComparison.Ordinal);
+        Assert.Contains("<p>Point one</p><p>Point two</p>", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_compound_file_reads_big_and_small_streams()
+    {
+        var big = Enumerable.Range(0, 10_000).Select(i => (byte)i).ToArray();
+        var file = CompoundFile.Open(TestDocuments.CompoundFile(("Big", big), ("Small", "tiny"u8.ToArray())));
+        Assert.Equal(big, file.Read("Big"));
+        Assert.Equal("tiny"u8.ToArray(), file.Read("small")); // the mini stream; names in any case
+        Assert.Null(file.Read("Missing"));
+        Assert.Throws<InvalidDataException>(() => CompoundFile.Open(new byte[600]));
+        Assert.Throws<InvalidDataException>(() => OfficeHtml.ToHtml("doc", new MemoryStream("not a document"u8.ToArray())));
     }
 
     [Fact]

@@ -1,7 +1,9 @@
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Shapes;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
@@ -13,7 +15,9 @@ namespace NextCommander.App.Views.Lister;
 
 /// <summary>
 /// The pages of a PDF one below the other, as wide as the view (Ctrl+wheel or Ctrl +/- zooms, Ctrl+0 fits again). Only
-/// the pages in and near the view are drawn (in the background, by PDFium); far ones give their pictures back.
+/// the pages in and near the view are drawn (in the background, by PDFium); far ones give their pictures back. Text is
+/// found (the Lister's find bar: the match is marked and scrolled to) and selected with the mouse within a page
+/// (Ctrl+A: the page's text, Ctrl+C copies).
 /// </summary>
 public sealed class PdfView : UserControl, IDisposable
 {
@@ -26,11 +30,24 @@ public sealed class PdfView : UserControl, IDisposable
     private double _zoom = 1;
     private int _generation;
 
-    private sealed class Page(Border frame, Image image, double width, double height)
+    private static readonly IBrush s_matchBrush = new SolidColorBrush(Color.FromArgb(110, 255, 170, 0));
+    private static readonly IBrush s_selectionBrush = new SolidColorBrush(Color.FromArgb(90, 0, 120, 215));
+
+    /// <summary>The match of the last search (page, first character, length), or none.</summary>
+    private (int Page, int Start, int Length)? _match;
+
+    /// <summary>The selected characters (page, first, length), or none; and where a mouse selection started.</summary>
+    private (int Page, int Start, int Length)? _selection;
+    private (int Page, int Character)? _anchor;
+
+    private sealed class Page(Border frame, Image image, Canvas marks, double width, double height)
     {
         public Border Frame { get; } = frame;
 
         public Image Image { get; } = image;
+
+        /// <summary>The marks over the page: the search match and the selection.</summary>
+        public Canvas Marks { get; } = marks;
 
         /// <summary>The page's size in points.</summary>
         public double Width { get; } = width;
@@ -69,12 +86,12 @@ public sealed class PdfView : UserControl, IDisposable
 
     public int PageCount => _pages.Count;
 
-    /// <summary>The page at the top of the view (1-based).</summary>
+    /// <summary>The page being read (1-based): the one at a third of the view's height (where a found text is put).</summary>
     public int CurrentPage
     {
         get
         {
-            var offset = _scroll.Offset.Y;
+            var offset = _scroll.Offset.Y + (_scroll.Offset.Y > 0 ? _scroll.Viewport.Height / 3 : 0);
             for (var i = 0; i < _pages.Count; i++)
             {
                 if (_pages[i].Frame.Bounds.Bottom + Gap > offset)
@@ -101,18 +118,179 @@ public sealed class PdfView : UserControl, IDisposable
         {
             var (width, height) = document.PageSize(i);
             var image = new Image { Stretch = Stretch.Fill };
+            var marks = new Canvas { Background = Brushes.Transparent, Cursor = new Cursor(StandardCursorType.Ibeam) };
+            var layers = new Grid();
+            layers.Children.AddRange([image, marks]);
             var frame = new Border
             {
-                Child = image,
+                Child = layers,
                 Background = Brushes.White,
                 BoxShadow = BoxShadows.Parse("0 1 4 0 #40000000"),
             };
-            _pages.Add(new Page(frame, image, Math.Max(1, width), Math.Max(1, height)));
+            var index = i;
+            marks.PointerPressed += (_, e) => Press(index, marks, e);
+            marks.PointerMoved += (_, e) => Drag(index, marks, e);
+            marks.PointerReleased += (_, _) => _anchor = null;
+            _pages.Add(new Page(frame, image, marks, Math.Max(1, width), Math.Max(1, height)));
             _stack.Children.Add(frame);
         }
         _scroll.Offset = default;
+        _match = null;
+        _selection = null;
         Arrange();
         StatusChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    // ---------------------------------------------------------------- find and select
+
+    /// <summary>The selected text, or empty.</summary>
+    public string SelectedText =>
+        _document is { } document && _selection is { } s ? document.PageText(s.Page).Substring(s.Start, Math.Min(s.Length, document.PageText(s.Page).Length - s.Start)) : string.Empty;
+
+    /// <summary>The match of the last search: its page (1-based) and text; null when there is none.</summary>
+    public (int Page, string Text)? Match =>
+        _document is { } document && _match is { } m ? (m.Page + 1, document.PageText(m.Page).Substring(m.Start, m.Length)) : null;
+
+    /// <summary>
+    /// The next (or previous) match of a search, from the last match or the page in view; the match is marked and
+    /// scrolled into view. False when there is none (the last one stays marked).
+    /// </summary>
+    public async Task<bool> FindAsync(Core.Search.TextMatcher matcher, bool forward, CancellationToken cancellationToken = default)
+    {
+        if (_document is not { } document || _pages.Count == 0)
+        {
+            return false;
+        }
+        var (page, from) = _match is { } last
+            ? (last.Page, forward ? last.Start + Math.Max(1, last.Length) : last.Start)
+            : (CurrentPage - 1, forward ? 0 : int.MaxValue);
+        for (var step = 0; step <= _pages.Count; step++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var index = page;
+            var text = await Task.Run(() => document.PageText(index), cancellationToken);
+            var start = Math.Clamp(from, 0, text.Length);
+            var (at, length) = forward ? matcher.Find(text, start) : matcher.FindLast(text, start);
+            if (at >= 0 && length > 0)
+            {
+                _match = (page, at, length);
+                Mark();
+                ScrollTo(page, at, length);
+                StatusChanged?.Invoke(this, EventArgs.Empty);
+                return true;
+            }
+            page = forward ? page + 1 : page - 1;
+            if (page < 0 || page >= _pages.Count)
+            {
+                return false; // the end of the document
+            }
+            from = forward ? 0 : int.MaxValue;
+        }
+        return false;
+    }
+
+    /// <summary>Selects characters of a page (Ctrl+A: all of it).</summary>
+    public void Select(int page, int start, int length)
+    {
+        _selection = length > 0 ? (page, start, length) : null;
+        Mark();
+    }
+
+    private void Press(int index, Control marks, PointerPressedEventArgs e)
+    {
+        if (_document is not { } document || !e.GetCurrentPoint(marks).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+        Focus();
+        var character = document.CharacterAt(index, ToPoints(index, e.GetPosition(marks)).X, ToPoints(index, e.GetPosition(marks)).Y);
+        _anchor = (index, character);
+        Select(index, 0, 0);
+        e.Handled = true;
+    }
+
+    private void Drag(int index, Control marks, PointerEventArgs e)
+    {
+        if (_anchor is not { } anchor || anchor.Page != index || _document is not { } document || !e.GetCurrentPoint(marks).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+        var point = ToPoints(index, e.GetPosition(marks));
+        var character = document.CharacterAt(index, point.X, point.Y);
+        if (anchor.Character < 0)
+        {
+            _anchor = (index, character); // started beside the text: from the first character reached
+            return;
+        }
+        if (character >= 0)
+        {
+            var (first, end) = (Math.Min(anchor.Character, character), Math.Max(anchor.Character, character));
+            Select(index, first, end - first + 1);
+        }
+    }
+
+    /// <summary>A point of a page's view in page points.</summary>
+    private Point ToPoints(int index, Point view)
+    {
+        var page = _pages[index];
+        var scale = page.Width / Math.Max(1, page.Frame.Width);
+        return new Point(view.X * scale, view.Y * scale);
+    }
+
+    /// <summary>Draws the match and the selection over their pages.</summary>
+    private void Mark()
+    {
+        foreach (var page in _pages)
+        {
+            page.Marks.Children.Clear();
+        }
+        if (_document is not { } document)
+        {
+            return;
+        }
+        void Add((int Page, int Start, int Length)? range, IBrush brush)
+        {
+            if (range is not { } r || r.Page >= _pages.Count)
+            {
+                return;
+            }
+            var page = _pages[r.Page];
+            var scale = page.Frame.Width / page.Width;
+            foreach (var (left, top, right, bottom) in document.TextRectangles(r.Page, r.Start, r.Length))
+            {
+                var mark = new Rectangle { Fill = brush, Width = Math.Max(2, (right - left) * scale), Height = Math.Max(2, (bottom - top) * scale), IsHitTestVisible = false };
+                Canvas.SetLeft(mark, left * scale);
+                Canvas.SetTop(mark, top * scale);
+                page.Marks.Children.Add(mark);
+            }
+        }
+        Add(_match, s_matchBrush);
+        Add(_selection, s_selectionBrush);
+    }
+
+    /// <summary>Scrolls so that characters of a page are in view (a third from the top).</summary>
+    private void ScrollTo(int index, int start, int length)
+    {
+        if (_document is not { } document)
+        {
+            return;
+        }
+        var y = Gap;
+        for (var i = 0; i < index; i++)
+        {
+            y += _pages[i].Frame.Height + Gap;
+        }
+        var page = _pages[index];
+        var top = document.TextRectangles(index, start, length) is [var first, ..] ? first.Top * page.Frame.Width / page.Width : 0;
+        _scroll.Offset = new Vector(_scroll.Offset.X, Math.Max(0, y + top - _scroll.Viewport.Height / 3));
+    }
+
+    private async Task CopyAsync()
+    {
+        if (SelectedText is { Length: > 0 } text && TopLevel.GetTopLevel(this)?.Clipboard is { } clipboard)
+        {
+            await clipboard.SetTextAsync(text);
+        }
     }
 
     public void Zoom(double factor)
@@ -140,6 +318,15 @@ public sealed class PdfView : UserControl, IDisposable
                     Zoom(1);
                     e.Handled = true;
                     return;
+                case Key.C or Key.Insert when _selection is not null:
+                    _ = CopyAsync();
+                    e.Handled = true;
+                    return;
+                case Key.A when _document is { } document && _pages.Count > 0:
+                    var page = _selection?.Page ?? CurrentPage - 1;
+                    Select(page, 0, document.PageText(page).Length);
+                    e.Handled = true;
+                    return;
             }
         }
         base.OnKeyDown(e);
@@ -164,6 +351,7 @@ public sealed class PdfView : UserControl, IDisposable
             page.Frame.Width = width;
             page.Frame.Height = width * page.Height / page.Width;
         }
+        Mark(); // the marks follow the pages' new size
         Dispatcher.UIThread.Post(DrawVisible, DispatcherPriority.Background); // after the layout
     }
 
@@ -244,6 +432,9 @@ public sealed class PdfView : UserControl, IDisposable
         }
         _pages.Clear();
         _stack.Children.Clear();
+        _match = null;
+        _selection = null;
+        _anchor = null;
         _document?.Dispose();
         _document = null;
     }

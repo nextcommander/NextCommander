@@ -2865,5 +2865,13 @@
   "LibreOffice.DidNotStart": "LibreOffice wurde nicht gestartet.",
   "LibreOffice.NotInTime": "LibreOffice hat die Datei nicht rechtzeitig umgewandelt.",
   "LibreOffice.CouldNotConvert": "LibreOffice konnte die Datei nicht umwandeln.",
-  "LibreOffice.CouldNotConvertBecause": "LibreOffice konnte die Datei nicht umwandeln: {0}"
+  "LibreOffice.CouldNotConvertBecause": "LibreOffice konnte die Datei nicht umwandeln: {0}",
+  "ListerView.PasswordWrongEnterAgain": "Das Passwort ist falsch. Geben Sie es erneut ein:",
+  "ListerView.PdfProtectedItsPassword": "Das PDF ist geschützt. Sein Passwort:",
+  "PdfPasswordException.ThePasswordIsNotRight": "Das Passwort ist falsch.",
+  "OfficeHtml.DocumentProtected": "Das Dokument ist durch ein Passwort geschützt.",
+  "OfficeHtml.WorkbookProtected": "Die Arbeitsmappe ist durch ein Passwort geschützt.",
+  "ConnectionManagerWindow.ShareActivePanelFolderMstsc": "Ordner des aktiven Panels freigeben (Remotedesktopverbindung gibt sein Laufwerk frei)",
+  "ConnectionManagerWindow.ShareActivePanelFolder": "Ordner des aktiven Panels freigeben",
+  "ConnectionManagerWindow.FilesSmb": "Dateien (SMB)"
 }

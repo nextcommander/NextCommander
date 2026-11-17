@@ -120,6 +120,64 @@ public sealed class DocumentPreviewUiTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task A_pdf_is_searched_selected_and_its_password_asked()
+    {
+        var (_, vm) = await _fx.OpenAsync();
+        var pdf = _fx.L("report.pdf");
+        File.WriteAllBytes(pdf, NextCommander.Tests.Shared.TestDocuments.Pdf(30, text: i => i is 4 or 21 ? $"Total due {i}" : $"Page {i + 1}"));
+        var window = _fx.Track(new ListerWindow(new ListerRequest([await EntryAsync(pdf)], 0, vm.Tools)) { Width = 900, Height = 700 });
+        window.Show();
+        await WaitUntilAsync(() => window.View.Loading is { IsCompleted: true } && window.View.PdfView is not null);
+        var pages = window.View.PdfView!;
+
+        // F7 / F3: the find bar searches the pages' text; the match is marked and its page scrolled to
+        window.View.SetFindText("total DUE");
+        Assert.True(await window.View.FindAsync(forward: true));
+        Assert.Equal((5, "Total due"), pages.Match);
+        await SettleAsync(2);
+        Assert.Contains("Page 5/30", window.View.StatusText, StringComparison.Ordinal);
+        Assert.True(await window.View.FindAsync(forward: true));
+        Assert.Equal(22, pages.Match!.Value.Page);
+        Assert.False(await window.View.FindAsync(forward: true)); // no more
+        Assert.Contains("not found", window.View.StatusText, StringComparison.Ordinal);
+        Assert.True(await window.View.FindAsync(forward: false));
+        Assert.Equal(5, pages.Match!.Value.Page);
+
+        // selecting text of a page
+        pages.Select(4, 0, 9);
+        Assert.Equal("Total due", pages.SelectedText);
+        if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
+        {
+            await SettleAsync(6);
+            window.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "lister-pdf-find.png"));
+        }
+
+        // a protected PDF asks for its password: a wrong one asks again, cancelling shows why it is not shown
+        var secret = _fx.L("secret.pdf");
+        File.WriteAllBytes(secret, NextCommander.Tests.Shared.TestDocuments.Pdf(1, password: "s3cret"));
+        _fx.Dialogs.Passwords.Enqueue("wrong");
+        _fx.Dialogs.Passwords.Enqueue("s3cret");
+        await window.View.LoadAsync(await EntryAsync(secret));
+        Assert.Equal(1, window.View.PdfView!.PageCount);
+        Assert.Empty(_fx.Dialogs.Passwords);
+        await window.View.LoadAsync(await EntryAsync(secret)); // no password given this time
+        Assert.Null(window.View.PdfView);
+    }
+
+    [AvaloniaFact]
+    public async Task An_old_word_document_is_previewed_without_office()
+    {
+        var (_, vm) = await _fx.OpenAsync();
+        var doc = _fx.L("letter.doc");
+        File.WriteAllBytes(doc, NextCommander.Tests.Shared.TestDocuments.Doc("Dear customer,\rThank you.\r"));
+        var window = _fx.Track(new ListerWindow(new ListerRequest([await EntryAsync(doc)], 0, vm.Tools)));
+        window.Show();
+        await WaitUntilAsync(() => window.View.Loading is { IsCompleted: true } && window.View.PreviewHtml is not null);
+        Assert.Equal(ListerMode.Preview, window.View.Mode);
+        Assert.Contains("<p>Dear customer,</p><p>Thank you.</p>", window.View.PreviewHtml, StringComparison.Ordinal);
+    }
+
+    [AvaloniaFact]
     public async Task The_quick_view_panel_shows_a_pdf()
     {
         var (w, vm) = await _fx.OpenAsync();

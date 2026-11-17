@@ -541,7 +541,12 @@ public sealed class ListerView : UserControl
                 var pdf = await Core.Documents.LibreOffice.ToPdfAsync(file, TimeSpan.FromMinutes(2), cancellationToken);
                 bytes = await File.ReadAllBytesAsync(pdf, cancellationToken);
             }
-            var document = await Task.Run(() => Core.Documents.PdfDocument.Open(bytes), cancellationToken);
+            var document = await OpenPdfAsync(entry, bytes, cancellationToken);
+            if (document is null)
+            {
+                ShowInfo(entry, Core.Localization.Localizer.T("The PDF is protected by a password."));
+                return false;
+            }
             if (cancellationToken.IsCancellationRequested || Entry != entry)
             {
                 document.Dispose();
@@ -564,6 +569,29 @@ public sealed class ListerView : UserControl
         {
             ShowInfo(entry, ex.Message);
             return false;
+        }
+    }
+
+    /// <summary>Opens a PDF; a protected one asks for its password (again when it is wrong). Null: no password was given.</summary>
+    private async Task<Core.Documents.PdfDocument?> OpenPdfAsync(VfsEntry entry, byte[] bytes, CancellationToken cancellationToken)
+    {
+        string? password = null;
+        while (true)
+        {
+            try
+            {
+                var given = password;
+                return await Task.Run(() => Core.Documents.PdfDocument.Open(bytes, given), cancellationToken);
+            }
+            catch (Core.Documents.PdfPasswordException ex)
+            {
+                password = await _context.Dialogs.PromptPasswordAsync(entry.Name,
+                    Core.Localization.Localizer.T(ex.Wrong ? "The password is not right. Enter it again:" : "The PDF is protected. Its password:"));
+                if (string.IsNullOrEmpty(password) || cancellationToken.IsCancellationRequested)
+                {
+                    return null;
+                }
+            }
         }
     }
 
@@ -771,6 +799,9 @@ public sealed class ListerView : UserControl
             case TheArtOfDev.HtmlRenderer.Avalonia.HtmlPanel:
                 _preview.Focus();
                 break;
+            case PdfView pdf:
+                pdf.Focus();
+                break;
             default:
                 Focus();
                 break;
@@ -804,14 +835,15 @@ public sealed class ListerView : UserControl
         bool found;
         try
         {
-            if (_findHex.IsChecked == true)
+            if (_findHex.IsChecked == true && PdfView is null) // a PDF's pages are searched as text
             {
                 found = await FindBytesAsync(ParseHex(text), forward, cts.Token);
             }
             else
             {
                 var matcher = new TextMatcher(text, _findCase.IsChecked == true, _findWords.IsChecked == true, _findRegex.IsChecked == true);
-                found = UsesEditor ? FindInEditor(matcher, forward) : await FindInBytesAsync(matcher, forward, cts.Token);
+                found = PdfView is { } pdf ? await pdf.FindAsync(matcher, forward, cts.Token) // the text of the PDF's pages
+                    : UsesEditor ? FindInEditor(matcher, forward) : await FindInBytesAsync(matcher, forward, cts.Token);
             }
         }
         catch (ArgumentException ex)
