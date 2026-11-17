@@ -1157,6 +1157,7 @@ public partial class MainWindow : Window
         {
             RemoteProtocol.Ssh => new Services.Terminal.SshTerminal(connection, hooks, columns, rows),
             RemoteProtocol.Rsh => new Services.Terminal.RshTerminal(connection, columns, rows),
+            RemoteProtocol.Serial => new Services.Terminal.SerialTerminal(connection, columns, rows),
             _ => (Services.Terminal.PseudoTerminal)new Services.Terminal.TelnetTerminal(connection, columns, rows),
         });
         if (IsTerminalMaximizedPage && _page != WorkspacePage.Terminal)

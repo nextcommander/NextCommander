@@ -1066,7 +1066,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         c.Register("nc_OpenWith", "Open with (internal associations)", _ => OpenWithAsync());
         c.Register("nc_Plugins", "Loaded plugins", _ => ShowPluginsAsync());
         c.Register("nc_RemoteConnection", "Connection manager: FTP, SFTP, SCP, WebDAV, SMB, S3, Azure, Google Drive, OneDrive, Dropbox, Box (Ctrl+F)", _ => ConnectAsync());
-        c.Register("nc_NewConnection", "New connection (parameter: sftp, scp, ftp, ftps, davs, dav, smb, s3, azblob, azfile, gdrive, onedrive, dropbox, box, rdp, vnc, ssh, telnet, rsh)", p => NewConnectionAsync(p));
+        c.Register("nc_NewConnection", "New connection (parameter: sftp, scp, ftp, ftps, davs, dav, smb, s3, azblob, azfile, gdrive, onedrive, dropbox, box, rdp, vnc, ssh, telnet, rsh, serial)", p => NewConnectionAsync(p));
         c.Register("nc_OpenConnection", "Open a saved connection (parameter: the connection's name)", p => OpenConnectionAsync(p));
         c.Register("nc_ConnectionsMenu", "Saved connections menu, grouped by type", () => DropDownMenuRequested?.Invoke(this, Controls.DropDown.Connections));
         c.Register("nc_SwitchWorkspaceTab", "Next page of the window: files, options, maximized terminal", () => NextPageRequested?.Invoke(this, EventArgs.Empty));
@@ -2785,7 +2785,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>A Telnet, SSH or rsh connection to open in a tab of the internal terminal (the window opens it).</summary>
-    public event EventHandler<RemoteConnection>? TerminalSessionRequested;
+    public event EventHandler<RemoteConnection>? TerminalSessionRequested; // also serial ports
 
     /// <summary>
     /// A remote session: Telnet, SSH and rsh in the internal terminal, RDP in the system's remote desktop client, VNC in
@@ -2798,7 +2798,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             await _dialogs.ShowMessageAsync(connection.Name, "Enter a valid server name (e.g. server.example.com).");
             return;
         }
-        if (connection.Protocol is RemoteProtocol.Telnet or RemoteProtocol.Ssh or RemoteProtocol.Rsh)
+        if (connection.Protocol is RemoteProtocol.Telnet or RemoteProtocol.Ssh or RemoteProtocol.Rsh or RemoteProtocol.Serial)
         {
             TerminalSessionRequested?.Invoke(this, connection);
             return;
@@ -2857,6 +2857,18 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     /// </summary>
     private async Task<string> TestConnectionAsync(RemoteConnection connection, CancellationToken cancellationToken)
     {
+        if (connection.Protocol == RemoteProtocol.Serial)
+        {
+            // a serial port: whether it opens with the connection's settings
+            try
+            {
+                return "The port opens: " + await Services.Terminal.SerialTerminal.TestAsync(connection);
+            }
+            catch (Exception ex) when (ex is UnauthorizedAccessException or ArgumentException or InvalidOperationException)
+            {
+                throw new IOException(ex.Message, ex); // in use, no right to it, or no such port
+            }
+        }
         var path = PathOf(connection) ?? throw new IOException("Enter a valid server name (e.g. server.example.com).");
         if (connection.IsSession)
         {

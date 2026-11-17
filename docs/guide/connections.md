@@ -30,6 +30,7 @@ Supported types:
 | SSH | A shell on a server in the internal terminal |
 | Telnet | A text session in the internal terminal (routers, switches, old systems) |
 | rsh / rlogin | Old Unix hosts without SSH, in the internal terminal (not encrypted) |
+| Serial port | The console of a switch, router, server or board over a serial cable (COM3, /dev/ttyUSB0), in the internal terminal |
 
 ## The Net menu
 
@@ -244,7 +245,7 @@ in the Plugins menu of the button bar lists the remotes of your rclone configura
 with rclone. NextCommander starts rclone once as a local API server (only on 127.0.0.1, with a random password) and
 stops it when it closes. Files are transferred through temporary files and keep their times where the service can.
 
-### Remote sessions: RDP, VNC, SSH, Telnet, rsh
+### Remote sessions: RDP, VNC, SSH, Telnet, rsh, serial port
 These are sessions on another computer, not folders: choosing one in the connection manager (or *Net > Saved
 connections*, `nc_OpenConnection name`) does not change the panel.
 
@@ -277,6 +278,13 @@ connections*, `nc_OpenConnection name`) does not change the panel.
   server lets this computer in by its `.rhosts` or `hosts.equiv` (with the *user on this computer* and the *user on
   the server*); rlogin asks for one in the terminal when it does not. The connection comes from a port below 1024
   when this computer allows it, as servers usually want (on Linux and macOS only as root). Nothing is encrypted.
+- **Serial port** opens a port of this computer (`COM3` on Windows; `/dev/ttyUSB0`, `/dev/ttyACM0` on Linux;
+  `/dev/cu.usbserial-...` on macOS; a bare name means `/dev/<name>`) in a tab of the internal terminal: the console
+  of a switch, a router, a server or a board. The port box offers the ports found. Settings: the speed (300 to
+  921600; usually 9600 or 115200) on the General tab; data bits, parity, stop bits, flow control (none, XON / XOFF,
+  RTS / CTS), DTR, terminal type, character set, what Backspace and Enter send (CR by default) and local echo (off:
+  devices echo themselves) on the Advanced tab. `serial://COM3:115200` opens a port with that speed. *Test* checks
+  that the port opens. On Linux the user must be in the `dialout` group (`uucp` on some systems).
 
 *Test* in the connection manager checks that the server answers on the port.
 
@@ -299,6 +307,7 @@ options of its type:
 | SSH | Jump host, keep-alive, pinned host key, command when it opens, terminal type, character set. |
 | VNC | Full screen, view only. |
 | rsh / rlogin | Command (empty: rlogin), terminal type, character set; the users on the Login tab. |
+| Serial port | Data bits, parity, stop bits, flow control, DTR, terminal type, character set, Backspace, Enter, local echo; the speed on the General tab. |
 
 A **pinned** host key or certificate (`SHA256:...`) is the only one trusted for the connection: another one is
 refused without asking.
@@ -375,7 +384,7 @@ The **Proxy** tab of a connection in the connection manager chooses its way, wha
 - **Its own proxy**: one of the types above with its server, port, user and password (an SSH tunnel also with a
   private key). The password is kept in the password store when the connection is saved.
 
-Remote desktop (RDP) and VNC connections and PC link have no Proxy tab: the RDP and VNC viewers connect themselves,
+Remote desktop (RDP) and VNC connections, serial ports and PC link have no Proxy tab: the RDP and VNC viewers connect themselves,
 and a PC link stays on the local network.
 
 ## Downloading from the web
