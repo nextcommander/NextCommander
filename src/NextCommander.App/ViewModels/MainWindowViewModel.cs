@@ -47,6 +47,16 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _backgroundJobsText = string.Empty;
 
+    /// <summary>The background jobs running or queued: the transfers button beside the command line shows while there are some.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasBackgroundJobs))]
+    private int _backgroundJobCount;
+
+    public bool HasBackgroundJobs => BackgroundJobCount > 0;
+
+    /// <summary>The background jobs (the transfers shown under the panels).</summary>
+    public JobQueue Jobs => _jobs;
+
     /// <summary>"Synchronous navigation" indicator next to the command line.</summary>
     [ObservableProperty]
     private string _modeText = string.Empty;
@@ -466,7 +476,12 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     /// </summary>
     public void ApplyOperationSettings()
     {
-        NextCommander.Core.Net.WebProxyConfig.Current = _settings.GetProxyOptions();
+        var proxy = _settings.GetProxyOptions();
+        if (proxy != NextCommander.Core.Net.WebProxyConfig.Current)
+        {
+            NextCommander.Core.Net.PacScript.Forget(); // the script is read again (its address or the file may have changed)
+        }
+        NextCommander.Core.Net.WebProxyConfig.Current = proxy;
         if (_settings.ProxyPasswordChange is { } proxyPassword)
         {
             _settings.ProxyPasswordChange = null;
@@ -992,7 +1007,10 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     {
         var count = _jobs.ActiveJobs.Count;
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-            BackgroundJobsText = count == 0 ? string.Empty : $"{count} operations running");
+        {
+            BackgroundJobsText = count == 0 ? string.Empty : $"{count} operations running";
+            BackgroundJobCount = count;
+        });
     }
 
     private void AppendToCommandLine(string text)
@@ -2633,8 +2651,9 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     /// <summary>The password of a manual proxy with a user, from the password store (asks for the master password when there is one).</summary>
     private async Task LoadProxyPasswordAsync()
     {
-        if (_remote?.Secrets is not { } secrets || _settings.ProxyMode != NextCommander.Core.Net.ProxyMode.Manual
-            || string.IsNullOrWhiteSpace(_settings.ProxyUser) || !secrets.Contains(NextCommander.Core.Net.WebProxyConfig.SecretId))
+        if (_remote?.Secrets is not { } secrets || _settings.ProxyMode is not (NextCommander.Core.Net.ProxyMode.Manual or NextCommander.Core.Net.ProxyMode.Pac)
+            || (string.IsNullOrWhiteSpace(_settings.ProxyUser) && string.IsNullOrWhiteSpace(_settings.ProxyKeyFile))
+            || !secrets.Contains(NextCommander.Core.Net.WebProxyConfig.SecretId))
         {
             return;
         }
@@ -2723,6 +2742,22 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             _dialogs.PickOpenFileAsync)
         {
             NewProtocol = newProtocol,
+            HasSecret = id => Remote?.Secrets.Contains(id) == true,
+            StoreSecret = async (id, value) =>
+            {
+                if (Remote?.Secrets is not { } secrets)
+                {
+                    return;
+                }
+                if (value.Length == 0)
+                {
+                    secrets.Remove(id);
+                }
+                else
+                {
+                    await secrets.SetAsync(id, value);
+                }
+            },
         };
         var answer = await _dialogs.ShowConnectionManagerAsync(request);
         OnPropertyChanged(nameof(HasConnectionMenuEntries)); // the connections button of the button bar
@@ -2731,16 +2766,71 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             return;
         }
         var side = result.RightPanel ? RightSide : LeftSide;
-        for (var i = 0; i < result.Connections.Count; i++)
+        var panels = 0;
+        foreach (var connection in result.Connections)
         {
-            if (i == 0)
+            if (connection.IsSession)
             {
-                await side.ActiveTab.NavigateAsync(PathOf(result.Connections[i])!);
+                await OpenSessionAsync(connection); // RDP, Telnet: not in a panel
+            }
+            else if (panels++ == 0)
+            {
+                await side.ActiveTab.NavigateAsync(PathOf(connection)!);
             }
             else
             {
-                await side.OpenTabAsync(PathOf(result.Connections[i])); // several connections: one tab each
+                await side.OpenTabAsync(PathOf(connection)); // several connections: one tab each
             }
+        }
+    }
+
+    /// <summary>A Telnet connection to open in a tab of the internal terminal (the window opens it).</summary>
+    public event EventHandler<RemoteConnection>? TelnetRequested;
+
+    /// <summary>
+    /// A remote session: Telnet in the internal terminal, RDP in the system's remote desktop client. A saved RDP
+    /// password (or one asked when the client cannot ask itself) is handed to the client.
+    /// </summary>
+    public async Task OpenSessionAsync(RemoteConnection connection)
+    {
+        if (connection.Host.Length == 0)
+        {
+            await _dialogs.ShowMessageAsync(connection.Name, "Enter a valid server name (e.g. server.example.com).");
+            return;
+        }
+        if (connection.Protocol == RemoteProtocol.Telnet)
+        {
+            TelnetRequested?.Invoke(this, connection);
+            return;
+        }
+        string? password = null;
+        var secrets = Remote?.Secrets;
+        if (NextCommander.Platform.RemoteDesktopLauncher.TakesPassword)
+        {
+            if (connection.SavePassword && secrets is not null && secrets.Contains(connection.SecretId))
+            {
+                password = await secrets.GetAsync(connection.SecretId);
+            }
+            if (password is null && (connection.SavePassword || NextCommander.Platform.RemoteDesktopLauncher.NeedsPassword))
+            {
+                if (await _dialogs.PromptLoginAsync(connection, false) is not { } login)
+                {
+                    return;
+                }
+                password = login.Password;
+                if (login.Save && secrets is not null)
+                {
+                    await secrets.SetAsync(connection.SecretId, password);
+                }
+            }
+        }
+        try
+        {
+            await NextCommander.Platform.RemoteDesktopLauncher.LaunchAsync(connection, password);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception or IOException or UnauthorizedAccessException)
+        {
+            await _dialogs.ShowMessageAsync("Remote desktop", ex.Message);
         }
     }
 
@@ -2754,6 +2844,23 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     private async Task<string> TestConnectionAsync(RemoteConnection connection, CancellationToken cancellationToken)
     {
         var path = PathOf(connection) ?? throw new IOException("Enter a valid server name (e.g. server.example.com).");
+        if (connection.IsSession)
+        {
+            // RDP, Telnet: whether the server answers on its port
+            var started = System.Diagnostics.Stopwatch.StartNew();
+            using var client = new System.Net.Sockets.TcpClient();
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(TimeSpan.FromSeconds(connection.TimeoutSeconds > 0 ? connection.TimeoutSeconds : 15));
+            try
+            {
+                await client.ConnectAsync(connection.Host, connection.EffectivePort, timeout.Token);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                throw new IOException("The server did not answer in time.");
+            }
+            return $"The server answers on port {connection.EffectivePort}: {started.ElapsedMilliseconds} ms";
+        }
         var provider = _registry.Resolve(path);
         if (provider is NextCommander.Vfs.Remote.IRemoteProvider remote)
         {
@@ -2771,6 +2878,11 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         if (_settings.Connections.FirstOrDefault(c => string.Equals(c.Name, wanted, StringComparison.CurrentCultureIgnoreCase)) is not { } connection)
         {
             await _dialogs.ShowMessageAsync("Connection", $"No saved connection named: {wanted}");
+            return;
+        }
+        if (connection.IsSession)
+        {
+            await OpenSessionAsync(connection);
             return;
         }
         await ActivePanel.NavigateAsync(VfsPath.Create(connection.Scheme, connection.Authority, connection.InitialPath));

@@ -379,6 +379,20 @@ public sealed class OneDriveFileSystemProvider(RemoteHooks hooks) : CloudProvide
         }
         await UseAsync(path, async client =>
         {
+            if (client.Session.Connection.DeletePermanently)
+            {
+                // work / school accounts: removed at once; personal accounts do not have it (the recycle bin then, as usual)
+                using var permanent = await client.SendAsync(() => new HttpRequestMessage(HttpMethod.Post, ItemUri(location.DriveBase, location.Path, "permanentDelete")), cancellationToken)
+                    .ConfigureAwait(false);
+                if (permanent.IsSuccessStatusCode)
+                {
+                    return;
+                }
+                if (permanent.StatusCode is not (HttpStatusCode.BadRequest or HttpStatusCode.NotFound or HttpStatusCode.MethodNotAllowed or HttpStatusCode.NotImplemented))
+                {
+                    await EnsureAsync(permanent, path.Path).ConfigureAwait(false);
+                }
+            }
             using var response = await client.SendAsync(() => new HttpRequestMessage(HttpMethod.Delete, ItemUri(location.DriveBase, location.Path, string.Empty)), cancellationToken)
                 .ConfigureAwait(false);
             await EnsureAsync(response, path.Path).ConfigureAwait(false);

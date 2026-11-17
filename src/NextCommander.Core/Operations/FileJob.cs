@@ -59,6 +59,16 @@ public abstract class FileJob
 
     public void Cancel() => _cts.Cancel();
 
+    /// <summary>Cancels a job that has not started (taken out of a queue): it never runs and is Cancelled at once.</summary>
+    public void CancelBeforeStart()
+    {
+        _cts.Cancel();
+        if (State == JobState.Pending)
+        {
+            SetState(JobState.Cancelled);
+        }
+    }
+
     public void TogglePause()
     {
         if (Pause.IsPaused)

@@ -412,6 +412,13 @@ public sealed class BoxFileSystemProvider(RemoteHooks hooks) : CloudProviderBase
             var url = ApiBase + Kind(item.IsFolder) + Uri.EscapeDataString(item.Id) + (item.IsFolder ? "?recursive=true" : string.Empty);
             using var response = await client.SendAsync(() => new HttpRequestMessage(HttpMethod.Delete, url), cancellationToken).ConfigureAwait(false);
             await EnsureAsync(response, path.Path).ConfigureAwait(false);
+            if (client.Session.Connection.DeletePermanently)
+            {
+                // out of the Box trash too
+                var trash = ApiBase + Kind(item.IsFolder) + Uri.EscapeDataString(item.Id) + "/trash";
+                using var purge = await client.SendAsync(() => new HttpRequestMessage(HttpMethod.Delete, trash), cancellationToken).ConfigureAwait(false);
+                await EnsureAsync(purge, path.Path).ConfigureAwait(false);
+            }
         }, cancellationToken).ConfigureAwait(false);
         Forget(path);
     }

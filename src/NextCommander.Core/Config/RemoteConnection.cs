@@ -32,6 +32,10 @@ public enum RemoteProtocol
     AzureFiles,
     /// <summary>PC link (link://): another computer running NextCommander, over a cable or the network.</summary>
     Link,
+    /// <summary>Remote desktop (rdp://): opened in the system's RDP client (Remote Desktop Connection, Windows App, FreeRDP / Remmina).</summary>
+    Rdp,
+    /// <summary>Telnet (telnet://): a text session in the built-in terminal.</summary>
+    Telnet,
 }
 
 /// <summary>A folder of the connection manager: its path ("Work/Prod") and color label ("#ED4245"; empty: none).</summary>
@@ -40,6 +44,88 @@ public sealed class ConnectionFolder
     public string Path { get; set; } = string.Empty;
 
     public string Color { get; set; } = string.Empty;
+}
+
+/// <summary>The TLS versions a connection allows.</summary>
+public enum TlsVersion
+{
+    /// <summary>What the system allows (TLS 1.2 and 1.3).</summary>
+    Auto,
+    /// <summary>TLS 1.2 only (servers that fail with 1.3).</summary>
+    Tls12,
+    /// <summary>TLS 1.3 only.</summary>
+    Tls13,
+}
+
+/// <summary>How an FTP folder is listed.</summary>
+public enum FtpListing
+{
+    /// <summary>MLSD when the server has it, otherwise LIST.</summary>
+    Auto,
+    /// <summary>Always LIST (servers whose MLSD is wrong or missing entries).</summary>
+    List,
+}
+
+/// <summary>How a WebDAV user logs in.</summary>
+public enum WebDavAuth
+{
+    /// <summary>As the server asks (Basic, Digest, NTLM or Negotiate).</summary>
+    Auto,
+    Basic,
+    Digest,
+    Ntlm,
+    Negotiate,
+}
+
+/// <summary>The format Google documents are exported to.</summary>
+public enum GoogleExport
+{
+    /// <summary>Microsoft Office: .docx, .xlsx, .pptx.</summary>
+    Office,
+    /// <summary>OpenDocument: .odt, .ods, .odp.</summary>
+    OpenDocument,
+    /// <summary>PDF.</summary>
+    Pdf,
+}
+
+/// <summary>Where the sound of a remote desktop plays.</summary>
+public enum RdpAudio
+{
+    /// <summary>On this computer.</summary>
+    Here,
+    /// <summary>On the remote computer.</summary>
+    Remote,
+    /// <summary>Nowhere.</summary>
+    None,
+}
+
+/// <summary>What the Backspace key sends in a Telnet session.</summary>
+public enum TelnetBackspace
+{
+    /// <summary>DEL (127), as xterm.</summary>
+    Delete,
+    /// <summary>Ctrl+H (8), as many network devices expect.</summary>
+    ControlH,
+}
+
+/// <summary>What the Enter key sends in a Telnet session.</summary>
+public enum TelnetEnter
+{
+    /// <summary>CR LF (the Telnet standard).</summary>
+    CrLf,
+    /// <summary>CR NUL.</summary>
+    CrNul,
+    /// <summary>LF only.</summary>
+    Lf,
+}
+
+/// <summary>Whether a Telnet session shows the typed text itself.</summary>
+public enum LocalEcho
+{
+    /// <summary>When the server does not echo.</summary>
+    Auto,
+    On,
+    Off,
 }
 
 /// <summary>S3 server-side encryption of uploads.</summary>
@@ -112,6 +198,9 @@ public sealed class RemoteConnection
     /// <summary>OneDrive (work / school account): a "SharePoint" folder at the root with the organization's sites and their document libraries.</summary>
     public bool IncludeSharePoint { get; set; }
 
+    /// <summary>RDP: the remote desktop opens full screen (otherwise in a window that follows its size).</summary>
+    public bool FullScreen { get; set; }
+
     /// <summary>Simultaneous connections (listing while copying).</summary>
     public int MaxConnections { get; set; } = 3;
 
@@ -152,6 +241,127 @@ public sealed class RemoteConnection
     /// <summary>Azure with Entra ID: the tenant (directory id or domain; empty: the account's own organization).</summary>
     public string? TenantId { get; set; }
 
+    // ---------------------------------------------------------------- more options by type
+
+    /// <summary>SFTP / SCP / FTP / Telnet: a keep-alive message every so many seconds (0: none).</summary>
+    public int KeepAliveSeconds { get; set; }
+
+    /// <summary>
+    /// SSH host key or TLS certificate: only this fingerprint is trusted (empty: the fingerprints accepted before, an
+    /// unknown one is asked). Another key is refused without asking.
+    /// </summary>
+    public string? PinnedFingerprint { get; set; }
+
+    /// <summary>TLS of FTPS and HTTPS connections: the versions allowed.</summary>
+    public TlsVersion TlsVersion { get; set; }
+
+    /// <summary>SFTP: the size of one read or write request in KB (0: the default, 32 KB).</summary>
+    public int SftpBufferKb { get; set; }
+
+    /// <summary>FTP active mode: the local ports for the data connections ("50000-50100"; empty: the program's setting).</summary>
+    public string? FtpActivePorts { get; set; }
+
+    /// <summary>FTP: how folders are listed.</summary>
+    public FtpListing FtpListing { get; set; }
+
+    /// <summary>FTP: the server's time zone as minutes from UTC (null: UTC, or what MLSD tells).</summary>
+    public int? FtpTimeOffsetMinutes { get; set; }
+
+    /// <summary>FTPS: the data connections are encrypted too (off: only the commands and the password; PROT C).</summary>
+    public bool FtpEncryptData { get; set; } = true;
+
+    /// <summary>WebDAV: how the user logs in.</summary>
+    public WebDavAuth WebDavAuth { get; set; }
+
+    /// <summary>S3: the storage class of uploads (empty: the bucket's default, STANDARD).</summary>
+    public string? S3StorageClass { get; set; }
+
+    /// <summary>S3: the canned ACL of uploads (empty: none sent, private).</summary>
+    public string? S3Acl { get; set; }
+
+    /// <summary>S3: the part size of multipart uploads in MB (0: the default).</summary>
+    public int S3PartSizeMb { get; set; }
+
+    /// <summary>S3: requests are marked as paid by the requester (Requester Pays buckets).</summary>
+    public bool S3RequesterPays { get; set; }
+
+    /// <summary>Azure Blob: the access tier of uploaded blobs (Hot, Cool, Cold, Archive; empty: the account's default).</summary>
+    public string? AzureAccessTier { get; set; }
+
+    /// <summary>SMB: the hidden administrative shares (C$, ADMIN$, IPC$ ...) are listed too.</summary>
+    public bool SmbShowHiddenShares { get; set; }
+
+    /// <summary>Google Drive, OneDrive, Box: deleted items are removed at once instead of going to the service's trash.</summary>
+    public bool DeletePermanently { get; set; }
+
+    /// <summary>Google Drive: the format Google documents are exported to when read.</summary>
+    public GoogleExport GoogleExport { get; set; }
+
+    /// <summary>RDP: the size of the remote desktop in a window (0: it follows the window).</summary>
+    public int RdpWidth { get; set; }
+
+    /// <summary>RDP: the height of the remote desktop in a window (0: it follows the window).</summary>
+    public int RdpHeight { get; set; }
+
+    /// <summary>RDP: bits per pixel (15, 16, 24, 32; 0: 32).</summary>
+    public int RdpColorDepth { get; set; }
+
+    /// <summary>RDP: the remote desktop spans all monitors (with full screen).</summary>
+    public bool RdpMultiMonitor { get; set; }
+
+    /// <summary>RDP: where the remote computer's sound plays.</summary>
+    public RdpAudio RdpAudio { get; set; }
+
+    /// <summary>RDP: the clipboard is shared with the remote computer.</summary>
+    public bool RdpClipboard { get; set; } = true;
+
+    /// <summary>RDP: this computer's drives are seen in the remote session.</summary>
+    public bool RdpDrives { get; set; }
+
+    /// <summary>RDP: this computer's printers are seen in the remote session.</summary>
+    public bool RdpPrinters { get; set; }
+
+    /// <summary>RDP: the administrative (console) session.</summary>
+    public bool RdpAdmin { get; set; }
+
+    /// <summary>RDP: the Remote Desktop Gateway to go through ("gateway.example.com"; empty: none).</summary>
+    public string? RdpGateway { get; set; }
+
+    /// <summary>Telnet: the terminal type told to the server (empty: xterm).</summary>
+    public string? TerminalType { get; set; }
+
+    /// <summary>Telnet: what the Backspace key sends.</summary>
+    public TelnetBackspace TelnetBackspace { get; set; }
+
+    /// <summary>Telnet: what the Enter key sends.</summary>
+    public TelnetEnter TelnetEnter { get; set; }
+
+    /// <summary>Telnet: whether typed text is shown here (automatic: when the server does not send it back).</summary>
+    public LocalEcho LocalEcho { get; set; }
+
+    /// <summary>Telnet: the character set of the session (empty: UTF-8).</summary>
+    public string? TerminalEncoding { get; set; }
+
+    // ---------------------------------------------------------------- proxy
+
+    /// <summary>The program's proxy setting, none, or the connection's own proxy below.</summary>
+    public Net.ConnectionProxy Proxy { get; set; }
+
+    /// <summary>Own proxy: its kind (HTTP, HTTPS, SOCKS4 / 4a / 5, SSH).</summary>
+    public Net.ProxyKind ProxyKind { get; set; } = Net.ProxyKind.Socks5;
+
+    /// <summary>Own proxy: its name or address.</summary>
+    public string? ProxyHost { get; set; }
+
+    /// <summary>Own proxy: its port (0: the kind's usual port).</summary>
+    public int ProxyPort { get; set; }
+
+    /// <summary>Own proxy: the user name when it asks for one; the password is in the password store (proxy:&lt;secret id&gt;).</summary>
+    public string? ProxyUser { get; set; }
+
+    /// <summary>Own SSH proxy: the private key file (empty: the password logs in).</summary>
+    public string? ProxyKeyFile { get; set; }
+
     public int EffectivePort => Port > 0 ? Port : Protocol is RemoteProtocol.S3 or RemoteProtocol.AzureBlob or RemoteProtocol.AzureFiles && PlainHttp ? 80 : DefaultPort(Protocol);
 
     public static int DefaultPort(RemoteProtocol protocol) => RemoteProtocols.Of(protocol).DefaultPort;
@@ -162,6 +372,9 @@ public sealed class RemoteConnection
 
     /// <summary>A cloud drive (Google Drive, OneDrive, Dropbox ...): signed in in the browser; the user is only a name for the account.</summary>
     public bool IsCloudDrive => RemoteProtocols.Of(Protocol).IsCloudDrive;
+
+    /// <summary>A remote session (RDP, Telnet): opened in a client or the terminal, not in a panel.</summary>
+    public bool IsSession => RemoteProtocols.Of(Protocol).IsSession;
 
     /// <summary>The fixed "host" of a cloud drive (part of the path: account@host).</summary>
     public static string CloudHost(RemoteProtocol protocol) => RemoteProtocols.Of(protocol).CloudHost ?? string.Empty;

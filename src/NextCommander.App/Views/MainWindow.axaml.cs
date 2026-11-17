@@ -53,7 +53,12 @@ public partial class MainWindow : Window
         ColumnSetsMenu.SubmenuOpened += (_, _) => FillColumnSetsMenu();
         ColorThemeMenu.SubmenuOpened += (_, _) => FillColorThemeMenu();
         SavedConnectionsMenu.SubmenuOpened += (_, _) => FillSavedConnectionsMenu();
-        Activated += (_, _) => _ = _vm?.OnWindowActivatedAsync();
+        Activated += (_, _) =>
+        {
+            _ = _vm?.OnWindowActivatedAsync();
+            // after the system has given the focus back (a dialog closed, another program left)
+            Dispatcher.UIThread.Post(KeepFocusInPanel, DispatcherPriority.Background);
+        };
         // the shared drive bar marks the active panel's drive
         DriveBarMarks.Watch(SharedDriveBar);
         LeftPanel.CurrentDriveChanged += (_, _) => MarkSharedDrive();
@@ -120,6 +125,7 @@ public partial class MainWindow : Window
             settings: () => _vm?.Settings);
         CommandHistoryButton.Click += (_, _) => ShowCommandHistory();
         TerminalButton.Click += (_, _) => ToggleTerminal();
+        TransfersButton.Click += (_, _) => ToggleTransfers();
         CommandHistoryList.Tapped += (_, _) => TakeCommandFromHistory();
         CommandHistoryList.KeyDown += (_, e) =>
         {
@@ -287,6 +293,7 @@ public partial class MainWindow : Window
         _vm.QuickSearchRequested += (_, filter) => ActiveView.BeginQuickSearch(null, filter);
         _vm.ButtonBarFocusRequested += (_, _) => _topBar.FocusFirst();
         _vm.DropDownMenuRequested += (_, kind) => ShowDropDownMenu(kind);
+        _vm.TelnetRequested += (_, connection) => OpenTelnet(connection);
         _vm.NextPageRequested += (_, _) => SelectNextPage();
         _vm.HotlistMenuRequested += (_, _) => ShowHotlistMenu();
         _vm.ButtonBarsChanged += (_, _) => UpdateButtonBars();
@@ -1117,7 +1124,46 @@ public partial class MainWindow : Window
         {
             return;
         }
-        if (_terminal is null)
+        EnsureTerminal();
+        if (IsTerminalMaximizedPage && _page != WorkspacePage.Terminal)
+        {
+            SelectPage(WorkspacePage.Terminal); // maximized behind another page: its tab
+            return;
+        }
+        if (TerminalHost.IsVisible && _terminal!.IsKeyboardFocusWithin)
+        {
+            HideTerminal(); // the shells keep running
+            return;
+        }
+        ShowTerminal();
+    }
+
+    /// <summary>
+    /// A Telnet session in a new tab of the internal terminal (opened first when it is closed); the login happens in
+    /// the terminal, as the server asks for it.
+    /// </summary>
+    public void OpenTelnet(RemoteConnection connection)
+    {
+        if (_vm is null)
+        {
+            return;
+        }
+        EnsureTerminal();
+        ApplyTerminalSettings();
+        var shell = new Services.TerminalSession.ShellInfo(connection.Name.Length > 0 ? connection.Name : connection.Host, "telnet", string.Empty, true, string.Empty);
+        _terminal!.NewTab(shell, (columns, rows) => new Services.Terminal.TelnetTerminal(connection, columns, rows));
+        if (IsTerminalMaximizedPage && _page != WorkspacePage.Terminal)
+        {
+            SelectPage(WorkspacePage.Terminal);
+            return;
+        }
+        ShowTerminal();
+    }
+
+    /// <summary>The terminal of the window, made the first time.</summary>
+    private void EnsureTerminal()
+    {
+        if (_terminal is null && _vm is not null)
         {
             _terminal = new TerminalView
             {
@@ -1127,7 +1173,15 @@ public partial class MainWindow : Window
             };
             // the height and the open tabs are kept in the settings
             _terminal.HeightRatioChanged += (_, _) => _vm.Settings.TerminalHeightRatio = Math.Round(_terminal.HeightRatio, 3);
-            _terminal.TabsChanged += (_, _) => _vm.Settings.TerminalTabs = _terminal.Consoles.Select(c => c.Shell.Name).ToList();
+            _terminal.TabsChanged += (_, _) =>
+            {
+                // the shells are kept (not the remote sessions); only remote ones open: the shells stay as they were
+                var shells = _terminal.Consoles.Where(c => !c.IsRemote).Select(c => c.Shell.Name).ToList();
+                if (shells.Count > 0 || _terminal.Consoles.Count == 0)
+                {
+                    _vm.Settings.TerminalTabs = shells;
+                }
+            };
             _terminal.MaximizeToggleRequested += (_, _) => ToggleTerminalMaximized();
             _terminal.CloseRequested += (_, _) =>
             {
@@ -1150,26 +1204,26 @@ public partial class MainWindow : Window
                 }
             };
         }
-        if (IsTerminalMaximizedPage && _page != WorkspacePage.Terminal)
-        {
-            SelectPage(WorkspacePage.Terminal); // maximized behind another page: its tab
-            return;
-        }
-        if (TerminalHost.IsVisible && _terminal.IsKeyboardFocusWithin)
-        {
-            HideTerminal(); // the shells keep running
-            return;
-        }
-        _terminal.Shell = _vm.Settings.InternalTerminalShell;
+    }
+
+    private void ApplyTerminalSettings()
+    {
+        _terminal!.Shell = _vm!.Settings.InternalTerminalShell;
         _terminal.Emulation = _vm.Settings.TerminalEmulation;
         _terminal.SetFont(_vm.Settings.TerminalFont, _vm.Settings.TerminalFontSize);
+    }
+
+    /// <summary>Shows the terminal below the panels and focuses its active tab (opening one if there is none).</summary>
+    private void ShowTerminal()
+    {
+        ApplyTerminalSettings();
         if (!TerminalHost.IsVisible)
         {
             TerminalHost.IsVisible = true;
-            _vm.IsTerminalOpen = true;
-            _terminal.FitWindow(Bounds.Height);
+            _vm!.IsTerminalOpen = true;
+            _terminal!.FitWindow(Bounds.Height);
         }
-        _terminal.Activate();
+        _terminal!.Activate();
     }
 
     /// <summary>
@@ -1227,6 +1281,57 @@ public partial class MainWindow : Window
         }
         ActiveView.FocusList();
     }
+
+    /// <summary>
+    /// When the window is active again, the focus belongs to the active panel if the system left it nowhere or on the
+    /// main menu: after a copy or rename the panel's row that had it was replaced by the refresh, Avalonia could not
+    /// give it back and the "File" menu was active. A text box (command line, path line), the terminal, an open menu
+    /// and the other pages keep their focus.
+    /// </summary>
+    internal void KeepFocusInPanel()
+    {
+        if (!IsActive || CurrentPage != WorkspacePage.Files || MainMenu.IsOpen)
+        {
+            return;
+        }
+        var focused = FocusManager?.GetFocusedElement();
+        if (focused is null || ReferenceEquals(focused, this) || (focused is Avalonia.Visual visual && Avalonia.VisualTree.VisualExtensions.IsVisualAncestorOf(MainMenu, visual)))
+        {
+            ActiveView.FocusList();
+        }
+    }
+
+    /// <summary>The background transfers under the panels (the button beside the command line): shown or hidden.</summary>
+    public void ToggleTransfers()
+    {
+        if (_vm is null)
+        {
+            return;
+        }
+        if (TransfersHost.Child is not Tools.TransferManagerView)
+        {
+            var close = new Button { Content = "×", Classes = { "tabclose" }, FontSize = 16, Padding = new Avalonia.Thickness(8, 0), VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center };
+            ToolTip.SetTip(close, "Close");
+            Avalonia.Automation.AutomationProperties.SetName(close, "Close");
+            close.Click += (_, _) =>
+            {
+                TransfersHost.IsVisible = false;
+                ActiveView.FocusList();
+            };
+            var view = new Tools.TransferManagerView(_vm.Jobs, close);
+            // the last job is over: the transfers hide by themselves
+            view.Emptied += (_, _) => TransfersHost.IsVisible = false;
+            TransfersHost.Child = view;
+        }
+        TransfersHost.IsVisible = !TransfersHost.IsVisible;
+        if (TransfersHost.IsVisible)
+        {
+            ((Tools.TransferManagerView)TransfersHost.Child).Refresh();
+        }
+    }
+
+    /// <summary>The transfers shown under the panels (tests).</summary>
+    internal Tools.TransferManagerView? TransfersView => TransfersHost.IsVisible ? TransfersHost.Child as Tools.TransferManagerView : null;
 
     private void FocusCommandLine()
     {

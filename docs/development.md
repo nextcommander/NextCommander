@@ -36,7 +36,7 @@ dotnet run --project src/NextCommander.App
 |---|---|
 | `./build/publish.ps1 -Rid win-x64` | zip, portable zip and the setup program (`-setup.exe`, Inno Setup) under `dist/` |
 | `./build/publish.ps1 -Rid linux-x64` | `.deb` and `.rpm` (nfpm), `.tar.gz` (with `.desktop` file and icons); an AppImage if `appimagetool` is present |
-| `./build/publish.ps1 -Rid osx-arm64` | `NextCommander.app` (in `dist/<name>/`) and a zip of it; on macOS also a `.dmg` |
+| `./build/publish.ps1 -Rid osx-arm64` | `NextCommander.app` (in `dist/<name>/`) and a zip of it; on macOS also a `.dmg`. libmtp (phones over MTP) goes into the app from Homebrew's bottles, on any system (needs Python 3; downloaded once under `artifacts/tools`) |
 | `./build/windows/new-signing-certificate.ps1 -Trust` | code signing certificate for the setup program (`CN=NextCommander`, user store) and trusting it on this machine (UAC) |
 | `./tests/servers/run-integration-tests.ps1` | remote tests against local FTP / SFTP / WebDAV / S3 / SMB servers (+ Azurite if Node.js is installed); needs Python |
 | `python build/make_icons.py` | application icons (Assets) from the design files in `build/icons` |
@@ -55,6 +55,8 @@ Environment variables used by tests and tools:
 | `SIGN_CERT`, `SIGN_CERT_PASSWORD`, `SIGN_PUBLISHER` | A `.pfx` (and its password) for signing the setup program, or the subject of the certificate to take from the user store (default `CN=NextCommander`). The former `MSIX_*` names work too. |
 | `PACKAGE_MAINTAINER` | The maintainer written into the `.deb` / `.rpm` (`Name <mail>`; default `NextCommander`). |
 | `MACOS_SIGN_IDENTITY`, `MACOS_NOTARY_PROFILE` | macOS signing and notarization. |
+| `MACOS_LIBMTP_DIR` | A folder of ready macOS libraries (libmtp.9.dylib and what it loads, with `@loader_path` names) to put into the app instead of Homebrew's bottles. |
+| `FM_LIBMTP` | Path of the libmtp library the program loads (Linux, macOS). |
 
 GitHub Actions (`.github/workflows/ci.yml`) builds and tests on the three platforms and uploads the packages.
 

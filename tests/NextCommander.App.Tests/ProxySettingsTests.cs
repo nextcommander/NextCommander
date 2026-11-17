@@ -32,11 +32,22 @@ public sealed class ProxySettingsTests : IDisposable
         await SettleAsync(4);
 
         var radios = window.GetVisualDescendants().OfType<RadioButton>().ToList();
-        Assert.Equal(3, radios.Count);
+        Assert.Equal(4, radios.Count); // system, none, manual, PAC script
         Assert.True(radios[0].IsChecked); // the system's proxy by default
         var boxes = window.GetVisualDescendants().OfType<TextBox>().ToList();
         var host = boxes.First(b => (b.PlaceholderText ?? string.Empty).StartsWith("proxy.example.com", StringComparison.Ordinal));
         Assert.False(host.IsEffectivelyEnabled); // the server fields wait for "Use this proxy"
+
+        // the PAC script: its address, the server of the manual proxy stays off
+        radios[3].IsChecked = true;
+        await SettleAsync();
+        var pac = boxes.First(b => b.PlaceholderText == "http://wpad.example.com/wpad.dat");
+        Assert.True(pac.IsEffectivelyEnabled);
+        Assert.False(host.IsEffectivelyEnabled);
+        Assert.False(window.CanApply()); // no script yet
+        pac.Text = "http://wpad.corp/wpad.dat";
+        await SettleAsync();
+        Assert.True(window.CanApply());
 
         radios[2].IsChecked = true;
         await SettleAsync();
@@ -54,7 +65,7 @@ public sealed class ProxySettingsTests : IDisposable
 
         window.Apply();
         vm.ApplySettings();
-        Assert.Equal(new ProxyOptions(ProxyMode.Manual, "proxy.corp", 8080, "alice", "localhost; 127.0.0.1", true), WebProxyConfig.Current);
+        Assert.Equal(new ProxyOptions(ProxyMode.Manual, "proxy.corp", 8080, "alice", "localhost; 127.0.0.1", true, PacUrl: "http://wpad.corp/wpad.dat"), WebProxyConfig.Current);
         Assert.Equal("s3cret", WebProxyConfig.Password);
         Assert.Null(vm.Settings.ProxyPasswordChange); // handed over, never in settings.json
         vm.SaveSettings();

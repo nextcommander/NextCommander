@@ -20,6 +20,17 @@ internal static class SshLogin
 
     private sealed record Tunnel(SshClient Jump, ForwardedPortLocal Port);
 
+    /// <summary>Sets the keep-alive of a client as the connection says (none when 0).</summary>
+    public static T KeepAlive<T>(T client, RemoteConnection connection)
+        where T : BaseClient
+    {
+        if (connection.KeepAliveSeconds > 0)
+        {
+            client.KeepAliveInterval = TimeSpan.FromSeconds(connection.KeepAliveSeconds);
+        }
+        return client;
+    }
+
     /// <summary>The timeout of a connection (its own, else 20 s).</summary>
     public static TimeSpan TimeoutOf(RemoteConnection connection) => TimeSpan.FromSeconds(connection.TimeoutSeconds > 0 ? connection.TimeoutSeconds : 20);
 
@@ -181,7 +192,7 @@ internal static class SshLogin
         string? trusted = hooks.KnownFingerprint?.Invoke(jumpConnection);
         while (true)
         {
-            var jump = new SshClient(Create(jumpConnection, password, keys));
+            var jump = KeepAlive(new SshClient(Create(jumpConnection, password, keys)), connection);
             try
             {
                 await ConnectAsync(jump, jumpConnection, trusted, cancellationToken).ConfigureAwait(false);

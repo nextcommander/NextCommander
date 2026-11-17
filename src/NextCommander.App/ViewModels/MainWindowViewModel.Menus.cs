@@ -233,6 +233,14 @@ public sealed partial class MainWindowViewModel
             await _dialogs.ShowMessageAsync("Connect by address", $"Address not understood: {text}");
             return;
         }
+        if (RemoteProtocols.FromScheme(path.Scheme) is { IsSession: true })
+        {
+            // rdp://, telnet://: a saved connection to the same address, else one made from it
+            var typed = RemoteConnection.FromAuthority(path.Scheme, path.Authority);
+            typed.Name = typed.Host;
+            await OpenSessionAsync(_settings.Connections.FirstOrDefault(c => c.Protocol == typed.Protocol && c.Authority == typed.Authority) ?? typed);
+            return;
+        }
         await ActivePanel.NavigateAsync(path);
     }
 

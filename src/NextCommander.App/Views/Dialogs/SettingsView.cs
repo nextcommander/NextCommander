@@ -1677,13 +1677,16 @@ public sealed class SettingsView : UserControl
                     ("Use the system's proxy", Core.Net.ProxyMode.System),
                     ("No proxy (connect directly)", Core.Net.ProxyMode.None),
                     ("Use this proxy:", Core.Net.ProxyMode.Manual),
+                    ("Automatic configuration script (PAC):", Core.Net.ProxyMode.Pac),
                 };
                 var host = new TextBox { Text = s.ProxyHost, PlaceholderText = "proxy.example.com or http://proxy:3128", MinWidth = 300, Classes = { "noloc" } };
                 var port = new NumericUpDown { Minimum = 1, Maximum = 65535, Value = s.ProxyPort, Width = 140, FormatString = "0" };
-                var kinds = new (string Text, Core.Net.ProxyKind Kind)[] { ("HTTP", Core.Net.ProxyKind.Http), ("SOCKS5", Core.Net.ProxyKind.Socks5) };
-                var kind = new ComboBox { ItemsSource = kinds.Select(k => k.Text).ToList(), Width = 140, SelectedIndex = s.ProxyKind == Core.Net.ProxyKind.Socks5 ? 1 : 0 };
+                var kinds = ProxyKinds;
+                var kind = new ComboBox { ItemsSource = kinds.Select(k => k.Text).ToList(), Width = 220, SelectedIndex = Math.Max(0, Array.FindIndex(kinds, k => k.Kind == s.ProxyKind)) };
+                var keyFile = new TextBox { Text = s.ProxyKeyFile, PlaceholderText = "empty: the password logs in", MinWidth = 300, Classes = { "noloc" } };
+                var pac = new TextBox { Text = s.ProxyPacUrl, PlaceholderText = "http://wpad.example.com/wpad.dat", MinWidth = 300, Classes = { "noloc" }, Margin = new Thickness(26, 2, 0, 0) };
                 var fileTransfers = new CheckBox { Content = "Also for FTP, SFTP and SMB connections", IsChecked = s.ProxyFileTransfers };
-                ToolTip.SetTip(fileTransfers, "An HTTP proxy has to allow CONNECT to their ports (21, 22, 445 ...); a SOCKS5 proxy takes any connection.");
+                ToolTip.SetTip(fileTransfers, "An HTTP proxy has to allow CONNECT to their ports (21, 22, 445 ...); SOCKS and SSH proxies take any connection.");
                 var user = new TextBox { Text = s.ProxyUser, PlaceholderText = "only when the proxy asks for one", MinWidth = 300, Classes = { "noloc" } };
                 var password = new TextBox
                 {
@@ -1697,8 +1700,8 @@ public sealed class SettingsView : UserControl
                 var fields = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), RowSpacing = 6, ColumnSpacing = 10, Margin = new Thickness(26, 2, 0, 0) };
                 var rows = new (string Label, Control Editor)[]
                 {
-                    ("Type", kind), ("Server", host), ("Port", port), ("User name", user), ("Password", password), ("Do not use it for", bypass), (string.Empty, bypassLocal),
-                    (string.Empty, fileTransfers),
+                    ("Type", kind), ("Server", host), ("Port", port), ("User name", user), ("Password", password), ("Private key", keyFile),
+                    ("Do not use it for", bypass), (string.Empty, bypassLocal), (string.Empty, fileTransfers),
                 };
                 for (var i = 0; i < rows.Length; i++)
                 {
@@ -1713,16 +1716,22 @@ public sealed class SettingsView : UserControl
 
                 void Update()
                 {
-                    fields.IsEnabled = s.ProxyMode == Core.Net.ProxyMode.Manual;
+                    fields.IsEnabled = s.ProxyMode is Core.Net.ProxyMode.Manual or Core.Net.ProxyMode.Pac;
+                    pac.IsEnabled = s.ProxyMode == Core.Net.ProxyMode.Pac;
+                    // the server of the PAC mode comes from the script; its user, password and the file transfer choice stay
+                    foreach (var control in new Control[] { kind, host, port, bypass, bypassLocal })
+                    {
+                        control.IsEnabled = s.ProxyMode == Core.Net.ProxyMode.Manual;
+                    }
+                    keyFile.IsEnabled = s.ProxyMode == Core.Net.ProxyMode.Manual && s.ProxyKind == Core.Net.ProxyKind.Ssh;
                     problem.Text = s.GetProxyOptions().Problem ?? string.Empty;
-                    // a manual proxy without a server cannot be taken (it would silently use the system's)
+                    // a manual proxy without a server (or a PAC mode without a script) cannot be taken
+                    var wrong = s.ProxyMode == Core.Net.ProxyMode.Pac ? pac : host;
+                    host.Classes.Remove(InvalidJsonClass);
+                    pac.Classes.Remove(InvalidJsonClass);
                     if (problem.Text.Length > 0)
                     {
-                        host.Classes.Add(InvalidJsonClass);
-                    }
-                    else
-                    {
-                        host.Classes.Remove(InvalidJsonClass);
+                        wrong.Classes.Add(InvalidJsonClass);
                     }
                 }
 
@@ -1740,12 +1749,18 @@ public sealed class SettingsView : UserControl
                         }
                     };
                     choices.Children.Add(radio);
+                    if (mode == Core.Net.ProxyMode.Pac)
+                    {
+                        choices.Children.Add(pac);
+                    }
                 }
                 host.TextChanged += (_, _) => { s.ProxyHost = host.Text?.Trim() ?? string.Empty; Update(); changed(); };
                 port.ValueChanged += (_, _) => { s.ProxyPort = (int)(port.Value ?? 8080); Update(); changed(); };
                 user.TextChanged += (_, _) => { s.ProxyUser = string.IsNullOrWhiteSpace(user.Text) ? null : user.Text.Trim(); changed(); };
                 password.TextChanged += (_, _) => { s.ProxyPasswordChange = password.Text ?? string.Empty; changed(); };
                 bypass.TextChanged += (_, _) => { s.ProxyBypass = bypass.Text ?? string.Empty; changed(); };
+                keyFile.TextChanged += (_, _) => { s.ProxyKeyFile = string.IsNullOrWhiteSpace(keyFile.Text) ? null : keyFile.Text.Trim(); changed(); };
+                pac.TextChanged += (_, _) => { s.ProxyPacUrl = pac.Text?.Trim() ?? string.Empty; Update(); changed(); };
                 bypassLocal.IsCheckedChanged += (_, _) => { s.ProxyBypassLocal = bypassLocal.IsChecked == true; changed(); };
                 fileTransfers.IsCheckedChanged += (_, _) => { s.ProxyFileTransfers = fileTransfers.IsChecked == true; changed(); };
                 kind.SelectionChanged += (_, _) =>
@@ -1753,10 +1768,10 @@ public sealed class SettingsView : UserControl
                     var chosen = kinds[Math.Max(0, kind.SelectedIndex)].Kind;
                     if (chosen != s.ProxyKind)
                     {
-                        // the usual port of the kind, when the port was the other kind's usual one
-                        if (s.ProxyPort == (chosen == Core.Net.ProxyKind.Socks5 ? 8080 : 1080))
+                        // the usual port of the kind, when the port was the old kind's usual one
+                        if (s.ProxyPort == Core.Net.ProxyOptions.DefaultPort(s.ProxyKind))
                         {
-                            port.Value = chosen == Core.Net.ProxyKind.Socks5 ? 1080 : 8080;
+                            port.Value = Core.Net.ProxyOptions.DefaultPort(chosen);
                         }
                         s.ProxyKind = chosen;
                         Update();
@@ -1797,9 +1812,22 @@ public sealed class SettingsView : UserControl
                 to.ProxyBypass = from.ProxyBypass;
                 to.ProxyBypassLocal = from.ProxyBypassLocal;
                 to.ProxyKind = from.ProxyKind;
+                to.ProxyKeyFile = from.ProxyKeyFile;
+                to.ProxyPacUrl = from.ProxyPacUrl;
                 to.ProxyFileTransfers = from.ProxyFileTransfers;
                 to.ProxyPasswordChange = from.ProxyPasswordChange; // the main window stores it and clears it
             }, FullWidth: true);
+
+    /// <summary>The proxy kinds offered (settings and the connection manager).</summary>
+    public static (string Text, Core.Net.ProxyKind Kind)[] ProxyKinds { get; } =
+    [
+        ("HTTP", Core.Net.ProxyKind.Http),
+        ("HTTPS (TLS to the proxy)", Core.Net.ProxyKind.Https),
+        ("SOCKS5", Core.Net.ProxyKind.Socks5),
+        ("SOCKS4a", Core.Net.ProxyKind.Socks4a),
+        ("SOCKS4", Core.Net.ProxyKind.Socks4),
+        ("SSH tunnel", Core.Net.ProxyKind.Ssh),
+    ];
 
     /// <summary>Requests an address with a proxy setting and tells how it went (which proxy, the answer, the time).</summary>
     public static async Task<string> TestProxyAsync(Core.Net.ProxyOptions options, string? password, Uri target)

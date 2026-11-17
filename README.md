@@ -47,10 +47,15 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
 - Web server folder listings (`http://`, `https://`) open like folders; the remotes of an installed rclone too.
 - Android phones over ADB (USB debugging) as drives; shortcuts to the local folders of OneDrive, iCloud Drive,
   Dropbox, Google Drive ... and to WSL distributions.
+- Remote desktop (RDP) connections open in the system's client (mstsc, Windows App, FreeRDP / Remmina); Telnet
+  sessions in a tab of the internal terminal.
 - PC link: two computers running NextCommander work on each other's shared folders over a USB or Ethernet cable
   (or the network), encrypted, paired once with a code shown on both screens.
-- A connection manager, saved passwords protected by an optional master password, and a view of the
-  machines on your local network.
+- A connection manager with the options of each type (keep-alive, pinned keys, TLS versions, S3 storage classes,
+  RDP screen and redirections, Telnet keys ...), saved passwords protected by an optional master password, and a
+  view of the machines on your local network.
+- Proxies: the system's, HTTP, HTTPS, SOCKS4 / 4a / 5, an SSH tunnel or a PAC script, for the whole program or
+  per connection.
 - Browse the trash / Recycle Bin in a panel: restore, copy out, delete for good, empty.
 - Phones, cameras and players connected over USB (MTP) appear as drives: copy photos off a phone, put files on it,
   make folders, rename and delete (Windows; Linux: the folders GNOME mounts for them, or through libmtp on other
@@ -80,7 +85,7 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
 - [Tools](docs/guide/tools.md): Lister, editor, find files, multi-rename, synchronize, compare, duplicates,
   folder sizes, checksums, terminal and more.
 - [Archives](docs/guide/archives.md): opening, packing and unpacking archives.
-- [Connections](docs/guide/connections.md): FTP, SFTP, SCP, WebDAV, SMB, S3, Azure, cloud drives, ADB and rclone.
+- [Connections](docs/guide/connections.md): FTP, SFTP, SCP, WebDAV, SMB, S3, Azure, cloud drives, ADB, rclone, RDP and Telnet.
 - [Configuration](docs/guide/configuration.md): a tour of the Configuration window.
 - [Color themes](docs/guide/themes.md): choosing a theme and making your own.
 - [Icon packs](docs/guide/icon-packs.md): choosing an icon pack and making your own.

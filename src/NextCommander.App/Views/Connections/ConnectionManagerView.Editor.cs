@@ -32,6 +32,8 @@ public sealed partial class ConnectionManagerView
         (RemoteProtocol.OneDrive, "OneDrive", "Personal, work or school; SharePoint sites", "Cloud drives"),
         (RemoteProtocol.Dropbox, "Dropbox", "Your Dropbox", "Cloud drives"),
         (RemoteProtocol.Box, "Box", "Your Box account", "Cloud drives"),
+        (RemoteProtocol.Rdp, "Remote desktop (RDP)", "The desktop of a Windows computer, in the system's RDP client", "Remote sessions"),
+        (RemoteProtocol.Telnet, "Telnet", "A text session in the internal terminal (routers, switches, old systems)", "Remote sessions"),
     ];
 
     private static readonly (string Name, string Color)[] s_colors =
@@ -333,6 +335,10 @@ public sealed partial class ConnectionManagerView
         tabs.Items.Add(Tab("General", General(c)));
         tabs.Items.Add(Tab("Login", Login(c)));
         tabs.Items.Add(Tab("Advanced", Advanced(c)));
+        if (HasProxy(c.Protocol))
+        {
+            tabs.Items.Add(Tab("Proxy", ProxyTab(c)));
+        }
         tabs.SelectedIndex = _tab;
         tabs.SelectionChanged += (_, _) => _tab = Math.Max(0, tabs.SelectedIndex);
         panel.Children.Add(tabs);
@@ -502,7 +508,12 @@ public sealed partial class ConnectionManagerView
                 c.Protocol = kinds[i];
                 Changed(c);
             })));
-            fields.Add(Field("Mode", Check("Passive mode", c.Passive, v => c.Passive = v)));
+            fields.Add(Field("Mode", Check("Passive mode", c.Passive, v =>
+            {
+                c.Passive = v;
+                _tab = 0;
+                ShowDetail(); // the active mode ports of the Advanced tab follow
+            })));
             fields.Add(null);
         }
         if (!c.IsCloudDrive)
@@ -529,6 +540,10 @@ public sealed partial class ConnectionManagerView
         if (c.Protocol == RemoteProtocol.S3)
         {
             fields.Add(Field("Region", Text(c.Region, v => c.Region = v.Trim(), Core.Localization.Localizer.T("empty: from the server name or us-east-1"))));
+        }
+        if (c.IsSession)
+        {
+            return Fields([.. fields]);
         }
         fields.Add(Field("Start folder", Text(c.InitialPath, v =>
         {
@@ -627,6 +642,30 @@ public sealed partial class ConnectionManagerView
                 TextWrapping = Avalonia.Media.TextWrapping.Wrap,
                 Opacity = 0.8,
             });
+            return fields;
+        }
+        if (c.Protocol == RemoteProtocol.Telnet)
+        {
+            fields.Add(new TextBlock
+            {
+                Text = "The server asks for the user and the password in the terminal.",
+                TextWrapping = TextWrapping.Wrap,
+                Opacity = 0.8,
+            });
+            return fields;
+        }
+        if (c.Protocol == RemoteProtocol.Rdp)
+        {
+            User("User (DOMAIN\\user; empty: asked by the client)");
+            fields.Add(null);
+            if (NextCommander.Platform.RemoteDesktopLauncher.TakesPassword)
+            {
+                fields.Add(Remember("Save password (asked on first connect)"));
+            }
+            else
+            {
+                fields.Add(new TextBlock { Text = "The remote desktop client asks for the password and can remember it.", TextWrapping = TextWrapping.Wrap, Opacity = 0.75 });
+            }
             return fields;
         }
         if (c.IsCloudDrive)
@@ -748,8 +787,16 @@ public sealed partial class ConnectionManagerView
         var fields = new List<Control?>
         {
             Field("Timeout (seconds)", Number(c.TimeoutSeconds, v => c.TimeoutSeconds = v, Core.Localization.Localizer.T("default"))),
-            Field("Simultaneous connections", Number(c.MaxConnections, v => c.MaxConnections = Math.Max(1, v), "3")),
         };
+        if (!c.IsSession)
+        {
+            fields.Add(Field("Simultaneous connections", Number(c.MaxConnections, v => c.MaxConnections = Math.Max(1, v), "3")));
+        }
+        if (IsSsh(c.Protocol) || IsFtp(c.Protocol) || c.Protocol == RemoteProtocol.Telnet)
+        {
+            fields.Add(Field("Keep-alive (seconds)", Number(c.KeepAliveSeconds, v => c.KeepAliveSeconds = v, Core.Localization.Localizer.T("off")),
+                Core.Localization.Localizer.T("A small message this often keeps an idle connection from being dropped.")));
+        }
         if (IsSsh(c.Protocol))
         {
             fields.Add(Field("Jump host", Text(c.JumpHost, v =>
@@ -757,12 +804,39 @@ public sealed partial class ConnectionManagerView
                 c.JumpHost = string.IsNullOrWhiteSpace(v) ? null : v.Trim();
                 Changed(c);
             }, "user@bastion.example.com:22"), Core.Localization.Localizer.T("The connection goes through this SSH server; it logs in with the same key file, agent or password.")));
+            if (c.Protocol == RemoteProtocol.Sftp)
+            {
+                fields.Add(Field("Request size (KB)", Number(c.SftpBufferKb, v => c.SftpBufferKb = v, "32"),
+                    Core.Localization.Localizer.T("Larger requests can be faster on far servers (4 to 256).")));
+            }
         }
         if (IsFtp(c.Protocol))
         {
             var encodings = FtpFileSystemProvider.Encodings;
+            fields.Add(null);
             fields.Add(Field("File name encoding", Choice([.. encodings.Select(e => e.Length == 0 ? Core.Localization.Localizer.T("Automatic (UTF-8 when the server has it)") : e)],
                 Array.IndexOf([.. encodings], c.FtpEncoding ?? string.Empty), i => c.FtpEncoding = encodings[i].Length == 0 ? null : encodings[i])));
+            fields.Add(Field("Folder listing", Choice(["Automatic (MLSD when the server has it)", "Always LIST"], (int)c.FtpListing, i => c.FtpListing = (FtpListing)i)));
+            var zones = s_timeOffsets;
+            fields.Add(Field("Server time zone", Choice([.. zones.Select(z => z is null ? Core.Localization.Localizer.T("UTC (or as the server tells)") : OffsetText(z.Value))],
+                Math.Max(0, Array.IndexOf(zones, c.FtpTimeOffsetMinutes)), i => c.FtpTimeOffsetMinutes = zones[i]),
+                Core.Localization.Localizer.T("For servers that list their local times (LIST without MLSD).")));
+            var active = Text(c.FtpActivePorts, v =>
+            {
+                c.FtpActivePorts = string.IsNullOrWhiteSpace(v) ? null : v.Trim();
+                Changed(c);
+            }, Core.Localization.Localizer.T("the program's setting"));
+            active.IsEnabled = !c.Passive;
+            fields.Add(Field("Active mode ports", active, Core.Localization.Localizer.T("A range such as 50000-50100 (only in active mode).")));
+            if (c.Protocol != RemoteProtocol.Ftp)
+            {
+                fields.Add(null);
+                fields.Add(Check("Encrypt the data connections too", c.FtpEncryptData, v => c.FtpEncryptData = v));
+            }
+        }
+        if (c.Protocol is RemoteProtocol.WebDav or RemoteProtocol.WebDavs)
+        {
+            fields.Add(Field("Authentication", Choice(["Automatic (as the server asks)", "Basic", "Digest", "NTLM", "Negotiate (Kerberos)"], (int)c.WebDavAuth, i => c.WebDavAuth = (WebDavAuth)i)));
         }
         if (c.Protocol == RemoteProtocol.S3)
         {
@@ -776,31 +850,253 @@ public sealed partial class ConnectionManagerView
             kms = Text(c.KmsKeyId, v => c.KmsKeyId = string.IsNullOrWhiteSpace(v) ? null : v.Trim(), Core.Localization.Localizer.T("empty: the account's default key"));
             kms.IsEnabled = c.S3Encryption == S3Encryption.Kms;
             fields.Add(Field("KMS key", kms));
+            var classes = s_storageClasses;
+            fields.Add(Field("Storage class", Choice([.. classes.Select(k => k.Length == 0 ? Core.Localization.Localizer.T("Bucket default (STANDARD)") : k)],
+                Math.Max(0, Array.IndexOf(classes, c.S3StorageClass ?? string.Empty)), i => c.S3StorageClass = classes[i].Length == 0 ? null : classes[i]),
+                Core.Localization.Localizer.T("Of new uploads; the Glacier classes are read only after a restore.")));
+            var acls = s_acls;
+            fields.Add(Field("Access (ACL)", Choice([.. acls.Select(a => a.Length == 0 ? Core.Localization.Localizer.T("None (private)") : a)],
+                Math.Max(0, Array.IndexOf(acls, c.S3Acl ?? string.Empty)), i => c.S3Acl = acls[i].Length == 0 ? null : acls[i])));
+            fields.Add(Field("Part size (MB)", Number(c.S3PartSizeMb, v => c.S3PartSizeMb = v, "32"),
+                Core.Localization.Localizer.T("Of large uploads, 5 to 5120 MB.")));
             fields.Add(null);
             fields.Add(Check("Virtual-hosted addresses (bucket.server/key)", c.S3VirtualHost, v => c.S3VirtualHost = v));
+            fields.Add(Check("Requester pays (the bucket's owner does not pay the transfers)", c.S3RequesterPays, v => c.S3RequesterPays = v));
+        }
+        if (c.Protocol == RemoteProtocol.AzureBlob)
+        {
+            var tiers = s_accessTiers;
+            fields.Add(Field("Access tier", Choice([.. tiers.Select(t => t.Length == 0 ? Core.Localization.Localizer.T("The account's default") : t)],
+                Math.Max(0, Array.IndexOf(tiers, c.AzureAccessTier ?? string.Empty)), i => c.AzureAccessTier = tiers[i].Length == 0 ? null : tiers[i]),
+                Core.Localization.Localizer.T("Of new uploads; an archived blob is read only after it is rehydrated.")));
         }
         if (c.Protocol == RemoteProtocol.S3 || IsAzure(c.Protocol))
         {
+            fields.Add(null);
             fields.Add(Check("No TLS: plain HTTP (a local MinIO or Azurite)", c.PlainHttp, v =>
             {
                 c.PlainHttp = v;
                 Changed(c);
             }));
         }
-        if (!c.IsCloudDrive && c.Protocol is not (RemoteProtocol.Sftp or RemoteProtocol.Scp or RemoteProtocol.Ftp or RemoteProtocol.WebDav or RemoteProtocol.Smb or RemoteProtocol.Link))
+        if (c.Protocol == RemoteProtocol.Smb)
         {
-            fields.Add(Check("Accept any certificate (not recommended)", c.AcceptAnyCertificate, v => c.AcceptAnyCertificate = v));
+            fields.Add(null);
+            fields.Add(Check("Show the hidden administrative shares (C$, ADMIN$)", c.SmbShowHiddenShares, v => c.SmbShowHiddenShares = v));
+        }
+        if (c.Protocol is RemoteProtocol.GoogleDrive or RemoteProtocol.OneDrive or RemoteProtocol.Box)
+        {
+            fields.Add(null);
+            fields.Add(Check(c.Protocol == RemoteProtocol.OneDrive
+                ? "Delete permanently, not to the recycle bin (work / school accounts)"
+                : "Delete permanently, not to the trash", c.DeletePermanently, v => c.DeletePermanently = v));
+        }
+        if (c.Protocol == RemoteProtocol.GoogleDrive)
+        {
+            fields.Add(Field("Google documents as", Choice(["Microsoft Office (.docx, .xlsx, .pptx)", "OpenDocument (.odt, .ods, .odp)", "PDF"], (int)c.GoogleExport, i => c.GoogleExport = (GoogleExport)i)));
         }
         if (c.Protocol == RemoteProtocol.OneDrive)
         {
             fields.Add(Check("Show SharePoint sites too (work / school account)", c.IncludeSharePoint, v => c.IncludeSharePoint = v));
         }
+        if (c.Protocol == RemoteProtocol.Rdp)
+        {
+            RdpFields(c, fields);
+        }
+        if (c.Protocol == RemoteProtocol.Telnet)
+        {
+            TelnetFields(c, fields);
+        }
+        if (HasTls(c))
+        {
+            fields.Add(null);
+            fields.Add(Field("TLS version", Choice(["Automatic (TLS 1.2 or 1.3)", "TLS 1.2 only", "TLS 1.3 only"], (int)c.TlsVersion, i => c.TlsVersion = (TlsVersion)i)));
+        }
+        if (HasFingerprint(c))
+        {
+            fields.Add(Field(IsSsh(c.Protocol) ? "Pinned host key" : "Pinned certificate", Text(c.PinnedFingerprint, v =>
+                c.PinnedFingerprint = string.IsNullOrWhiteSpace(v) ? null : v.Trim(), "SHA256:..."),
+                Core.Localization.Localizer.T("Only this fingerprint is trusted; another key is refused without asking. Empty: the one accepted on first connect.")));
+        }
+        if (!c.IsCloudDrive && !c.IsSession && c.Protocol is not (RemoteProtocol.Sftp or RemoteProtocol.Scp or RemoteProtocol.Ftp or RemoteProtocol.WebDav or RemoteProtocol.Smb or RemoteProtocol.Link))
+        {
+            fields.Add(null);
+            fields.Add(Check("Accept any certificate (not recommended)", c.AcceptAnyCertificate, v => c.AcceptAnyCertificate = v));
+        }
+        fields.Add(null);
         fields.Add(Check("Favorite", c.Favorite, v =>
         {
             c.Favorite = v;
             RefreshTree();
         }));
         return Fields([.. fields]);
+    }
+
+    private static readonly int?[] s_timeOffsets = [null, .. Enumerable.Range(-24, 53).Select(h => (int?)(h * 30)).Where(m => m != 0)];
+
+    private static readonly string[] s_storageClasses = ["", "STANDARD", "INTELLIGENT_TIERING", "STANDARD_IA", "ONEZONE_IA", "GLACIER_IR", "GLACIER", "DEEP_ARCHIVE", "REDUCED_REDUNDANCY"];
+
+    private static readonly string[] s_acls = ["", "private", "public-read", "authenticated-read", "bucket-owner-read", "bucket-owner-full-control"];
+
+    private static readonly string[] s_accessTiers = ["", "Hot", "Cool", "Cold", "Archive"];
+
+    private static string OffsetText(int minutes) =>
+        "UTC" + (minutes < 0 ? "−" : "+") + TimeSpan.FromMinutes(Math.Abs(minutes)).ToString(@"hh\:mm", CultureInfo.InvariantCulture);
+
+    /// <summary>FTPS and the HTTPS types (TLS versions can be chosen).</summary>
+    private static bool HasTls(RemoteConnection c) =>
+        c.Protocol is RemoteProtocol.FtpsExplicit or RemoteProtocol.FtpsImplicit or RemoteProtocol.WebDavs
+        || (c.Protocol == RemoteProtocol.S3 || IsAzure(c.Protocol)) && !c.PlainHttp;
+
+    /// <summary>The types whose server key or certificate is checked by fingerprint.</summary>
+    private static bool HasFingerprint(RemoteConnection c) => IsSsh(c.Protocol) || HasTls(c);
+
+    /// <summary>The types that can go through a proxy (RDP has its own client; PC link stays on the local network).</summary>
+    private static bool HasProxy(RemoteProtocol p) => p is not (RemoteProtocol.Rdp or RemoteProtocol.Link);
+
+    private void RdpFields(RemoteConnection c, List<Control?> fields)
+    {
+        ComboBox? size = null;
+        fields.Add(null);
+        fields.Add(Check("Full screen", c.FullScreen, v =>
+        {
+            c.FullScreen = v;
+            size!.IsEnabled = !v;
+        }));
+        fields.Add(Check("All monitors (with full screen)", c.RdpMultiMonitor, v => c.RdpMultiMonitor = v));
+        var sizes = Core.Net.RemoteDesktop.Sizes;
+        size = Choice([.. sizes.Select(z => z.Width == 0 ? Core.Localization.Localizer.T("Follow the window") : $"{z.Width} × {z.Height}")],
+            Math.Max(0, sizes.ToList().IndexOf((c.RdpWidth, c.RdpHeight))), i => (c.RdpWidth, c.RdpHeight) = sizes[i]);
+        size.IsEnabled = !c.FullScreen;
+        fields.Add(null);
+        fields.Add(Field("Size in a window", size));
+        var depths = Core.Net.RemoteDesktop.ColorDepths;
+        fields.Add(Field("Colors", Choice([.. depths.Select(d => d switch
+            {
+                0 => Core.Localization.Localizer.T("Highest (32 bit)"),
+                32 => Core.Localization.Localizer.T("True color (32 bit)"),
+                24 => Core.Localization.Localizer.T("True color (24 bit)"),
+                16 => Core.Localization.Localizer.T("High color (16 bit)"),
+                _ => Core.Localization.Localizer.T("High color (15 bit)"),
+            })], Math.Max(0, depths.ToList().IndexOf(c.RdpColorDepth)), i => c.RdpColorDepth = depths[i])));
+        fields.Add(Field("Sound", Choice(["Play on this computer", "Play on the remote computer", "Do not play"], (int)c.RdpAudio, i => c.RdpAudio = (RdpAudio)i)));
+        fields.Add(Field("Remote Desktop Gateway", Text(c.RdpGateway, v => c.RdpGateway = string.IsNullOrWhiteSpace(v) ? null : v.Trim(), "gateway.example.com"),
+            Core.Localization.Localizer.T("Empty: connect directly. The gateway uses the same user.")));
+        fields.Add(null);
+        fields.Add(Check("Share the clipboard", c.RdpClipboard, v => c.RdpClipboard = v));
+        fields.Add(Check("Share this computer's drives", c.RdpDrives, v => c.RdpDrives = v));
+        fields.Add(Check("Share this computer's printers", c.RdpPrinters, v => c.RdpPrinters = v));
+        fields.Add(Check("Administrative session (console)", c.RdpAdmin, v => c.RdpAdmin = v));
+    }
+
+    private void TelnetFields(RemoteConnection c, List<Control?> fields)
+    {
+        fields.Add(null);
+        fields.Add(Field("Terminal type", Text(c.TerminalType, v => c.TerminalType = string.IsNullOrWhiteSpace(v) ? null : v.Trim(), "xterm"),
+            Core.Localization.Localizer.T("Told to the server (xterm, vt100, ansi ...).")));
+        var encodings = Services.Terminal.TelnetTerminal.Encodings;
+        fields.Add(Field("Character set", Choice([.. encodings.Select(e => e.Length == 0 ? "UTF-8" : e)],
+            Math.Max(0, Array.IndexOf([.. encodings], c.TerminalEncoding ?? string.Empty)), i => c.TerminalEncoding = encodings[i].Length == 0 ? null : encodings[i])));
+        fields.Add(Field("Backspace sends", Choice(["DEL (127)", "Ctrl+H (8)"], (int)c.TelnetBackspace, i => c.TelnetBackspace = (TelnetBackspace)i)));
+        fields.Add(Field("Enter sends", Choice(["CR LF", "CR NUL", "LF"], (int)c.TelnetEnter, i => c.TelnetEnter = (TelnetEnter)i)));
+        fields.Add(Field("Local echo", Choice(["Automatic (when the server does not echo)", "On", "Off"], (int)c.LocalEcho, i => c.LocalEcho = (LocalEcho)i)));
+    }
+
+    /// <summary>
+    /// The Proxy tab: the program's proxy setting, none, or the connection's own proxy (kind, server, port, user,
+    /// password, key file for an SSH proxy). The password goes to the password store when the connection is saved.
+    /// </summary>
+    private Control ProxyTab(RemoteConnection c)
+    {
+        var panel = new StackPanel();
+        var segment = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 4) };
+        foreach (var (name, use) in new[] { ("The program's setting", Core.Net.ConnectionProxy.Default), ("No proxy", Core.Net.ConnectionProxy.None), ("Its own proxy", Core.Net.ConnectionProxy.Custom) })
+        {
+            var button = new ToggleButton { Content = name, IsChecked = c.Proxy == use, Padding = new Thickness(12, 6), CornerRadius = new CornerRadius(0) };
+            button.Click += (_, _) =>
+            {
+                c.Proxy = use;
+                Changed(c);
+                _tab = 3;
+                ShowDetail();
+            };
+            segment.Children.Add(button);
+        }
+        panel.Children.Add(Field("Proxy", segment));
+        if (c.Proxy != Core.Net.ConnectionProxy.Custom)
+        {
+            panel.Children.Add(new TextBlock
+            {
+                Text = c.Proxy == Core.Net.ConnectionProxy.None
+                    ? "The connection goes directly, whatever Configuration > Proxy says."
+                    : "As Configuration > Operation > Proxy says.",
+                TextWrapping = TextWrapping.Wrap, Opacity = 0.75, Margin = new Thickness(0, 8, 0, 0),
+            });
+            return panel;
+        }
+        var fields = new List<Control?>();
+        var kinds = Dialogs.SettingsView.ProxyKinds;
+        TextBox? port = null;
+        fields.Add(Field("Type", Choice([.. kinds.Select(k => k.Text)], Math.Max(0, Array.FindIndex(kinds, k => k.Kind == c.ProxyKind)), i =>
+        {
+            if (kinds[i].Kind == c.ProxyKind)
+            {
+                return;
+            }
+            c.ProxyKind = kinds[i].Kind;
+            Changed(c);
+            _tab = 3;
+            ShowDetail(); // the port's placeholder and the key file follow the kind
+        })));
+        fields.Add(null);
+        fields.Add(Field("Server", Text(c.ProxyHost, v =>
+        {
+            c.ProxyHost = string.IsNullOrWhiteSpace(v) ? null : v.Trim();
+            Changed(c);
+        }, "proxy.example.com")));
+        port = Number(c.ProxyPort, v =>
+        {
+            c.ProxyPort = v;
+            Changed(c);
+        }, Core.Localization.Localizer.T("default") + " " + Core.Net.ProxyOptions.DefaultPort(c.ProxyKind));
+        fields.Add(Field("Port", port));
+        fields.Add(Field("User", Text(c.ProxyUser, v => c.ProxyUser = string.IsNullOrWhiteSpace(v) ? null : v.Trim(),
+            Core.Localization.Localizer.T(c.ProxyKind is Core.Net.ProxyKind.Socks4 or Core.Net.ProxyKind.Socks4a ? "the user id (optional)" : "only when the proxy asks for one"))));
+        var id = Core.Net.WebProxyConfig.SecretIdOf(c);
+        var password = new TextBox
+        {
+            PasswordChar = '•',
+            PlaceholderText = Core.Localization.Localizer.T(_request.HasSecret?.Invoke(id) == true ? "saved (type to change)" : "kept encrypted in the password store"),
+        };
+        password.TextChanged += (_, _) =>
+        {
+            var text = password.Text ?? string.Empty;
+            _proxyPasswords[id] = text;
+            Core.Net.WebProxyConfig.SetPassword(id, text.Length > 0 ? text : null); // the test and the connection use it at once
+        };
+        if (c.ProxyKind is not (Core.Net.ProxyKind.Socks4 or Core.Net.ProxyKind.Socks4a))
+        {
+            fields.Add(Field(c.ProxyKind == Core.Net.ProxyKind.Ssh && !string.IsNullOrEmpty(c.ProxyKeyFile) ? "Key passphrase" : "Password", password));
+        }
+        if (c.ProxyKind == Core.Net.ProxyKind.Ssh)
+        {
+            var key = Text(c.ProxyKeyFile, v => c.ProxyKeyFile = string.IsNullOrWhiteSpace(v) ? null : v.Trim(), Core.Localization.Localizer.T("empty: the password logs in"));
+            var browse = new Button { Content = "...", Margin = new Thickness(6, 0, 0, 0) };
+            browse.Click += async (_, _) =>
+            {
+                if (await _request.PickFile("Private key file") is { } file)
+                {
+                    key.Text = file;
+                }
+            };
+            var row = new DockPanel();
+            DockPanel.SetDock(browse, Dock.Right);
+            row.Children.AddRange([browse, key]);
+            fields.Add(null);
+            fields.Add(Field("Private key", row, Core.Localization.Localizer.T("The SSH server's key is checked as for any SSH connection.")));
+        }
+        panel.Children.Add(Fields([.. fields]));
+        return panel;
     }
 
     /// <summary>The note above the tabs: how to set up the type, and the chosen service's own note.</summary>
@@ -815,6 +1111,8 @@ public sealed partial class ConnectionManagerView
             RemoteProtocol.Box => "On first use you sign in with your Box account in the browser. For the application id: app.box.com/developers/console → Create Platform App → User Authentication (OAuth 2.0); Configuration: Redirect URI http://localhost:53682/, application scopes: read and write all files and folders. Enter the Client ID and Client Secret here.",
             RemoteProtocol.Smb => "SMB2/3 shares (Windows, Samba, NAS); they open without mounting on Linux and macOS too. User: DOMAIN\\user or user; empty for a guest login. The root lists the machine's shares; the start folder can be a share (e.g. /documents).",
             RemoteProtocol.Link => "Another computer running NextCommander that shares folders (Net > Share with PC link there). Server: its computer name (as Net > PC link lists it) or its address, e.g. 169.254.12.34 on a direct cable. A USB-C / Thunderbolt cable or a USB link cable works when the system shows it as a network connection.",
+            RemoteProtocol.Rdp => "Opens in the system's remote desktop client: Remote Desktop Connection on Windows, Microsoft's Windows App on macOS, FreeRDP or Remmina on Linux. The remote computer must allow remote desktop connections (port 3389).",
+            RemoteProtocol.Telnet => "Opens a tab in the internal terminal. Telnet is not encrypted: what is typed, the password too, can be read on the network. Use it for devices that have nothing else (routers, switches, old systems).",
             RemoteProtocol.AzureFiles => "Server: account.file.core.windows.net. The account key or a SAS token is asked as the password. The root lists the file shares; the start folder can be a share (e.g. /documents).",
             RemoteProtocol.AzureBlob => "Server: account.blob.core.windows.net (at another address, such as Azurite, requests go as server/account/container). The account key or a SAS token is asked as the password. The root lists the containers.",
             RemoteProtocol.S3 => "Server: the S3 endpoint (AWS, MinIO, R2 ...). User: the access key id; the secret key is asked as the password. With an AWS profile the keys (and the session token of temporary keys) are read from ~/.aws/credentials. The root lists the buckets; the start folder can be a bucket (e.g. /backups).",

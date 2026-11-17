@@ -67,31 +67,56 @@ public sealed class CopyDialog : DialogWindow
     /// <summary>The choices for an existing target file: text and policy (Configuration offers the same list).</summary>
     public static IReadOnlyList<(string Text, ConflictPolicy Policy)> Policies => s_policies;
 
+    /// <summary>What each answer does, under the answer's list (in the order of <see cref="s_policies"/>).</summary>
+    private static readonly string[] s_policyDescriptions =
+    [
+        "You decide for each conflicting file.",
+        "Existing files in the destination are replaced.",
+        "Existing files are kept; those files are not copied.",
+        "Replaces a file only when the destination copy is older.",
+        "Copied files get a new name, e.g. Movie (2).mkv.",
+        "Existing files are renamed before copying.",
+        "Replaces a file only when the source is larger.",
+        "Replaces a file only when the source is smaller.",
+        "Older files in the destination are renamed; newer ones are skipped.",
+    ];
+
+    /// <summary>Quick filters under the filter box: the patterns they add or take out.</summary>
+    private static readonly (string Text, string Patterns)[] s_presets =
+    [
+        ("Video", "*.mkv *.mp4 *.avi *.mov"),
+        ("Subtitles", "*.srt *.sub *.ass"),
+        ("Images", "*.jpg *.png *.webp"),
+        ("Info files", "*.nfo *.txt"),
+    ];
+
     private readonly bool _move;
     private readonly CopyDialogOptions _options;
     private readonly TextBox _target;
-    private readonly TextBox _filter = new() { PlaceholderText = "*.* (all files), e.g. *.jpg *.png | thumbs\\" };
+    private readonly TextBox _filter = new() { PlaceholderText = "*.* (all files), e.g. *.jpg *.png | thumbs\\", Classes = { "nc-mono", "noloc" } };
     private readonly ComboBox _policy;
     private readonly CheckBox _verify;
-    private readonly CheckBox _permissions = new() { Content = "Copy NTFS permissions (may need administrator rights)" };
-    private readonly CheckBox _skipUnreadable = new() { Content = "Skip all which cannot be opened for reading" };
-    private readonly CheckBox _overwriteProtected = new() { Content = "Overwrite/Delete read only/hidden/system" };
-    private readonly CheckBox _allTargets = new() { Content = "Copy to all selected folders/links in the target panel" };
-    private readonly TextBlock _size = new() { VerticalAlignment = VerticalAlignment.Center, Classes = { "noloc" } };
-    private readonly TextBlock _files = new() { VerticalAlignment = VerticalAlignment.Center, Classes = { "noloc" } };
-    private readonly TextBlock _folders = new() { VerticalAlignment = VerticalAlignment.Center, Classes = { "noloc" } };
-    private readonly TextBlock _error = new() { Foreground = Brushes.IndianRed, IsVisible = false, TextWrapping = TextWrapping.Wrap };
-    private readonly Border _advanced;
-    private readonly Button _optionsButton;
+    private readonly CheckBox _permissions = new();
+    private readonly CheckBox _skipUnreadable = new();
+    private readonly CheckBox _overwriteProtected = new();
+    private readonly CheckBox _allTargets = new();
+    private readonly TextBlock _size = new() { FontWeight = FontWeight.SemiBold, Classes = { "nc-meta", "noloc" } };
+    private readonly TextBlock _files = new() { FontWeight = FontWeight.SemiBold, Classes = { "nc-meta", "noloc" } };
+    private readonly TextBlock _folders = new() { FontWeight = FontWeight.SemiBold, Classes = { "nc-meta", "noloc" } };
+    private readonly TextBlock _policyDescription = new() { Classes = { "nc-hint" }, MinHeight = 17 };
+    private readonly TextBlock _error = new() { IsVisible = false, TextWrapping = TextWrapping.Wrap };
+    private readonly Services.Design.NcDisclosure _advanced;
     private readonly ToggleButton _pin;
     private readonly IReadOnlyList<string> _suggestions;
     private readonly CancellationTokenSource _counting = new();
     private readonly Button _targetButton;
     private readonly Button _filterButton;
+    private readonly List<(ToggleButton Chip, string[] Patterns)> _presetChips = [];
     private CopySummary? _summary;
     private IReadOnlyList<Core.Vfs.VfsEntry>? _found;
     private bool _showingFound;
-    private readonly StackPanel _counts = new() { Orientation = Orientation.Horizontal, Spacing = 6, HorizontalAlignment = HorizontalAlignment.Right };
+    private bool _syncingPresets;
+    private readonly WrapPanel _counts = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 2, 0, 0) };
 
     public CopyDialog(bool move, string description, string target, bool verifyDefault, IReadOnlyList<string>? suggestions = null, CopyDialogOptions? options = null)
         : base(move ? "Move / Rename" : "Copy", 640)
@@ -100,27 +125,57 @@ public sealed class CopyDialog : DialogWindow
         _options = options ?? new CopyDialogOptions();
         _suggestions = suggestions ?? [];
         var settings = _options.Settings;
+        Services.Design.Nc.Apply(this);
 
-        Body.Children.Add(new TextBlock { Text = description, TextTrimming = TextTrimming.CharacterEllipsis });
+        // what is copied: a folder badge, the description, the size and the counts
+        var badge = new Border
+        {
+            Classes = { "nc-badge-lg" },
+            VerticalAlignment = VerticalAlignment.Top,
+            Child = new Avalonia.Controls.Shapes.Path { Data = Geometry.Parse(Services.Design.Nc.Icons.FolderFilled), Width = 26, Height = 26, Stretch = Stretch.Uniform },
+        };
+        ((Avalonia.Controls.Shapes.Path)badge.Child)[!Avalonia.Controls.Shapes.Shape.FillProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("FmFolderBrush");
+        _counts.Children.AddRange([
+            Meta(Services.Design.Nc.Icons.Disk, _size, null),
+            Meta(Services.Design.Nc.Icons.File, _files, "files"),
+            Meta(Services.Design.Nc.Icons.Folder, _folders, "folders"),
+        ]);
+        var head = new DockPanel();
+        DockPanel.SetDock(badge, Dock.Left);
+        head.Children.Add(badge);
+        head.Children.Add(new StackPanel
+        {
+            Margin = new Thickness(14, 0, 0, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+            Children = { new TextBlock { Text = description, Classes = { "nc-title" } }, _counts },
+        });
 
         // target with its list, + F7
-        _target = new TextBox { Text = target, Classes = { "noloc" } };
-        _targetButton = ListButton("+ F7", "The target list and the directory hotlist (F7, Ctrl+D)", TargetMenu);
-        Body.Children.Add(Line(ListBox(_target, TargetChoices), _targetButton));
+        _target = new TextBox { Text = target, Classes = { "nc-mono", "noloc" } };
+        _targetButton = SideButton("F7", "The target list and the directory hotlist (F7, Ctrl+D)");
+        _targetButton.Click += (_, _) => TargetMenu().ShowAt(_targetButton);
+        var targetField = Services.Design.Nc.Field("Destination",
+            Services.Design.Nc.Line(ListBox(_target, Services.Design.Nc.Icons.Folder, TargetChoices, "Recent destinations"), _targetButton),
+            "Recent folders in the list");
         Completion = PathAutoComplete.Attach(_target);
 
-        // "Only files of this type", the size and the counts
-        var counts = _counts;
-        counts.Children.AddRange([_size, new Border { Width = 26 }, Glyph(Services.Icons.FileKind.File), _files, new Border { Width = 26 },
-            Glyph(Services.Icons.FileKind.Folder), _folders]);
-        var filterHead = new DockPanel();
-        DockPanel.SetDock(counts, Dock.Right);
-        filterHead.Children.AddRange([counts, new TextBlock { Text = "Only files of this type:", VerticalAlignment = VerticalAlignment.Center }]);
-        Body.Children.Add(filterHead);
-        _filterButton = new Button { Content = "+ F8", MinWidth = 60, HorizontalContentAlignment = HorizontalAlignment.Center, IsEnabled = _options.FindFiles is not null };
-        ToolTip.SetTip(_filterButton, "Find files: search, and copy the files found (F8)");
+        // "Only files of this type" with + F8 and the quick filters
+        _filterButton = SideButton("F8", "Find files: search, and copy the files found (F8)");
+        _filterButton.IsEnabled = _options.FindFiles is not null;
         _filterButton.Click += async (_, _) => await FindFilesAsync();
-        Body.Children.Add(Line(ListBox(_filter, FilterChoices), _filterButton));
+        var presets = new WrapPanel { Orientation = Orientation.Horizontal };
+        foreach (var (text, patterns) in s_presets)
+        {
+            var chip = Services.Design.Nc.Chip(text);
+            chip.Margin = new Thickness(0, 0, 6, 6);
+            var list = patterns.Split(' ');
+            chip.Click += (_, _) => TogglePreset(list);
+            _presetChips.Add((chip, list));
+            presets.Children.Add(chip);
+        }
+        var filterField = Services.Design.Nc.Field("Only files of this type",
+            Services.Design.Nc.Line(ListBox(_filter, Services.Design.Nc.Icons.Filter, FilterChoices, "Saved filters"), _filterButton),
+            "Separate with spaces · | excludes", presets);
         _filter.TextChanged += (_, _) =>
         {
             if (!_showingFound && _found is not null)
@@ -129,33 +184,82 @@ public sealed class CopyDialog : DialogWindow
                 _found = null;
                 ShowSummary(_options.Summary);
             }
+            SyncPresets();
         };
         ShowSummary(_options.Summary);
 
         // NTFS permissions (Windows) and Verify
-        _verify = new CheckBox { Content = "Verify", IsChecked = verifyDefault };
-        var checks = new DockPanel();
-        DockPanel.SetDock(_verify, Dock.Right);
-        checks.Children.Add(_verify);
+        _verify = new CheckBox { IsChecked = verifyDefault };
+        var options1 = new List<Border>();
         if (OperatingSystem.IsWindows())
         {
-            checks.Children.Add(_permissions);
+            options1.Add(Services.Design.Nc.Option(_permissions, "Copy NTFS permissions", "May need administrator rights", "Admin"));
         }
-        Body.Children.Add(checks);
-        Body.Children.Add(_error);
+        options1.Add(Services.Design.Nc.Option(_verify, "Verify", "Compare each file with its copy after writing"));
+        _error[!TextBlock.ForegroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("NcBadBrush");
 
-        // OK, F2 Queue, Tree, Cancel, Options >>
-        var ok = new Button { Content = "OK", IsDefault = true };
-        ok.Click += (_, _) => Finish(queue: false, switchOperation: false);
-        var queue = new Button { Content = "F2 Queue" };
-        queue.Click += (_, _) => Finish(queue: true, switchOperation: false);
-        var tree = new Button { Content = "Tree", IsEnabled = _options.PickFolder is not null };
+        // Advanced options: the answer when a file exists (pinned open, saved as the default) and the other switches
+        _policy = new ComboBox
+        {
+            ItemsSource = s_policies.Select((p, i) => $"{i + 1}. {p.Text}").ToList(),
+            SelectedIndex = Math.Max(0, Array.FindIndex(s_policies, p => p.Policy == DefaultPolicy)),
+            Classes = { "nc-select" },
+        };
+        _pin = Services.Design.Nc.IconButton<ToggleButton>(Services.Design.Nc.Icons.Pin, "Always open the copy dialog with these options");
+        _pin.IsChecked = settings?.CopyDialogExpanded == true;
+        _pin.IsCheckedChanged += (_, _) =>
+        {
+            if (settings is not null)
+            {
+                settings.CopyDialogExpanded = _pin.IsChecked == true;
+            }
+            if (_pin.IsChecked == true)
+            {
+                ShowAdvanced(true);
+            }
+        };
+        var save = Services.Design.Nc.IconButton<Button>(Services.Design.Nc.Icons.Save, "Use this answer by default");
+        save.Click += (_, _) => SaveDefaultPolicy();
+        _allTargets.IsEnabled = _options.TargetFolders > 0;
+        var allTargetsHint = _options.TargetFolders > 0
+            ? string.Format(CultureInfo.CurrentCulture, "{0} folders are selected in the target panel", _options.TargetFolders)
+            : "Select more than one folder in the target panel";
+        var advancedBody = new StackPanel
+        {
+            Spacing = 14,
+            Children =
+            {
+                Services.Design.Nc.Field("If a file already exists", _policy, null, _policyDescription),
+                Services.Design.Nc.Options(
+                    Services.Design.Nc.Option(_skipUnreadable, "Skip files that can't be opened for reading"),
+                    Services.Design.Nc.Option(_overwriteProtected, "Overwrite or delete read-only, hidden and system files"),
+                    Services.Design.Nc.Option(_allTargets, "Copy to all selected folders and links in the target panel", allTargetsHint)),
+            },
+        };
+        advancedBody.Children[0].Margin = new Thickness(0, 10, 0, 0);
+        if (advancedBody.Children[1] is Border inner)
+        {
+            // the switches of the advanced options are not framed again
+            inner.BorderThickness = new Thickness(0);
+            inner.Padding = new Thickness(0);
+            inner.Margin = new Thickness(-10, 0);
+        }
+        _advanced = new Services.Design.NcDisclosure("Advanced options", advancedBody, _pin, save);
+        _policy.SelectionChanged += (_, _) => ShowPolicy();
+        ShowPolicy();
+
+        // Tree · Cancel, Add to queue, Copy / Move (right click on the last two: the other operation)
+        var tree = Services.Design.Nc.Button("Tree", "ghost", icon: Services.Design.Nc.Icons.Tree);
+        tree.IsEnabled = _options.PickFolder is not null;
         tree.Click += async (_, _) => await PickFromTreeAsync();
-        var cancel = new Button { Content = "Cancel", IsCancel = true };
+        var cancel = Services.Design.Nc.Button("Cancel", "", "Esc");
+        cancel.IsCancel = true;
         cancel.Click += (_, _) => Close();
-        _optionsButton = new Button { Content = "Options >>" };
-        _optionsButton.Click += (_, _) => ShowAdvanced(true);
-        // right click: the other operation (copy instead of move, move instead of copy)
+        var queue = Services.Design.Nc.Button("Add to queue", "", "F2");
+        queue.Click += (_, _) => Finish(queue: true, switchOperation: false);
+        var ok = Services.Design.Nc.Button(move ? "Move" : "Copy", "primary", "Enter");
+        ok.IsDefault = true;
+        ok.Click += (_, _) => Finish(queue: false, switchOperation: false);
         foreach (var (button, toQueue) in new[] { (ok, false), (queue, true) })
         {
             var other = new MenuItem { Header = move ? "Copy" : "Move" };
@@ -163,62 +267,19 @@ public sealed class CopyDialog : DialogWindow
             button.ContextMenu = new ContextMenu { Items = { other } };
             button.ContextMenu.Opening += (_, _) => other.Icon = settings?.ShowMenuIcons != false ? MenuIcons.Create(move ? "nc_Copy" : "nc_RenMov") : null;
         }
-        var buttons = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*,*,*,*"), ColumnSpacing = 6 };
-        var column = 0;
-        foreach (var button in new[] { ok, queue, tree, cancel, _optionsButton })
-        {
-            button.HorizontalAlignment = HorizontalAlignment.Stretch;
-            button.HorizontalContentAlignment = HorizontalAlignment.Center;
-            Grid.SetColumn(button, column++);
-            buttons.Children.Add(button);
-        }
-        Body.Children.Add(buttons);
+        var footer = Services.Design.Nc.Footer([tree], cancel, queue, ok);
 
-        // Advanced options
-        _policy = new ComboBox
+        var content = new StackPanel
         {
-            ItemsSource = s_policies.Select((p, i) => $"{i + 1}. {p.Text}").ToList(),
-            SelectedIndex = Math.Max(0, Array.FindIndex(s_policies, p => p.Policy == DefaultPolicy)),
-            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Spacing = 20,
+            Margin = new Thickness(24, 18, 24, 22),
+            Children = { head, targetField, filterField, Services.Design.Nc.Options([.. options1]), _error, _advanced },
         };
-        _pin = new ToggleButton
-        {
-            IsChecked = settings?.CopyDialogExpanded == true,
-            Content = new Avalonia.Controls.Shapes.Path { Data = s_pin, Fill = Brushes.SteelBlue, Width = 14, Height = 14, Stretch = Stretch.Uniform },
-            Padding = new Thickness(6, 4),
-        };
-        ToolTip.SetTip(_pin, "Always open the copy dialog with these options");
-        _pin.IsCheckedChanged += (_, _) =>
-        {
-            if (settings is not null)
-            {
-                settings.CopyDialogExpanded = _pin.IsChecked == true;
-            }
-        };
-        var save = new Button { Content = new Viewbox { Width = 14, Height = 14, Child = MenuIcons.Create("copy.savedefault") ?? new Panel() }, Padding = new Thickness(6, 4) };
-        ToolTip.SetTip(save, "Use this answer by default");
-        save.Click += (_, _) => SaveDefaultPolicy();
-        _allTargets.IsEnabled = _options.TargetFolders > 0;
-        if (_options.TargetFolders > 0)
-        {
-            ToolTip.SetTip(_allTargets, string.Format(CultureInfo.CurrentCulture, "{0} folders are selected in the target panel", _options.TargetFolders));
-        }
-        var advanced = new StackPanel { Spacing = 6 };
-        var overwriteHead = new DockPanel();
-        DockPanel.SetDock(_pin, Dock.Right);
-        overwriteHead.Children.AddRange([_pin, new TextBlock { Text = "Overwrite options", VerticalAlignment = VerticalAlignment.Bottom }]);
-        advanced.Children.AddRange([overwriteHead, Line(_policy, save), _skipUnreadable, _overwriteProtected, _allTargets]);
-        var group = new StackPanel { Spacing = 4 };
-        group.Children.AddRange([new TextBlock { Text = "Advanced options", FontWeight = FontWeight.SemiBold }, advanced]);
-        _advanced = new Border
-        {
-            Child = group,
-            BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(3),
-            Padding = new Thickness(8, 4, 8, 8),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(0x60, 0x80, 0x80, 0x80)),
-        };
-        Body.Children.Add(_advanced);
+        var root = new DockPanel();
+        DockPanel.SetDock(footer, Dock.Bottom);
+        root.Children.Add(footer);
+        root.Children.Add(content);
+        Content = root;
         ShowAdvanced(settings?.CopyDialogExpanded == true);
 
         Opened += async (_, _) =>
@@ -230,6 +291,71 @@ public sealed class CopyDialog : DialogWindow
         Closed += (_, _) => _counting.Cancel();
     }
 
+    /// <summary>An icon, a number and its word ("35 files").</summary>
+    private static StackPanel Meta(string icon, TextBlock value, string? word)
+    {
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 5, Margin = new Thickness(0, 0, 14, 0), Children = { Services.Design.Nc.Icon(icon, 13, "NcMutedBrush", 1.4), value } };
+        if (word is not null)
+        {
+            row.Children.Add(new TextBlock { Text = word, Classes = { "nc-meta" } });
+        }
+        return row;
+    }
+
+    /// <summary>The "+" button beside a field with its key (F7, F8).</summary>
+    private static Button SideButton(string key, string tip)
+    {
+        var button = Services.Design.Nc.Button(string.Empty, "side", key, Services.Design.Nc.Icons.Plus);
+        ToolTip.SetTip(button, tip);
+        Avalonia.Automation.AutomationProperties.SetName(button, "+ " + key);
+        return button;
+    }
+
+    /// <summary>The chosen answer: its description and the line of the closed Advanced options.</summary>
+    private void ShowPolicy()
+    {
+        var index = Math.Max(0, _policy.SelectedIndex);
+        _policyDescription.Text = s_policyDescriptions[index];
+        _advanced.Summary = string.Format(CultureInfo.CurrentCulture, "If file exists: {0}", s_policies[index].Text);
+    }
+
+    /// <summary>A quick filter adds its patterns to the filter (before "|"), or takes them out when all are there.</summary>
+    private void TogglePreset(string[] patterns)
+    {
+        var text = _filter.Text ?? string.Empty;
+        var bar = text.IndexOf('|', StringComparison.Ordinal);
+        var include = (bar >= 0 ? text[..bar] : text).Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
+        var exclude = bar >= 0 ? text[(bar + 1)..].Trim() : string.Empty;
+        if (patterns.All(p => include.Contains(p, StringComparer.OrdinalIgnoreCase)))
+        {
+            include.RemoveAll(p => patterns.Contains(p, StringComparer.OrdinalIgnoreCase));
+        }
+        else
+        {
+            include.AddRange(patterns.Where(p => !include.Contains(p, StringComparer.OrdinalIgnoreCase)));
+        }
+        _filter.Text = string.Join(' ', include) + (exclude.Length > 0 ? " | " + exclude : string.Empty);
+        SyncPresets();
+    }
+
+    /// <summary>A quick filter is pressed while all its patterns are in the filter.</summary>
+    private void SyncPresets()
+    {
+        if (_syncingPresets)
+        {
+            return;
+        }
+        _syncingPresets = true;
+        var text = _filter.Text ?? string.Empty;
+        var bar = text.IndexOf('|', StringComparison.Ordinal);
+        var include = (bar >= 0 ? text[..bar] : text).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var (chip, patterns) in _presetChips)
+        {
+            chip.IsChecked = patterns.All(p => include.Contains(p, StringComparer.OrdinalIgnoreCase));
+        }
+        _syncingPresets = false;
+    }
+
     public CopyDialogResult? Result { get; private set; }
 
     /// <summary>Path completion of the target box.</summary>
@@ -239,17 +365,13 @@ public sealed class CopyDialog : DialogWindow
 
     public TextBox FilterBox => _filter;
 
-    public bool AdvancedShown => _advanced.IsVisible;
+    public bool AdvancedShown => _advanced.IsOpen;
 
     /// <summary>The size and count texts (tests).</summary>
     public string SummaryText => $"{_size.Text} | {_files.Text} | {_folders.Text}";
 
-    /// <summary>Opens or closes the advanced options (Options &gt;&gt;).</summary>
-    public void ShowAdvanced(bool show)
-    {
-        _advanced.IsVisible = show;
-        _optionsButton.IsVisible = !show;
-    }
+    /// <summary>Opens or closes the advanced options.</summary>
+    public void ShowAdvanced(bool show) => _advanced.IsOpen = show;
 
     /// <summary>Speed limit text ("10M", "500k/s", empty = unlimited) to bytes per second.</summary>
     public static bool TryParseSpeed(string? text, out long bytesPerSecond)
@@ -273,20 +395,12 @@ public sealed class CopyDialog : DialogWindow
 
     // ---------------------------------------------------------------- pieces
 
-    private static DockPanel Line(Control main, Control side)
-    {
-        side.Margin = new Thickness(6, 0, 0, 0);
-        var line = new DockPanel();
-        DockPanel.SetDock(side, Dock.Right);
-        line.Children.AddRange([side, main]);
-        return line;
-    }
-
-    /// <summary>A text box with a drop-down list (built when it opens; Alt+Down opens it too).</summary>
-    private static Control ListBox(TextBox box, Func<IReadOnlyList<string>> choices)
+    /// <summary>A field with its icon and a drop-down list (built when it opens; Alt+Down opens it too).</summary>
+    private static Control ListBox(TextBox box, string icon, Func<IReadOnlyList<string>> choices, string dropName)
     {
         var flyout = new MenuFlyout { Placement = PlacementMode.BottomEdgeAlignedRight };
-        var drop = new Button { Content = "▾", Flyout = flyout, Focusable = false, Padding = new Thickness(8, 0), VerticalAlignment = VerticalAlignment.Stretch };
+        var drop = new Button { Content = Services.Design.Nc.Icon(Services.Design.Nc.Icons.ChevronDown, 14, null, 1.6), Flyout = flyout, Focusable = false, Classes = { "nc-tail", "flat" } };
+        Avalonia.Automation.AutomationProperties.SetName(drop, dropName);
         flyout.Opening += (_, _) =>
         {
             flyout.Items.Clear();
@@ -313,21 +427,7 @@ public sealed class CopyDialog : DialogWindow
                 e.Handled = true;
             }
         };
-        // the box in a panel of its own: path completion puts its popup next to it (a last child of the dock panel would fill it)
-        var host = new Grid();
-        host.Children.Add(box);
-        var line = new DockPanel();
-        DockPanel.SetDock(drop, Dock.Right);
-        line.Children.AddRange([drop, host]);
-        return line;
-    }
-
-    private static Button ListButton(string text, string tip, Func<MenuFlyout> menu)
-    {
-        var button = new Button { Content = text, MinWidth = 60, HorizontalContentAlignment = HorizontalAlignment.Center };
-        ToolTip.SetTip(button, tip);
-        button.Click += (_, _) => menu().ShowAt(button);
-        return button;
+        return Services.Design.Nc.Combo(box, icon, drop);
     }
 
     private MenuItem MenuEntry(string header, string? icon, Action action)
@@ -426,12 +526,6 @@ public sealed class CopyDialog : DialogWindow
             _target.Text = folder.TrimEnd('\\', '/') + Path.DirectorySeparatorChar;
         }
     }
-
-    private static Control Glyph(Services.Icons.FileKind kind) => new Viewbox
-    {
-        Width = 14, Height = 14, VerticalAlignment = VerticalAlignment.Center,
-        Child = Services.Icons.FileKinds.GeometryFor(kind) is { } glyph ? Services.Icons.IconPacks.Draw(glyph, Services.Icons.FileKinds.BrushFor(kind)) : new Panel(),
-    };
 
     /// <summary>The kept target list, then the suggestions (other panel, recent targets, its subfolders).</summary>
     public IReadOnlyList<string> TargetChoices() =>

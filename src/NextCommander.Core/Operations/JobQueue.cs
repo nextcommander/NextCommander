@@ -103,10 +103,87 @@ public sealed class JobQueue : IAsyncDisposable
         QueueChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <summary>
+    /// Whether a waiting job of the queue can move by <paramref name="delta"/> places among the waiting ones (the running
+    /// job stays first; jobs started at once are not in the queue).
+    /// </summary>
+    public bool CanMove(FileJob job, int delta)
+    {
+        lock (_active)
+        {
+            var waiting = WaitingLocked();
+            var index = waiting.IndexOf(job);
+            return index >= 0 && delta != 0 && index + delta >= 0 && index + delta < waiting.Count;
+        }
+    }
+
+    /// <summary>Moves a waiting job up (negative) or down among the waiting jobs; false when it cannot move.</summary>
+    public bool Move(FileJob job, int delta)
+    {
+        lock (_active)
+        {
+            var waiting = WaitingLocked();
+            var index = waiting.IndexOf(job);
+            if (index < 0 || delta == 0)
+            {
+                return false;
+            }
+            var target = Math.Clamp(index + delta, 0, waiting.Count - 1);
+            if (target == index)
+            {
+                return false;
+            }
+            // the waiting jobs keep their places in the queue list; only their order among themselves changes
+            var slots = waiting.Select(w => _queued.IndexOf(w)).ToList();
+            waiting.RemoveAt(index);
+            waiting.Insert(target, job);
+            for (var i = 0; i < slots.Count; i++)
+            {
+                _queued[slots[i]] = waiting[i];
+            }
+        }
+        QueueChanged?.Invoke(this, EventArgs.Empty);
+        return true;
+    }
+
+    /// <summary>Gives a waiting job priority: it runs next.</summary>
+    public bool MoveToFront(FileJob job)
+    {
+        int index;
+        lock (_active)
+        {
+            index = WaitingLocked().IndexOf(job);
+        }
+        return index > 0 && Move(job, -index);
+    }
+
+    /// <summary>The jobs of the queue that have not started, in the order they run.</summary>
+    private List<FileJob> WaitingLocked() => [.. _queued.Where(j => j.State == JobState.Pending && !ReferenceEquals(j, _running))];
+
+    private FileJob? _running;
+
     /// <summary>Takes a job out of the queue: a waiting one never runs, the running one is cancelled.</summary>
     public void Remove(FileJob job)
     {
-        job.Cancel();
+        bool waiting;
+        lock (_active)
+        {
+            waiting = WaitingLocked().Contains(job);
+            if (waiting)
+            {
+                // out of the list at once; its item in the channel finds no job and is skipped
+                _queued.Remove(job);
+            }
+        }
+        if (waiting)
+        {
+            job.CancelBeforeStart();
+            Untrack(job);
+        }
+        else
+        {
+            job.Cancel();
+        }
         QueueChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -169,7 +246,9 @@ public sealed class JobQueue : IAsyncDisposable
 
     private async Task ProcessQueueAsync()
     {
-        await foreach (var job in _queue.Reader.ReadAllAsync().ConfigureAwait(false))
+        // one item in the channel for each job added; the job that runs is the first waiting one of the queue list,
+        // so moving waiting jobs (Move, MoveToFront) changes what runs next
+        await foreach (var _ in _queue.Reader.ReadAllAsync().ConfigureAwait(false))
         {
             Task gate;
             lock (_active)
@@ -177,6 +256,16 @@ public sealed class JobQueue : IAsyncDisposable
                 gate = _resumed.Task;
             }
             await gate.ConfigureAwait(false); // the queue is paused: the next job waits
+            FileJob? job;
+            lock (_active)
+            {
+                job = WaitingLocked().FirstOrDefault();
+                _running = job;
+            }
+            if (job is null)
+            {
+                continue;
+            }
             try
             {
                 QueueChanged?.Invoke(this, EventArgs.Empty);
@@ -187,6 +276,7 @@ public sealed class JobQueue : IAsyncDisposable
                 lock (_active)
                 {
                     _queued.Remove(job);
+                    _running = null;
                 }
                 Untrack(job);
                 QueueChanged?.Invoke(this, EventArgs.Empty);

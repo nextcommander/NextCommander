@@ -27,8 +27,8 @@ From top to bottom:
   icon. Its first level is the phone's storages (internal storage, SD card); copy, move, new folder, rename and
   delete work as on a disk. Unlock the phone and allow file transfer when it asks. On Linux the phone appears as the
   folder the desktop (GNOME) mounts for it; on other desktops (KDE ...) and on macOS NextCommander talks to it itself
-  through libmtp (Linux: the package `libmtp`, installed with NextCommander's package; macOS: inside the app, or
-  `brew install libmtp`). On macOS close Photos, Image Capture and Android File Transfer first: the first program
+  through libmtp (Linux: the package `libmtp`, installed with NextCommander's package; macOS: it comes inside the
+  app). On macOS close Photos, Image Capture and Android File Transfer first: the first program
   that takes the phone keeps it.
 - **Drive box:** the current drive with its label and free space, plus the `\` (root) and `..` (parent folder)
   buttons. Alt+F1 and Alt+F2 open the drive list of the left and right panel. The list shows each drive's label, or
@@ -138,7 +138,7 @@ panels (*Compare folders*, Shift+F2), which marks the files missing or newer on 
 | F4 | Edit the file; Shift+F4 creates a new file |
 | F5 | Copy to the other panel |
 | F6 | Move to the other panel (or rename) |
-| Shift+F6 | Rename in place: the name is edited in the list; Enter renames, Esc gives up, ↑ / ↓ rename and go on to the previous / next file |
+| Shift+F6 | Rename in place: the name is edited in the list; Enter renames, Esc gives up, ↑ / ↓ rename and go on to the previous / next file. Clicking once more on the name of the file under the cursor does the same (a moment after the click, so a double click still opens) |
 | F7 | New folder (`a/b/c` creates nested folders); Shift+F7 creates it in the other panel |
 | F8 or Delete | Delete (to the recycle bin / trash) |
 | Shift+Delete | Delete permanently |

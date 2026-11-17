@@ -192,6 +192,10 @@ public sealed partial class S3FileSystemProvider(RemoteHooks hooks) : RemoteProv
             {
                 request.Headers.TryAddWithoutValidation("x-amz-security-token", token); // signed with the x-amz-* headers
             }
+            if (client.Connection.S3RequesterPays)
+            {
+                request.Headers.TryAddWithoutValidation("x-amz-request-payer", "requester"); // Requester Pays buckets
+            }
             var region = bucket is not null && _bucketRegions.TryGetValue(bucket, out var known) ? known : RegionOf(client.Connection);
             S3Signer.Sign(request, client.Connection.User, client.Password ?? string.Empty, region, payloadHash ?? S3Signer.EmptyPayloadHash, DateTime.UtcNow);
             var response = await client.SendAsync(request, ct, headersOnly).ConfigureAwait(false);
@@ -423,9 +427,27 @@ public sealed partial class S3FileSystemProvider(RemoteHooks hooks) : RemoteProv
             var content = new StreamContent(new NonDisposingStream(data));
             content.Headers.ContentLength = data.Length;
             return content;
-        }, S3Signer.UnsignedPayload, r => AddEncryption(r, client.Connection)).ConfigureAwait(false);
+        }, S3Signer.UnsignedPayload, r => AddObjectOptions(r, client.Connection)).ConfigureAwait(false);
         await EnsureSuccessAsync(response, "/" + bucket + "/" + key).ConfigureAwait(false);
     }
+
+    /// <summary>What the connection asks of a new object: the server-side encryption, the storage class and the ACL.</summary>
+    internal static void AddObjectOptions(HttpRequestMessage request, RemoteConnection connection)
+    {
+        AddEncryption(request, connection);
+        if (!string.IsNullOrWhiteSpace(connection.S3StorageClass))
+        {
+            request.Headers.TryAddWithoutValidation("x-amz-storage-class", connection.S3StorageClass.Trim());
+        }
+        if (!string.IsNullOrWhiteSpace(connection.S3Acl))
+        {
+            request.Headers.TryAddWithoutValidation("x-amz-acl", connection.S3Acl.Trim());
+        }
+    }
+
+    /// <summary>The part size of multipart uploads: the connection's (5 MB to 5 GB), else <see cref="PartSize"/>.</summary>
+    internal long PartSizeOf(RemoteConnection connection) =>
+        connection.S3PartSizeMb > 0 ? Math.Clamp(connection.S3PartSizeMb, 5, 5120) * 1024L * 1024 : PartSize;
 
     /// <summary>The server-side encryption chosen for the connection, on a request that makes an object.</summary>
     internal static void AddEncryption(HttpRequestMessage request, RemoteConnection connection)
@@ -449,7 +471,7 @@ public sealed partial class S3FileSystemProvider(RemoteHooks hooks) : RemoteProv
     private async Task UploadInPartsAsync(HttpRemoteClient client, string bucket, string key, Stream data, CancellationToken ct)
     {
         string uploadId;
-        using (var start = await SendAsync(client, HttpMethod.Post, bucket, key, "uploads=", ct, configure: r => AddEncryption(r, client.Connection)).ConfigureAwait(false))
+        using (var start = await SendAsync(client, HttpMethod.Post, bucket, key, "uploads=", ct, configure: r => AddObjectOptions(r, client.Connection)).ConfigureAwait(false))
         {
             await EnsureSuccessAsync(start, "/" + bucket + "/" + key).ConfigureAwait(false);
             var root = XDocument.Parse(await start.Content.ReadAsStringAsync(ct).ConfigureAwait(false)).Root!;
@@ -458,7 +480,7 @@ public sealed partial class S3FileSystemProvider(RemoteHooks hooks) : RemoteProv
         try
         {
             var etags = new List<string>();
-            var buffer = new byte[PartSize];
+            var buffer = new byte[PartSizeOf(client.Connection)];
             for (var number = 1; ; number++)
             {
                 var read = 0;
@@ -609,7 +631,7 @@ public sealed partial class S3FileSystemProvider(RemoteHooks hooks) : RemoteProv
                     configure: r =>
                     {
                         r.Headers.TryAddWithoutValidation("x-amz-copy-source", copySource);
-                        AddEncryption(r, client.Connection); // a copy is a new object: encrypted as chosen
+                        AddObjectOptions(r, client.Connection); // a copy is a new object: encrypted as chosen
                     }).ConfigureAwait(false))
                 {
                     await EnsureSuccessAsync(copy, "/" + toBucket + "/" + to).ConfigureAwait(false);
@@ -663,7 +685,7 @@ public sealed partial class S3FileSystemProvider(RemoteHooks hooks) : RemoteProv
                     r.Headers.TryAddWithoutValidation("x-amz-copy-source", copySource);
                     r.Headers.TryAddWithoutValidation("x-amz-metadata-directive", "REPLACE");
                     r.Headers.TryAddWithoutValidation(MtimeHeader, MtimeValue(time));
-                    AddEncryption(r, client.Connection);
+                    AddObjectOptions(r, client.Connection);
                 }).ConfigureAwait(false);
             await EnsureSuccessAsync(copy, path.Path).ConfigureAwait(false);
             var text = await copy.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);

@@ -21,10 +21,12 @@ public sealed class EmulatedTerminal : TerminalTab
 {
     private readonly TerminalScreen _screen;
     private PseudoTerminal? _terminal;
+    private readonly Func<int, int, PseudoTerminal>? _connect;
 
-    public EmulatedTerminal(TerminalSession.ShellInfo shell, Func<string?> currentFolder)
+    public EmulatedTerminal(TerminalSession.ShellInfo shell, Func<string?> currentFolder, Func<int, int, PseudoTerminal>? connect = null)
         : base(shell, currentFolder)
     {
+        _connect = connect;
         _screen = new TerminalScreen(this);
         Child = _screen;
         this[!BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("FmListerBackgroundBrush");
@@ -36,6 +38,9 @@ public sealed class EmulatedTerminal : TerminalTab
     public Control ScreenControl => _screen;
 
     public PseudoTerminal? Terminal => _terminal;
+
+    /// <summary>A remote session (Telnet) in place of a local shell.</summary>
+    public override bool IsRemote => _connect is not null;
 
     /// <summary>Scrollback and screen as text.</summary>
     public override string OutputText => _screen.Vt.AllText();
@@ -56,16 +61,28 @@ public sealed class EmulatedTerminal : TerminalTab
         StartFolder = folder;
         try
         {
-            var terminal = PseudoTerminal.Start(Shell.FileName, Shell.TerminalArguments, folder, _screen.Vt.Columns, _screen.Vt.Rows);
+            var terminal = _connect is not null
+                ? _connect(_screen.Vt.Columns, _screen.Vt.Rows)
+                : PseudoTerminal.Start(Shell.FileName, Shell.TerminalArguments, folder, _screen.Vt.Columns, _screen.Vt.Rows);
             terminal.Output += _screen.Enqueue;
             terminal.Exited += code =>
             {
-                if (ReferenceEquals(terminal, _terminal))
+                if (!ReferenceEquals(terminal, _terminal))
+                {
+                    return;
+                }
+                if (_connect is not null)
+                {
+                    // the tab stays with what the server wrote last; Enter connects again
+                    _screen.Enqueue("\r\n[" + Core.Localization.Localizer.T("Disconnected. Press Enter to connect again.") + "]\r\n");
+                }
+                else
                 {
                     Dispatcher.UIThread.Post(RaiseShellExited);
                 }
             };
             _terminal = terminal;
+            terminal.Open();
         }
         catch (Exception ex) when (ex is IOException or System.ComponentModel.Win32Exception or InvalidOperationException
             or PlatformNotSupportedException or DllNotFoundException or EntryPointNotFoundException)
@@ -101,8 +118,11 @@ public sealed class EmulatedTerminal : TerminalTab
     {
         _screen.Vt.Clear();
         _screen.InvalidateVisual();
-        // the shell draws its prompt again
-        Send(Shell.IsCommandPrompt ? "cls\r" : "\f");
+        // the shell draws its prompt again (a remote session is left alone)
+        if (_connect is null)
+        {
+            Send(Shell.IsCommandPrompt ? "cls\r" : "\f");
+        }
         _screen.Focus();
     }
 

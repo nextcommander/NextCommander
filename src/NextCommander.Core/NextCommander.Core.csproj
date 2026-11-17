@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Blake3" />
+    <PackageReference Include="Jint" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="NextCommander.Core.Tests" />

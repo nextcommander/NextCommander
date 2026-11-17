@@ -1,11 +1,15 @@
 namespace NextCommander.Core.Config;
 
-/// <summary>What a connection type is: a server, object storage (buckets / containers at the root) or a cloud drive.</summary>
+/// <summary>
+/// What a connection type is: a server, object storage (buckets / containers at the root), a cloud drive, or a remote
+/// session (RDP, Telnet) that opens in a client or the terminal instead of a panel.
+/// </summary>
 public enum ProtocolKind
 {
     Server,
     ObjectStorage,
     CloudDrive,
+    Session,
 }
 
 /// <summary>
@@ -18,6 +22,8 @@ public sealed record ProtocolInfo(RemoteProtocol Protocol, string Scheme, int De
     public bool IsCloudDrive => Kind == ProtocolKind.CloudDrive;
 
     public bool IsObjectStorage => Kind == ProtocolKind.ObjectStorage;
+
+    public bool IsSession => Kind == ProtocolKind.Session;
 
     /// <summary>Whether a typed scheme names this type (the scheme or one of its aliases, case-insensitive).</summary>
     public bool Accepts(string scheme) =>
@@ -49,6 +55,8 @@ public static class RemoteProtocols
         new(RemoteProtocol.OneDrive, "onedrive", 443, ProtocolKind.CloudDrive, Http: true, CloudHost: "onedrive.live.com"),
         new(RemoteProtocol.Dropbox, "dropbox", 443, ProtocolKind.CloudDrive, Http: true, CloudHost: "dropbox.com"),
         new(RemoteProtocol.Box, "box", 443, ProtocolKind.CloudDrive, Http: true, CloudHost: "box.com"),
+        new(RemoteProtocol.Rdp, "rdp", 3389, ProtocolKind.Session),
+        new(RemoteProtocol.Telnet, "telnet", 23, ProtocolKind.Session),
     ];
 
     public static ProtocolInfo Of(RemoteProtocol protocol) => All.First(p => p.Protocol == protocol);

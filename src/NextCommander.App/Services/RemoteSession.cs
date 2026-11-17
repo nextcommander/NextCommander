@@ -62,6 +62,9 @@ public sealed class RemoteSession
                 return Task.CompletedTask;
             },
         };
+        // the connections' own proxies: their passwords from the password store; an SSH proxy checks its key with these hooks
+        NextCommander.Core.Net.WebProxyConfig.LoadPassword = async id => Secrets.Contains(id) ? await Secrets.GetAsync(id) : null;
+        NextCommander.Vfs.Remote.SshProxy.Hooks = Hooks;
     }
 
     public SecretStore Secrets { get; }

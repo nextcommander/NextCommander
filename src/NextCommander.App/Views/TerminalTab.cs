@@ -26,6 +26,9 @@ public abstract class TerminalTab : Border
     /// <summary>Tab title: the shell's shown name.</summary>
     public virtual string Title => Shell.DisplayName;
 
+    /// <summary>A session on another computer (Telnet): no local folder, not kept with the shells between starts.</summary>
+    public virtual bool IsRemote => false;
+
     /// <summary>What the terminal shows as text (output and, for the line console, the command being typed).</summary>
     public abstract string OutputText { get; }
 
@@ -53,7 +56,7 @@ public abstract class TerminalTab : Border
     /// <summary>Changes the shell's folder to the folder of the active panel.</summary>
     public void GoToPanelFolder()
     {
-        if (CurrentFolder() is { } folder)
+        if (!IsRemote && CurrentFolder() is { } folder)
         {
             Run(TerminalSession.ChangeDirectoryCommand(Shell, folder));
         }

@@ -1,0 +1,53 @@
+<!--
+  The colors of the tool windows built after the templates (copy dialog, find files, multi-rename; docs/design.md). They
+  follow the color theme: surfaces, text, lines and fields take the colors of the theme's Fluent palette (Window.Background,
+  Window.Text, Controls.*), so a theme file changes them too. Colors made from the theme's accent (its soft tint, the
+  focus ring, text on the accent) are set by Services/Design/DesignColors.cs whenever a theme is applied. Only the state
+  colors (ok, warn, bad) are the design's own, in a light and a dark tone.
+-->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <SolidColorBrush x:Key="NcAccentHoverBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+      <SolidColorBrush x:Key="NcOkBrush" Color="#17804F" />
+      <SolidColorBrush x:Key="NcOkSoftBrush" Color="#1A17804F" />
+      <SolidColorBrush x:Key="NcWarnBrush" Color="#B26B00" />
+      <SolidColorBrush x:Key="NcWarnSoftBrush" Color="#1AB26B00" />
+      <SolidColorBrush x:Key="NcBadBrush" Color="#C4302B" />
+      <SolidColorBrush x:Key="NcBadSoftBrush" Color="#1AC4302B" />
+      <BoxShadows x:Key="NcBadRing">0 0 0 3 #1AC4302B</BoxShadows>
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="NcAccentHoverBrush" Color="{DynamicResource SystemAccentColorLight1}" />
+      <SolidColorBrush x:Key="NcOkBrush" Color="#4CC38A" />
+      <SolidColorBrush x:Key="NcOkSoftBrush" Color="#244CC38A" />
+      <SolidColorBrush x:Key="NcWarnBrush" Color="#E9A23B" />
+      <SolidColorBrush x:Key="NcWarnSoftBrush" Color="#24E9A23B" />
+      <SolidColorBrush x:Key="NcBadBrush" Color="#FF6B6B" />
+      <SolidColorBrush x:Key="NcBadSoftBrush" Color="#24FF6B6B" />
+      <BoxShadows x:Key="NcBadRing">0 0 0 3 #24FF6B6B</BoxShadows>
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+
+  <!-- Window.Background: the window and the fields -->
+  <SolidColorBrush x:Key="NcSurfaceBrush" Color="{DynamicResource SystemAltHighColor}" />
+  <SolidColorBrush x:Key="NcFieldBrush" Color="{DynamicResource SystemAltHighColor}" />
+  <!-- Controls.Background / Controls.HoverBackground: bars, the results area, buttons -->
+  <SolidColorBrush x:Key="NcSurface2Brush" Color="{DynamicResource SystemChromeLowColor}" />
+  <SolidColorBrush x:Key="NcSurface3Brush" Color="{DynamicResource SystemChromeMediumLowColor}" />
+  <!-- Window.Text and its tones -->
+  <SolidColorBrush x:Key="NcTextBrush" Color="{DynamicResource SystemBaseHighColor}" />
+  <SolidColorBrush x:Key="NcMutedBrush" Color="{DynamicResource SystemBaseMediumHighColor}" />
+  <SolidColorBrush x:Key="NcFaintBrush" Color="{DynamicResource SystemBaseMediumColor}" />
+  <SolidColorBrush x:Key="NcLineBrush" Color="{DynamicResource SystemBaseLowColor}" />
+  <!-- Controls.Border -->
+  <SolidColorBrush x:Key="NcLineStrongBrush" Color="{DynamicResource SystemChromeHighColor}" />
+  <!-- Accent -->
+  <SolidColorBrush x:Key="NcAccentBrush" Color="{DynamicResource SystemAccentColor}" />
+  <!-- until DesignColors sets them from the theme's accent -->
+  <SolidColorBrush x:Key="NcAccentSoftBrush" Color="#1A0F6CDB" />
+  <SolidColorBrush x:Key="NcOnAccentBrush" Color="#FFFFFF" />
+  <BoxShadows x:Key="NcFocusRing">0 0 0 3 #1A0F6CDB</BoxShadows>
+  <FontFamily x:Key="NcMonoFont">Cascadia Code,Cascadia Mono,Consolas,Menlo,DejaVu Sans Mono,monospace</FontFamily>
+</ResourceDictionary>
