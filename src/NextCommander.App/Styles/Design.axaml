@@ -1,0 +1,527 @@
+<!--
+  Building blocks of the tool window templates (docs/design.md; colors from DesignTokens.axaml). Code-built windows make
+  them with Services/Design/Nc.cs.
+-->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Style Selector="Window.nc-window">
+    <Setter Property="Background" Value="{DynamicResource NcSurfaceBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+
+  <!-- Text -->
+  <Style Selector="TextBlock.nc-title">
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="TextBlock.nc-meta">
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="Foreground" Value="{DynamicResource NcMutedBrush}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.nc-label">
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource NcMutedBrush}" />
+  </Style>
+  <Style Selector="TextBlock.nc-hint">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{DynamicResource NcFaintBrush}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="TextBlock.nc-section">
+    <Setter Property="FontSize" Value="11.5" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="0.7" />
+    <Setter Property="Foreground" Value="{DynamicResource NcFaintBrush}" />
+  </Style>
+  <Style Selector="TextBlock.nc-mono">
+    <Setter Property="FontFamily" Value="{DynamicResource NcMonoFont}" />
+  </Style>
+
+  <!-- Buttons -->
+  <Style Selector="Button.nc">
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="Padding" Value="16,0" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Background" Value="{DynamicResource NcSurface3Brush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcLineStrongBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="Button.nc:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcSurface3Brush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcFaintBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="Button.nc:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcSurface2Brush}" />
+  </Style>
+  <Style Selector="Button.nc:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcSurface3Brush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcLineStrongBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+    <Setter Property="Opacity" Value="0.45" />
+  </Style>
+  <Style Selector="Button.nc.sm">
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="Padding" Value="11,0" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+  <Style Selector="Button.nc.big">
+    <Setter Property="MinHeight" Value="46" />
+    <Setter Property="FontSize" Value="15" />
+  </Style>
+  <Style Selector="Button.nc.ghost">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource NcMutedBrush}" />
+  </Style>
+  <Style Selector="Button.nc.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcSurface3Brush}" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="Button.nc.ghost:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource NcMutedBrush}" />
+  </Style>
+  <Style Selector="Button.nc.primary, Button.nc[IsDefault=True]">
+    <Setter Property="Background" Value="{DynamicResource NcAccentBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcAccentBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcOnAccentBrush}" />
+    <Setter Property="MinWidth" Value="120" />
+  </Style>
+  <Style Selector="Button.nc.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.nc[IsDefault=True]:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcAccentHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcAccentHoverBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcOnAccentBrush}" />
+  </Style>
+  <Style Selector="Button.nc.primary:disabled /template/ ContentPresenter#PART_ContentPresenter, Button.nc[IsDefault=True]:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcAccentBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcAccentBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcOnAccentBrush}" />
+  </Style>
+  <Style Selector="Button.nc.stop">
+    <Setter Property="Background" Value="{DynamicResource NcBadSoftBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcBadBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcBadBrush}" />
+  </Style>
+  <Style Selector="Button.nc.stop:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcBadSoftBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcBadBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcBadBrush}" />
+  </Style>
+  <!-- the square button beside a field (+ F7) -->
+  <Style Selector="Button.nc.side">
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="Background" Value="{DynamicResource NcSurface2Brush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcLineBrush}" />
+    <Setter Property="FontWeight" Value="Normal" />
+  </Style>
+  <Style Selector="Button.nc.side:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcSurface3Brush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcLineBrush}" />
+  </Style>
+  <!-- a small button inside a field (Browse, the drop-down arrow) -->
+  <Style Selector="Button.nc-tail">
+    <Setter Property="MinHeight" Value="30" />
+    <Setter Property="Padding" Value="9,0" />
+    <Setter Property="Margin" Value="0,0,4,0" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Background" Value="{DynamicResource NcSurface3Brush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcMutedBrush}" />
+  </Style>
+  <Style Selector="Button.nc-tail:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcSurface3Brush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="Button.nc-tail.flat">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="MinWidth" Value="36" />
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="Margin" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.nc-tail.flat:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcSurface2Brush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <!-- a square icon button (pin, save as default); a toggle one is accent when on -->
+  <Style Selector=":is(Button).nc-icon">
+    <Setter Property="Width" Value="30" />
+    <Setter Property="Height" Value="30" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="7" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource NcMutedBrush}" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector=":is(Button).nc-icon:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcSurface3Brush}" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="ToggleButton.nc-icon:checked /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.nc-icon:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcAccentSoftBrush}" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource NcAccentBrush}" />
+  </Style>
+
+  <!-- Chips: on / off options and quick filters -->
+  <Style Selector="ToggleButton.nc-chip">
+    <Setter Property="MinHeight" Value="26" />
+    <Setter Property="Padding" Value="11,3" />
+    <Setter Property="CornerRadius" Value="13" />
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcLineBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcMutedBrush}" />
+  </Style>
+  <Style Selector="ToggleButton.nc-chip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcLineStrongBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="ToggleButton.nc-chip:checked /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.nc-chip:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.nc-chip:checked:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcAccentSoftBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcAccentBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="ToggleButton.nc-chip:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Opacity" Value="0.4" />
+  </Style>
+  <!-- small toggles inside a field: .* (regex), Aa (case), ab (whole word) -->
+  <Style Selector="ToggleButton.nc-tog">
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="Padding" Value="9,0" />
+    <Setter Property="Margin" Value="0,0,4,0" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="FontFamily" Value="{DynamicResource NcMonoFont}" />
+    <Setter Property="FontSize" Value="11.5" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource NcFaintBrush}" />
+  </Style>
+  <Style Selector="ToggleButton.nc-tog:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcSurface3Brush}" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="ToggleButton.nc-tog:checked /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.nc-tog:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcAccentSoftBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcAccentBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcAccentBrush}" />
+  </Style>
+
+  <!-- A field: a box holding an icon, a bare text box and buttons -->
+  <Style Selector="Border.nc-combo">
+    <Setter Property="Background" Value="{DynamicResource NcFieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcLineStrongBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="MinHeight" Value="40" />
+  </Style>
+  <Style Selector="Border.nc-combo:pointerover">
+    <Setter Property="BorderBrush" Value="{DynamicResource NcFaintBrush}" />
+  </Style>
+  <Style Selector="Border.nc-combo:focus-within">
+    <Setter Property="BorderBrush" Value="{DynamicResource NcAccentBrush}" />
+    <Setter Property="BoxShadow" Value="{DynamicResource NcFocusRing}" />
+  </Style>
+  <Style Selector="Border.nc-combo.err">
+    <Setter Property="BorderBrush" Value="{DynamicResource NcBadBrush}" />
+    <Setter Property="BoxShadow" Value="{DynamicResource NcBadRing}" />
+  </Style>
+  <Style Selector="Border.nc-combo.big">
+    <Setter Property="MinHeight" Value="46" />
+  </Style>
+  <Style Selector="TextBox.nc-bare">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="MinHeight" Value="38" />
+    <Setter Property="Padding" Value="0,0,6,0" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="TextBox.nc-bare /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="TextBox.nc-bare:pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="TextBox.nc-bare:focus /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="TextBox.nc-bare:pointerover">
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="TextBox.nc-bare:focus">
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="TextBox.nc-mono">
+    <Setter Property="FontFamily" Value="{DynamicResource NcMonoFont}" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+  <Style Selector="TextBox.nc-bare.big">
+    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="FontSize" Value="15" />
+  </Style>
+  <Style Selector="ComboBox.nc-select">
+    <Setter Property="MinHeight" Value="38" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Background" Value="{DynamicResource NcFieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcLineStrongBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="ComboBox.nc-select.sm">
+    <Setter Property="MinHeight" Value="32" />
+  </Style>
+  <Style Selector="NumericUpDown.nc-num">
+    <Setter Property="MinHeight" Value="38" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="FontFamily" Value="{DynamicResource NcMonoFont}" />
+    <Setter Property="Background" Value="{DynamicResource NcFieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcLineStrongBrush}" />
+  </Style>
+
+  <!-- Cards and option rows -->
+  <Style Selector="Border.nc-card">
+    <Setter Property="BorderBrush" Value="{DynamicResource NcLineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="14,12,14,14" />
+  </Style>
+  <Style Selector="Border.nc-options">
+    <Setter Property="BorderBrush" Value="{DynamicResource NcLineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="4" />
+  </Style>
+  <Style Selector="Border.nc-opt">
+    <Setter Property="Padding" Value="10,9" />
+    <Setter Property="CornerRadius" Value="7" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Border.nc-opt:pointerover">
+    <Setter Property="Background" Value="{DynamicResource NcSurface2Brush}" />
+  </Style>
+  <Style Selector="Border.nc-opt:disabled">
+    <Setter Property="Opacity" Value="0.5" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Cursor" Value="No" />
+  </Style>
+
+  <!-- A switch: an on / off check box drawn as a track (no text) -->
+  <Style Selector="CheckBox.nc-switch">
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="PART_Track" Width="36" Height="20" CornerRadius="10" BorderThickness="1"
+                BorderBrush="{DynamicResource NcLineStrongBrush}" Background="{DynamicResource NcFieldBrush}">
+          <Ellipse Name="PART_Knob" Width="12" Height="12" Margin="3,0" HorizontalAlignment="Left" VerticalAlignment="Center"
+                   Fill="{DynamicResource NcMutedBrush}" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="CheckBox.nc-switch:checked /template/ Border#PART_Track">
+    <Setter Property="Background" Value="{DynamicResource NcAccentBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcAccentBrush}" />
+  </Style>
+  <Style Selector="CheckBox.nc-switch:checked /template/ Ellipse#PART_Knob">
+    <Setter Property="HorizontalAlignment" Value="Right" />
+    <Setter Property="Fill" Value="{DynamicResource NcOnAccentBrush}" />
+  </Style>
+  <Style Selector="CheckBox.nc-switch:focus-visible /template/ Border#PART_Track">
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcAccentBrush}" />
+  </Style>
+
+  <!-- Segmented: one of a few -->
+  <Style Selector="Border.nc-seg">
+    <Setter Property="Padding" Value="3" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Background" Value="{DynamicResource NcFieldBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcLineStrongBrush}" />
+  </Style>
+  <Style Selector="RadioButton.nc-seg">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Foreground" Value="{DynamicResource NcMutedBrush}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="PART_Box" CornerRadius="6" Padding="10,0" MinHeight="30" Background="Transparent" BorderThickness="1" BorderBrush="Transparent">
+          <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
+                            VerticalAlignment="Center" HorizontalAlignment="Center" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="RadioButton.nc-seg:pointerover">
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="RadioButton.nc-seg:checked">
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="RadioButton.nc-seg:checked /template/ Border#PART_Box">
+    <Setter Property="Background" Value="{DynamicResource NcSurface3Brush}" />
+    <Setter Property="BoxShadow" Value="0 1 2 0 #33000000" />
+  </Style>
+  <Style Selector="RadioButton.nc-seg:focus-visible /template/ Border#PART_Box">
+    <Setter Property="BorderBrush" Value="{DynamicResource NcAccentBrush}" />
+  </Style>
+
+  <!-- A section that opens and closes (Advanced options) -->
+  <Style Selector="Border.nc-disclosure">
+    <Setter Property="BorderBrush" Value="{DynamicResource NcLineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="10" />
+  </Style>
+  <Style Selector="Border.nc-summary">
+    <Setter Property="Padding" Value="14,8,8,8" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Border.nc-summary:pointerover">
+    <Setter Property="Background" Value="{DynamicResource NcSurface2Brush}" />
+  </Style>
+
+  <!-- Key caps, tags, counts -->
+  <Style Selector="Border.nc-kbd">
+    <Setter Property="Padding" Value="5,0" />
+    <Setter Property="MinHeight" Value="17" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="BorderThickness" Value="1,1,1,2" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcLineStrongBrush}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.nc-kbd TextBlock">
+    <Setter Property="FontSize" Value="10.5" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{DynamicResource NcMutedBrush}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.nc.primary Border.nc-kbd, Button.nc[IsDefault=True] Border.nc-kbd">
+    <Setter Property="BorderBrush" Value="{DynamicResource NcOnAccentBrush}" />
+    <Setter Property="Opacity" Value="0.65" />
+  </Style>
+  <Style Selector="Button.nc.primary Border.nc-kbd TextBlock, Button.nc[IsDefault=True] Border.nc-kbd TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource NcOnAccentBrush}" />
+  </Style>
+  <Style Selector="Button.nc.stop Border.nc-kbd">
+    <Setter Property="BorderBrush" Value="{DynamicResource NcBadBrush}" />
+  </Style>
+  <Style Selector="Button.nc.stop Border.nc-kbd TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource NcBadBrush}" />
+  </Style>
+  <!-- a small upper-case tag (Admin) -->
+  <Style Selector="Border.nc-tag">
+    <Setter Property="Padding" Value="6,1" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Background" Value="{DynamicResource NcWarnSoftBrush}" />
+  </Style>
+  <Style Selector="Border.nc-tag TextBlock">
+    <Setter Property="FontSize" Value="10.5" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="0.4" />
+    <Setter Property="Foreground" Value="{DynamicResource NcWarnBrush}" />
+  </Style>
+  <!-- a count (12 to rename, 3 duplicate) -->
+  <Style Selector="Border.nc-count">
+    <Setter Property="Padding" Value="9,2" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Background" Value="{DynamicResource NcSurface3Brush}" />
+  </Style>
+  <Style Selector="Border.nc-count TextBlock">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{DynamicResource NcMutedBrush}" />
+  </Style>
+  <Style Selector="Border.nc-count.ok"><Setter Property="Background" Value="{DynamicResource NcOkSoftBrush}" /></Style>
+  <Style Selector="Border.nc-count.ok TextBlock"><Setter Property="Foreground" Value="{DynamicResource NcOkBrush}" /></Style>
+  <Style Selector="Border.nc-count.warn"><Setter Property="Background" Value="{DynamicResource NcWarnSoftBrush}" /></Style>
+  <Style Selector="Border.nc-count.warn TextBlock"><Setter Property="Foreground" Value="{DynamicResource NcWarnBrush}" /></Style>
+  <Style Selector="Border.nc-count.bad"><Setter Property="Background" Value="{DynamicResource NcBadSoftBrush}" /></Style>
+  <Style Selector="Border.nc-count.bad TextBlock"><Setter Property="Foreground" Value="{DynamicResource NcBadBrush}" /></Style>
+
+  <!-- A table of rows (results, preview): a line under each row, the selection in the accent tint -->
+  <Style Selector="ListBox.nc-table">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="ListBox.nc-table ListBoxItem">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcLineBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="ListBox.nc-table ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcSurface3Brush}" />
+  </Style>
+  <Style Selector="ListBox.nc-table ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter, ListBox.nc-table ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter, ListBox.nc-table ListBoxItem:selected:focus /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcAccentSoftBrush}" />
+  </Style>
+  <Style Selector="ListBox.nc-table ListBoxItem:selected">
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+
+  <!-- Window bars -->
+  <Style Selector="Border.nc-footer">
+    <Setter Property="Padding" Value="24,14" />
+    <Setter Property="Background" Value="{DynamicResource NcSurface2Brush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcLineBrush}" />
+    <Setter Property="BorderThickness" Value="0,1,0,0" />
+  </Style>
+  <Style Selector="Border.nc-statusbar">
+    <Setter Property="Padding" Value="16,8" />
+    <Setter Property="Background" Value="{DynamicResource NcSurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcLineBrush}" />
+    <Setter Property="BorderThickness" Value="0,1,0,0" />
+  </Style>
+  <Style Selector="Border.nc-statusbar TextBlock">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{DynamicResource NcMutedBrush}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.nc-badge-lg">
+    <Setter Property="Width" Value="44" />
+    <Setter Property="Height" Value="44" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Background" Value="{DynamicResource NcSurface2Brush}" />
+  </Style>
+</Styles>

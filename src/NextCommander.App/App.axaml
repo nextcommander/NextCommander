@@ -58,6 +58,7 @@
       </ResourceDictionary.ThemeDictionaries>
       <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://NextCommander/Styles/MenuIcons.axaml" />
+        <ResourceInclude Source="avares://NextCommander/Styles/DesignTokens.axaml" />
       </ResourceDictionary.MergedDictionaries>
 
       <x:Double x:Key="FmPanelFontSize">13</x:Double>
@@ -101,5 +102,6 @@
     <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
     <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
     <StyleInclude Source="avares://NextCommander/Styles/NextCommanderStyles.axaml" />
+    <StyleInclude Source="avares://NextCommander/Styles/Design.axaml" />
   </Application.Styles>
 </Application>

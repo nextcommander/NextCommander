@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Input;
@@ -11,6 +12,7 @@ using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using NextCommander.App.Services;
+using NextCommander.App.Services.Design;
 using NextCommander.App.Views.Dialogs;
 using NextCommander.App.Views.Lister;
 using NextCommander.Core.Formatting;
@@ -41,6 +43,16 @@ public sealed class SearchResultItem
 
     public VfsEntry? Entry { get; }
 
+    /// <summary>The name column (a folder ends with the separator).</summary>
+    public string Name => Entry is { } e ? e.Name + (e.IsDirectory ? Path.DirectorySeparatorChar.ToString() : string.Empty) : Display;
+
+    /// <summary>The folder column: where the entry is.</summary>
+    public string Folder => Entry?.Path.Parent?.ToDisplayString() ?? string.Empty;
+
+    public string SizeText => Entry is { IsDirectory: false } e ? SizeFormatter.Human(e.Size) : Entry is null ? string.Empty : "Folder";
+
+    public string DateText => Entry?.LastWriteTime.ToString("g", CultureInfo.CurrentCulture) ?? string.Empty;
+
     public string Display { get; }
 
     public string Detail { get; }
@@ -62,42 +74,50 @@ public sealed partial class FindFilesWindow : Window
     private const int MaxHistory = 25;
 
     private readonly FindFilesRequest _request;
-    private readonly AutoCompleteBox _mask = new() { MinimumPrefixLength = 0, FilterMode = AutoCompleteFilterMode.StartsWith };
-    private readonly CheckBox _nameRegex = new() { Content = "Regex" };
-    private readonly TextBox _searchIn = new();
-    private readonly ComboBox _depth = new() { MinWidth = 140 };
-    private readonly ComboBox _kind = new() { MinWidth = 160 };
-    private readonly AutoCompleteBox _text = new() { MinimumPrefixLength = 0, FilterMode = AutoCompleteFilterMode.StartsWith };
-    private readonly CheckBox _case = new() { Content = "Case sensitive" };
-    private readonly CheckBox _words = new() { Content = "Whole words" };
-    private readonly CheckBox _contentRegex = new() { Content = "Regex" };
-    private readonly CheckBox _notContaining = new() { Content = "Not containing" };
-    private readonly CheckBox _utf16 = new() { Content = "UTF-16", IsChecked = true };
-    private readonly CheckBox _office = new() { Content = "Office / ODT / EPUB text", IsChecked = true };
-    private readonly CheckBox _skipBinary = new() { Content = "Skip binary files" };
-    private readonly TextBox _minSize = new() { PlaceholderText = "e.g. 10k", Width = 90 };
-    private readonly TextBox _maxSize = new() { PlaceholderText = "e.g. 2M", Width = 90 };
-    private readonly TextBox _after = new() { PlaceholderText = "2024-05-01 / 7g", Width = 130 };
-    private readonly TextBox _before = new() { PlaceholderText = "2024-12-31 / 1g", Width = 130 };
+    private readonly AutoCompleteBox _mask = new() { MinimumPrefixLength = 0, FilterMode = AutoCompleteFilterMode.StartsWith, Classes = { "nc-mono", "big", "noloc" } };
+    private readonly ToggleButton _nameRegex = Nc.Tog(".*", "Use regular expression");
+    private readonly TextBox _searchIn = new() { Classes = { "nc-mono", "noloc" } };
+    private readonly ComboBox _depth = new() { Classes = { "nc-select" } };
+    private readonly ComboBox _kind = new() { Classes = { "nc-select" } };
+    private readonly AutoCompleteBox _text = new() { MinimumPrefixLength = 0, FilterMode = AutoCompleteFilterMode.StartsWith, PlaceholderText = "Text inside files", Classes = { "nc-mono", "noloc" } };
+    private readonly ToggleButton _case = Nc.Tog("Aa", "Case sensitive");
+    private readonly ToggleButton _words = Nc.Tog("ab", "Whole words");
+    private readonly ToggleButton _contentRegex = Nc.Tog(".*", "Regular expression");
+    private readonly ToggleButton _notContaining = Nc.Chip("Not containing", withCheck: true);
+    private readonly ToggleButton _utf16 = Nc.Chip("UTF-16", true, withCheck: true);
+    private readonly ToggleButton _office = Nc.Chip("Office / ODT / EPUB text", true, withCheck: true);
+    private readonly ToggleButton _skipBinary = Nc.Chip("Skip binary files", withCheck: true);
+    private readonly TextBox _minSize = new() { PlaceholderText = "e.g. 10k", Classes = { "nc-mono" } };
+    private readonly TextBox _maxSize = new() { PlaceholderText = "e.g. 2M", Classes = { "nc-mono" } };
+    private readonly TextBox _after = new() { PlaceholderText = "2024-05-01 / 7g", Classes = { "nc-mono" } };
+    private readonly TextBox _before = new() { PlaceholderText = "2024-12-31 / 1g", Classes = { "nc-mono" } };
     private readonly ComboBox _hidden = TriCombo();
     private readonly ComboBox _readOnly = TriCombo();
     private readonly ComboBox _archive = TriCombo();
     private readonly ComboBox _system = TriCombo();
-    private readonly CheckBox _skipHiddenDirs = new() { Content = "Do not enter hidden folders" };
-    private readonly CheckBox _followLinks = new() { Content = "Follow links" };
-    private readonly CheckBox _useIndex = new()
-    {
-        Content = Core.Search.FileIndexes.Default is { } index ? $"Use file index ({index.Name})" : "Use file index (not installed)",
-        IsEnabled = Core.Search.FileIndexes.Default is not null,
-        IsChecked = Core.Search.FileIndexes.Local is { IsReady: true }, // the own index answers at once: on by default
-    };
-    private readonly ComboBox _duplicates = new() { MinWidth = 180 };
-    private readonly CheckBox _inResults = new() { Content = "Search in previous results" };
-    private readonly ComboBox _saved = new() { MinWidth = 180, PlaceholderText = "Saved searches" };
-    private readonly Button _start = new() { Content = "Search", IsDefault = true };
-    private readonly Button _stop = new() { Content = "Stop", IsEnabled = false };
-    private readonly ListBox _results = new() { SelectionMode = SelectionMode.Multiple };
-    private readonly TextBlock _status = new() { FontSize = 12, Margin = new Thickness(8, 3), TextTrimming = TextTrimming.CharacterEllipsis };
+    private readonly ToggleButton _skipHiddenDirs = Nc.Chip("Do not enter hidden folders", withCheck: true);
+    private readonly ToggleButton _followLinks = Nc.Chip("Follow links", withCheck: true);
+    private readonly ToggleButton _useIndex = Nc.Chip(
+        Core.Search.FileIndexes.Default is { } index ? $"Use file index ({index.Name})" : "Use file index (not installed)",
+        Core.Search.FileIndexes.Local is { IsReady: true }, // the own index answers at once: on by default
+        withCheck: true);
+    private readonly ComboBox _duplicates = new() { Classes = { "nc-select" } };
+    private readonly ToggleButton _inResults = Nc.Chip("Search in previous results", withCheck: true);
+    private readonly ComboBox _saved = new() { MinWidth = 200, PlaceholderText = "Saved searches", Classes = { "nc-select", "sm" } };
+    private readonly Button _start = Nc.Button("Search", "primary big", "Enter");
+    private readonly Button _stop = Nc.Button("Stop", "stop big", "Esc");
+    private readonly ListBox _results = new() { SelectionMode = SelectionMode.Multiple, Classes = { "nc-table" } };
+    private readonly TextBlock _status = new() { TextTrimming = TextTrimming.CharacterEllipsis, Text = "Ready" };
+    private readonly TextBlock _count = new() { FontSize = 13, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0), Classes = { "noloc" } };
+    private readonly ProgressBar _progress = new() { Height = 2, MinHeight = 2, IsIndeterminate = true, IsVisible = false, CornerRadius = new CornerRadius(0) };
+    private readonly NcDisclosure _advanced;
+    private readonly Grid _header = new() { ColumnDefinitions = new ColumnDefinitions(RowColumns), Margin = new Thickness(16, 0) };
+    private string? _sortKey;
+    private IReadOnlyList<string> _highlight = [];
+    private bool _sortDescending;
+
+    /// <summary>The columns of the result table: name, folder, size, modified.</summary>
+    private const string RowColumns = "*,0.55*,96,150";
     private readonly ConcurrentQueue<VfsEntry> _incoming = new();
     private readonly DispatcherTimer _flushTimer;
     private CancellationTokenSource? _cts;
@@ -110,10 +130,16 @@ public sealed partial class FindFilesWindow : Window
     {
         _request = request;
         Title = "Find files";
-        Width = 960;
-        Height = 720;
+        Width = 1040;
+        Height = 780;
         MinWidth = 640;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        Nc.Apply(this);
+        _stop.IsVisible = false;
+        _stop.IsEnabled = false;
+        _start.IsDefault = true;
+        _useIndex.IsEnabled = Core.Search.FileIndexes.Default is not null;
+        _advanced = new NcDisclosure("Advanced", BuildAdvanced());
 
         _depth.ItemsSource = new List<string> { "All subfolders", "This folder only" }.Concat(Enumerable.Range(1, 9).Select(i => $"{i} seviye")).ToList();
         _depth.SelectedIndex = 0;
@@ -127,14 +153,12 @@ public sealed partial class FindFilesWindow : Window
         _searchIn.Text = request.SearchIn;
         RefreshSaved();
 
-        _results.ItemTemplate = new FuncDataTemplate<SearchResultItem>((item, _) => ResultRow(item));
+        _results.ItemTemplate = new FuncDataTemplate<SearchResultItem>((item, _) => ResultRow(item, _highlight));
         _results.ItemsSource = Results;
         _results.ContextMenu = BuildResultMenu();
         _results.DoubleTapped += async (_, _) => await GoToSelectedAsync();
         _results.KeyDown += OnResultsKeyDown;
 
-        _start.Click += (_, _) => _ = StartAsync();
-        _stop.Click += (_, _) => Stop();
         _saved.SelectionChanged += (_, _) =>
         {
             if (_saved.SelectedItem is string name && request.Context.Settings.SavedSearches.TryGetValue(name, out var preset))
@@ -171,70 +195,33 @@ public sealed partial class FindFilesWindow : Window
     /// <summary>The running search (tests).</summary>
     public Task? Running { get; private set; }
 
-    private static ComboBox TriCombo() => new() { ItemsSource = new[] { "Any", "Yes", "No" }, SelectedIndex = 0, MinWidth = 110 };
+    private static ComboBox TriCombo() => new() { ItemsSource = new[] { "Any", "Yes", "No" }, SelectedIndex = 0, Classes = { "nc-select" } };
 
+    /// <summary>
+    /// The template: the name pattern and Search on top, saved searches, the Location and Content cards, Advanced (opens),
+    /// then the results (tool bar, the table with sortable columns) and the status line with the keys.
+    /// </summary>
     private Control BuildLayout()
     {
-        static TextBlock Caption(string text) => new() { Text = text, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
-        static StackPanel Row(params Control[] children)
+        // the name pattern and Search / Stop
+        _start.Click += (_, _) => _ = StartAsync();
+        _stop.Click += (_, _) => Stop();
+        var maskBox = Nc.Combo(_mask, Nc.Icons.Search, _nameRegex);
+        maskBox.Classes.Add("big");
+        Avalonia.Automation.AutomationProperties.SetName(_mask, "File name pattern");
+        var hero = new DockPanel();
+        foreach (var button in new[] { _stop, _start })
         {
-            var panel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
-            panel.Children.AddRange(children);
-            return panel;
+            button.Margin = new Thickness(10, 0, 0, 0);
+            DockPanel.SetDock(button, Dock.Right);
+            hero.Children.Add(button);
         }
+        hero.Children.Add(maskBox);
 
-        var browse = new Button { Content = "..." };
-        browse.Click += async (_, _) => await BrowseAsync();
-        var drives = new Button { Content = "All drives" };
-        drives.Click += (_, _) => _searchIn.Text = string.Join(";", DriveInfo.GetDrives().Where(d => d.IsReady && d.DriveType is DriveType.Fixed).Select(d => d.RootDirectory.FullName));
-
-        var grid = new Grid
-        {
-            ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"),
-            RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto"),
-            Margin = new Thickness(10, 10, 10, 4),
-            RowSpacing = 6,
-        };
-        void Add(Control c, int row, int column, int span = 1)
-        {
-            Grid.SetRow(c, row);
-            Grid.SetColumn(c, column);
-            Grid.SetColumnSpan(c, span);
-            grid.Children.Add(c);
-        }
-        Add(Caption("Search:"), 0, 0);
-        Add(_mask, 0, 1);
-        Add(Row(_nameRegex, new TextBlock { Text = "e.g. *.cs *.xaml | obj\\ bin\\", Opacity = 0.6, VerticalAlignment = VerticalAlignment.Center }), 0, 2);
-        Add(Caption("Search in:"), 1, 0);
-        Add(_searchIn, 1, 1);
-        Add(Row(browse, drives), 1, 2);
-        Add(Caption("Depth:"), 2, 0);
-        Add(Row(_depth, _kind, new TextBlock { Text = "';' for multiple folders, @file.txt for a list file", Opacity = 0.6, VerticalAlignment = VerticalAlignment.Center }), 2, 1, 2);
-        Add(Caption("Content:"), 3, 0);
-        Add(_text, 3, 1);
-        Add(Row(_case, _words, _contentRegex), 3, 2);
-
-        ToolTip.SetTip(_skipBinary, "Files whose start looks like binary data (programs, images, archives) are not searched for the text.");
-        var contentOptions = Row(_notContaining, _utf16, _office, _skipBinary);
-        contentOptions.Margin = new Thickness(10, 0, 10, 4);
-
-        var advanced = new StackPanel { Spacing = 6, Margin = new Thickness(4) };
-        advanced.Children.Add(Row(Caption("Size at least:"), _minSize, Caption("at most:"), _maxSize));
-        advanced.Children.Add(Row(Caption("Modified after:"), _after, Caption("before:"), _before));
-        advanced.Children.Add(Row(Caption("Hidden:"), _hidden, Caption("Read-only:"), _readOnly, Caption("Archive:"), _archive, Caption("System:"), _system));
-        advanced.Children.Add(Row(_skipHiddenDirs, _followLinks, _inResults, _duplicates));
-        advanced.Children.Add(Row(_useIndex));
-        var expander = new Expander { Header = "Advanced", Content = advanced, Margin = new Thickness(10, 0, 10, 4), HorizontalAlignment = HorizontalAlignment.Stretch };
-
-        var feed = new Button { Content = "Feed to panel" };
-        feed.Click += async (_, _) => await FeedToPanelAsync();
-        var goTo = new Button { Content = "Go to file" };
-        goTo.Click += async (_, _) => await GoToSelectedAsync();
-        var view = new Button { Content = "View (F3)" };
-        view.Click += (_, _) => ViewSelected();
-        var save = new Button { Content = "Save search..." };
+        // a hint, the saved searches
+        var save = Nc.Button("Save search", "sm");
         save.Click += async (_, _) => await SaveSearchAsync();
-        var delete = new Button { Content = "Delete" };
+        var delete = Nc.Button("Delete", "sm ghost");
         delete.Click += (_, _) =>
         {
             if (_saved.SelectedItem is string name)
@@ -243,33 +230,284 @@ public sealed partial class FindFilesWindow : Window
                 RefreshSaved();
             }
         };
-        var export = new Button { Content = "Export..." };
+        delete.IsEnabled = false;
+        _saved.SelectionChanged += (_, _) => delete.IsEnabled = _saved.SelectedItem is string;
+        var savedRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { _saved, save, delete } };
+        var hintRow = new DockPanel();
+        DockPanel.SetDock(savedRow, Dock.Right);
+        hintRow.Children.Add(savedRow);
+        hintRow.Children.Add(new TextBlock
+        {
+            Text = "Separate patterns with spaces. Anything after | is excluded, e.g. *.cs *.xaml | obj\\ bin\\",
+            Classes = { "nc-hint" },
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 12, 0),
+        });
+
+        // Location
+        var browse = new Button { Content = "Browse", Classes = { "nc-tail" } };
+        browse.Click += async (_, _) => await BrowseAsync();
+        var drives = Nc.Chip("All drives", withCheck: true);
+        string? beforeDrives = null;
+        drives.IsCheckedChanged += (_, _) =>
+        {
+            if (drives.IsChecked == true)
+            {
+                beforeDrives = _searchIn.Text;
+                _searchIn.Text = string.Join(";", DriveInfo.GetDrives().Where(d => d.IsReady && d.DriveType is DriveType.Fixed).Select(d => d.RootDirectory.FullName));
+            }
+            else if (beforeDrives is not null)
+            {
+                _searchIn.Text = beforeDrives;
+            }
+            _searchIn.IsEnabled = browse.IsEnabled = drives.IsChecked != true;
+        };
+        Avalonia.Automation.AutomationProperties.SetName(_searchIn, "Search in");
+        var location = Nc.Card("Location",
+            Nc.Line(Nc.Combo(_searchIn, Nc.Icons.Folder, browse), drives),
+            Columns("*,*", _depth, _kind),
+            new TextBlock { Text = "; separates several folders · @file.txt reads a list of folders from a file", Classes = { "nc-hint" } });
+
+        // Content
+        ToolTip.SetTip(_skipBinary, "Files whose start looks like binary data (programs, images, archives) are not searched for the text.");
+        Avalonia.Automation.AutomationProperties.SetName(_text, "Content");
+        var contentChips = new WrapPanel();
+        foreach (var chip in new[] { _notContaining, _utf16, _office, _skipBinary })
+        {
+            chip.Margin = new Thickness(0, 0, 6, 6);
+            contentChips.Children.Add(chip);
+        }
+        var content = Nc.Card(new TextBlock { Text = "Optional", Classes = { "nc-hint" } }, "Content",
+            Nc.Combo(_text, Nc.Icons.Lines, _case, _words, _contentRegex), contentChips);
+
+        var cards = Columns("1.4*,*", location, content);
+        cards.ColumnSpacing = 14;
+        foreach (var control in new Control[] { _minSize, _maxSize, _after, _before })
+        {
+            if (control is TextBox box)
+            {
+                box.TextChanged += (_, _) => UpdateAdvancedSummary();
+            }
+        }
+        foreach (var combo in new[] { _hidden, _readOnly, _archive, _system, _duplicates })
+        {
+            combo.SelectionChanged += (_, _) => UpdateAdvancedSummary();
+        }
+        foreach (var chip in new[] { _skipHiddenDirs, _followLinks, _inResults, _useIndex })
+        {
+            chip.IsCheckedChanged += (_, _) => UpdateAdvancedSummary();
+        }
+        UpdateAdvancedSummary();
+
+        var query = new StackPanel
+        {
+            Spacing = 14,
+            Margin = new Thickness(16, 14, 16, 16),
+            Children = { hero, hintRow, cards, _advanced },
+        };
+
+        // results: the tool bar, the table head, the rows
+        var feed = Nc.Button("Feed to panel", "sm");
+        feed.Click += async (_, _) => await FeedToPanelAsync();
+        var goTo = Nc.Button("Go to file", "sm ghost");
+        goTo.Click += async (_, _) => await GoToSelectedAsync();
+        var view = Nc.Button("View", "sm ghost", "F3");
+        view.Click += (_, _) => ViewSelected();
+        var export = Nc.Button("Export...", "sm ghost");
         ToolTip.SetTip(export, "Save the results as a list of paths or as a table (CSV)");
         export.Click += async (_, _) => await ExportAsync();
-        var buttons = Row(_start, _stop, feed, goTo, view, export, new Border { Width = 16 }, _saved, save, delete);
+        var separator = new Border { Width = 1, Height = 20, Margin = new Thickness(2, 0) };
+        separator[!Border.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("NcLineBrush");
+        var tools = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { feed, separator, goTo, view, export } };
         if (_request.UseResults is not null)
         {
             // opened from the copy dialog: the results are what gets copied; the panel is not changed from here
-            var use = new Button { Content = _request.UseResultsText, FontWeight = FontWeight.SemiBold };
+            var use = Nc.Button(_request.UseResultsText, "sm primary");
             ToolTip.SetTip(use, "Close Find files and copy the files found to the target of the copy dialog");
             use.Click += async (_, _) => await UseResultsAsync();
-            feed.IsVisible = goTo.IsVisible = false;
-            buttons.Children.Insert(2, use);
+            feed.IsVisible = goTo.IsVisible = separator.IsVisible = false;
+            tools.Children.Insert(0, use);
         }
-        buttons.Margin = new Thickness(10, 4, 10, 6);
+        var title = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            VerticalAlignment = VerticalAlignment.Center,
+            Children = { new TextBlock { Text = "Results", FontSize = 13, FontWeight = FontWeight.SemiBold, VerticalAlignment = VerticalAlignment.Center }, _count },
+        };
+        _count[!TextBlock.ForegroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("NcMutedBrush");
+        var toolbar = new DockPanel { Margin = new Thickness(16, 10) };
+        DockPanel.SetDock(tools, Dock.Right);
+        toolbar.Children.AddRange([tools, title]);
 
-        var statusBar = new Border { Child = _status };
-        statusBar[!Border.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("FmStatusBrush");
+        BuildHeader();
+        var head = new Border { Child = _header, BorderThickness = new Thickness(0, 0, 0, 1) };
+        head[!Border.BorderBrushProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("NcLineBrush");
+        _results.Padding = new Thickness(16, 0);
+        _progress[!ProgressBar.ForegroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("NcAccentBrush");
+        _progress.Background = Brushes.Transparent;
+        var resultsTop = new StackPanel { Children = { _progress, toolbar, head } };
+        var results = new DockPanel();
+        DockPanel.SetDock(resultsTop, Dock.Top);
+        results.Children.AddRange([resultsTop, _results]);
+        var resultsBox = new Border { Child = results, BorderThickness = new Thickness(0, 1, 0, 0) };
+        resultsBox[!Border.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("NcSurface2Brush");
+        resultsBox[!Border.BorderBrushProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("NcLineBrush");
 
-        var top = new StackPanel();
-        top.Children.AddRange([grid, contentOptions, expander, buttons]);
+        // the status line with the keys
+        var keys = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 14 };
+        foreach (var (key, what) in new[] { ("Enter", "search"), ("Esc", "stop"), ("F3", "view"), ("↑ ↓", "move") })
+        {
+            keys.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 5, Children = { Nc.Kbd(key), new TextBlock { Text = what } } });
+        }
+        var statusRow = new DockPanel();
+        DockPanel.SetDock(keys, Dock.Right);
+        statusRow.Children.AddRange([keys, _status]);
+        var statusBar = new Border { Classes = { "nc-statusbar" }, Child = statusRow };
+
         var root = new DockPanel();
-        DockPanel.SetDock(top, Dock.Top);
+        DockPanel.SetDock(query, Dock.Top);
         DockPanel.SetDock(statusBar, Dock.Bottom);
-        root.Children.Add(top);
-        root.Children.Add(statusBar);
-        root.Children.Add(_results);
+        root.Children.AddRange([query, statusBar, resultsBox]);
         return root;
+    }
+
+    /// <summary>Controls side by side in a grid of <paramref name="columns"/>.</summary>
+    private static Grid Columns(string columns, params Control[] cells)
+    {
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions(columns), ColumnSpacing = 8 };
+        for (var i = 0; i < cells.Length; i++)
+        {
+            Grid.SetColumn(cells[i], i);
+            grid.Children.Add(cells[i]);
+        }
+        return grid;
+    }
+
+    /// <summary>Advanced: size and dates, the attributes, duplicates and the other switches.</summary>
+    private StackPanel BuildAdvanced()
+    {
+        static Control Box(TextBox box) => Nc.Combo(box, null);
+        var chips = new WrapPanel();
+        foreach (var chip in new[] { _skipHiddenDirs, _followLinks, _inResults, _useIndex })
+        {
+            chip.Margin = new Thickness(0, 0, 6, 6);
+            chips.Children.Add(chip);
+        }
+        var fields = Columns("*,*,*",
+            Nc.Field("Size at least", Box(_minSize)), Nc.Field("Size at most", Box(_maxSize)), Nc.Field("Duplicates", _duplicates));
+        fields.ColumnSpacing = 12;
+        var dates = Columns("*,*,*", Nc.Field("Modified after", Box(_after)), Nc.Field("Modified before", Box(_before)));
+        dates.ColumnSpacing = 12;
+        var attributes = Columns("*,*,*,*",
+            Nc.Field("Hidden", _hidden), Nc.Field("Read-only", _readOnly), Nc.Field("Archive", _archive), Nc.Field("System", _system));
+        attributes.ColumnSpacing = 12;
+        return new StackPanel { Spacing = 12, Margin = new Thickness(0, 12, 0, 0), Children = { fields, dates, attributes, chips } };
+    }
+
+    /// <summary>The line of the closed Advanced section: what is set there ("Any size · Any date" when nothing).</summary>
+    private void UpdateAdvancedSummary()
+    {
+        if (_advanced is null)
+        {
+            return;
+        }
+        static string T(string text) => Core.Localization.Localizer.T(text);
+        var parts = new List<string>();
+        parts.Add(string.IsNullOrWhiteSpace(_minSize.Text) && string.IsNullOrWhiteSpace(_maxSize.Text)
+            ? T("Any size")
+            : $"{(string.IsNullOrWhiteSpace(_minSize.Text) ? "0" : _minSize.Text.Trim())} – {(string.IsNullOrWhiteSpace(_maxSize.Text) ? "∞" : _maxSize.Text.Trim())}");
+        parts.Add(string.IsNullOrWhiteSpace(_after.Text) && string.IsNullOrWhiteSpace(_before.Text)
+            ? T("Any date")
+            : $"{_after.Text?.Trim()} – {_before.Text?.Trim()}".Trim());
+        if (new[] { _hidden, _readOnly, _archive, _system }.Any(c => c.SelectedIndex > 0))
+        {
+            parts.Add(T("Attributes"));
+        }
+        if (_duplicates.SelectedIndex > 0 && _duplicates.SelectedItem is string duplicates)
+        {
+            parts.Add(T(duplicates));
+        }
+        foreach (var chip in new[] { _skipHiddenDirs, _followLinks, _inResults, _useIndex })
+        {
+            if (chip.IsChecked == true && chip.Content is StackPanel { Children: [_, TextBlock label] })
+            {
+                parts.Add(T(label.Text ?? string.Empty));
+            }
+        }
+        _advanced.Summary = string.Join(" · ", parts);
+    }
+
+    /// <summary>The head of the result table: a click sorts by the column, a second click the other way.</summary>
+    private void BuildHeader()
+    {
+        _header.Children.Clear();
+        var columns = new[] { ("name", "Name"), ("folder", "Folder"), ("size", "Size"), ("date", "Modified") };
+        for (var i = 0; i < columns.Length; i++)
+        {
+            var (key, text) = columns[i];
+            var arrow = _sortKey == key ? (_sortDescending ? " ▼" : " ▲") : string.Empty;
+            var label = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = key == "size" ? HorizontalAlignment.Right : HorizontalAlignment.Left,
+                Children = { new TextBlock { Text = text, Classes = { "nc-section" } }, new TextBlock { Text = arrow, Classes = { "nc-section", "noloc" } } },
+            };
+            var button = new Button
+            {
+                Content = label,
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                Padding = new Thickness(10, 8),
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = key == "size" ? HorizontalAlignment.Right : HorizontalAlignment.Left,
+            };
+            button.Click += (_, _) => SortBy(key);
+            Grid.SetColumn(button, i);
+            _header.Children.Add(button);
+        }
+    }
+
+    /// <summary>Sorts the results by a column (folders first); a duplicate search keeps its groups.</summary>
+    public void SortBy(string key)
+    {
+        _sortDescending = _sortKey == key && !_sortDescending;
+        _sortKey = key;
+        BuildHeader();
+        ApplySort();
+    }
+
+    private void ApplySort()
+    {
+        if (_sortKey is not { } key || Results.Any(r => r.IsHeader) || Results.Count < 2)
+        {
+            return;
+        }
+        var comparer = StringComparer.Create(CultureInfo.CurrentCulture, ignoreCase: true);
+        IEnumerable<SearchResultItem> sorted = Results.OrderBy(r => r.Entry!.IsDirectory ? 0 : 1);
+        var ordered = (IOrderedEnumerable<SearchResultItem>)sorted;
+        ordered = key switch
+        {
+            "size" => _sortDescending ? ordered.ThenByDescending(r => r.Entry!.Size) : ordered.ThenBy(r => r.Entry!.Size),
+            "date" => _sortDescending ? ordered.ThenByDescending(r => r.Entry!.LastWriteTime) : ordered.ThenBy(r => r.Entry!.LastWriteTime),
+            "folder" => _sortDescending ? ordered.ThenByDescending(r => r.Folder, comparer) : ordered.ThenBy(r => r.Folder, comparer),
+            _ => _sortDescending ? ordered.ThenByDescending(r => r.Entry!.Name, comparer) : ordered.ThenBy(r => r.Entry!.Name, comparer),
+        };
+        var list = ordered.ToList();
+        var selected = _results.SelectedItem;
+        Results.Clear();
+        foreach (var item in list)
+        {
+            Results.Add(item);
+        }
+        _results.SelectedItem = selected;
+    }
+
+    /// <summary>The count beside "Results".</summary>
+    private void ShowCount()
+    {
+        var count = ResultEntries.Count;
+        _count.Text = count == 0 ? string.Empty
+            : string.Format(CultureInfo.CurrentCulture, count == 1 ? Core.Localization.Localizer.T("{0:N0} item") : Core.Localization.Localizer.T("{0:N0} items"), count);
     }
 
     private async Task BrowseAsync()
@@ -395,8 +633,12 @@ public sealed partial class FindFilesWindow : Window
         }
         var cts = new CancellationTokenSource();
         _cts = cts;
+        _highlight = HighlightTerms(options);
         _start.IsEnabled = false;
         _stop.IsEnabled = true;
+        _start.IsVisible = false;
+        _stop.IsVisible = true;
+        _progress.IsVisible = true;
         _flushTimer.Start();
         var searcher = _searcher;
         var started = DateTime.UtcNow;
@@ -426,6 +668,11 @@ public sealed partial class FindFilesWindow : Window
         cts.Dispose();
         _start.IsEnabled = true;
         _stop.IsEnabled = false;
+        _start.IsVisible = true;
+        _stop.IsVisible = false;
+        _progress.IsVisible = false;
+        ApplySort();
+        ShowCount();
         var elapsed = DateTime.UtcNow - started;
         _status.Text = string.Format(CultureInfo.CurrentCulture, "{0}: {1:N0} results, {2:N0} items scanned, {3:0.0} s",
             cancelled ? "Stopped" : "Done", ResultEntries.Count, searcher.Progress.Scanned, elapsed.TotalSeconds)
@@ -439,6 +686,20 @@ public sealed partial class FindFilesWindow : Window
 
     public void Stop() => _cts?.Cancel();
 
+    /// <summary>The fixed parts of a name pattern ("*report*.xls" → "report", ".xls"), marked in the names found.</summary>
+    private static IReadOnlyList<string> HighlightTerms(SearchOptions options)
+    {
+        if (options.NameIsRegex)
+        {
+            return [];
+        }
+        var include = options.NameMask.Split('|')[0];
+        return [.. include.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .SelectMany(p => p.Split(['*', '?'], StringSplitOptions.RemoveEmptyEntries))
+            .Where(p => p.Length > 0 && p != ".")
+            .Distinct(StringComparer.OrdinalIgnoreCase)];
+    }
+
     private void Flush()
     {
         var added = 0;
@@ -446,6 +707,10 @@ public sealed partial class FindFilesWindow : Window
         {
             Results.Add(new SearchResultItem(entry, _searcher?.Hits.GetValueOrDefault(entry.Path)));
             added++;
+        }
+        if (added > 0)
+        {
+            ShowCount();
         }
         if (_searcher is { } s && _cts is not null)
         {

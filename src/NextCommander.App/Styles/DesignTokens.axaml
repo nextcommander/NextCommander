@@ -1,0 +1,58 @@
+<!--
+  The colors of the tool window templates (copy dialog, find files, multi-rename; docs/design.md): Nc* brushes, light and
+  dark. Root keys of a color theme (Services/ColorThemes.cs) are read before these, so a theme can set them too.
+-->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <SolidColorBrush x:Key="NcSurfaceBrush" Color="#FBFBFD" />
+      <SolidColorBrush x:Key="NcSurface2Brush" Color="#F1F3F7" />
+      <SolidColorBrush x:Key="NcSurface3Brush" Color="#E6E9EF" />
+      <SolidColorBrush x:Key="NcFieldBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="NcLineBrush" Color="#D9DDE5" />
+      <SolidColorBrush x:Key="NcLineStrongBrush" Color="#BCC3CF" />
+      <SolidColorBrush x:Key="NcTextBrush" Color="#1A1E27" />
+      <SolidColorBrush x:Key="NcMutedBrush" Color="#5B6475" />
+      <SolidColorBrush x:Key="NcFaintBrush" Color="#8A92A1" />
+      <SolidColorBrush x:Key="NcAccentBrush" Color="#0F6CDB" />
+      <SolidColorBrush x:Key="NcAccentHoverBrush" Color="#0B5EC0" />
+      <SolidColorBrush x:Key="NcAccentSoftBrush" Color="#1A0F6CDB" />
+      <SolidColorBrush x:Key="NcOnAccentBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="NcFolderBrush" Color="#D9A120" />
+      <SolidColorBrush x:Key="NcOkBrush" Color="#17804F" />
+      <SolidColorBrush x:Key="NcOkSoftBrush" Color="#1A17804F" />
+      <SolidColorBrush x:Key="NcWarnBrush" Color="#B26B00" />
+      <SolidColorBrush x:Key="NcWarnSoftBrush" Color="#1AB26B00" />
+      <SolidColorBrush x:Key="NcBadBrush" Color="#C4302B" />
+      <SolidColorBrush x:Key="NcBadSoftBrush" Color="#1AC4302B" />
+      <BoxShadows x:Key="NcFocusRing">0 0 0 3 #1A0F6CDB</BoxShadows>
+      <BoxShadows x:Key="NcBadRing">0 0 0 3 #1AC4302B</BoxShadows>
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="NcSurfaceBrush" Color="#1C1F26" />
+      <SolidColorBrush x:Key="NcSurface2Brush" Color="#242832" />
+      <SolidColorBrush x:Key="NcSurface3Brush" Color="#2D323E" />
+      <SolidColorBrush x:Key="NcFieldBrush" Color="#15181E" />
+      <SolidColorBrush x:Key="NcLineBrush" Color="#323846" />
+      <SolidColorBrush x:Key="NcLineStrongBrush" Color="#454D5E" />
+      <SolidColorBrush x:Key="NcTextBrush" Color="#E8EBF1" />
+      <SolidColorBrush x:Key="NcMutedBrush" Color="#9AA3B4" />
+      <SolidColorBrush x:Key="NcFaintBrush" Color="#6B7486" />
+      <SolidColorBrush x:Key="NcAccentBrush" Color="#3B8CFF" />
+      <SolidColorBrush x:Key="NcAccentHoverBrush" Color="#5A9FFF" />
+      <SolidColorBrush x:Key="NcAccentSoftBrush" Color="#293B8CFF" />
+      <SolidColorBrush x:Key="NcOnAccentBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="NcFolderBrush" Color="#E9B949" />
+      <SolidColorBrush x:Key="NcOkBrush" Color="#4CC38A" />
+      <SolidColorBrush x:Key="NcOkSoftBrush" Color="#244CC38A" />
+      <SolidColorBrush x:Key="NcWarnBrush" Color="#E9A23B" />
+      <SolidColorBrush x:Key="NcWarnSoftBrush" Color="#24E9A23B" />
+      <SolidColorBrush x:Key="NcBadBrush" Color="#FF6B6B" />
+      <SolidColorBrush x:Key="NcBadSoftBrush" Color="#24FF6B6B" />
+      <BoxShadows x:Key="NcFocusRing">0 0 0 3 #293B8CFF</BoxShadows>
+      <BoxShadows x:Key="NcBadRing">0 0 0 3 #24FF6B6B</BoxShadows>
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+  <FontFamily x:Key="NcMonoFont">Cascadia Code,Cascadia Mono,Consolas,Menlo,DejaVu Sans Mono,monospace</FontFamily>
+</ResourceDictionary>
