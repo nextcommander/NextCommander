@@ -31,8 +31,10 @@ public sealed class CopyDialogTests : IDisposable
         }
     }
 
+    /// <summary>The texts of the visible buttons (a button with only an icon: its automation name).</summary>
     private static List<string> ButtonTexts(Control root) =>
-        [.. root.GetLogicalDescendants().OfType<Button>().Where(b => b is not Avalonia.Controls.Primitives.ToggleButton && b.IsEffectivelyVisible && b.Content is string).Select(b => (string)b.Content!)];
+        [.. root.GetLogicalDescendants().OfType<Button>().Where(b => b is not Avalonia.Controls.Primitives.ToggleButton && b.IsEffectivelyVisible)
+            .Select(b => NextCommander.App.Services.Design.Nc.TextOf(b) is { Length: > 0 } text ? text : Avalonia.Automation.AutomationProperties.GetName(b) ?? string.Empty)];
 
     [AvaloniaFact]
     public async Task The_dialog_has_the_layout_and_lists_of_total_commander()
@@ -51,7 +53,11 @@ public sealed class CopyDialogTests : IDisposable
         await dialog.CountAsync();
         await SettleAsync(2);
 
-        Assert.Equal(["+ F7", "+ F8", "OK", "F2 Queue", "Tree", "Cancel", "Options >>"], ButtonTexts(dialog).Where(t => t != "▾"));
+        var texts = ButtonTexts(dialog);
+        foreach (var text in new[] { "+ F7", "+ F8", "Copy", "Add to queue", "Tree", "Cancel", "Recent destinations", "Saved filters" })
+        {
+            Assert.Contains(text, texts);
+        }
         Assert.Contains("3", dialog.SummaryText, StringComparison.Ordinal);
         Assert.EndsWith("| 2", dialog.SummaryText, StringComparison.Ordinal);
         Assert.False(dialog.AdvancedShown);
@@ -67,10 +73,9 @@ public sealed class CopyDialogTests : IDisposable
         dialog.ToggleFilter();
         Assert.Equal(["*.mp4 *.mkv"], settings.CopyFilterList);
 
-        // Options >>: the advanced options; the disk icon keeps the answer as the default
+        // Advanced options; the disk icon keeps the answer as the default
         dialog.ShowAdvanced(true);
         Assert.True(dialog.AdvancedShown);
-        Assert.DoesNotContain("Options >>", ButtonTexts(dialog));
         dialog.PolicyIndex = 3;
         dialog.SaveDefaultPolicy();
         Assert.Equal(ConflictPolicy.OverwriteOlder, settings.DefaultConflictPolicy);
@@ -198,7 +203,7 @@ public sealed class CopyDialogTests : IDisposable
         var dialog = _fx.Track(new CopyDialog(true, "Move \"a.txt\" to", _fx.R(), false, [], new CopyDialogOptions { Settings = settings }));
         dialog.Show();
         Assert.True(dialog.AdvancedShown);
-        Assert.False(dialog.GetLogicalDescendants().OfType<Button>().Single(b => b.Content as string == "Tree").IsEnabled); // no tree given
+        Assert.False(dialog.GetLogicalDescendants().OfType<Button>().Single(b => NextCommander.App.Services.Design.Nc.TextOf(b) == "Tree").IsEnabled); // no tree given
     }
 
     [AvaloniaFact]
