@@ -234,11 +234,71 @@ public sealed class SshTerminal(RemoteConnection connection, Vfs.Remote.RemoteHo
 /// <summary>
 /// An rsh connection in the internal terminal: rlogin (a login session) without a command, rsh (the command's output)
 /// with one. The connection comes from a port below 1024 when this computer allows it (servers usually want that); it
-/// can go through the connection's proxy. Nothing is encrypted.
+/// can go through the connection's proxy. Nothing is encrypted. rlogin tells the window's size when the server asks
+/// for it (its urgent byte 0x80; on a direct connection) and again whenever the window changes.
 /// </summary>
 public sealed class RshTerminal(RemoteConnection connection, int columns, int rows) : StreamTerminal(connection, columns, rows)
 {
+    private Socket? _socket;
+    private volatile bool _sendsWindowSize;
+    private readonly CancellationTokenSource _closing = new();
+
     protected override string Target => Connection.Host + ":" + Core.Net.RshProtocol.PortOf(Connection);
+
+    /// <summary>Whether the server asked for the window size (tests).</summary>
+    public bool SendsWindowSize => _sendsWindowSize;
+
+    protected override void Opened(Stream stream)
+    {
+        if (_socket is { } socket && Core.Net.RshProtocol.IsLogin(Connection))
+        {
+            _ = Task.Run(() => WatchUrgent(socket, _closing.Token));
+        }
+    }
+
+    /// <summary>
+    /// The server's control bytes come as urgent (out-of-band) data: 0x80 asks for the window size (sent now and on
+    /// every change). Polled beside the normal reads.
+    /// </summary>
+    private void WatchUrgent(Socket socket, CancellationToken cancellationToken)
+    {
+        var control = new byte[1];
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                if (!socket.Poll(200_000, SelectMode.SelectError))
+                {
+                    continue;
+                }
+                if (socket.Receive(control, SocketFlags.OutOfBand) == 0)
+                {
+                    return;
+                }
+            }
+            catch (Exception ex) when (ex is SocketException or ObjectDisposedException)
+            {
+                return; // the session ended
+            }
+            if ((control[0] & Core.Net.RshProtocol.WindowRequest) != 0)
+            {
+                _sendsWindowSize = true;
+                SendRaw(Core.Net.RshProtocol.WindowSize(Columns, Rows));
+            }
+        }
+    }
+
+    public override void Resize(int columns, int rows)
+    {
+        var changed = columns != Columns || rows != Rows;
+        base.Resize(columns, rows);
+        if (changed && _sendsWindowSize)
+        {
+            SendRaw(Core.Net.RshProtocol.WindowSize(columns, rows));
+        }
+    }
+
+    protected override void Closed() => _closing.Cancel();
 
     protected override async Task<Stream> ConnectAsync(CancellationToken cancellationToken)
     {
@@ -251,7 +311,8 @@ public sealed class RshTerminal(RemoteConnection connection, int columns, int ro
         }
         else
         {
-            stream = new NetworkStream(await ConnectFromReservedPortAsync(Connection.Host, port, cancellationToken).ConfigureAwait(false), ownsSocket: true);
+            _socket = await ConnectFromReservedPortAsync(Connection.Host, port, cancellationToken).ConfigureAwait(false);
+            stream = new NetworkStream(_socket, ownsSocket: true);
         }
         try
         {

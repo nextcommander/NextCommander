@@ -16,6 +16,21 @@ public static class RshProtocol
     /// <summary>The rsh port (also the type's default port).</summary>
     public const int ShellPort = 514;
 
+    /// <summary>The bit of the server's urgent control byte that asks for the window size (TIOCPKT_WINDOW).</summary>
+    public const byte WindowRequest = 0x80;
+
+    /// <summary>
+    /// rlogin's window size message: the magic FF FF 's' 's', then rows, columns, width and height in pixels (0: not
+    /// known), each a 16-bit number, most significant byte first.
+    /// </summary>
+    public static byte[] WindowSize(int columns, int rows)
+    {
+        static (byte, byte) Word(int value) => ((byte)(Math.Clamp(value, 0, 65535) >> 8), (byte)Math.Clamp(value, 0, 65535));
+        var (rowHigh, rowLow) = Word(rows);
+        var (columnHigh, columnLow) = Word(columns);
+        return [0xFF, 0xFF, (byte)'s', (byte)'s', rowHigh, rowLow, columnHigh, columnLow, 0, 0, 0, 0];
+    }
+
     /// <summary>Whether the connection opens a login session (no command): rlogin.</summary>
     public static bool IsLogin(RemoteConnection connection) => string.IsNullOrWhiteSpace(connection.RemoteCommand);
 

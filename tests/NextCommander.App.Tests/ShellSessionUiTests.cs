@@ -75,6 +75,44 @@ public sealed class ShellSessionUiTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task Rlogin_tells_the_window_size_when_the_server_asks_and_when_it_changes()
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var connection = new RemoteConnection { Protocol = RemoteProtocol.Rsh, Host = "127.0.0.1", Port = port, User = "root", LocalUser = "ali" };
+        using var terminal = new Services.Terminal.RshTerminal(connection, 100, 30);
+        var accepted = listener.AcceptSocketAsync();
+        terminal.Open();
+        using var server = await accepted.WaitAsync(TimeSpan.FromSeconds(10));
+        var one = new byte[1];
+        for (var zeros = 0; zeros < 4;)
+        {
+            server.Receive(one);
+            zeros += one[0] == 0 ? 1 : 0;
+        }
+        server.Send([0]); // accepted
+        await WaitUntilAsync(() => terminal.IsConnected);
+        Assert.False(terminal.SendsWindowSize);
+
+        server.Send([0x80], SocketFlags.OutOfBand); // "tell me the window size"
+        byte[] Message()
+        {
+            var message = new byte[12];
+            for (var read = 0; read < message.Length;)
+            {
+                read += server.Receive(message, read, message.Length - read, SocketFlags.None);
+            }
+            return message;
+        }
+        server.ReceiveTimeout = 10_000;
+        Assert.Equal(new byte[] { 0xFF, 0xFF, (byte)'s', (byte)'s', 0, 30, 0, 100, 0, 0, 0, 0 }, Message());
+        Assert.True(terminal.SendsWindowSize);
+        terminal.Resize(120, 40);
+        Assert.Equal(new byte[] { 0xFF, 0xFF, (byte)'s', (byte)'s', 0, 40, 0, 120, 0, 0, 0, 0 }, Message());
+    }
+
+    [AvaloniaFact]
     public async Task An_rsh_command_shows_its_output()
     {
         var (w, vm) = await _fx.OpenAsync();

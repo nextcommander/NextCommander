@@ -109,9 +109,10 @@ public sealed class LinkUiTests : IDisposable
                 using var udp = new System.Net.Sockets.UdpClient(new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, port));
                 return port;
             }
-            catch (System.Net.Sockets.SocketException) when (attempt < 20)
+            catch (System.Net.Sockets.SocketException) when (attempt < 1000)
             {
-                // that number is taken for UDP: another one
+                // that number is taken or reserved for UDP (Windows reserves blocks of ~100 ports for Hyper-V / WSL, and
+                // the next free TCP numbers come one after the other): another one
             }
             finally
             {

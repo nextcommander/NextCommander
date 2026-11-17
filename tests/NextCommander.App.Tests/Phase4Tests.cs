@@ -118,7 +118,7 @@ public sealed class Phase4Tests : IDisposable
         var target = _fx.R("bundle.tar.gz");
         _fx.Dialogs.NextPack = new PackDialogResult(target, PackFormat.TarGz, CompressionLevel.Optimal, null, false, false, false);
         Press(w, Key.F5, RawInputModifiers.Alt);
-        await WaitUntilAsync(() => File.Exists(target));
+        await WaitUntilAsync(() => File.Exists(target), 20_000); // packing is slow under the full test run
         Assert.Equal(_fx.R("left.zip"), _fx.Dialogs.LastPackTarget); // suggested: other panel + folder name + zip
         Assert.Equal("tar.gz", vm.Settings.PackFormat);
 
@@ -128,12 +128,12 @@ public sealed class Phase4Tests : IDisposable
         SetCursor(vm.Right, "bundle.tar.gz");
         _fx.Dialogs.NextCopyTarget = _fx.L("out");
         Press(w, Key.F9, RawInputModifiers.Alt);
-        await WaitUntilAsync(() => File.Exists(_fx.L("out", "bundle", "sub", "inner.txt")) && File.Exists(_fx.L("out", "bundle", "a.txt")));
+        await WaitUntilAsync(() => File.Exists(_fx.L("out", "bundle", "sub", "inner.txt")) && File.Exists(_fx.L("out", "bundle", "a.txt")), 20_000);
         Assert.Equal("A", File.ReadAllText(_fx.L("out", "bundle", "a.txt")));
 
         // Alt+Shift+F9: test.
         Press(w, Key.F9, RawInputModifiers.Alt | RawInputModifiers.Shift);
-        await WaitUntilAsync(() => _fx.Dialogs.Messages.Any(m => m.Contains("no errors", StringComparison.Ordinal)));
+        await WaitUntilAsync(() => _fx.Dialogs.Messages.Any(m => m.Contains("no errors", StringComparison.Ordinal)), 20_000);
         Assert.Contains(_fx.Dialogs.Messages, m => m.Contains("Tested 2 files", StringComparison.Ordinal));
     }
 
@@ -208,7 +208,7 @@ public sealed class Phase4Tests : IDisposable
         }
     }
 
-    [Fact]
+    [AvaloniaFact] // touches a static of an Avalonia class (ListerView / MainWindowViewModel): on the UI thread
     public void Archive_base_names()
     {
         Assert.Equal("data", MainWindowViewModel.ArchiveBaseName("data.tar.gz"));
