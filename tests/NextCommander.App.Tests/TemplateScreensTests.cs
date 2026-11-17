@@ -45,6 +45,53 @@ public sealed class TemplateScreensTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task The_windows_take_the_colors_of_the_color_theme()
+    {
+        await _fx.OpenAsync();
+        var app = Avalonia.Application.Current!;
+        static Avalonia.Media.Color Resolved(string key) =>
+            Avalonia.Application.Current!.TryGetResource(key, Avalonia.Application.Current.ActualThemeVariant, out var value) && value is Avalonia.Media.ISolidColorBrush brush
+                ? brush.Color : default;
+        try
+        {
+            foreach (var theme in new[] { "dark", "macos", "macos-dark", "ubuntu", "ubuntu-dark" })
+            {
+                ColorThemes.Apply(app, theme);
+                var current = ColorThemes.Current!;
+                await SettleAsync(2);
+                // the window ground is the theme's Window.Background, the text its Window.Text
+                if (current.Colors.TryGetValue("Window.Background", out var background))
+                {
+                    Assert.Equal(Avalonia.Media.Color.Parse(background).ToUInt32() | 0xFF000000, Resolved("NcSurfaceBrush").ToUInt32() | 0xFF000000);
+                }
+                if (current.Colors.TryGetValue("Window.Text", out var text))
+                {
+                    Assert.Equal(Avalonia.Media.Color.Parse(text).ToUInt32() | 0xFF000000, Resolved("NcTextBrush").ToUInt32() | 0xFF000000);
+                }
+                // the soft accent is the theme's accent, made transparent
+                var accent = Resolved("NcAccentBrush");
+                var soft = Resolved("NcAccentSoftBrush");
+                Assert.Equal((accent.R, accent.G, accent.B), (soft.R, soft.G, soft.B));
+                Assert.True(soft.A < 0x40);
+
+                var dialog = _fx.Track(new CopyDialog(false, "Copy \"Movie\" to", _fx.R(), false, [], new CopyDialogOptions { Settings = new AppSettings(), Summary = new CopySummary(1000, 3, 1) }));
+                dialog.Show();
+                await SettleAsync(4);
+                if (Environment.GetEnvironmentVariable("FM_DESIGN_SHOTS") is { Length: > 0 } dir)
+                {
+                    Directory.CreateDirectory(dir);
+                    Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(dialog)!.SavePng(Path.Combine(dir, $"copy-theme-{theme}.png"));
+                }
+                dialog.Close();
+            }
+        }
+        finally
+        {
+            ColorThemes.Apply(app, null);
+        }
+    }
+
+    [AvaloniaFact]
     public async Task Find_files_follows_the_template()
     {
         var (_, vm) = await _fx.OpenAsync();
