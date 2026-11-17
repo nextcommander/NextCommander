@@ -41,6 +41,11 @@ public abstract class PseudoTerminal : IDisposable
     /// <summary>Whether a pseudo terminal can be made here (Windows: ConPTY in kernel32).</summary>
     public static bool IsSupported => OperatingSystem.IsWindows() ? WindowsPseudoTerminal.IsAvailable : OperatingSystem.IsLinux() || OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD();
 
+    /// <summary>Called once the events are hooked: a terminal that works in the background (Telnet) starts then.</summary>
+    public virtual void Open()
+    {
+    }
+
     public abstract void Write(byte[] data);
 
     public void Write(string text) => Write(Encoding.UTF8.GetBytes(text));

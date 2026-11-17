@@ -32,6 +32,8 @@ public sealed partial class ConnectionManagerView
         (RemoteProtocol.OneDrive, "OneDrive", "Personal, work or school; SharePoint sites", "Cloud drives"),
         (RemoteProtocol.Dropbox, "Dropbox", "Your Dropbox", "Cloud drives"),
         (RemoteProtocol.Box, "Box", "Your Box account", "Cloud drives"),
+        (RemoteProtocol.Rdp, "Remote desktop (RDP)", "The desktop of a Windows computer, in the system's RDP client", "Remote sessions"),
+        (RemoteProtocol.Telnet, "Telnet", "A text session in the internal terminal (routers, switches, old systems)", "Remote sessions"),
     ];
 
     private static readonly (string Name, string Color)[] s_colors =
@@ -530,6 +532,10 @@ public sealed partial class ConnectionManagerView
         {
             fields.Add(Field("Region", Text(c.Region, v => c.Region = v.Trim(), Core.Localization.Localizer.T("empty: from the server name or us-east-1"))));
         }
+        if (c.IsSession)
+        {
+            return Fields([.. fields]);
+        }
         fields.Add(Field("Start folder", Text(c.InitialPath, v =>
         {
             c.InitialPath = string.IsNullOrWhiteSpace(v) ? "/" : "/" + v.Trim().Trim('/');
@@ -627,6 +633,30 @@ public sealed partial class ConnectionManagerView
                 TextWrapping = Avalonia.Media.TextWrapping.Wrap,
                 Opacity = 0.8,
             });
+            return fields;
+        }
+        if (c.Protocol == RemoteProtocol.Telnet)
+        {
+            fields.Add(new TextBlock
+            {
+                Text = "The server asks for the user and the password in the terminal.",
+                TextWrapping = TextWrapping.Wrap,
+                Opacity = 0.8,
+            });
+            return fields;
+        }
+        if (c.Protocol == RemoteProtocol.Rdp)
+        {
+            User("User (DOMAIN\\user; empty: asked by the client)");
+            fields.Add(null);
+            if (NextCommander.Platform.RemoteDesktopLauncher.TakesPassword)
+            {
+                fields.Add(Remember("Save password (asked on first connect)"));
+            }
+            else
+            {
+                fields.Add(new TextBlock { Text = "The remote desktop client asks for the password and can remember it.", TextWrapping = TextWrapping.Wrap, Opacity = 0.75 });
+            }
             return fields;
         }
         if (c.IsCloudDrive)
@@ -748,8 +778,15 @@ public sealed partial class ConnectionManagerView
         var fields = new List<Control?>
         {
             Field("Timeout (seconds)", Number(c.TimeoutSeconds, v => c.TimeoutSeconds = v, Core.Localization.Localizer.T("default"))),
-            Field("Simultaneous connections", Number(c.MaxConnections, v => c.MaxConnections = Math.Max(1, v), "3")),
         };
+        if (c.Protocol == RemoteProtocol.Rdp)
+        {
+            fields.Add(Check("Full screen", c.FullScreen, v => c.FullScreen = v));
+        }
+        if (!c.IsSession)
+        {
+            fields.Add(Field("Simultaneous connections", Number(c.MaxConnections, v => c.MaxConnections = Math.Max(1, v), "3")));
+        }
         if (IsSsh(c.Protocol))
         {
             fields.Add(Field("Jump host", Text(c.JumpHost, v =>
@@ -787,7 +824,7 @@ public sealed partial class ConnectionManagerView
                 Changed(c);
             }));
         }
-        if (!c.IsCloudDrive && c.Protocol is not (RemoteProtocol.Sftp or RemoteProtocol.Scp or RemoteProtocol.Ftp or RemoteProtocol.WebDav or RemoteProtocol.Smb or RemoteProtocol.Link))
+        if (!c.IsCloudDrive && !c.IsSession && c.Protocol is not (RemoteProtocol.Sftp or RemoteProtocol.Scp or RemoteProtocol.Ftp or RemoteProtocol.WebDav or RemoteProtocol.Smb or RemoteProtocol.Link))
         {
             fields.Add(Check("Accept any certificate (not recommended)", c.AcceptAnyCertificate, v => c.AcceptAnyCertificate = v));
         }
@@ -815,6 +852,8 @@ public sealed partial class ConnectionManagerView
             RemoteProtocol.Box => "On first use you sign in with your Box account in the browser. For the application id: app.box.com/developers/console → Create Platform App → User Authentication (OAuth 2.0); Configuration: Redirect URI http://localhost:53682/, application scopes: read and write all files and folders. Enter the Client ID and Client Secret here.",
             RemoteProtocol.Smb => "SMB2/3 shares (Windows, Samba, NAS); they open without mounting on Linux and macOS too. User: DOMAIN\\user or user; empty for a guest login. The root lists the machine's shares; the start folder can be a share (e.g. /documents).",
             RemoteProtocol.Link => "Another computer running NextCommander that shares folders (Net > Share with PC link there). Server: its computer name (as Net > PC link lists it) or its address, e.g. 169.254.12.34 on a direct cable. A USB-C / Thunderbolt cable or a USB link cable works when the system shows it as a network connection.",
+            RemoteProtocol.Rdp => "Opens in the system's remote desktop client: Remote Desktop Connection on Windows, Microsoft's Windows App on macOS, FreeRDP or Remmina on Linux. The remote computer must allow remote desktop connections (port 3389).",
+            RemoteProtocol.Telnet => "Opens a tab in the internal terminal. Telnet is not encrypted: what is typed, the password too, can be read on the network. Use it for devices that have nothing else (routers, switches, old systems).",
             RemoteProtocol.AzureFiles => "Server: account.file.core.windows.net. The account key or a SAS token is asked as the password. The root lists the file shares; the start folder can be a share (e.g. /documents).",
             RemoteProtocol.AzureBlob => "Server: account.blob.core.windows.net (at another address, such as Azurite, requests go as server/account/container). The account key or a SAS token is asked as the password. The root lists the containers.",
             RemoteProtocol.S3 => "Server: the S3 endpoint (AWS, MinIO, R2 ...). User: the access key id; the secret key is asked as the password. With an AWS profile the keys (and the session token of temporary keys) are read from ~/.aws/credentials. The root lists the buckets; the start folder can be a bucket (e.g. /backups).",

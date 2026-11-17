@@ -25,6 +25,8 @@ Supported types:
 | Android over ADB | Phones with USB debugging on (also when MTP is not available) |
 | PC link | Another computer running NextCommander, over a USB or Ethernet cable or the network: see [PC link](#pc-link) |
 | rclone remotes | Every remote you set up with `rclone config` (70+ services); the rclone plugin shipped with the program |
+| Remote desktop (RDP) | The desktop of a Windows computer (or a Linux one with xrdp), in the system's RDP client: see [Remote desktop and Telnet](#remote-desktop-rdp-and-telnet) |
+| Telnet | A text session in the internal terminal (routers, switches, old systems) |
 
 ## The Net menu
 
@@ -106,6 +108,7 @@ You can also type an address straight into the path line (Alt+D) or into *Connec
 | Web server folder | `https://archive.apache.org/dist/` |
 | Android over ADB | `adb://SERIAL/sdcard/DCIM` |
 | rclone | `rclone://remote/folder` (`rclone:///` lists the remotes) |
+| RDP, Telnet | `rdp://user@pc.example.com`, `telnet://router:2323` (in *Connect by address...*; they do not open in a panel) |
 
 ## Notes per type
 
@@ -237,6 +240,27 @@ off). With [rclone](https://rclone.org/downloads) installed (on the PATH or thro
 in the Plugins menu of the button bar lists the remotes of your rclone configuration; set them up with `rclone config`. Their passwords and tokens stay
 with rclone. NextCommander starts rclone once as a local API server (only on 127.0.0.1, with a random password) and
 stops it when it closes. Files are transferred through temporary files and keep their times where the service can.
+
+### Remote desktop (RDP) and Telnet
+These two are sessions on another computer, not folders: choosing one in the connection manager (or *Net > Saved
+connections*, `nc_OpenConnection name`) does not change the panel.
+
+- **Remote desktop (RDP)** opens in the system's client: *Remote Desktop Connection* (mstsc) on Windows, Microsoft's
+  **Windows App** on macOS (from the App Store), **FreeRDP** (`xfreerdp3`, `sdl-freerdp3`, `xfreerdp`) or **Remmina**
+  on Linux; without one you are told what to install. Settings: server, port (3389), user (`DOMAIN\user`), *Full
+  screen* (otherwise a window whose desktop follows its size), and *Save password*. A saved password is handed to
+  the client without a command line: on Windows it goes to the credential store for the current logon only (as
+  `TERMSRV/server`, where mstsc looks), on Linux to FreeRDP's standard input. FreeRDP cannot ask for a password by
+  itself here, so on Linux it is asked when none is saved. On macOS the Windows App asks and remembers it itself.
+  The remote computer must allow remote desktop connections: Windows Pro / Server (not Home), or Linux with xrdp.
+- **Telnet** opens a tab in the internal terminal (Ctrl+`), titled with the connection's name. The server asks for
+  the user and the password there. The terminal says it is xterm and sends its size, again when it changes. When the
+  server closes the connection the tab stays with the last screen; Enter connects again. Telnet tabs are not
+  reopened with the shells at the next start.
+  Telnet is **not encrypted**: everything typed, the password too, can be read on the network. Prefer SSH where the
+  device has it.
+
+*Test* in the connection manager checks that the server answers on the port.
 
 ## Security
 
