@@ -36,6 +36,7 @@ dotnet run --project src/NextCommander.App
 |---|---|
 | `./build/publish.ps1 -Rid win-x64` | zip, portable zip and the setup program (`-setup.exe`, Inno Setup) under `dist/` |
 | `./build/publish.ps1 -Rid linux-x64` | `.deb` and `.rpm` (nfpm), `.tar.gz` (with `.desktop` file and icons); an AppImage if `appimagetool` is present |
+| `./build/publish.ps1 -Rid all` | every platform in turn (`win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `osx-x64`, `osx-arm64`); one that fails does not stop the others, a table at the end shows each result and the time it took (exit code 1 when one failed) |
 | `./build/publish.ps1 -Rid osx-arm64` | `NextCommander.app` (in `dist/<name>/`) and a zip of it; on macOS also a `.dmg`. libmtp (phones over MTP) goes into the app from Homebrew's bottles, on any system (needs Python 3; downloaded once under `artifacts/tools`) |
 | `./build/windows/new-signing-certificate.ps1 -Trust` | code signing certificate for the setup program (`CN=NextCommander`, user store) and trusting it on this machine (UAC) |
 | `./tests/servers/run-integration-tests.ps1` | remote tests against local FTP / SFTP / WebDAV / S3 / SMB servers (+ Azurite if Node.js is installed); needs Python |

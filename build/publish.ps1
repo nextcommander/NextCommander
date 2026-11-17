@@ -11,13 +11,37 @@
   ./build/publish.ps1 -Rid osx-arm64         # dist/NextCommander-<ver>-osx-arm64/NextCommander.app and a .zip of it
                                              # signed when $env:MACOS_SIGN_IDENTITY is set; on macOS also a .dmg,
                                              # notarized when $env:MACOS_NOTARY_PROFILE (notarytool keychain profile) is set
+  ./build/publish.ps1 -Rid all               # every platform above in turn; a failed one does not stop the others,
+                                             # the summary at the end lists them (exit code 1 when one failed)
 #>
 param(
-    [Parameter(Mandatory = $true)][ValidateSet('win-x64', 'win-arm64', 'linux-x64', 'linux-arm64', 'osx-x64', 'osx-arm64')][string]$Rid,
+    [Parameter(Mandatory = $true)][ValidateSet('all', 'win-x64', 'win-arm64', 'linux-x64', 'linux-arm64', 'osx-x64', 'osx-arm64')][string]$Rid,
     [string]$Configuration = 'Release'
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
+
+# all: this script once for each platform (each in its own script scope), then what succeeded and what failed
+if ($Rid -eq 'all') {
+    $rids = @('win-x64', 'win-arm64', 'linux-x64', 'linux-arm64', 'osx-x64', 'osx-arm64')
+    $results = foreach ($one in $rids) {
+        Write-Host ""
+        Write-Host "==== $one ====" -ForegroundColor Cyan
+        $started = Get-Date
+        try {
+            & $PSCommandPath -Rid $one -Configuration $Configuration
+            [pscustomobject]@{ Rid = $one; Result = 'ok'; Minutes = [math]::Round(((Get-Date) - $started).TotalMinutes, 1); Error = '' }
+        }
+        catch {
+            Write-Host "$one failed: $($_.Exception.Message)" -ForegroundColor Red
+            [pscustomobject]@{ Rid = $one; Result = 'FAILED'; Minutes = [math]::Round(((Get-Date) - $started).TotalMinutes, 1); Error = $_.Exception.Message }
+        }
+    }
+    Write-Host ""
+    $results | Format-Table -AutoSize | Out-String | Write-Host
+    if ($results | Where-Object Result -ne 'ok') { exit 1 }
+    exit 0
+}
 # YY.MM.NNNN: year and month of the commit, NNNN its number within the month from 0000 (NcVersion target in
 # Directory.Build.props). $version keeps the month with two digits (file names, setup); $numericVersion has no
 # leading zero (deb / rpm and macOS bundle versions).
