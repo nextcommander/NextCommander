@@ -2,7 +2,7 @@ namespace NextCommander.Core.Config;
 
 /// <summary>
 /// What a connection type is: a server, object storage (buckets / containers at the root), a cloud drive, or a remote
-/// session (RDP, Telnet) that opens in a client or the terminal instead of a panel.
+/// session (RDP, VNC, Telnet, SSH, rsh) that opens in a client or the terminal instead of a panel.
 /// </summary>
 public enum ProtocolKind
 {
@@ -57,6 +57,9 @@ public static class RemoteProtocols
         new(RemoteProtocol.Box, "box", 443, ProtocolKind.CloudDrive, Http: true, CloudHost: "box.com"),
         new(RemoteProtocol.Rdp, "rdp", 3389, ProtocolKind.Session),
         new(RemoteProtocol.Telnet, "telnet", 23, ProtocolKind.Session),
+        new(RemoteProtocol.Ssh, "ssh", 22, ProtocolKind.Session),
+        new(RemoteProtocol.Vnc, "vnc", 5900, ProtocolKind.Session),
+        new(RemoteProtocol.Rsh, "rsh", 514, ProtocolKind.Session, Aliases: ["rlogin"]),
     ];
 
     public static ProtocolInfo Of(RemoteProtocol protocol) => All.First(p => p.Protocol == protocol);

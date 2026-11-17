@@ -36,6 +36,12 @@ public enum RemoteProtocol
     Rdp,
     /// <summary>Telnet (telnet://): a text session in the built-in terminal.</summary>
     Telnet,
+    /// <summary>SSH (ssh://): a shell on the server in the built-in terminal (the login of SFTP: password, key, agent, jump host).</summary>
+    Ssh,
+    /// <summary>VNC (vnc://): the remote screen in the system's VNC viewer (TigerVNC, RealVNC, TightVNC, UltraVNC, Screen Sharing, Remmina).</summary>
+    Vnc,
+    /// <summary>rsh / rlogin (rsh://): a session or one command on an old Unix host in the built-in terminal (not encrypted).</summary>
+    Rsh,
 }
 
 /// <summary>A folder of the connection manager: its path ("Work/Prod") and color label ("#ED4245"; empty: none).</summary>
@@ -243,7 +249,7 @@ public sealed class RemoteConnection
 
     // ---------------------------------------------------------------- more options by type
 
-    /// <summary>SFTP / SCP / FTP / Telnet: a keep-alive message every so many seconds (0: none).</summary>
+    /// <summary>SFTP / SCP / SSH / FTP / Telnet: a keep-alive message every so many seconds (0: none).</summary>
     public int KeepAliveSeconds { get; set; }
 
     /// <summary>
@@ -327,7 +333,7 @@ public sealed class RemoteConnection
     /// <summary>RDP: the Remote Desktop Gateway to go through ("gateway.example.com"; empty: none).</summary>
     public string? RdpGateway { get; set; }
 
-    /// <summary>Telnet: the terminal type told to the server (empty: xterm).</summary>
+    /// <summary>Telnet, SSH, rlogin: the terminal type told to the server (empty: xterm).</summary>
     public string? TerminalType { get; set; }
 
     /// <summary>Telnet: what the Backspace key sends.</summary>
@@ -339,8 +345,17 @@ public sealed class RemoteConnection
     /// <summary>Telnet: whether typed text is shown here (automatic: when the server does not send it back).</summary>
     public LocalEcho LocalEcho { get; set; }
 
-    /// <summary>Telnet: the character set of the session (empty: UTF-8).</summary>
+    /// <summary>Telnet, SSH, rsh: the character set of the session (empty: UTF-8).</summary>
     public string? TerminalEncoding { get; set; }
+
+    /// <summary>SSH: a command typed into the shell when it opens; rsh: the command run instead of a login session (rlogin).</summary>
+    public string? RemoteCommand { get; set; }
+
+    /// <summary>rsh / rlogin: the user name on this computer the server checks (.rhosts; empty: the current user).</summary>
+    public string? LocalUser { get; set; }
+
+    /// <summary>VNC: only watch the screen (no keys or mouse sent).</summary>
+    public bool VncViewOnly { get; set; }
 
     // ---------------------------------------------------------------- proxy
 
@@ -373,7 +388,7 @@ public sealed class RemoteConnection
     /// <summary>A cloud drive (Google Drive, OneDrive, Dropbox ...): signed in in the browser; the user is only a name for the account.</summary>
     public bool IsCloudDrive => RemoteProtocols.Of(Protocol).IsCloudDrive;
 
-    /// <summary>A remote session (RDP, Telnet): opened in a client or the terminal, not in a panel.</summary>
+    /// <summary>A remote session (RDP, VNC, Telnet, SSH, rsh): opened in a client or the terminal, not in a panel.</summary>
     public bool IsSession => RemoteProtocols.Of(Protocol).IsSession;
 
     /// <summary>The fixed "host" of a cloud drive (part of the path: account@host).</summary>

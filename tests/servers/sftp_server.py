@@ -35,9 +35,32 @@ class Sftp(asyncssh.SFTPServer):
         super().__init__(chan, chroot=root)
 
 
+async def shell(process):
+    """A tiny shell for the SSH terminal test: a prompt, "echo <text>" answers the text, "exit" ends the session."""
+    process.stdout.write(f"test shell ({process.get_terminal_type() or 'no terminal'})\r\n$ ")
+    line = ""
+    while True:
+        data = await process.stdin.read(1)
+        if not data:
+            break
+        if data in "\r\n":
+            command = line.strip()
+            line = ""
+            process.stdout.write("\r\n")
+            if command == "exit":
+                break
+            if command.startswith("echo "):
+                process.stdout.write(command[5:] + "\r\n")
+            process.stdout.write("$ ")
+        else:
+            line += data
+            process.stdout.write(data)  # the terminal echo
+    process.exit(0)
+
+
 async def main():
     await asyncssh.listen("127.0.0.1", port, server_host_keys=[key_path], server_factory=Server, sftp_factory=Sftp,
-                          authorized_client_keys=authorized)
+                          authorized_client_keys=authorized, process_factory=shell)
     print("ready", flush=True)
     await asyncio.Future()
 

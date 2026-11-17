@@ -293,7 +293,7 @@ public partial class MainWindow : Window
         _vm.QuickSearchRequested += (_, filter) => ActiveView.BeginQuickSearch(null, filter);
         _vm.ButtonBarFocusRequested += (_, _) => _topBar.FocusFirst();
         _vm.DropDownMenuRequested += (_, kind) => ShowDropDownMenu(kind);
-        _vm.TelnetRequested += (_, connection) => OpenTelnet(connection);
+        _vm.TerminalSessionRequested += (_, connection) => OpenTerminalSession(connection);
         _vm.NextPageRequested += (_, _) => SelectNextPage();
         _vm.HotlistMenuRequested += (_, _) => ShowHotlistMenu();
         _vm.ButtonBarsChanged += (_, _) => UpdateButtonBars();
@@ -1139,10 +1139,10 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// A Telnet session in a new tab of the internal terminal (opened first when it is closed); the login happens in
-    /// the terminal, as the server asks for it.
+    /// A Telnet, SSH or rsh session in a new tab of the internal terminal (opened first when it is closed). Telnet and
+    /// rlogin log in in the terminal, as the server asks; SSH asks for the password and the host key in dialogs first.
     /// </summary>
-    public void OpenTelnet(RemoteConnection connection)
+    public void OpenTerminalSession(RemoteConnection connection)
     {
         if (_vm is null)
         {
@@ -1150,8 +1150,15 @@ public partial class MainWindow : Window
         }
         EnsureTerminal();
         ApplyTerminalSettings();
-        var shell = new Services.TerminalSession.ShellInfo(connection.Name.Length > 0 ? connection.Name : connection.Host, "telnet", string.Empty, true, string.Empty);
-        _terminal!.NewTab(shell, (columns, rows) => new Services.Terminal.TelnetTerminal(connection, columns, rows));
+        var kind = RemoteConnection.SchemeOf(connection.Protocol);
+        var shell = new Services.TerminalSession.ShellInfo(connection.Name.Length > 0 ? connection.Name : connection.Host, kind, string.Empty, true, string.Empty);
+        var hooks = _vm.Remote?.Hooks ?? new NextCommander.Vfs.Remote.RemoteHooks();
+        _terminal!.NewTab(shell, (columns, rows) => connection.Protocol switch
+        {
+            RemoteProtocol.Ssh => new Services.Terminal.SshTerminal(connection, hooks, columns, rows),
+            RemoteProtocol.Rsh => new Services.Terminal.RshTerminal(connection, columns, rows),
+            _ => (Services.Terminal.PseudoTerminal)new Services.Terminal.TelnetTerminal(connection, columns, rows),
+        });
         if (IsTerminalMaximizedPage && _page != WorkspacePage.Terminal)
         {
             SelectPage(WorkspacePage.Terminal);

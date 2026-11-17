@@ -71,7 +71,7 @@ public sealed class RemoteSession
 
     public RemoteHooks Hooks { get; }
 
-    public static string HostKey(RemoteConnection c) => $"{c.Scheme}:{c.Host}:{c.EffectivePort}";
+    public static string HostKey(RemoteConnection c) => $"{(c.Protocol == RemoteProtocol.Ssh ? "sftp" : c.Scheme)}:{c.Host}:{c.EffectivePort}"; // an SSH session trusts the key its server has for SFTP
 
     private RemoteConnection Resolve(string scheme, string authority) =>
         _settings.Connections.FirstOrDefault(c => (c.Scheme == scheme || (scheme == "ftps" && c.Scheme == "ftps")) && c.Authority == authority)?.Clone()
