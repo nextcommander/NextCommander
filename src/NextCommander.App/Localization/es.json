@@ -2826,5 +2826,7 @@
   "StreamTerminal.TheServerClosedTheConnection": "El servidor cerró la conexión.",
   "SshSession.LoginFailed": "{0}@{1}: falló el inicio de sesión ({2}).",
   "SshSession.KeyNotAccepted": "{0}: no se aceptó la clave del servidor.",
-  "SshSession.KeyNotPinned": "{0}: la clave del servidor ({1}) no es la fijada."
+  "SshSession.KeyNotPinned": "{0}: la clave del servidor ({1}) no es la fijada.",
+  "MtpAccessDeniedException.Text": "El teléfono no deja leer sus archivos. Desbloquéelo; si pregunta \"¿Permitir acceso a los datos del teléfono?\", toque Permitir; ponga la conexión USB en \"Transferencia de archivos\" (no \"Solo carga\"). Después abra el dispositivo de nuevo.",
+  "MtpAccessDeniedException.TextWithDetail": "El teléfono no deja leer sus archivos. Desbloquéelo; si pregunta \"¿Permitir acceso a los datos del teléfono?\", toque Permitir; ponga la conexión USB en \"Transferencia de archivos\" (no \"Solo carga\"). Después abra el dispositivo de nuevo. ({0})"
 }

@@ -2826,5 +2826,7 @@
   "StreamTerminal.TheServerClosedTheConnection": "服务器关闭了连接。",
   "SshSession.LoginFailed": "{0}@{1}：登录失败（{2}）。",
   "SshSession.KeyNotAccepted": "{0}：未接受服务器的密钥。",
-  "SshSession.KeyNotPinned": "{0}：服务器的密钥（{1}）不是固定的那个。"
+  "SshSession.KeyNotPinned": "{0}：服务器的密钥（{1}）不是固定的那个。",
+  "MtpAccessDeniedException.Text": "手机不允许读取其文件。请解锁手机；如果提示“允许访问手机数据？”，请点按“允许”；将 USB 连接设为“文件传输”（而非“仅充电”）。然后重新打开设备。",
+  "MtpAccessDeniedException.TextWithDetail": "手机不允许读取其文件。请解锁手机；如果提示“允许访问手机数据？”，请点按“允许”；将 USB 连接设为“文件传输”（而非“仅充电”）。然后重新打开设备。（{0}）"
 }

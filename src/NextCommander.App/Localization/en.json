@@ -2826,5 +2826,7 @@
   "StreamTerminal.TheServerClosedTheConnection": "The server closed the connection.",
   "SshSession.LoginFailed": "{0}@{1}: login failed ({2}).",
   "SshSession.KeyNotAccepted": "{0}: the server's key was not accepted.",
-  "SshSession.KeyNotPinned": "{0}: the server's key ({1}) is not the pinned one."
+  "SshSession.KeyNotPinned": "{0}: the server's key ({1}) is not the pinned one.",
+  "MtpAccessDeniedException.Text": "The phone does not let its files be read. Unlock it; when it asks \"Allow access to phone data?\", tap Allow; set its USB connection to \"File transfer\" (not \"Charging only\"). Then open the device again.",
+  "MtpAccessDeniedException.TextWithDetail": "The phone does not let its files be read. Unlock it; when it asks \"Allow access to phone data?\", tap Allow; set its USB connection to \"File transfer\" (not \"Charging only\"). Then open the device again. ({0})"
 }

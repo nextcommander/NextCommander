@@ -354,12 +354,39 @@ public sealed class MtpFileSystemProvider(IMtpDeviceSource source) : IFileSystem
             Close(path.Authority);
             return action(_sessions.GetOrAdd(path.Authority, Open));
         }
+        catch (MtpAccessDeniedException)
+        {
+            // a locked phone, or one still asking to allow access: opened again a few times while the user answers it
+            // (Android connects again after "Allow"); the last refusal goes to the panel and the session is not kept
+            for (var attempt = 1; ; attempt++)
+            {
+                Close(path.Authority);
+                Thread.Sleep(AccessRetryDelay);
+                try
+                {
+                    return action(_sessions.GetOrAdd(path.Authority, Open));
+                }
+                catch (MtpAccessDeniedException) when (attempt < AccessRetries)
+                {
+                }
+                catch (MtpAccessDeniedException)
+                {
+                    Close(path.Authority);
+                    throw;
+                }
+            }
+        }
         catch (IOException) when (!IsConnected(path.Authority))
         {
             Close(path.Authority);
             throw new IOException($"The device was disconnected: {path.Authority}");
         }
     }
+
+    /// <summary>How many times a phone that refuses access is opened again, and how long it is waited for before each.</summary>
+    internal int AccessRetries { get; init; } = 3;
+
+    internal TimeSpan AccessRetryDelay { get; init; } = TimeSpan.FromSeconds(1.5);
 
     private bool IsConnected(string name) =>
         source.GetDevices().Any(d => string.Equals(d.Name, name, StringComparison.OrdinalIgnoreCase));

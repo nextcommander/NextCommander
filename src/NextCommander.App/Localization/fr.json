@@ -2826,5 +2826,7 @@
   "StreamTerminal.TheServerClosedTheConnection": "Le serveur a fermé la connexion.",
   "SshSession.LoginFailed": "{0}@{1} : échec de la connexion ({2}).",
   "SshSession.KeyNotAccepted": "{0} : la clé du serveur n'a pas été acceptée.",
-  "SshSession.KeyNotPinned": "{0} : la clé du serveur ({1}) n'est pas celle épinglée."
+  "SshSession.KeyNotPinned": "{0} : la clé du serveur ({1}) n'est pas celle épinglée.",
+  "MtpAccessDeniedException.Text": "Le téléphone ne laisse pas lire ses fichiers. Déverrouillez-le ; s'il demande « Autoriser l'accès aux données du téléphone ? », touchez Autoriser ; réglez sa connexion USB sur « Transfert de fichiers » (pas « Recharge uniquement »). Puis ouvrez de nouveau l'appareil.",
+  "MtpAccessDeniedException.TextWithDetail": "Le téléphone ne laisse pas lire ses fichiers. Déverrouillez-le ; s'il demande « Autoriser l'accès aux données du téléphone ? », touchez Autoriser ; réglez sa connexion USB sur « Transfert de fichiers » (pas « Recharge uniquement »). Puis ouvrez de nouveau l'appareil. ({0})"
 }

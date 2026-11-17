@@ -2826,5 +2826,7 @@
   "StreamTerminal.TheServerClosedTheConnection": "Sunucu bağlantıyı kapattı.",
   "SshSession.LoginFailed": "{0}@{1}: giriş başarısız ({2}).",
   "SshSession.KeyNotAccepted": "{0}: sunucunun anahtarı kabul edilmedi.",
-  "SshSession.KeyNotPinned": "{0}: sunucunun anahtarı ({1}) sabitlenmiş olan değil."
+  "SshSession.KeyNotPinned": "{0}: sunucunun anahtarı ({1}) sabitlenmiş olan değil.",
+  "MtpAccessDeniedException.Text": "Telefon dosyalarının okunmasına izin vermiyor. Telefonun kilidini açın; \"Telefon verilerine erişime izin verilsin mi?\" diye sorarsa İzin ver'e dokunun; USB bağlantısını \"Dosya aktarımı\" yapın (\"Yalnızca şarj\" değil). Sonra cihazı yeniden açın.",
+  "MtpAccessDeniedException.TextWithDetail": "Telefon dosyalarının okunmasına izin vermiyor. Telefonun kilidini açın; \"Telefon verilerine erişime izin verilsin mi?\" diye sorarsa İzin ver'e dokunun; USB bağlantısını \"Dosya aktarımı\" yapın (\"Yalnızca şarj\" değil). Sonra cihazı yeniden açın. ({0})"
 }
