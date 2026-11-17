@@ -2865,5 +2865,13 @@
   "LibreOffice.DidNotStart": "LibreOffice did not start.",
   "LibreOffice.NotInTime": "LibreOffice did not convert the file in time.",
   "LibreOffice.CouldNotConvert": "LibreOffice could not convert the file.",
-  "LibreOffice.CouldNotConvertBecause": "LibreOffice could not convert the file: {0}"
+  "LibreOffice.CouldNotConvertBecause": "LibreOffice could not convert the file: {0}",
+  "ListerView.PasswordWrongEnterAgain": "The password is not right. Enter it again:",
+  "ListerView.PdfProtectedItsPassword": "The PDF is protected. Its password:",
+  "PdfPasswordException.ThePasswordIsNotRight": "The password is not right.",
+  "OfficeHtml.DocumentProtected": "The document is protected by a password.",
+  "OfficeHtml.WorkbookProtected": "The workbook is protected by a password.",
+  "ConnectionManagerWindow.ShareActivePanelFolderMstsc": "Share the active panel's folder (Remote Desktop Connection shares its drive)",
+  "ConnectionManagerWindow.ShareActivePanelFolder": "Share the active panel's folder",
+  "ConnectionManagerWindow.FilesSmb": "Files (SMB)"
 }

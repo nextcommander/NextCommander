@@ -146,6 +146,26 @@ public sealed class ConnectionOptionsTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task A_remote_desktop_opens_its_files_over_smb()
+    {
+        var settings = new AppSettings();
+        var rdp = new RemoteConnection { Name = "pc", Protocol = RemoteProtocol.Rdp, Host = "pc.example.com", User = @"CORP\ali" };
+        var other = new RemoteConnection { Name = "server", Protocol = RemoteProtocol.Rdp, Host = "srv.example.com" };
+        var share = new RemoteConnection { Name = "srv files", Protocol = RemoteProtocol.Smb, Host = "SRV.example.com", User = "admin" };
+        settings.Connections.AddRange([rdp, other, share]);
+        var (view, _) = Open(settings);
+        await SettleAsync();
+
+        view.Reveal(rdp);
+        await SettleAsync();
+        Click(view, "Files (SMB)");
+        var result = Assert.Single(view.Result!.Connections);
+        Assert.Equal((RemoteProtocol.Smb, "pc.example.com", @"CORP\ali"), (result.Protocol, result.Host, result.User)); // made from the remote desktop
+
+        Assert.Same(share, view.SmbOf(other)); // a saved SMB connection to the same server is used
+    }
+
+    [AvaloniaFact]
     public void Telnet_sends_the_keys_as_the_connection_says()
     {
         var c = new RemoteConnection { Protocol = RemoteProtocol.Telnet };

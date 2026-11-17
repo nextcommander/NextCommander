@@ -20,7 +20,8 @@ public static partial class RemoteDesktopLauncher
     public static bool NeedsPassword => OperatingSystem.IsLinux() && FindProgram(RemoteDesktop.FreeRdpPrograms) is not null;
 
     /// <summary>Starts the client; an <see cref="InvalidOperationException"/> says what to install when there is none.</summary>
-    public static async Task LaunchAsync(RemoteConnection connection, string? password)
+    /// <param name="folder">The active panel's folder, shared in the session when the connection says so.</param>
+    public static async Task LaunchAsync(RemoteConnection connection, string? password, string? folder = null)
     {
         if (OperatingSystem.IsWindows())
         {
@@ -28,7 +29,7 @@ public static partial class RemoteDesktopLauncher
             {
                 StoreWindowsCredential(connection.Host, connection.User, password);
             }
-            var file = WriteRdpFile(connection);
+            var file = WriteRdpFile(connection, folder);
             Start(new ProcessStartInfo("mstsc.exe") { ArgumentList = { file }, UseShellExecute = false });
             DeleteLater(file);
             return;
@@ -50,7 +51,7 @@ public static partial class RemoteDesktopLauncher
         {
             var stdin = !string.IsNullOrEmpty(password);
             var info = new ProcessStartInfo(freeRdp) { UseShellExecute = false, RedirectStandardInput = stdin };
-            foreach (var arg in RemoteDesktop.FreeRdpArguments(connection, stdin))
+            foreach (var arg in RemoteDesktop.FreeRdpArguments(connection, stdin, folder))
             {
                 info.ArgumentList.Add(arg);
             }
@@ -74,13 +75,13 @@ public static partial class RemoteDesktopLauncher
     private static Process Start(ProcessStartInfo info) =>
         Process.Start(info) ?? throw new InvalidOperationException("The remote desktop client did not start: " + info.FileName);
 
-    private static string WriteRdpFile(RemoteConnection connection)
+    private static string WriteRdpFile(RemoteConnection connection, string? shared = null)
     {
         var folder = Path.Combine(Path.GetTempPath(), "NextCommander-rdp");
         Directory.CreateDirectory(folder);
         var name = string.Concat(connection.Name.Select(ch => Path.GetInvalidFileNameChars().Contains(ch) ? '_' : ch)).Trim();
         var file = Path.Combine(folder, (name.Length > 0 ? name : connection.Host) + ".rdp");
-        File.WriteAllText(file, RemoteDesktop.RdpFile(connection));
+        File.WriteAllText(file, RemoteDesktop.RdpFile(connection, shared));
         return file;
     }
 

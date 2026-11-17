@@ -359,10 +359,22 @@ public sealed partial class ConnectionManagerView
         AddFooter(FooterButton("⟳ Test", () => _ = TestAsync(c)), right: false);
         AddFooter(FooterButton("Duplicate", () => Duplicate(c)), right: false);
         AddFooter(FooterButton("Delete", () => _ = DeleteAsync(Selected!)), right: false);
+        if (c.Protocol == RemoteProtocol.Rdp)
+        {
+            AddFooter(FooterButton("Files (SMB)", () => Connect([SmbOf(c)], right: false)), right: false);
+        }
         AddFooter(FooterButton("Connect", () => Connect([c], right: false), accent: true, right: true), right: true);
         AddFooter(FooterButton("Save", Save, right: true), right: true);
         return panel;
     }
+
+    /// <summary>
+    /// The files of a remote desktop's computer: a saved SMB connection to the same server, else one made from it (the
+    /// same user; its password is asked when it connects).
+    /// </summary>
+    public RemoteConnection SmbOf(RemoteConnection rdp) =>
+        _settings.Connections.FirstOrDefault(s => s.Protocol == RemoteProtocol.Smb && s.Host.Equals(rdp.Host, StringComparison.OrdinalIgnoreCase))
+        ?? new RemoteConnection { Name = rdp.Host, Protocol = RemoteProtocol.Smb, Host = rdp.Host, User = rdp.User, Proxy = rdp.Proxy };
 
     /// <summary>The changed connection: the tree row and the address under the name follow.</summary>
     private void Changed(RemoteConnection c)
@@ -1055,6 +1067,9 @@ public sealed partial class ConnectionManagerView
         fields.Add(Check("Share the clipboard", c.RdpClipboard, v => c.RdpClipboard = v));
         fields.Add(Check("Share this computer's drives", c.RdpDrives, v => c.RdpDrives = v));
         fields.Add(Check("Share this computer's printers", c.RdpPrinters, v => c.RdpPrinters = v));
+        fields.Add(Check(OperatingSystem.IsWindows()
+            ? "Share the active panel's folder (Remote Desktop Connection shares its drive)"
+            : "Share the active panel's folder", c.RdpShareFolder, v => c.RdpShareFolder = v));
         fields.Add(Check("Administrative session (console)", c.RdpAdmin, v => c.RdpAdmin = v));
     }
 

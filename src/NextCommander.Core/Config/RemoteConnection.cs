@@ -359,6 +359,12 @@ public sealed class RemoteConnection
     /// <summary>RDP: this computer's printers are seen in the remote session.</summary>
     public bool RdpPrinters { get; set; }
 
+    /// <summary>
+    /// RDP: the folder of the active panel is seen in the session (FreeRDP: that folder; Remote Desktop Connection: its
+    /// drive, as mstsc shares drives only).
+    /// </summary>
+    public bool RdpShareFolder { get; set; }
+
     /// <summary>RDP: the administrative (console) session.</summary>
     public bool RdpAdmin { get; set; }
 

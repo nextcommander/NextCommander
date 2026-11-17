@@ -2865,5 +2865,13 @@
   "LibreOffice.DidNotStart": "LibreOffice 未启动。",
   "LibreOffice.NotInTime": "LibreOffice 未能及时转换该文件。",
   "LibreOffice.CouldNotConvert": "LibreOffice 无法转换该文件。",
-  "LibreOffice.CouldNotConvertBecause": "LibreOffice 无法转换该文件：{0}"
+  "LibreOffice.CouldNotConvertBecause": "LibreOffice 无法转换该文件：{0}",
+  "ListerView.PasswordWrongEnterAgain": "密码不正确。请重新输入：",
+  "ListerView.PdfProtectedItsPassword": "该 PDF 受保护。其密码：",
+  "PdfPasswordException.ThePasswordIsNotRight": "密码不正确。",
+  "OfficeHtml.DocumentProtected": "该文档受密码保护。",
+  "OfficeHtml.WorkbookProtected": "该工作簿受密码保护。",
+  "ConnectionManagerWindow.ShareActivePanelFolderMstsc": "共享活动面板的文件夹（远程桌面连接会共享其驱动器）",
+  "ConnectionManagerWindow.ShareActivePanelFolder": "共享活动面板的文件夹",
+  "ConnectionManagerWindow.FilesSmb": "文件（SMB）"
 }

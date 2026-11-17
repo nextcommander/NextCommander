@@ -29,8 +29,15 @@ public static class RemoteDesktop
 
     private static string Number(int value) => value.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
-    /// <summary>The .rdp file of a connection (the screen, sound, clipboard, drives, printers and gateway as chosen).</summary>
-    public static string RdpFile(RemoteConnection c)
+    /// <summary>The drive of a Windows folder for mstsc's drive list ("D:\"), or null for another kind of path.</summary>
+    public static string? DriveOf(string? folder) =>
+        folder is { Length: >= 2 } && char.IsAsciiLetter(folder[0]) && folder[1] == ':' ? char.ToUpperInvariant(folder[0]) + ":\\" : null;
+
+    /// <summary>
+    /// The .rdp file of a connection (the screen, sound, clipboard, drives, printers and gateway as chosen);
+    /// <paramref name="folder"/>: the active panel's folder, shared through its drive when the connection says so.
+    /// </summary>
+    public static string RdpFile(RemoteConnection c, string? folder = null)
     {
         var lines = new List<string>
         {
@@ -52,7 +59,7 @@ public static class RemoteDesktop
         lines.Add("use multimon:i:" + (c.RdpMultiMonitor ? "1" : "0"));
         lines.Add("redirectclipboard:i:" + (c.RdpClipboard ? "1" : "0"));
         lines.Add("audiomode:i:" + (c.RdpAudio switch { RdpAudio.Remote => "1", RdpAudio.None => "2", _ => "0" }));
-        lines.Add("drivestoredirect:s:" + (c.RdpDrives ? "*" : string.Empty));
+        lines.Add("drivestoredirect:s:" + (c.RdpDrives ? "*" : c.RdpShareFolder && DriveOf(folder) is { } drive ? drive + ";" : string.Empty));
         lines.Add("redirectprinters:i:" + (c.RdpPrinters ? "1" : "0"));
         if (c.RdpAdmin)
         {
@@ -78,7 +85,7 @@ public static class RemoteDesktop
     /// FreeRDP's arguments: the server, the user (DOMAIN\user split into /d: and /u:), a window that follows its size, a
     /// fixed size or full screen, and the options of the connection; with a password it is read from the standard input.
     /// </summary>
-    public static IReadOnlyList<string> FreeRdpArguments(RemoteConnection c, bool passwordOnStdin)
+    public static IReadOnlyList<string> FreeRdpArguments(RemoteConnection c, bool passwordOnStdin, string? folder = null)
     {
         var args = new List<string> { "/v:" + Address(c) };
         if (c.User.Length > 0)
@@ -124,6 +131,12 @@ public static class RemoteDesktop
         if (c.RdpDrives)
         {
             args.Add("/drive:home,~"); // the home folder (FreeRDP has no "all drives" on Linux and macOS)
+        }
+        if (c.RdpShareFolder && !string.IsNullOrEmpty(folder))
+        {
+            // the panel's folder under its own name (FreeRDP takes the share name up to the comma)
+            var name = new string(Path.GetFileName(folder.TrimEnd('/', '\\')).Where(ch => char.IsLetterOrDigit(ch) || ch is '-' or '_').ToArray());
+            args.Add("/drive:" + (name.Length > 0 ? name : "NextCommander") + "," + folder);
         }
         if (c.RdpPrinters)
         {
