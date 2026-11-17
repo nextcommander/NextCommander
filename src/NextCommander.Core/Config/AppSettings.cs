@@ -848,8 +848,14 @@ public sealed class AppSettings
     /// <summary>Manual proxy: names without a dot (the local network) are reached directly.</summary>
     public bool ProxyBypassLocal { get; set; } = true;
 
-    /// <summary>Manual proxy: an HTTP proxy or a SOCKS5 proxy.</summary>
+    /// <summary>Manual proxy: HTTP, HTTPS, SOCKS4, SOCKS4a, SOCKS5 or an SSH server.</summary>
     public Net.ProxyKind ProxyKind { get; set; } = Net.ProxyKind.Http;
+
+    /// <summary>Manual SSH proxy: the private key file (its passphrase is the password; empty: the password logs in).</summary>
+    public string? ProxyKeyFile { get; set; }
+
+    /// <summary>Automatic configuration: the address of the PAC script (http, https or a file).</summary>
+    public string ProxyPacUrl { get; set; } = string.Empty;
 
     /// <summary>Manual proxy: FTP, SFTP and SMB connections go through it too.</summary>
     public bool ProxyFileTransfers { get; set; } = true;
@@ -859,7 +865,8 @@ public sealed class AppSettings
     public string? ProxyPasswordChange { get; set; }
 
     /// <summary>The proxy settings as one value.</summary>
-    public Net.ProxyOptions GetProxyOptions() => new(ProxyMode, ProxyHost, ProxyPort, ProxyUser, ProxyBypass, ProxyBypassLocal, ProxyKind, ProxyFileTransfers);
+    public Net.ProxyOptions GetProxyOptions() => new(ProxyMode, ProxyHost, ProxyPort, ProxyUser, ProxyBypass, ProxyBypassLocal, ProxyKind, ProxyFileTransfers,
+        string.IsNullOrWhiteSpace(ProxyKeyFile) ? null : ProxyKeyFile, ProxyPacUrl ?? string.Empty);
 
     /// <summary>A transfer is broken off (and retried) when no data came for this many seconds.</summary>
     public int FtpStallSeconds { get; set; } = 60;

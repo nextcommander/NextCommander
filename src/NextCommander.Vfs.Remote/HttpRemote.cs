@@ -35,17 +35,26 @@ public sealed class HttpRemoteClient : IDisposable
             AllowAutoRedirect = false,
             ConnectTimeout = TimeSpan.FromSeconds(20),
         };
-        NextCommander.Core.Net.WebProxyConfig.Apply(handler); // Configuration > Operation > Proxy
+        NextCommander.Core.Net.WebProxyConfig.Apply(handler, connection); // its own proxy or Configuration > Operation > Proxy
         if (useCredentials && !string.IsNullOrEmpty(connection.User))
         {
-            // Basic, Digest and NTLM / Negotiate as the server asks
-            handler.Credentials = new NetworkCredential(connection.User, password ?? string.Empty);
+            // Basic, Digest and NTLM / Negotiate as the server asks, or only the one the connection names
+            var credential = new NetworkCredential(connection.User, password ?? string.Empty);
+            handler.Credentials = connection.WebDavAuth switch
+            {
+                WebDavAuth.Basic => new CredentialCache { { BaseUri, "Basic", credential } },
+                WebDavAuth.Digest => new CredentialCache { { BaseUri, "Digest", credential } },
+                WebDavAuth.Ntlm => new CredentialCache { { BaseUri, "NTLM", credential } },
+                WebDavAuth.Negotiate => new CredentialCache { { BaseUri, "Negotiate", credential } },
+                _ => credential,
+            };
             handler.PreAuthenticate = true;
         }
         if (secure)
         {
             handler.SslOptions = new SslClientAuthenticationOptions
             {
+                EnabledSslProtocols = FtpFileSystemProvider.SslProtocolsOf(connection.TlsVersion),
                 RemoteCertificateValidationCallback = (_, certificate, _, errors) =>
                 {
                     if (errors == SslPolicyErrors.None || connection.AcceptAnyCertificate)

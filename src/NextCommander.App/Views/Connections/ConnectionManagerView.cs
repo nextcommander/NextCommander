@@ -25,6 +25,12 @@ public sealed record ConnectionManagerRequest(
 {
     /// <summary>Opens with a new connection of this type (Net > New connection).</summary>
     public RemoteProtocol? NewProtocol { get; init; }
+
+    /// <summary>Whether the password store has a secret (the own proxy's password is shown as saved).</summary>
+    public Func<string, bool>? HasSecret { get; init; }
+
+    /// <summary>Keeps a secret in the password store (id, value; an empty value removes it).</summary>
+    public Func<string, string, Task>? StoreSecret { get; init; }
 }
 
 /// <summary>The connections to open, and in which panel.</summary>
@@ -734,6 +740,7 @@ public sealed partial class ConnectionManagerView : UserControl
             FinishName(named);
         }
         _newOnes.Remove(Current!);
+        StoreProxyPasswords();
         _request.Save();
         Toast("Saved");
     }
@@ -749,7 +756,23 @@ public sealed partial class ConnectionManagerView : UserControl
         {
             FinishName(c);
         }
+        StoreProxyPasswords();
         _request.Save();
+    }
+
+    /// <summary>The own proxies' passwords typed in the Proxy tab: to the password store (empty: removed).</summary>
+    private readonly Dictionary<string, string> _proxyPasswords = new(StringComparer.Ordinal);
+
+    private void StoreProxyPasswords()
+    {
+        if (_request.StoreSecret is { } store)
+        {
+            foreach (var (id, password) in _proxyPasswords)
+            {
+                _ = store(id, password);
+            }
+        }
+        _proxyPasswords.Clear();
     }
 
     private static void FinishName(RemoteConnection c)

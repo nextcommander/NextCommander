@@ -164,8 +164,7 @@ public sealed class CloudClient(HttpClient http, CloudSession session)
 public abstract class CloudProviderBase(RemoteHooks hooks) : RemoteProviderBase<CloudClient>(hooks)
 {
     private readonly ConcurrentDictionary<string, CloudSession> _sessions = new(StringComparer.Ordinal);
-    private HttpClient? _http;
-    private int _httpProxyVersion;
+    private readonly ConcurrentDictionary<string, HttpClient> _clients = new(StringComparer.Ordinal);
 
     protected abstract OAuthService Service { get; }
 
@@ -181,21 +180,18 @@ public abstract class CloudProviderBase(RemoteHooks hooks) : RemoteProviderBase<
 
     protected override bool NeedsPassword(RemoteConnection connection) => false;
 
-    /// <summary>The web client; made again when the proxy setting changed (new connections use the new proxy).</summary>
-    private HttpClient Http
+    /// <summary>
+    /// The web client of a connection: one per proxy way (the program's, none, or the connection's own proxy); made
+    /// again when the proxy setting changed (new connections use the new proxy, the old client stays with its sessions).
+    /// </summary>
+    private HttpClient HttpFor(RemoteConnection connection)
     {
-        get
-        {
-            if (_http is null || _httpProxyVersion != NextCommander.Core.Net.WebProxyConfig.Version)
-            {
-                _httpProxyVersion = NextCommander.Core.Net.WebProxyConfig.Version;
-                _http = CreateHttp(); // the old one stays with the sessions using it
-            }
-            return _http;
-        }
+        var key = string.Join('|', NextCommander.Core.Net.WebProxyConfig.Version, connection.Proxy,
+            connection.Proxy == NextCommander.Core.Net.ConnectionProxy.Custom ? $"{connection.ProxyKind}|{connection.ProxyHost}|{connection.ProxyPort}|{connection.ProxyUser}|{connection.ProxyKeyFile}" : string.Empty);
+        return _clients.GetOrAdd(key, _ => CreateHttp(connection));
     }
 
-    private HttpClient CreateHttp()
+    private HttpClient CreateHttp(RemoteConnection connection)
     {
         // redirects are followed (downloads answer with a pre-signed address; the Authorization header is not sent there)
         HttpMessageHandler handler;
@@ -205,7 +201,7 @@ public abstract class CloudProviderBase(RemoteHooks hooks) : RemoteProviderBase<
         }
         else
         {
-            var sockets = NextCommander.Core.Net.WebProxyConfig.CreateHandler(); // Configuration > Operation > Proxy
+            var sockets = NextCommander.Core.Net.WebProxyConfig.CreateHandler(connection); // its own proxy or Configuration > Operation > Proxy
             sockets.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
             handler = sockets;
         }
@@ -216,8 +212,9 @@ public abstract class CloudProviderBase(RemoteHooks hooks) : RemoteProviderBase<
 
     protected override Task<CloudClient> ConnectAsync(RemoteConnection connection, string? password, string? trustedFingerprint, CancellationToken cancellationToken)
     {
-        var session = _sessions.GetOrAdd(connection.SecretId, _ => new CloudSession(connection, ServiceOverride ?? ServiceFor(connection), Hooks, Http));
-        return ConnectClientAsync(new CloudClient(Http, session), cancellationToken);
+        var http = HttpFor(connection);
+        var session = _sessions.GetOrAdd(connection.SecretId, _ => new CloudSession(connection, ServiceOverride ?? ServiceFor(connection), Hooks, http));
+        return ConnectClientAsync(new CloudClient(http, session), cancellationToken);
     }
 
     /// <summary>Signs in (if needed) and checks the account; the base returns the client as is.</summary>
@@ -363,7 +360,10 @@ public abstract class CloudProviderBase(RemoteHooks hooks) : RemoteProviderBase<
     public new async ValueTask DisposeAsync()
     {
         await base.DisposeAsync().ConfigureAwait(false);
-        _http?.Dispose();
-        _http = null;
+        foreach (var client in _clients.Values)
+        {
+            client.Dispose();
+        }
+        _clients.Clear();
     }
 }

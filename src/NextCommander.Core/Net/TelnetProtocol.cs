@@ -9,6 +9,7 @@ namespace NextCommander.Core.Net;
 public sealed class TelnetProtocol(string terminalType = "XTERM")
 {
     public const byte Se = 240;
+    public const byte Nop = 241;
     public const byte Sb = 250;
     public const byte Will = 251;
     public const byte Wont = 252;
@@ -226,7 +227,7 @@ public sealed class TelnetProtocol(string terminalType = "XTERM")
             {
                 output.Add(Iac);
             }
-            else if (b == '\r' && (i + 1 >= data.Length || data[i + 1] != '\n'))
+            else if (b == '\r' && (i + 1 >= data.Length || data[i + 1] is not ((byte)'\n' or 0)))
             {
                 output.Add((byte)'\n');
             }

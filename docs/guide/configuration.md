@@ -96,7 +96,7 @@ click it or press Enter. **...** next to it chooses a program instead, and in th
 | Operation › **Copy and delete** | Recycle bin, confirmations, verify after copying, symbolic links, what to do when a target exists, the Copy dialog on drag and drop, copy buffers and big file mode, using Windows Explorer for copying and deleting (Windows). |
 | Operation › **Quick search** | How quick search starts (Ctrl+Alt+letter or letters alone) and matches (beginning, anywhere, fuzzy). |
 | Operation › **FTP** | Hidden files, passive mode, retries, transfer type (binary / text), FTP log, active mode ports. |
-| Operation › **Proxy** | How web requests (WebDAV, S3, Azure, cloud drives, URL downloads, the update check) reach the internet: the system's proxy, none, or a proxy of your own with user, password and addresses that go directly; a button tries the connection. See [Connections](connections.md#proxy). |
+| Operation › **Proxy** | How web requests (WebDAV, S3, Azure, cloud drives, URL downloads, the update check) reach the internet: the system's proxy, none, a proxy of your own (HTTP, HTTPS, SOCKS4 / 4a / 5 or an SSH tunnel) with user, password and addresses that go directly, or an automatic configuration script (PAC); a button tries the connection. A connection can have its own proxy (its Proxy tab in the connection manager). See [Connections](connections.md#proxy). |
 | Operation › **Plugins** | The installed plugins; unchecked ones are not loaded. |
 | Operation › **Thumbnails** | Thumbnail size, the disk cache, fields shown under thumbnails, thumbnails of text files and other files. |
 | Operation › **Associations** | Internal associations: what Enter does for a file type (a program, Lister, the editor, the system's program or a command). |

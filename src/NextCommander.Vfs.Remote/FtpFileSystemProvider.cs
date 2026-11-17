@@ -71,7 +71,7 @@ public sealed class FtpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBas
     /// </summary>
     internal static AsyncFtpClient CreateClient(RemoteConnection connection, string user, string password, FtpConfig config)
     {
-        if (NextCommander.Core.Net.WebProxyConfig.FileTransferProxy(connection.Host) is not { Address: { } address } proxy)
+        if (NextCommander.Core.Net.WebProxyConfig.TunnelProxyOf(connection) is not { Address: { } address } proxy)
         {
             return new AsyncFtpClient(connection.Host, user, password, connection.EffectivePort, config);
         }
@@ -79,14 +79,19 @@ public sealed class FtpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBas
         {
             ProxyHost = address.Host,
             ProxyPort = address.Port,
-            ProxyCredentials = string.IsNullOrEmpty(proxy.User) ? null : new System.Net.NetworkCredential(proxy.User, NextCommander.Core.Net.WebProxyConfig.Password ?? string.Empty),
+            ProxyCredentials = string.IsNullOrEmpty(proxy.User) ? null : new System.Net.NetworkCredential(proxy.User, NextCommander.Core.Net.WebProxyConfig.PasswordOf(proxy) ?? string.Empty),
             FtpHost = connection.Host,
             FtpPort = connection.EffectivePort,
             FtpCredentials = new System.Net.NetworkCredential(user, password),
         };
-        AsyncFtpClient client = proxy.EffectiveKind == NextCommander.Core.Net.ProxyKind.Socks5
-            ? new FluentFTP.Proxy.AsyncProxy.AsyncFtpClientSocks5Proxy(profile)
-            : new FluentFTP.Proxy.AsyncProxy.AsyncFtpClientHttp11Proxy(profile);
+        AsyncFtpClient client = proxy.EffectiveKind switch
+        {
+            NextCommander.Core.Net.ProxyKind.Socks5 => new FluentFTP.Proxy.AsyncProxy.AsyncFtpClientSocks5Proxy(profile),
+            NextCommander.Core.Net.ProxyKind.Socks4 => new FluentFTP.Proxy.AsyncProxy.AsyncFtpClientSocks4Proxy(profile),
+            NextCommander.Core.Net.ProxyKind.Socks4a => new FluentFTP.Proxy.AsyncProxy.AsyncFtpClientSocks4aProxy(profile),
+            NextCommander.Core.Net.ProxyKind.Http => new FluentFTP.Proxy.AsyncProxy.AsyncFtpClientHttp11Proxy(profile),
+            _ => new FtpTunnelClient(profile, proxy), // HTTPS and SSH proxies: every connection through ProxyTunnel
+        };
         client.Config = config;
         return client;
     }
@@ -107,12 +112,30 @@ public sealed class FtpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBas
             ReadTimeout = connection.TimeoutSeconds > 0 ? connection.TimeoutSeconds * 1000 : 60_000,
             DataConnectionReadTimeout = Math.Max(5, StallSeconds) * 1000,
             RetryAttempts = Math.Clamp(RetryAttempts, 0, 20),
-            ActivePorts = ActivePorts is { From: > 0 } range && range.To >= range.From ? Enumerable.Range(range.From, range.To - range.From + 1) : null,
-            // times in the local time zone (MLSD and MFMT are UTC); the server time zone is UTC unless it says otherwise
+            // the connection's own active mode ports, else the program's
+            ActivePorts = (string.IsNullOrWhiteSpace(connection.FtpActivePorts) ? ActivePorts : ConnectionChecks.PortRange(connection.FtpActivePorts)) is { From: > 0 } range
+                && range.To >= range.From ? Enumerable.Range(range.From, range.To - range.From + 1) : null,
+            // times in the local time zone (MLSD and MFMT are UTC); the server time zone is UTC unless the connection says otherwise
             TimeConversion = FtpDate.LocalTime,
+            DataConnectionEncryption = connection.FtpEncryptData,
+            SslProtocols = SslProtocolsOf(connection.TlsVersion),
         };
+        if (connection.FtpTimeOffsetMinutes is { } offset && offset != 0)
+        {
+            config.ServerTimeZone = TimeZoneInfo.CreateCustomTimeZone($"UTC{offset:+0;-0}m", TimeSpan.FromMinutes(offset), "Server", "Server");
+        }
+        if (connection.KeepAliveSeconds > 0)
+        {
+            // a NOOP on the control connection while it waits (long transfers, idle panels)
+            config.Noop = true;
+            config.NoopInterval = connection.KeepAliveSeconds * 1000;
+        }
         var user = string.IsNullOrEmpty(connection.User) ? "anonymous" : connection.User;
         var client = CreateClient(connection, user, password ?? (user == "anonymous" ? "anonymous@" : string.Empty), config);
+        if (connection.FtpListing == FtpListing.List)
+        {
+            s_forceList.AddOrUpdate(client, connection);
+        }
         // Credentials and names as UTF-8 from the start (otherwise non-ASCII passwords are sent as '?'), or the encoding chosen
         var encoding = EncodingOf(connection);
         client.Encoding = encoding ?? System.Text.Encoding.UTF8;
@@ -178,6 +201,17 @@ public sealed class FtpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBas
         }
     }
 
+    /// <summary>The TLS versions of a connection's choice (None: the system's defaults).</summary>
+    public static System.Security.Authentication.SslProtocols SslProtocolsOf(TlsVersion version) => version switch
+    {
+        TlsVersion.Tls12 => System.Security.Authentication.SslProtocols.Tls12,
+        TlsVersion.Tls13 => System.Security.Authentication.SslProtocols.Tls13,
+        _ => System.Security.Authentication.SslProtocols.None,
+    };
+
+    /// <summary>The connections whose folders are listed with LIST (the client does not carry its connection).</summary>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<AsyncFtpClient, object> s_forceList = [];
+
     /// <summary>The encodings offered for FTP file names (web names); the first is "automatic".</summary>
     public static IReadOnlyList<string> Encodings { get; } = ["", "utf-8", "windows-1254", "iso-8859-9", "windows-1252", "iso-8859-1", "ibm857", "ibm437"];
 
@@ -237,7 +271,8 @@ public sealed class FtpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBas
     public override Task<IReadOnlyList<VfsEntry>> ListAsync(VfsPath directory, CancellationToken cancellationToken) =>
         UseAsync<IReadOnlyList<VfsEntry>>(directory, async client =>
         {
-            var items = await client.GetListing(directory.Path, ShowHidden ? FtpListOption.AllFiles : FtpListOption.Auto, cancellationToken).ConfigureAwait(false);
+            var options = (ShowHidden ? FtpListOption.AllFiles : FtpListOption.Auto) | (s_forceList.TryGetValue(client, out _) ? FtpListOption.ForceList : 0);
+            var items = await client.GetListing(directory.Path, options, cancellationToken).ConfigureAwait(false);
             var result = new List<VfsEntry>(items.Length);
             foreach (var item in items)
             {

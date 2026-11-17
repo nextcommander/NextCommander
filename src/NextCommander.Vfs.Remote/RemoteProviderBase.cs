@@ -97,6 +97,7 @@ public abstract class RemoteProviderBase<TClient> : IFileSystemProvider, IRemote
         try
         {
             var connection = server.Connection;
+            await NextCommander.Core.Net.WebProxyConfig.PrepareAsync(connection).ConfigureAwait(false); // the password of its own proxy
             if (!server.PasswordKnown && NeedsPassword(connection))
             {
                 server.Password = await AskPasswordAsync(connection, retry: false).ConfigureAwait(false);
@@ -107,7 +108,8 @@ public abstract class RemoteProviderBase<TClient> : IFileSystemProvider, IRemote
                 cancellationToken.ThrowIfCancellationRequested();
                 try
                 {
-                    var trusted = server.TrustedFingerprint ?? Hooks.KnownFingerprint?.Invoke(connection);
+                    var pinned = string.IsNullOrWhiteSpace(connection.PinnedFingerprint) ? null : connection.PinnedFingerprint.Trim();
+                    var trusted = server.TrustedFingerprint ?? pinned ?? Hooks.KnownFingerprint?.Invoke(connection);
                     var client = await ConnectAsync(connection, server.Password, trusted, cancellationToken).ConfigureAwait(false);
                     if (Hooks.LoginSucceeded is { } succeeded)
                     {
@@ -115,6 +117,15 @@ public abstract class RemoteProviderBase<TClient> : IFileSystemProvider, IRemote
                     }
                     server.PasswordKnown = true;
                     return client;
+                }
+                catch (UntrustedServerException ex) when (!string.IsNullOrWhiteSpace(connection.PinnedFingerprint))
+                {
+                    // a pinned fingerprint: another key is refused without asking (a hex certificate fingerprint in any case)
+                    if (!string.Equals(ex.Fingerprint, connection.PinnedFingerprint.Trim(), StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new IOException($"{connection.Host}: the server's key or certificate ({ex.Fingerprint}) is not the pinned one.", ex);
+                    }
+                    server.TrustedFingerprint = ex.Fingerprint;
                 }
                 catch (UntrustedServerException ex)
                 {

@@ -17,7 +17,11 @@ public sealed class SftpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBa
 
     protected override async Task<SftpClient> ConnectAsync(RemoteConnection connection, string? password, string? trustedFingerprint, CancellationToken cancellationToken) =>
         (await SshLogin.ConnectAsync(connection, password, trustedFingerprint, Hooks,
-            info => new SftpClient(info) { OperationTimeout = OperationTimeoutOf(connection) }, 1, cancellationToken).ConfigureAwait(false))[0];
+            info => SshLogin.KeepAlive(new SftpClient(info)
+            {
+                OperationTimeout = OperationTimeoutOf(connection),
+                BufferSize = connection.SftpBufferKb > 0 ? (uint)Math.Clamp(connection.SftpBufferKb, 4, 256) * 1024 : 32 * 1024,
+            }, connection), 1, cancellationToken).ConfigureAwait(false))[0];
 
     /// <summary>How long one SFTP request may take: the connection's timeout when longer, else two minutes.</summary>
     internal static TimeSpan OperationTimeoutOf(RemoteConnection connection) =>
@@ -26,16 +30,31 @@ public sealed class SftpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBa
     /// <summary>No password with the SSH agent or a key file (asked only when they are refused).</summary>
     protected override bool NeedsPassword(RemoteConnection connection) => string.IsNullOrEmpty(connection.KeyFile) && !connection.UseSshAgent;
 
-    /// <summary>The connection: directly, or through the proxy of Configuration > Proxy (HTTP CONNECT or SOCKS5) when it is meant for file transfers too.</summary>
+    /// <summary>
+    /// The connection: directly, or through its own proxy or the one of Configuration > Proxy. HTTP, SOCKS4 and SOCKS5
+    /// are SSH.NET's own; SOCKS4a, HTTPS and SSH proxies go through a local port that leads there (for this one session).
+    /// </summary>
     internal static ConnectionInfo CreateConnectionInfo(RemoteConnection connection, AuthenticationMethod[] methods)
     {
-        if (NextCommander.Core.Net.WebProxyConfig.FileTransferProxy(connection.Host) is not { Address: { } address } proxy)
+        if (NextCommander.Core.Net.WebProxyConfig.TunnelProxyOf(connection) is not { Address: { } address } proxy)
         {
             return new ConnectionInfo(connection.Host, connection.EffectivePort, connection.User, methods);
         }
-        var kind = proxy.EffectiveKind == NextCommander.Core.Net.ProxyKind.Socks5 ? ProxyTypes.Socks5 : ProxyTypes.Http;
-        return new ConnectionInfo(connection.Host, connection.EffectivePort, connection.User, kind, address.Host, address.Port,
-            proxy.User ?? string.Empty, NextCommander.Core.Net.WebProxyConfig.Password ?? string.Empty, methods);
+        var password = NextCommander.Core.Net.WebProxyConfig.PasswordOf(proxy);
+        ProxyTypes? native = proxy.EffectiveKind switch
+        {
+            NextCommander.Core.Net.ProxyKind.Http => ProxyTypes.Http,
+            NextCommander.Core.Net.ProxyKind.Socks4 => ProxyTypes.Socks4,
+            NextCommander.Core.Net.ProxyKind.Socks5 => ProxyTypes.Socks5,
+            _ => null,
+        };
+        if (native is { } kind)
+        {
+            return new ConnectionInfo(connection.Host, connection.EffectivePort, connection.User, kind, address.Host, address.Port,
+                proxy.User ?? string.Empty, password ?? string.Empty, methods);
+        }
+        var forwarder = new NextCommander.Core.Net.ProxyForwarder(proxy, password, connection.Host, connection.EffectivePort, once: true);
+        return new ConnectionInfo("127.0.0.1", forwarder.LocalEndPoint.Port, connection.User, methods);
     }
 
     protected override bool IsAlive(SftpClient client) => client.IsConnected;

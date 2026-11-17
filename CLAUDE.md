@@ -40,7 +40,7 @@ The remote integration tests are skipped unless `FM_TEST_FTP` / `FM_TEST_SFTP` /
 
 ## Structure
 - `src/NextCommander.Core`: the core without UI.
-  - Net: `TelnetProtocol` (option negotiation of Telnet sessions), `RemoteDesktop` (.rdp file and FreeRDP arguments of RDP connections), `ProxyTunnel`.
+  - Net: `TelnetProtocol` (option negotiation of Telnet sessions), `RemoteDesktop` (.rdp file and FreeRDP arguments of RDP connections), `ProxyTunnel` (HTTP / HTTPS CONNECT, SOCKS4 / 4a / 5, SSH through `SshConnector` = `Vfs.Remote/SshProxy`; `ProxyForwarder` a local port, `once` for one session), `WebProxyConfig` (the program's proxy `Current`, a connection's own proxy: `RemoteConnection.Proxy` / `TunnelProxyOf` / `Apply(handler, connection)`, its password `proxy:<secret id>` loaded by `PrepareAsync`), `PacScript` (PAC in Jint).
   - Vfs: `VfsPath` (`archive://`, `sftp://`, `ftp://` schemes), `ProviderRegistry`, `PosixShell` (list / stat / touch commands for a remote POSIX shell: SCP and ADB).
   - Config: `RemoteProtocols` is the one table of the connection types (scheme, aliases, default port, kind; `ProtocolKind.Session` = RDP / Telnet, which open in a client (`Platform/RemoteDesktopLauncher`) or a terminal tab (`Services/Terminal/TelnetTerminal`) instead of a panel: `MainWindowViewModel.OpenSessionAsync`); `ConnectionPresets` the S3 / WebDAV services of the connection dialog.
   - Operations: `CopyMoveJob`, `JobQueue`, `HttpDownloadJob`, `SpeedLimiter`.

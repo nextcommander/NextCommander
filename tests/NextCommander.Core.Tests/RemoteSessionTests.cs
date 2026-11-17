@@ -73,7 +73,7 @@ public sealed class RemoteSessionTests
         Assert.Contains("full address:s:pc.example.com\r\n", file, StringComparison.Ordinal);
         Assert.Contains(@"username:s:CORP\ali", file, StringComparison.Ordinal);
         Assert.Contains("screen mode id:i:1", file, StringComparison.Ordinal);
-        Assert.Equal(["/v:pc.example.com", "/d:CORP", "/u:ali", "/dynamic-resolution", "+clipboard", "/cert:tofu"], RemoteDesktop.FreeRdpArguments(c, false));
+        Assert.Equal(["/v:pc.example.com", "/d:CORP", "/u:ali", "/dynamic-resolution", "+clipboard", "/sound", "/cert:tofu"], RemoteDesktop.FreeRdpArguments(c, false));
 
         c.Port = 3390;
         c.User = "ali";
@@ -81,7 +81,7 @@ public sealed class RemoteSessionTests
         Assert.Contains("full address:s:pc.example.com:3390", RemoteDesktop.RdpFile(c), StringComparison.Ordinal);
         Assert.Contains("screen mode id:i:2", RemoteDesktop.RdpFile(c), StringComparison.Ordinal);
         var args = RemoteDesktop.FreeRdpArguments(c, true);
-        Assert.Equal(["/v:pc.example.com:3390", "/u:ali", "/f", "+clipboard", "/cert:tofu", "/from-stdin:force"], args);
+        Assert.Equal(["/v:pc.example.com:3390", "/u:ali", "/f", "+clipboard", "/sound", "/cert:tofu", "/from-stdin:force"], args);
         Assert.DoesNotContain(args, a => a.StartsWith("/p:", StringComparison.Ordinal)); // never on the command line
         Assert.Equal("rdp://ali@pc.example.com:3390", RemoteDesktop.RemminaAddress(c));
 

@@ -113,6 +113,10 @@ public static class ConnectionChecks
     /// <summary>The first problem of a connection (null: it can be used).</summary>
     public static string? Problem(RemoteConnection connection)
     {
+        if (OptionProblem(connection) is { } option)
+        {
+            return option;
+        }
         var cloud = connection.IsCloudDrive;
         if (cloud)
         {
@@ -154,6 +158,42 @@ public static class ConnectionChecks
             {
                 return "Enter the jump host as user@host:port.";
             }
+        }
+        return null;
+    }
+
+    /// <summary>What is wrong with the options of the Advanced and Proxy tabs (own proxy, FTP ports, sizes), or null.</summary>
+    public static string? OptionProblem(RemoteConnection connection)
+    {
+        if (connection.Proxy == Net.ConnectionProxy.Custom)
+        {
+            var own = new Net.ProxyOptions(Net.ProxyMode.Manual, connection.ProxyHost ?? string.Empty,
+                connection.ProxyPort > 0 ? connection.ProxyPort : Net.ProxyOptions.DefaultPort(connection.ProxyKind), Kind: connection.ProxyKind);
+            if (own.Problem is { } problem)
+            {
+                return problem;
+            }
+        }
+        if (!string.IsNullOrWhiteSpace(connection.FtpActivePorts) && PortRange(connection.FtpActivePorts) is null)
+        {
+            return "Enter the active mode ports as a range, e.g. 50000-50100.";
+        }
+        if (connection.RdpWidth < 0 || connection.RdpHeight < 0 || (connection.RdpWidth > 0) != (connection.RdpHeight > 0))
+        {
+            return "Enter both the width and the height of the remote desktop, or neither.";
+        }
+        return null;
+    }
+
+    /// <summary>"50000-50100" → the ports (null: not a range of valid ports).</summary>
+    public static (int From, int To)? PortRange(string text)
+    {
+        var parts = text.Split('-', StringSplitOptions.TrimEntries);
+        if (parts.Length == 2 && int.TryParse(parts[0], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var from)
+            && int.TryParse(parts[1], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var to)
+            && from is >= 1 and <= 65535 && to >= from && to <= 65535)
+        {
+            return (from, to);
         }
         return null;
     }

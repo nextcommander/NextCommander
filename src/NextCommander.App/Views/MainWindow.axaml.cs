@@ -1150,9 +1150,8 @@ public partial class MainWindow : Window
         }
         EnsureTerminal();
         ApplyTerminalSettings();
-        var timeout = TimeSpan.FromSeconds(connection.TimeoutSeconds > 0 ? connection.TimeoutSeconds : 15);
         var shell = new Services.TerminalSession.ShellInfo(connection.Name.Length > 0 ? connection.Name : connection.Host, "telnet", string.Empty, true, string.Empty);
-        _terminal!.NewTab(shell, (columns, rows) => new Services.Terminal.TelnetTerminal(connection.Host, connection.EffectivePort, columns, rows, timeout));
+        _terminal!.NewTab(shell, (columns, rows) => new Services.Terminal.TelnetTerminal(connection, columns, rows));
         if (IsTerminalMaximizedPage && _page != WorkspacePage.Terminal)
         {
             SelectPage(WorkspacePage.Terminal);
