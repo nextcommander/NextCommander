@@ -426,7 +426,7 @@ public sealed class Phase3Tests : IDisposable
         Assert.Null(w.QuickView.Entry);
     }
 
-    [Fact]
+    [AvaloniaFact] // touches a static of an Avalonia class (ListerView / MainWindowViewModel): on the UI thread
     public void Common_parent_of_search_results()
     {
         var root = Path.GetTempPath();
@@ -436,7 +436,7 @@ public sealed class Phase3Tests : IDisposable
         Assert.Null(MainWindowViewModel.CommonParent([]));
     }
 
-    [Fact]
+    [AvaloniaFact] // touches a static of an Avalonia class (ListerView / MainWindowViewModel): on the UI thread
     public void Hex_search_text_parsing()
     {
         Assert.Equal([0x4D, 0x5A, 0x90], ListerView.ParseHex("4D 5a90"));

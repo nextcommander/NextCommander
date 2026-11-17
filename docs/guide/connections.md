@@ -276,7 +276,8 @@ connections*, `nc_OpenConnection name`) does not change the panel.
 - **rsh / rlogin** is for old Unix hosts that have no SSH. Without a command it is an rlogin session (port 513) in
   the terminal; with a command, rsh runs it (port 514) and the tab shows its output. There is no password: the
   server lets this computer in by its `.rhosts` or `hosts.equiv` (with the *user on this computer* and the *user on
-  the server*); rlogin asks for one in the terminal when it does not. The connection comes from a port below 1024
+  the server*); rlogin asks for one in the terminal when it does not. rlogin tells the server the window's size when it asks, and again
+  when the window changes (on a direct connection). The connection comes from a port below 1024
   when this computer allows it, as servers usually want (on Linux and macOS only as root). Nothing is encrypted.
 - **Serial port** opens a port of this computer (`COM3` on Windows; `/dev/ttyUSB0`, `/dev/ttyACM0` on Linux;
   `/dev/cu.usbserial-...` on macOS; a bare name means `/dev/<name>`) in a tab of the internal terminal: the console
