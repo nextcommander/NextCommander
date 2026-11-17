@@ -2197,7 +2197,7 @@ public sealed class SettingsView : UserControl
                 s => s.UpdateCheckUrl, (s, v) => s.UpdateCheckUrl = v ?? string.Empty, "https://api.github.com/repos/<owner>/<repo>/releases/latest"),
 
             Bool(edit, "Lister", "Word wrap in Lister", null, s => s.ListerWrap, (s, v) => s.ListerWrap = v),
-            Bool(edit, "Lister", "Open HTML, Markdown and RTF files with preview", "When off, opens as text; key 5 switches to preview.", s => s.ListerPreviewDocuments, (s, v) => s.ListerPreviewDocuments = v),
+            Bool(edit, "Lister", "Open PDF, Office, HTML, Markdown and RTF files with preview", "When off, opens as text; key 5 switches to preview.", s => s.ListerPreviewDocuments, (s, v) => s.ListerPreviewDocuments = v),
             Bool(edit, "Lister", "Reload Lister when file changes", null, s => s.ListerAutoReload, (s, v) => s.ListerAutoReload = v),
             Number(edit, "Lister", "Full text view limit (MB)", "Larger texts open in streaming view.", 1, 1024, s => s.ListerMaxTextBytes / 1024d / 1024, (s, v) => s.ListerMaxTextBytes = (long)(v * 1024 * 1024)),
             Bool(edit, "Editor", "F4 uses the internal editor", "When off, the program below or the system application opens.", s => s.UseInternalEditor, (s, v) => s.UseInternalEditor = v),

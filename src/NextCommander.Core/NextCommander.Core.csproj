@@ -6,6 +6,9 @@
   <ItemGroup>
     <PackageReference Include="Blake3" />
     <PackageReference Include="Jint" />
+    <PackageReference Include="bblanchon.PDFium.Win32" />
+    <PackageReference Include="bblanchon.PDFium.Linux" />
+    <PackageReference Include="bblanchon.PDFium.macOS" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="NextCommander.Core.Tests" />

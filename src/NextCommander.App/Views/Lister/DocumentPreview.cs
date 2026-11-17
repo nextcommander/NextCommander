@@ -63,12 +63,15 @@ public static partial class DocumentPreview
         sb.Append(CultureFree($"a {{ color: {link}; }} h1, h2 {{ border-bottom: 1px solid {border}; padding-bottom: 4px; }}"));
         sb.Append(CultureFree($"code, pre {{ font-family: Cascadia Mono, Consolas, Menlo, monospace; background-color: {code}; }} pre {{ padding: 8px; }}"));
         sb.Append(CultureFree($"blockquote {{ color: {muted}; border-left: 3px solid {border}; margin-left: 0; padding-left: 10px; }}"));
-        sb.Append(CultureFree($"table {{ border-collapse: collapse; }} td, th {{ border: 1px solid {border}; padding: 3px 8px; }} hr {{ border: 0; border-top: 1px solid {border}; }}"));
+        sb.Append(CultureFree($"table {{ border-collapse: collapse; margin-bottom: 10px; }} td, th {{ border: 1px solid {border}; padding: 3px 8px; }} th {{ background-color: {code}; color: {muted}; font-weight: normal; }} hr {{ border: 0; border-top: 1px solid {border}; }}"));
         sb.Append(" p { margin: 0 0 8px 0; }</style>");
         return sb.ToString();
     }
 
     private static string CultureFree(FormattableString s) => FormattableString.Invariant(s);
+
+    /// <summary>An HTML body (an Office / OpenDocument preview) as a page with the theme's stylesheet.</summary>
+    public static string Wrap(string body, bool dark) => $"<html><head>{Style(dark)}</head><body>{body}</body></html>";
 
     /// <summary>Plain text as a page (fallback).</summary>
     public static string PlainText(string text, bool dark) =>
