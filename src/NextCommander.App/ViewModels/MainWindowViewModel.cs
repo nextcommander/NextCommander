@@ -47,6 +47,16 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _backgroundJobsText = string.Empty;
 
+    /// <summary>The background jobs running or queued: the transfers button beside the command line shows while there are some.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasBackgroundJobs))]
+    private int _backgroundJobCount;
+
+    public bool HasBackgroundJobs => BackgroundJobCount > 0;
+
+    /// <summary>The background jobs (the transfers shown under the panels).</summary>
+    public JobQueue Jobs => _jobs;
+
     /// <summary>"Synchronous navigation" indicator next to the command line.</summary>
     [ObservableProperty]
     private string _modeText = string.Empty;
@@ -992,7 +1002,10 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     {
         var count = _jobs.ActiveJobs.Count;
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-            BackgroundJobsText = count == 0 ? string.Empty : $"{count} operations running");
+        {
+            BackgroundJobsText = count == 0 ? string.Empty : $"{count} operations running";
+            BackgroundJobCount = count;
+        });
     }
 
     private void AppendToCommandLine(string text)

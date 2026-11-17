@@ -125,6 +125,7 @@ public partial class MainWindow : Window
             settings: () => _vm?.Settings);
         CommandHistoryButton.Click += (_, _) => ShowCommandHistory();
         TerminalButton.Click += (_, _) => ToggleTerminal();
+        TransfersButton.Click += (_, _) => ToggleTransfers();
         CommandHistoryList.Tapped += (_, _) => TakeCommandFromHistory();
         CommandHistoryList.KeyDown += (_, e) =>
         {
@@ -1251,6 +1252,35 @@ public partial class MainWindow : Window
             ActiveView.FocusList();
         }
     }
+
+    /// <summary>The background transfers under the panels (the button beside the command line): shown or hidden.</summary>
+    public void ToggleTransfers()
+    {
+        if (_vm is null)
+        {
+            return;
+        }
+        if (TransfersHost.Child is not Tools.TransferManagerView)
+        {
+            var close = new Button { Content = "×", Classes = { "tabclose" }, FontSize = 16, Padding = new Avalonia.Thickness(8, 0), VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center };
+            ToolTip.SetTip(close, "Close");
+            Avalonia.Automation.AutomationProperties.SetName(close, "Close");
+            close.Click += (_, _) =>
+            {
+                TransfersHost.IsVisible = false;
+                ActiveView.FocusList();
+            };
+            TransfersHost.Child = new Tools.TransferManagerView(_vm.Jobs, close);
+        }
+        TransfersHost.IsVisible = !TransfersHost.IsVisible;
+        if (TransfersHost.IsVisible)
+        {
+            ((Tools.TransferManagerView)TransfersHost.Child).Refresh();
+        }
+    }
+
+    /// <summary>The transfers shown under the panels (tests).</summary>
+    internal Tools.TransferManagerView? TransfersView => TransfersHost.IsVisible ? TransfersHost.Child as Tools.TransferManagerView : null;
 
     private void FocusCommandLine()
     {
