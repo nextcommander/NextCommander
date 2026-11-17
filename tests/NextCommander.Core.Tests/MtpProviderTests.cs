@@ -29,6 +29,24 @@ public sealed class MtpProviderTests : IDisposable
     private FakeMtpDevice Phone => _source.Devices.Values.First();
 
     [Fact]
+    public async Task A_phone_that_refuses_access_is_opened_again_until_it_is_allowed()
+    {
+        using var provider = new MtpFileSystemProvider(_source) { AccessRetries = 3, AccessRetryDelay = TimeSpan.FromMilliseconds(1) };
+        Phone.DenyAccess = 2; // the user unlocks the phone and taps Allow meanwhile
+        Assert.Equal("Internal storage", Assert.Single(await provider.ListAsync(P("/"), CancellationToken.None)).Name);
+        Assert.Equal(3, _source.Opens); // a fresh session each time: Android connects again after "Allow"
+
+        Phone.DenyAccess = 10; // never allowed: the panel is told what to do, and the session is not kept
+        var refused = await Assert.ThrowsAsync<MtpAccessDeniedException>(() => provider.ListAsync(P("/"), CancellationToken.None));
+        Assert.StartsWith(MtpAccessDeniedException.Text, refused.Message, StringComparison.Ordinal);
+        Assert.Contains("Get Storage information failed.", refused.Message, StringComparison.Ordinal);
+        var opens = _source.Opens;
+        Phone.DenyAccess = 0;
+        Assert.Single(await provider.ListAsync(P("/"), CancellationToken.None));
+        Assert.Equal(opens + 1, _source.Opens);
+    }
+
+    [Fact]
     public async Task A_device_handle_that_is_no_longer_open_is_opened_again()
     {
         Phone.AddFile("/Internal storage/a.txt", "x");
@@ -330,6 +348,9 @@ public sealed class MtpProviderTests : IDisposable
         /// <summary>The next call answers "device not opened" (Windows: 0x802A0002).</summary>
         public bool LoseSessionOnce { get; set; }
 
+        /// <summary>How many more listings are refused as a locked phone (or one asking to allow access) refuses them.</summary>
+        public int DenyAccess { get; set; }
+
         public IReadOnlyList<MtpObject> ListChildren(string parentId)
         {
             CheckConnected();
@@ -337,6 +358,11 @@ public sealed class MtpProviderTests : IDisposable
             {
                 LoseSessionOnce = false;
                 throw new MtpSessionLostException("not opened");
+            }
+            if (DenyAccess > 0)
+            {
+                DenyAccess--;
+                throw new MtpAccessDeniedException("Get Storage information failed.");
             }
             lock (_nodes) // a folder watch reads from a timer thread
             {

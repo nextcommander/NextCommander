@@ -60,7 +60,11 @@ internal sealed unsafe class LibMtpDevice : IMtpDevice
             var device = Handle();
             if (parentId == RootId)
             {
-                return Storages(device).Select(s => new MtpObject(StorageKey(s.Id), s.Name, true, 0, null)).ToList();
+                var storages = Storages(device);
+                // a phone always has a storage: none means it is locked or has not been allowed yet
+                return storages.Count > 0
+                    ? storages.Select(s => new MtpObject(StorageKey(s.Id), s.Name, true, 0, null)).ToList()
+                    : throw new MtpAccessDeniedException();
             }
             var (storage, parent) = Parse(parentId);
             var result = new List<MtpObject>();
@@ -95,7 +99,8 @@ internal sealed unsafe class LibMtpDevice : IMtpDevice
     {
         if (GetStorage(device, 0) != 0)
         {
-            ThrowOnError(device, "The storages of the device could not be read");
+            // Android refuses GetStorageIDs (access denied) until the phone is unlocked and access is allowed
+            throw new MtpAccessDeniedException(TakeErrors(device));
         }
         var result = new List<StorageInfo>();
         var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

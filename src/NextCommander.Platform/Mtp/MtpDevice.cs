@@ -9,6 +9,18 @@ public sealed record MtpObject(string Id, string Name, bool IsFolder, long Size,
 /// </summary>
 public sealed class MtpSessionLostException(string message) : IOException(message);
 
+/// <summary>
+/// The device does not show its storages: an Android phone that is locked, still asks "Allow access to phone data?",
+/// or is set to charge only. The session is closed and opened again (after the user allows, Android connects again).
+/// </summary>
+public sealed class MtpAccessDeniedException(string? detail = null) : IOException(Text + (string.IsNullOrWhiteSpace(detail) ? string.Empty : " (" + detail.Trim() + ")"))
+{
+    /// <summary>What the user is told to do.</summary>
+    public const string Text =
+        "The phone does not let its files be read. Unlock it; when it asks \"Allow access to phone data?\", tap Allow; "
+        + "set its USB connection to \"File transfer\" (not \"Charging only\"). Then open the device again.";
+}
+
 /// <summary>A connected portable device: the system's id and its name (as the system shows it).</summary>
 public sealed record MtpDeviceInfo(string Id, string Name);
 
