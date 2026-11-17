@@ -47,8 +47,9 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
 - Web server folder listings (`http://`, `https://`) open like folders; the remotes of an installed rclone too.
 - Android phones over ADB (USB debugging) as drives; shortcuts to the local folders of OneDrive, iCloud Drive,
   Dropbox, Google Drive ... and to WSL distributions.
-- Remote desktop (RDP) connections open in the system's client (mstsc, Windows App, FreeRDP / Remmina); Telnet
-  sessions in a tab of the internal terminal.
+- Remote desktop (RDP) and VNC connections open in the system's client (mstsc, Windows App, FreeRDP / Remmina;
+  TigerVNC, RealVNC, TightVNC, Screen Sharing); SSH, Telnet and rsh / rlogin sessions in a tab of the internal
+  terminal.
 - PC link: two computers running NextCommander work on each other's shared folders over a USB or Ethernet cable
   (or the network), encrypted, paired once with a code shown on both screens.
 - A connection manager with the options of each type (keep-alive, pinned keys, TLS versions, S3 storage classes,
@@ -85,7 +86,7 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
 - [Tools](docs/guide/tools.md): Lister, editor, find files, multi-rename, synchronize, compare, duplicates,
   folder sizes, checksums, terminal and more.
 - [Archives](docs/guide/archives.md): opening, packing and unpacking archives.
-- [Connections](docs/guide/connections.md): FTP, SFTP, SCP, WebDAV, SMB, S3, Azure, cloud drives, ADB, rclone, RDP and Telnet.
+- [Connections](docs/guide/connections.md): FTP, SFTP, SCP, WebDAV, SMB, S3, Azure, cloud drives, ADB, rclone, RDP, VNC, SSH, Telnet and rsh.
 - [Configuration](docs/guide/configuration.md): a tour of the Configuration window.
 - [Color themes](docs/guide/themes.md): choosing a theme and making your own.
 - [Icon packs](docs/guide/icon-packs.md): choosing an icon pack and making your own.

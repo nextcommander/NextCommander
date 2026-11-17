@@ -70,6 +70,9 @@ public static class BrandIcons
         RemoteProtocol.Link => ("MiMonitor", "#1FA59C"),
         RemoteProtocol.Rdp => ("MiDesktop", "#2F7FE0"),
         RemoteProtocol.Telnet => ("MiTerminal", "#6E7781"),
+        RemoteProtocol.Ssh => ("MiTerminal", "#3BA54A"),
+        RemoteProtocol.Vnc => ("MiDesktop", "#C2410C"),
+        RemoteProtocol.Rsh => ("MiTerminal", "#B45309"),
         RemoteProtocol.WebDav or RemoteProtocol.WebDavs => ("MiGlobe", "#1FA59C"),
         _ => ("MiTransfer", "#2F7FE0"),
     };

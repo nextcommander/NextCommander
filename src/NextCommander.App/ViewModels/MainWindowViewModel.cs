@@ -1066,7 +1066,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         c.Register("nc_OpenWith", "Open with (internal associations)", _ => OpenWithAsync());
         c.Register("nc_Plugins", "Loaded plugins", _ => ShowPluginsAsync());
         c.Register("nc_RemoteConnection", "Connection manager: FTP, SFTP, SCP, WebDAV, SMB, S3, Azure, Google Drive, OneDrive, Dropbox, Box (Ctrl+F)", _ => ConnectAsync());
-        c.Register("nc_NewConnection", "New connection (parameter: sftp, scp, ftp, ftps, davs, dav, smb, s3, azblob, azfile, gdrive, onedrive, dropbox, box)", p => NewConnectionAsync(p));
+        c.Register("nc_NewConnection", "New connection (parameter: sftp, scp, ftp, ftps, davs, dav, smb, s3, azblob, azfile, gdrive, onedrive, dropbox, box, rdp, vnc, ssh, telnet, rsh)", p => NewConnectionAsync(p));
         c.Register("nc_OpenConnection", "Open a saved connection (parameter: the connection's name)", p => OpenConnectionAsync(p));
         c.Register("nc_ConnectionsMenu", "Saved connections menu, grouped by type", () => DropDownMenuRequested?.Invoke(this, Controls.DropDown.Connections));
         c.Register("nc_SwitchWorkspaceTab", "Next page of the window: files, options, maximized terminal", () => NextPageRequested?.Invoke(this, EventArgs.Empty));
@@ -2784,12 +2784,12 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>A Telnet connection to open in a tab of the internal terminal (the window opens it).</summary>
-    public event EventHandler<RemoteConnection>? TelnetRequested;
+    /// <summary>A Telnet, SSH or rsh connection to open in a tab of the internal terminal (the window opens it).</summary>
+    public event EventHandler<RemoteConnection>? TerminalSessionRequested;
 
     /// <summary>
-    /// A remote session: Telnet in the internal terminal, RDP in the system's remote desktop client. A saved RDP
-    /// password (or one asked when the client cannot ask itself) is handed to the client.
+    /// A remote session: Telnet, SSH and rsh in the internal terminal, RDP in the system's remote desktop client, VNC in
+    /// the system's VNC viewer. A saved RDP password (or one asked when the client cannot ask itself) is handed to the client.
     /// </summary>
     public async Task OpenSessionAsync(RemoteConnection connection)
     {
@@ -2798,9 +2798,21 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             await _dialogs.ShowMessageAsync(connection.Name, "Enter a valid server name (e.g. server.example.com).");
             return;
         }
-        if (connection.Protocol == RemoteProtocol.Telnet)
+        if (connection.Protocol is RemoteProtocol.Telnet or RemoteProtocol.Ssh or RemoteProtocol.Rsh)
         {
-            TelnetRequested?.Invoke(this, connection);
+            TerminalSessionRequested?.Invoke(this, connection);
+            return;
+        }
+        if (connection.Protocol == RemoteProtocol.Vnc)
+        {
+            try
+            {
+                await NextCommander.Platform.VncLauncher.LaunchAsync(connection);
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception or IOException or UnauthorizedAccessException)
+            {
+                await _dialogs.ShowMessageAsync("VNC", ex.Message);
+            }
             return;
         }
         string? password = null;
@@ -2834,6 +2846,8 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         }
     }
 
+    private static int SessionPort(RemoteConnection c) => c.Protocol == RemoteProtocol.Rsh ? NextCommander.Core.Net.RshProtocol.PortOf(c) : c.EffectivePort;
+
     private static VfsPath? PathOf(RemoteConnection c) =>
         c.Host.Length > 0 || c.IsCloudDrive ? VfsPath.Create(c.Scheme, c.Authority, c.InitialPath) : null;
 
@@ -2846,20 +2860,20 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         var path = PathOf(connection) ?? throw new IOException("Enter a valid server name (e.g. server.example.com).");
         if (connection.IsSession)
         {
-            // RDP, Telnet: whether the server answers on its port
+            // RDP, VNC, Telnet, SSH, rsh: whether the server answers on its port (rsh: rlogin's without a command)
             var started = System.Diagnostics.Stopwatch.StartNew();
             using var client = new System.Net.Sockets.TcpClient();
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeout.CancelAfter(TimeSpan.FromSeconds(connection.TimeoutSeconds > 0 ? connection.TimeoutSeconds : 15));
             try
             {
-                await client.ConnectAsync(connection.Host, connection.EffectivePort, timeout.Token);
+                await client.ConnectAsync(connection.Host, SessionPort(connection), timeout.Token);
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
                 throw new IOException("The server did not answer in time.");
             }
-            return $"The server answers on port {connection.EffectivePort}: {started.ElapsedMilliseconds} ms";
+            return $"The server answers on port {SessionPort(connection)}: {started.ElapsedMilliseconds} ms";
         }
         var provider = _registry.Resolve(path);
         if (provider is NextCommander.Vfs.Remote.IRemoteProvider remote)

@@ -34,6 +34,9 @@ public sealed partial class ConnectionManagerView
         (RemoteProtocol.Box, "Box", "Your Box account", "Cloud drives"),
         (RemoteProtocol.Rdp, "Remote desktop (RDP)", "The desktop of a Windows computer, in the system's RDP client", "Remote sessions"),
         (RemoteProtocol.Telnet, "Telnet", "A text session in the internal terminal (routers, switches, old systems)", "Remote sessions"),
+        (RemoteProtocol.Ssh, "SSH", "A shell on a server in the internal terminal", "Remote sessions"),
+        (RemoteProtocol.Vnc, "VNC", "The screen of another computer, in a VNC viewer", "Remote sessions"),
+        (RemoteProtocol.Rsh, "rsh / rlogin", "Old Unix hosts without SSH, in the internal terminal (not encrypted)", "Remote sessions"),
     ];
 
     private static readonly (string Name, string Color)[] s_colors =
@@ -464,7 +467,7 @@ public sealed partial class ConnectionManagerView
         return box;
     }
 
-    private static bool IsSsh(RemoteProtocol p) => p is RemoteProtocol.Sftp or RemoteProtocol.Scp;
+    private static bool IsSsh(RemoteProtocol p) => p is RemoteProtocol.Sftp or RemoteProtocol.Scp or RemoteProtocol.Ssh;
 
     private static bool IsFtp(RemoteProtocol p) => p is RemoteProtocol.Ftp or RemoteProtocol.FtpsExplicit or RemoteProtocol.FtpsImplicit;
 
@@ -640,6 +643,26 @@ public sealed partial class ConnectionManagerView
             {
                 Text = "No user or password: the first time both screens show the same code, and the other computer allows this one.",
                 TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                Opacity = 0.8,
+            });
+            return fields;
+        }
+        if (c.Protocol == RemoteProtocol.Vnc)
+        {
+            User("User (only when the server asks for one)");
+            fields.Add(null);
+            fields.Add(new TextBlock { Text = "The VNC viewer asks for the password and can remember it.", TextWrapping = TextWrapping.Wrap, Opacity = 0.75 });
+            return fields;
+        }
+        if (c.Protocol == RemoteProtocol.Rsh)
+        {
+            User("User on the server", Core.Localization.Localizer.T("empty: the same as on this computer"));
+            fields.Add(Field("User on this computer", Text(c.LocalUser, v => c.LocalUser = string.IsNullOrWhiteSpace(v) ? null : v.Trim(), Environment.UserName)));
+            fields.Add(null);
+            fields.Add(new TextBlock
+            {
+                Text = "No password: the server lets this computer in by its .rhosts or hosts.equiv file. rlogin asks for one in the terminal when it does not.",
+                TextWrapping = TextWrapping.Wrap,
                 Opacity = 0.8,
             });
             return fields;
@@ -907,6 +930,21 @@ public sealed partial class ConnectionManagerView
         {
             TelnetFields(c, fields);
         }
+        if (c.Protocol is RemoteProtocol.Ssh or RemoteProtocol.Rsh)
+        {
+            fields.Add(null);
+            fields.Add(Field(c.Protocol == RemoteProtocol.Ssh ? "Command when it opens" : "Command", Text(c.RemoteCommand,
+                v => c.RemoteCommand = string.IsNullOrWhiteSpace(v) ? null : v.Trim(),
+                Core.Localization.Localizer.T(c.Protocol == RemoteProtocol.Ssh ? "e.g. tmux attach (empty: the shell only)" : "empty: a login session (rlogin)")),
+                c.Protocol == RemoteProtocol.Rsh ? Core.Localization.Localizer.T("With a command: rsh runs it and shows its output (port 514); without one: rlogin (port 513).") : null));
+            TerminalFields(c, fields);
+        }
+        if (c.Protocol == RemoteProtocol.Vnc)
+        {
+            fields.Add(null);
+            fields.Add(Check("Full screen", c.FullScreen, v => c.FullScreen = v));
+            fields.Add(Check("View only (no keys or mouse sent)", c.VncViewOnly, v => c.VncViewOnly = v));
+        }
         if (HasTls(c))
         {
             fields.Add(null);
@@ -952,7 +990,7 @@ public sealed partial class ConnectionManagerView
     private static bool HasFingerprint(RemoteConnection c) => IsSsh(c.Protocol) || HasTls(c);
 
     /// <summary>The types that can go through a proxy (RDP has its own client; PC link stays on the local network).</summary>
-    private static bool HasProxy(RemoteProtocol p) => p is not (RemoteProtocol.Rdp or RemoteProtocol.Link);
+    private static bool HasProxy(RemoteProtocol p) => p is not (RemoteProtocol.Rdp or RemoteProtocol.Vnc or RemoteProtocol.Link);
 
     private void RdpFields(RemoteConnection c, List<Control?> fields)
     {
@@ -989,14 +1027,20 @@ public sealed partial class ConnectionManagerView
         fields.Add(Check("Administrative session (console)", c.RdpAdmin, v => c.RdpAdmin = v));
     }
 
-    private void TelnetFields(RemoteConnection c, List<Control?> fields)
+    /// <summary>The terminal type and character set of a session in the internal terminal (Telnet, SSH, rsh).</summary>
+    private void TerminalFields(RemoteConnection c, List<Control?> fields)
     {
         fields.Add(null);
-        fields.Add(Field("Terminal type", Text(c.TerminalType, v => c.TerminalType = string.IsNullOrWhiteSpace(v) ? null : v.Trim(), "xterm"),
+        fields.Add(Field("Terminal type", Text(c.TerminalType, v => c.TerminalType = string.IsNullOrWhiteSpace(v) ? null : v.Trim(), c.Protocol == RemoteProtocol.Ssh ? "xterm-256color" : "xterm"),
             Core.Localization.Localizer.T("Told to the server (xterm, vt100, ansi ...).")));
         var encodings = Services.Terminal.TelnetTerminal.Encodings;
         fields.Add(Field("Character set", Choice([.. encodings.Select(e => e.Length == 0 ? "UTF-8" : e)],
             Math.Max(0, Array.IndexOf([.. encodings], c.TerminalEncoding ?? string.Empty)), i => c.TerminalEncoding = encodings[i].Length == 0 ? null : encodings[i])));
+    }
+
+    private void TelnetFields(RemoteConnection c, List<Control?> fields)
+    {
+        TerminalFields(c, fields);
         fields.Add(Field("Backspace sends", Choice(["DEL (127)", "Ctrl+H (8)"], (int)c.TelnetBackspace, i => c.TelnetBackspace = (TelnetBackspace)i)));
         fields.Add(Field("Enter sends", Choice(["CR LF", "CR NUL", "LF"], (int)c.TelnetEnter, i => c.TelnetEnter = (TelnetEnter)i)));
         fields.Add(Field("Local echo", Choice(["Automatic (when the server does not echo)", "On", "Off"], (int)c.LocalEcho, i => c.LocalEcho = (LocalEcho)i)));
@@ -1113,6 +1157,9 @@ public sealed partial class ConnectionManagerView
             RemoteProtocol.Link => "Another computer running NextCommander that shares folders (Net > Share with PC link there). Server: its computer name (as Net > PC link lists it) or its address, e.g. 169.254.12.34 on a direct cable. A USB-C / Thunderbolt cable or a USB link cable works when the system shows it as a network connection.",
             RemoteProtocol.Rdp => "Opens in the system's remote desktop client: Remote Desktop Connection on Windows, Microsoft's Windows App on macOS, FreeRDP or Remmina on Linux. The remote computer must allow remote desktop connections (port 3389).",
             RemoteProtocol.Telnet => "Opens a tab in the internal terminal. Telnet is not encrypted: what is typed, the password too, can be read on the network. Use it for devices that have nothing else (routers, switches, old systems).",
+            RemoteProtocol.Ssh => "Opens a shell of the server in a tab of the internal terminal. It logs in as SFTP does: the password (asked, or saved), a key file or the SSH agent, through a jump host or a proxy when set; the server's key is the one trusted for SFTP.",
+            RemoteProtocol.Vnc => "Opens in a VNC viewer of this computer: TigerVNC, RealVNC, TightVNC or UltraVNC; Screen Sharing on macOS; Remmina or KRDC on Linux. Port 5900 is display :0, 5901 display :1 ... The viewer asks for the password.",
+            RemoteProtocol.Rsh => "For old Unix hosts that have no SSH. Nothing is encrypted, and the server trusts this computer by name. The connection comes from a port below 1024 when this computer allows it (servers usually want that; on Linux and macOS only as root).",
             RemoteProtocol.AzureFiles => "Server: account.file.core.windows.net. The account key or a SAS token is asked as the password. The root lists the file shares; the start folder can be a share (e.g. /documents).",
             RemoteProtocol.AzureBlob => "Server: account.blob.core.windows.net (at another address, such as Azurite, requests go as server/account/container). The account key or a SAS token is asked as the password. The root lists the containers.",
             RemoteProtocol.S3 => "Server: the S3 endpoint (AWS, MinIO, R2 ...). User: the access key id; the secret key is asked as the password. With an AWS profile the keys (and the session token of temporary keys) are read from ~/.aws/credentials. The root lists the buckets; the start folder can be a bucket (e.g. /backups).",

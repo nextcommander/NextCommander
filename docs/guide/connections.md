@@ -25,8 +25,11 @@ Supported types:
 | Android over ADB | Phones with USB debugging on (also when MTP is not available) |
 | PC link | Another computer running NextCommander, over a USB or Ethernet cable or the network: see [PC link](#pc-link) |
 | rclone remotes | Every remote you set up with `rclone config` (70+ services); the rclone plugin shipped with the program |
-| Remote desktop (RDP) | The desktop of a Windows computer (or a Linux one with xrdp), in the system's RDP client: see [Remote desktop and Telnet](#remote-desktop-rdp-and-telnet) |
+| Remote desktop (RDP) | The desktop of a Windows computer (or a Linux one with xrdp), in the system's RDP client: see [Remote sessions](#remote-sessions-rdp-vnc-ssh-telnet-rsh) |
+| VNC | The screen of another computer (any system with a VNC server), in a VNC viewer |
+| SSH | A shell on a server in the internal terminal |
 | Telnet | A text session in the internal terminal (routers, switches, old systems) |
+| rsh / rlogin | Old Unix hosts without SSH, in the internal terminal (not encrypted) |
 
 ## The Net menu
 
@@ -241,8 +244,8 @@ in the Plugins menu of the button bar lists the remotes of your rclone configura
 with rclone. NextCommander starts rclone once as a local API server (only on 127.0.0.1, with a random password) and
 stops it when it closes. Files are transferred through temporary files and keep their times where the service can.
 
-### Remote desktop (RDP) and Telnet
-These two are sessions on another computer, not folders: choosing one in the connection manager (or *Net > Saved
+### Remote sessions: RDP, VNC, SSH, Telnet, rsh
+These are sessions on another computer, not folders: choosing one in the connection manager (or *Net > Saved
 connections*, `nc_OpenConnection name`) does not change the panel.
 
 - **Remote desktop (RDP)** opens in the system's client: *Remote Desktop Connection* (mstsc) on Windows, Microsoft's
@@ -259,6 +262,21 @@ connections*, `nc_OpenConnection name`) does not change the panel.
   reopened with the shells at the next start.
   Telnet is **not encrypted**: everything typed, the password too, can be read on the network. Prefer SSH where the
   device has it.
+- **SSH** opens a shell of the server in a tab of the internal terminal. It logs in as SFTP does: the password
+  (asked in a dialog, or saved), a private key file or the SSH agent; through a jump host or a proxy when they are
+  set. The server's key is checked as for SFTP (a key trusted for SFTP on the same server is trusted here too; a
+  pinned key must match). The terminal type (xterm-256color unless you set another) and the window size go to the
+  server, again when the window changes. *Command when it opens* is typed into the shell first (e.g. `tmux attach`).
+  `exit` closes the session; the tab stays with the last screen.
+- **VNC** opens in a VNC viewer of this computer: a `vncviewer` (TigerVNC, UltraVNC, TurboVNC), RealVNC Viewer or
+  TightVNC (on Windows also where they are installed), macOS's Screen Sharing, or Remmina / KRDC on Linux. Port 5900
+  is display `:0`, 5901 display `:1` and so on. Options: full screen, view only (no keys or mouse sent). The viewer
+  asks for the password.
+- **rsh / rlogin** is for old Unix hosts that have no SSH. Without a command it is an rlogin session (port 513) in
+  the terminal; with a command, rsh runs it (port 514) and the tab shows its output. There is no password: the
+  server lets this computer in by its `.rhosts` or `hosts.equiv` (with the *user on this computer* and the *user on
+  the server*); rlogin asks for one in the terminal when it does not. The connection comes from a port below 1024
+  when this computer allows it, as servers usually want (on Linux and macOS only as root). Nothing is encrypted.
 
 *Test* in the connection manager checks that the server answers on the port.
 
@@ -278,6 +296,9 @@ options of its type:
 | Google Drive, OneDrive, Box | Delete permanently instead of to the service's trash (OneDrive: work / school accounts; personal ones keep the recycle bin). Google Drive: Google documents as Office, OpenDocument or PDF files. |
 | Remote desktop | Full screen, all monitors, size in a window, colors, sound (here, on the remote computer, none), Remote Desktop Gateway, shared clipboard, drives and printers, administrative session. |
 | Telnet | Terminal type, character set, what Backspace (DEL or Ctrl+H) and Enter (CR LF, CR NUL, LF) send, local echo, keep-alive. |
+| SSH | Jump host, keep-alive, pinned host key, command when it opens, terminal type, character set. |
+| VNC | Full screen, view only. |
+| rsh / rlogin | Command (empty: rlogin), terminal type, character set; the users on the Login tab. |
 
 A **pinned** host key or certificate (`SHA256:...`) is the only one trusted for the connection: another one is
 refused without asking.
@@ -354,8 +375,8 @@ The **Proxy** tab of a connection in the connection manager chooses its way, wha
 - **Its own proxy**: one of the types above with its server, port, user and password (an SSH tunnel also with a
   private key). The password is kept in the password store when the connection is saved.
 
-Remote desktop (RDP) connections and PC link have no Proxy tab: the RDP client connects itself, and a PC link stays
-on the local network.
+Remote desktop (RDP) and VNC connections and PC link have no Proxy tab: the RDP and VNC viewers connect themselves,
+and a PC link stays on the local network.
 
 ## Downloading from the web
 
