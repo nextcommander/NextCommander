@@ -2871,7 +2871,7 @@
   "PdfPasswordException.ThePasswordIsNotRight": "Le mot de passe n'est pas correct.",
   "OfficeHtml.DocumentProtected": "Le document est protégé par un mot de passe.",
   "OfficeHtml.WorkbookProtected": "Le classeur est protégé par un mot de passe.",
-  "ConnectionManagerWindow.ShareActivePanelFolderMstsc": "Partager le dossier du panneau actif (Connexion Bureau à distance : son lecteur ; dans un onglet : tous les lecteurs)",
+  "ConnectionManagerWindow.ShareActivePanelFolderMstsc": "Partager le dossier du panneau actif (Connexion Bureau à distance partage son lecteur)",
   "ConnectionManagerWindow.ShareActivePanelFolder": "Partager le dossier du panneau actif",
   "ConnectionManagerWindow.FilesSmb": "Fichiers (SMB)",
   "ConnectionManagerWindow.OpenInClientOwnWindow": "Ouvrir dans la fenêtre du client (pas dans un onglet)",
@@ -2884,5 +2884,8 @@
   "RemoteDesktopView.ConnectionFailed": "La connexion à {0} n'a pas pu être établie.",
   "RemoteDesktopView.ConnectionFailedFreeRdp": "La connexion à {0} n'a pas pu être établie (code de sortie FreeRDP {1}).",
   "RemoteDesktopView.CannotShowHere": "Le bureau à distance n'a pas pu être affiché ici : {0}",
-  "RemoteDesktopView.SessionCouldNotStart": "La session n'a pas pu démarrer : {0}"
+  "RemoteDesktopView.SessionCouldNotStart": "La session n'a pas pu démarrer : {0}",
+  "RemoteDesktopView.SessionEndedBecause": "La session de bureau à distance est terminée : {0}",
+  "RemoteDesktopView.ConnectionFailedBecause": "La connexion à {0} n'a pas pu être établie : {1}",
+  "RemoteDesktopView.SessionEndedReason": "La session de bureau à distance est terminée (raison {0})."
 }

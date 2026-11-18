@@ -65,7 +65,7 @@ public sealed class ConnectionTypeOptionsTests
         Assert.Equal(("CORP", "ali"), (Value(RdpControlPart.Client, "Domain"), Value(RdpControlPart.Client, "UserName")));
         Assert.Equal((1600, 900), (Value(RdpControlPart.Client, "DesktopWidth"), Value(RdpControlPart.Client, "DesktopHeight"))); // the tab's size
         Assert.Equal(3390, Value(RdpControlPart.Advanced, "RDPPort"));
-        Assert.Equal(true, Value(RdpControlPart.Advanced, "RedirectDrives")); // the control shares all drives for the folder
+        Assert.Equal(false, Value(RdpControlPart.Advanced, "RedirectDrives")); // not all drives: the folder's drive alone
         Assert.Equal(false, Value(RdpControlPart.Advanced, "SmartSizing"));
         Assert.Equal(2, Value(RdpControlPart.Secured, "AudioRedirectionMode"));
         Assert.Equal("gw.corp", Value(RdpControlPart.Transport, "GatewayHostname"));
@@ -73,7 +73,7 @@ public sealed class ConnectionTypeOptionsTests
 
         var args = RemoteDesktop.EmbeddedFreeRdpArguments(c, true, "/home/ali/Reports", 0x3a00007, 1600, 900);
         Assert.Equal(["/v:pc.corp:3390", "/parent-window:60817415", "/size:1600x900"], args.Take(3));
-        Assert.DoesNotContain("/dynamic-resolution", args);
+        Assert.Contains("/dynamic-resolution", args); // the tab resizes FreeRDP's window, the desktop follows
         Assert.Contains("/drive:Reports,/home/ali/Reports", args);
         Assert.Contains("/from-stdin:force", args);
 
@@ -85,7 +85,7 @@ public sealed class ConnectionTypeOptionsTests
         Assert.Equal(["/size:1280x720", "/smart-sizing:1600x900"], RemoteDesktop.EmbeddedFreeRdpArguments(c, false, null, 7, 1600, 900).Skip(2).Take(2));
         Assert.Equal(200, RemoteDesktop.ControlSettings(new RemoteConnection { Protocol = RemoteProtocol.Rdp, Host = "x" }, 10, 10).Single(s => s.Property == "DesktopWidth").Value);
 
-        // its own window: full screen, or the connection asks for it
+        // the control's reasons: closed here, logged off / disconnected there, by the server are plain ends
         Assert.False(RemoteDesktop.OpensInTab(new RemoteConnection { Protocol = RemoteProtocol.Rdp, FullScreen = true }));
         Assert.False(RemoteDesktop.OpensInTab(new RemoteConnection { Protocol = RemoteProtocol.Rdp, RdpOwnWindow = true }));
     }

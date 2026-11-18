@@ -2871,7 +2871,7 @@
   "PdfPasswordException.ThePasswordIsNotRight": "The password is not right.",
   "OfficeHtml.DocumentProtected": "The document is protected by a password.",
   "OfficeHtml.WorkbookProtected": "The workbook is protected by a password.",
-  "ConnectionManagerWindow.ShareActivePanelFolderMstsc": "Share the active panel's folder (Remote Desktop Connection: its drive; in a tab: all drives)",
+  "ConnectionManagerWindow.ShareActivePanelFolderMstsc": "Share the active panel's folder (Remote Desktop Connection shares its drive)",
   "ConnectionManagerWindow.ShareActivePanelFolder": "Share the active panel's folder",
   "ConnectionManagerWindow.FilesSmb": "Files (SMB)",
   "ConnectionManagerWindow.OpenInClientOwnWindow": "Open in the client's own window (not in a tab)",
@@ -2884,5 +2884,8 @@
   "RemoteDesktopView.ConnectionFailed": "The connection to {0} could not be made.",
   "RemoteDesktopView.ConnectionFailedFreeRdp": "The connection to {0} could not be made (FreeRDP exit code {1}).",
   "RemoteDesktopView.CannotShowHere": "The remote desktop could not be shown here: {0}",
-  "RemoteDesktopView.SessionCouldNotStart": "The session could not start: {0}"
+  "RemoteDesktopView.SessionCouldNotStart": "The session could not start: {0}",
+  "RemoteDesktopView.SessionEndedBecause": "The remote desktop session ended: {0}",
+  "RemoteDesktopView.ConnectionFailedBecause": "The connection to {0} could not be made: {1}",
+  "RemoteDesktopView.SessionEndedReason": "The remote desktop session ended (reason {0})."
 }

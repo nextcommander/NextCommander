@@ -2871,7 +2871,7 @@
   "PdfPasswordException.ThePasswordIsNotRight": "La contraseña no es correcta.",
   "OfficeHtml.DocumentProtected": "El documento está protegido con contraseña.",
   "OfficeHtml.WorkbookProtected": "El libro está protegido con contraseña.",
-  "ConnectionManagerWindow.ShareActivePanelFolderMstsc": "Compartir la carpeta del panel activo (Conexión a Escritorio remoto: su unidad; en una pestaña: todas las unidades)",
+  "ConnectionManagerWindow.ShareActivePanelFolderMstsc": "Compartir la carpeta del panel activo (Conexión a Escritorio remoto comparte su unidad)",
   "ConnectionManagerWindow.ShareActivePanelFolder": "Compartir la carpeta del panel activo",
   "ConnectionManagerWindow.FilesSmb": "Archivos (SMB)",
   "ConnectionManagerWindow.OpenInClientOwnWindow": "Abrir en la ventana propia del cliente (no en una pestaña)",
@@ -2884,5 +2884,8 @@
   "RemoteDesktopView.ConnectionFailed": "No se pudo establecer la conexión con {0}.",
   "RemoteDesktopView.ConnectionFailedFreeRdp": "No se pudo establecer la conexión con {0} (código de salida de FreeRDP {1}).",
   "RemoteDesktopView.CannotShowHere": "No se pudo mostrar el escritorio remoto aquí: {0}",
-  "RemoteDesktopView.SessionCouldNotStart": "No se pudo iniciar la sesión: {0}"
+  "RemoteDesktopView.SessionCouldNotStart": "No se pudo iniciar la sesión: {0}",
+  "RemoteDesktopView.SessionEndedBecause": "La sesión de escritorio remoto ha terminado: {0}",
+  "RemoteDesktopView.ConnectionFailedBecause": "No se pudo establecer la conexión con {0}: {1}",
+  "RemoteDesktopView.SessionEndedReason": "La sesión de escritorio remoto ha terminado (motivo {0})."
 }

@@ -218,6 +218,11 @@ public sealed class RemoteDesktopView : UserControl, IDisposable
                 _resize?.Stop();
                 var (w, h) = Pixels();
                 _control?.Resize(w, h, session: Core.Net.RemoteDesktop.FollowsWindow(owner.Connection));
+                if (_xWindow != 0 && _freeRdp is { HasExited: false })
+                {
+                    // Linux: FreeRDP's window in the tab gets the new size (its desktop follows, or is scaled)
+                    RemoteDesktopLauncher.ResizeEmbedded(_xWindow, w, h);
+                }
             });
             _resize.Start();
         }
@@ -243,7 +248,15 @@ public sealed class RemoteDesktopView : UserControl, IDisposable
                 try
                 {
                     control.Resize(width, height, session: false);
-                    if (control.Connect(owner.Connection, owner.Password, width, height) is { Count: > 0 } refused)
+                    control.Connected += (_, _) => Dispatcher.UIThread.Post(() =>
+                    {
+                        _wasConnected = true;
+                        owner.Connected();
+                    });
+                    // the tab is ended after the control's event has returned (its window goes with the tab's host)
+                    control.Disconnected += (_, end) => Dispatcher.UIThread.Post(() => EndedBy(end));
+                    var drive = Core.Net.RemoteDesktop.ControlDrive(owner.Connection, owner.Folder);
+                    if (control.Connect(owner.Connection, owner.Password, width, height, drive) is { Count: > 0 } refused)
                     {
                         Log.Debug("The remote desktop control did not take {Settings}", string.Join(", ", refused));
                     }
@@ -254,8 +267,11 @@ public sealed class RemoteDesktopView : UserControl, IDisposable
                     owner.Ended($"The session could not start: {ex.Message}");
                     return;
                 }
-                _poll = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => Poll());
-                _poll.Start();
+                if (!control.HasEvents)
+                {
+                    _poll = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => Poll());
+                    _poll.Start();
+                }
                 return;
             }
             if (_xWindow != 0)
@@ -264,7 +280,24 @@ public sealed class RemoteDesktopView : UserControl, IDisposable
             }
         }
 
-        /// <summary>Windows: the control's state, read every second (connected; ended after it was connecting or connected).</summary>
+        /// <summary>
+        /// Windows: the session ended (the control's OnDisconnected): a plain end (closed here, logged off or
+        /// disconnected on the remote computer) or why it failed, in the control's (the system's) words.
+        /// </summary>
+        private void EndedBy(Platform.Windows.RemoteDesktopDisconnect end)
+        {
+            if (_stopped)
+            {
+                return;
+            }
+            var host = owner.Connection.Host;
+            owner.Ended(Core.Net.RemoteDesktop.IsPlainEnd(end.Reason) ? "The remote desktop session ended."
+                : end.Description is { } why ? (_wasConnected ? $"The remote desktop session ended: {why}" : $"The connection to {host} could not be made: {why}")
+                : _wasConnected ? $"The remote desktop session ended (reason {end.Reason})."
+                : $"The connection to {host} could not be made (reason {end.Reason}).");
+        }
+
+        /// <summary>Windows without the control's events: its state, read every second (connected; ended after it was connecting or connected).</summary>
         private void Poll()
         {
             if (_control is not { } control)
