@@ -22,11 +22,14 @@ internal sealed unsafe class LibMtpDevice : IMtpDevice
 
     public static LibMtpDevice Open(RawMtpDevice raw)
     {
-        var device = LibMtpNative.Open(raw);
+        // macOS: its camera service (ptpcamerad) takes the phone first; it is stopped and the phone opened again
+        var device = OperatingSystem.IsMacOS()
+            ? MacImageCapture.OpenReleasing(() => LibMtpNative.Open(raw), MacImageCapture.Release, Thread.Sleep)
+            : LibMtpNative.Open(raw);
         if (device == IntPtr.Zero)
         {
             throw new IOException(OperatingSystem.IsMacOS()
-                ? "The device could not be opened. macOS gives a phone or camera to the first program that takes it: close Photos, Image Capture and Android File Transfer, unplug the device and plug it in again. The phone must be unlocked and in \"File transfer\" mode."
+                ? "The device could not be opened. macOS gives a phone or camera to the first program that takes it: close Photos, Image Capture, Android File Transfer and Smart Switch (NextCommander already stops the camera service ptpcamerad), unplug the device and plug it in again. The phone must be unlocked and in \"File transfer\" mode."
                 : "The device could not be opened. Another program may be using it (the desktop's file manager mounts phones: unmount it there), or the user may not have the right to use it (the package libmtp installs the rules for that). The phone must be unlocked and in \"File transfer\" mode.");
         }
         return new LibMtpDevice(device);

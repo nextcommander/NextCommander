@@ -2904,5 +2904,7 @@
   "ConnectionManagerView.EnterANameFor": "Introduzca un nombre para la conexión.",
   "ConnectionManagerView.AnotherConnectionHasThis": "Otra conexión tiene este nombre; elija otro.",
   "ConnectionManagerView.FirstGiveTheConnection": "Primero dé un nombre a la conexión: la lista la muestra con este nombre y su registro se guarda con él.",
-  "ConnectionManagerView.Back": "‹ Atrás"
+  "ConnectionManagerView.Back": "‹ Atrás",
+  "LibMtpDevice.TheDeviceCouldNotBeMac": "No se pudo abrir el dispositivo. macOS entrega un teléfono o una cámara al primer programa que lo toma: cierre Fotos, Captura de Imagen, Android File Transfer y Smart Switch (NextCommander ya detiene el servicio de cámara ptpcamerad), desconecte el dispositivo y vuelva a conectarlo. El teléfono debe estar desbloqueado y en modo \"Transferencia de archivos\".",
+  "LibMtpDevice.TheDeviceCouldNotBe": "No se pudo abrir el dispositivo. Puede que otro programa lo esté usando (el gestor de archivos del escritorio monta los teléfonos: desmóntelo allí) o que el usuario no tenga permiso para usarlo (el paquete libmtp instala las reglas para ello). El teléfono debe estar desbloqueado y en modo \"Transferencia de archivos\"."
 }

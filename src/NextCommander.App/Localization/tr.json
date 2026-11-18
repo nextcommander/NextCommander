@@ -2904,5 +2904,7 @@
   "ConnectionManagerView.EnterANameFor": "Bağlantı için bir ad girin.",
   "ConnectionManagerView.AnotherConnectionHasThis": "Bu ad başka bir bağlantıda kullanılıyor; başka bir ad seçin.",
   "ConnectionManagerView.FirstGiveTheConnection": "Önce bağlantıya bir ad verin: liste onu bu adla gösterir, günlüğü de bu adla tutulur.",
-  "ConnectionManagerView.Back": "‹ Geri"
+  "ConnectionManagerView.Back": "‹ Geri",
+  "LibMtpDevice.TheDeviceCouldNotBeMac": "Cihaz açılamadı. macOS bir telefonu ya da fotoğraf makinesini onu ilk alan programa verir: Fotoğraflar, Görüntü Yakalama, Android File Transfer ve Smart Switch'i kapatın (NextCommander kamera servisi ptpcamerad'ı kendisi durdurur), cihazı çıkarıp yeniden takın. Telefonun kilidi açık ve \"Dosya aktarımı\" modunda olmalı.",
+  "LibMtpDevice.TheDeviceCouldNotBe": "Cihaz açılamadı. Başka bir program kullanıyor olabilir (masaüstünün dosya yöneticisi telefonları bağlar: oradan ayırın) ya da kullanıcının onu kullanma hakkı olmayabilir (bunun kurallarını libmtp paketi kurar). Telefonun kilidi açık ve \"Dosya aktarımı\" modunda olmalı."
 }
