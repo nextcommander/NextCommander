@@ -60,8 +60,9 @@ turns it off.
 
 ![The connection manager](../screenshots/connections.png)
 
-The manager opens in place of the left file panel, whichever panel is active (the right panel stays usable); ✕ or
-Esc closes it and brings the file panel back. The connections are on the left, in folders; the selected connection or folder is on the right.
+The manager opens as a page of its own with a tab, like the maximized internal terminal: the **Files** tab above it
+goes back to the panels while the manager stays open; ✕, its tab's × or Esc closes it. The connections are on the
+left, in folders; the selected connection or folder is on the right.
 New connections start from the **New connection** button below the list.
 
 - **Folders** can be nested and have a color label (for example red for production). Drag connections and folders
@@ -73,8 +74,10 @@ New connections start from the **New connection** button below the list.
   (a folder with everything in it; its saved passwords are forgotten), Ctrl+Z puts the last deleted items back,
   Ctrl+D duplicates, Ctrl+N makes a new connection, Ctrl+S saves. The right click menu has the same, plus favorites,
   copying the address and forgetting the saved password.
-- **New connection:** first choose its type from the cards (or paste an address such as
-  `sftp://user@server:22/folder`, which fills it in). Then fill in the tabs:
+- **New connection:** three steps, shown above them (1 Name › 2 Type › 3 Settings). First give it a **name** (the
+  list shows it by this name and its log is kept under it; it must not be another connection's name), then choose
+  its type from the cards (or paste an address such as `sftp://user@server:22/folder`, which fills it in; *Net > New
+  connection* of a type skips this step; **‹ Back** goes to the step before, keeping what was entered, and from the name drops the new connection). Then fill in the tabs:
   - **General:** the server, port and start folder (for FTP also the encryption and passive mode, for S3 the region;
     a **Service** for S3 and WebDAV, see below).
   - **Login:** the method: password, key file or the **SSH agent** (SFTP / SCP); access key or **AWS profile / SSO**
@@ -83,6 +86,13 @@ New connections start from the **New connection** button below the list.
   - **Advanced:** the timeout, simultaneous connections, a **jump host** (SFTP / SCP), the **file name encoding**
     (FTP), **server-side encryption** with SSE-S3 or SSE-KMS (S3), plain HTTP, accepting any certificate, SharePoint
     sites (OneDrive) and the favorite mark.
+  - **Log:** the connection's own log (see *Connection logs* below).
+- **What must be filled in** has a red \* after its caption: the server; the user of SFTP, SCP and SSH (an SSH login
+  always has one); S3's access key id (or an AWS profile) and Azure's storage account; a cloud drive's application id
+  (and Box's client secret); the key file when the login is by key file (it must exist); the own proxy's server. A
+  field that is empty or wrong is framed in red with what is wrong under it (a new connection once you start filling
+  it in). *Save*, *Connect* and *Test* refuse such a connection, show the tab of the first problem and put the cursor
+  there; in the tree a red **!** marks a connection that cannot connect yet (its tooltip says why).
 - **Test** connects with the settings as they are and lists the start folder; the result shows under the tabs.
   **Save** writes the connections (closing the window does too; new connections never filled in are dropped).
   **Connect** opens the connection; a folder's **Connect to all** opens each of its connections in a tab.
@@ -94,6 +104,21 @@ For S3 and WebDAV, the **Service** list fills in the server, port, region and st
 Amazon S3, Google Cloud Storage, Cloudflare R2, Backblaze B2, Wasabi, DigitalOcean Spaces, Hetzner and MinIO;
 Nextcloud / ownCloud, Yandex Disk, pCloud and Koofr. A part of the server name in capitals (such as `ACCOUNT_ID`
 or `REGION`) is yours to replace; the note under the fields says how.
+
+## Connection logs
+
+Every connection has its own log: connecting (the address, the jump host, the proxy, the login method), logging in,
+a new or changed server key, sessions ending, the tests and **every error with its causes** (the inner errors, such
+as the system's socket error, and the details for a report). Passwords, keys and tokens are never written. The logs
+are files in the settings folder's `logs/connections` (one per connection, named after it; one over 1 MB is set
+aside as `.old.log`); the errors also go to the program log when it is on.
+
+- The **Log** tab of a connection in the connection manager shows its log, errors in red, and follows new entries;
+  *Refresh*, *Copy* and *Clear the log* are next to it.
+- When a server cannot be opened, the message names the connection (name and address), where, the error with its
+  causes and the log file; **Show the log** opens the log in the Lister. *Test* shows the whole chain of causes too.
+- Terminal sessions (SSH, Telnet, rsh, serial port) write their causes and the log file in the terminal; a remote
+  desktop tab under its end message.
 
 ## Typing an address
 

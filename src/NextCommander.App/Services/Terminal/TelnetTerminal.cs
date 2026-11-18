@@ -78,6 +78,7 @@ public sealed class TelnetTerminal : PseudoTerminal
         try
         {
             Show(Core.Localization.Localizer.T("Connecting to {0}...").Replace("{0}", Host + ":" + Port, StringComparison.Ordinal) + "\r\n");
+            ConnectionLog.Info(_connection, $"Connecting to {Host}:{Port} (a tab of the internal terminal) ...");
             using (var connect = CancellationTokenSource.CreateLinkedTokenSource(_stop.Token))
             {
                 connect.CancelAfter(TimeSpan.FromSeconds(_connection.TimeoutSeconds > 0 ? _connection.TimeoutSeconds : 15));
@@ -90,6 +91,7 @@ public sealed class TelnetTerminal : PseudoTerminal
                     throw new TimeoutException(Core.Localization.Localizer.T("The server did not answer in time."));
                 }
             }
+            ConnectionLog.Info(_connection, "Connected.");
             if (_connection.KeepAliveSeconds > 0)
             {
                 _ = KeepAliveAsync(TimeSpan.FromSeconds(_connection.KeepAliveSeconds));
@@ -102,6 +104,7 @@ public sealed class TelnetTerminal : PseudoTerminal
                 if (read == 0)
                 {
                     Show("\r\n" + Core.Localization.Localizer.T("The connection was closed by the server.") + "\r\n");
+                    ConnectionLog.Info(_connection, "The connection was closed by the server.");
                     break;
                 }
                 reply.Clear();
@@ -129,7 +132,8 @@ public sealed class TelnetTerminal : PseudoTerminal
         catch (Exception ex) when (ex is IOException or SocketException or TimeoutException)
         {
             code = 1;
-            Show("\r\n" + ex.Message + "\r\n");
+            ConnectionLog.Error(_connection, ex.Message, ex);
+            Show("\r\n" + ConnectionLog.Causes(ex).Replace("\n", "\r\n", StringComparison.Ordinal) + "\r\n" + StreamTerminal.LogLine(_connection));
         }
         finally
         {

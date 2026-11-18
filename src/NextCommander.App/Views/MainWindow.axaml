@@ -410,6 +410,9 @@
       <!-- Synchronize directories as a page of its own (MainWindow.Workspace.cs) -->
       <Border x:Name="SyncHost" Grid.Column="0" Grid.ColumnSpan="3" Grid.RowSpan="3" ZIndex="25" IsVisible="False"
               Background="{DynamicResource SystemControlBackgroundAltHighBrush}" />
+      <!-- The connection manager as a page of its own (MainWindow.Workspace.cs) -->
+      <Border x:Name="ConnectionsHost" Grid.Column="0" Grid.ColumnSpan="3" Grid.RowSpan="3" ZIndex="25" IsVisible="False"
+              Background="{DynamicResource SystemControlBackgroundAltHighBrush}" />
       <!-- Remote desktop sessions, each a page of its own (MainWindow.Workspace.cs); the hidden ones keep running -->
       <Panel x:Name="RemoteDesktopHost" Grid.Column="0" Grid.ColumnSpan="3" Grid.RowSpan="3" ZIndex="26" IsVisible="False"
              Background="{DynamicResource SystemControlBackgroundAltHighBrush}" />

@@ -879,7 +879,10 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
             // A folder of a reachable server that may not be read shows "<Read error!>" like local folders.
             Log.Information(ex, "Cannot open archive {Path}", path);
             PathText = CurrentPath?.ToDisplayString() ?? string.Empty;
-            ErrorOccurred?.Invoke(this, $"{path.ToDisplayString()}\n\n{ex.Message}");
+            if (!ReportConnectionError(path, ex))
+            {
+                ErrorOccurred?.Invoke(this, $"{path.ToDisplayString()}\n\n{ex.Message}");
+            }
             return false;
         }
         catch (Exception ex) when (ex is UnauthorizedAccessException
@@ -901,7 +904,10 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         {
             Log.Information(ex, "Cannot open {Path}", path);
             PathText = CurrentPath?.ToDisplayString() ?? string.Empty;
-            ErrorOccurred?.Invoke(this, $"{path.ToDisplayString()}\n\n{ex.Message}");
+            if (!ReportConnectionError(path, ex))
+            {
+                ErrorOccurred?.Invoke(this, $"{path.ToDisplayString()}\n\n{ex.Message}");
+            }
             return false;
         }
         if (cts.IsCancellationRequested)
@@ -959,6 +965,21 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         StartAutomaticDirectorySizes();
         RecordVisit(path);
         Navigated?.Invoke(this, path);
+        return true;
+    }
+
+    /// <summary>A server could not be opened: its connection, the folder and the error (the window shows them with the connection's log).</summary>
+    public event EventHandler<ConnectionError>? ConnectionFailed;
+
+    /// <summary>Reports the error of a server's folder as the connection's error (false: not a server's folder).</summary>
+    private bool ReportConnectionError(VfsPath path, Exception ex)
+    {
+        if (ConnectionFailed is null || path.IsLocal || path.Container is not null
+            || _registry.Providers.OfType<NextCommander.Vfs.Remote.IRemoteProvider>().FirstOrDefault(p => p.CanHandle(path)) is not { } remote)
+        {
+            return false;
+        }
+        ConnectionFailed(this, new ConnectionError(remote.ConnectionOf(path), path, ex));
         return true;
     }
 

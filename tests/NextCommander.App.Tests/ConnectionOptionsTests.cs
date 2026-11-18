@@ -74,7 +74,7 @@ public sealed class ConnectionOptionsTests : IDisposable
 
         view.Reveal(sftp);
         await SettleAsync();
-        Assert.Equal(["General", "Login", "Advanced", "Proxy"], TabNames(view));
+        Assert.Equal(["General", "Login", "Advanced", "Proxy", "Log"], TabNames(view));
         Tabs(view).SelectedIndex = 3;
         await SettleAsync();
         Assert.True(Shown(view, "As Configuration > Operation > Proxy says."));
@@ -142,7 +142,7 @@ public sealed class ConnectionOptionsTests : IDisposable
         ChoiceWith(view, "CR NUL").SelectedIndex = 1;
         ChoiceWith(view, "UTF-8").SelectedIndex = TelnetTerminal.Encodings.ToList().IndexOf("iso-8859-9");
         Assert.Equal((TelnetBackspace.ControlH, TelnetEnter.CrNul, "iso-8859-9"), (telnet.TelnetBackspace, telnet.TelnetEnter, telnet.TerminalEncoding));
-        Assert.Equal(["General", "Login", "Advanced", "Proxy"], TabNames(view)); // a Telnet session can go through a proxy
+        Assert.Equal(["General", "Login", "Advanced", "Proxy", "Log"], TabNames(view)); // a Telnet session can go through a proxy
     }
 
     [AvaloniaFact]

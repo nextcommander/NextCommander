@@ -2887,5 +2887,22 @@
   "RemoteDesktopView.SessionCouldNotStart": "The session could not start: {0}",
   "RemoteDesktopView.SessionEndedBecause": "The remote desktop session ended: {0}",
   "RemoteDesktopView.ConnectionFailedBecause": "The connection to {0} could not be made: {1}",
-  "RemoteDesktopView.SessionEndedReason": "The remote desktop session ended (reason {0})."
+  "RemoteDesktopView.SessionEndedReason": "The remote desktop session ended (reason {0}).",
+  "ConnectionFolders.EnterTheUserNameAn": "Enter the user name (an SSH login always has one).",
+  "ConnectionFolders.ChooseThePrivateKeyFile": "Choose the private key file (or another login method).",
+  "ConnectionFolders.ThePrivateKeyFileWas": "The private key file was not found.",
+  "ConnectionManagerView.Required": "Required",
+  "ConnectionManagerView.ClearTheLog": "Clear the log",
+  "ConnectionManagerView.NothingLoggedYetTheLog": "Nothing logged yet: the log fills when the connection is opened or tested.",
+  "MainWindow.ConnectionError": "Connection error",
+  "MainWindow.ShowTheLog": "Show the log",
+  "MainWindow.TheConnectionSLog": "The connection's log:",
+  "ConnectionManagerView.ConnectionName": "Connection name",
+  "ConnectionManagerView.Next": "Next ›",
+  "ConnectionManagerView.NoNameGivenYet": "no name given yet",
+  "ConnectionManagerView.EGProductionWebServer": "e.g. Production web server",
+  "ConnectionManagerView.EnterANameFor": "Enter a name for the connection.",
+  "ConnectionManagerView.AnotherConnectionHasThis": "Another connection has this name; choose another.",
+  "ConnectionManagerView.FirstGiveTheConnection": "First give the connection a name: the list shows it by this name, and its log is kept under it.",
+  "ConnectionManagerView.Back": "‹ Back"
 }

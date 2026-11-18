@@ -11,14 +11,15 @@ using NextCommander.Core.Vfs;
 namespace NextCommander.App.Views;
 
 /// <summary>
-/// A page of the main window: the two file panels, the options, synchronize directories, the maximized internal
-/// terminal or a remote desktop session (one page each).
+/// A page of the main window: the two file panels, the options, synchronize directories, the connection manager, the
+/// maximized internal terminal or a remote desktop session (one page each).
 /// </summary>
 public enum WorkspacePage
 {
     Files,
     Options,
     Sync,
+    Connections,
     Terminal,
     RemoteDesktop,
 }
@@ -58,6 +59,10 @@ public partial class MainWindow
             if (Sync is not null)
             {
                 pages.Add(WorkspacePage.Sync);
+            }
+            if (ConnectionManager is not null)
+            {
+                pages.Add(WorkspacePage.Connections);
             }
             if (IsTerminalMaximizedPage)
             {
@@ -99,6 +104,9 @@ public partial class MainWindow
                 break;
             case WorkspacePage.Sync:
                 Sync?.Focus();
+                break;
+            case WorkspacePage.Connections:
+                ConnectionManager?.FocusTree();
                 break;
             case WorkspacePage.Terminal:
                 _terminal?.Activate();
@@ -192,6 +200,7 @@ public partial class MainWindow
         PanelsGrid.IsVisible = !terminalPage;
         SettingsHost.IsVisible = _page == WorkspacePage.Options;
         SyncHost.IsVisible = _page == WorkspacePage.Sync;
+        ConnectionsHost.IsVisible = _page == WorkspacePage.Connections;
         RemoteDesktopHost.IsVisible = _page == WorkspacePage.RemoteDesktop;
         foreach (var desktop in _desktops)
         {
@@ -259,6 +268,7 @@ public partial class MainWindow
             WorkspacePage.Options => (MenuIcons.Create("nc_Config") ?? new Panel(), "Options", "Options", false),
             WorkspacePage.Terminal => (MenuIcons.Create("nc_MaximizeTerminal") ?? new Panel(), "Terminal", "Internal terminal", false),
             WorkspacePage.Sync => (MenuIcons.Create("nc_SyncDirs") ?? new Panel(), "Synchronize", Tools.SyncDirsView.Title, false),
+            WorkspacePage.Connections => (MenuIcons.Create("nc_RemoteConnection") ?? new Panel(), "Connections", "Connection manager", false),
             _ => (LocationIcon(panel?.CurrentPath), panel?.Title ?? "?", panel?.CurrentPath?.ToDisplayString() ?? string.Empty, true),
         };
         icon.Width = 14;
@@ -282,7 +292,7 @@ public partial class MainWindow
             ToolTip.SetTip(close, page switch
             {
                 WorkspacePage.Options => "Close the options (Esc)",
-                WorkspacePage.Sync => "Close (Esc)",
+                WorkspacePage.Sync or WorkspacePage.Connections => "Close (Esc)",
                 WorkspacePage.RemoteDesktop => "Disconnect and close",
                 _ => "Back to its place below the panels",
             });
@@ -339,6 +349,9 @@ public partial class MainWindow
             case WorkspacePage.Sync:
                 Sync?.Close();
                 break;
+            case WorkspacePage.Connections:
+                ConnectionManager?.Close();
+                break;
             case WorkspacePage.Terminal:
                 RestoreTerminalSize();
                 ActiveView.FocusList();
@@ -348,6 +361,9 @@ public partial class MainWindow
                 break;
         }
     }
+
+    /// <summary>The connection manager shown as a page (null: not open).</summary>
+    public Connections.ConnectionManagerView? ConnectionManager => ConnectionsHost.Child as Connections.ConnectionManagerView;
 
     /// <summary>Synchronize directories shown as a page (null: not open).</summary>
     public Tools.SyncDirsView? Sync => SyncHost.Child as Tools.SyncDirsView;

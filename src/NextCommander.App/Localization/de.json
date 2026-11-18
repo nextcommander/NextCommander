@@ -2887,5 +2887,22 @@
   "RemoteDesktopView.SessionCouldNotStart": "Die Sitzung konnte nicht gestartet werden: {0}",
   "RemoteDesktopView.SessionEndedBecause": "Die Remotedesktopsitzung wurde beendet: {0}",
   "RemoteDesktopView.ConnectionFailedBecause": "Die Verbindung mit {0} konnte nicht hergestellt werden: {1}",
-  "RemoteDesktopView.SessionEndedReason": "Die Remotedesktopsitzung wurde beendet (Grund {0})."
+  "RemoteDesktopView.SessionEndedReason": "Die Remotedesktopsitzung wurde beendet (Grund {0}).",
+  "ConnectionFolders.EnterTheUserNameAn": "Geben Sie den Benutzernamen ein (eine SSH-Anmeldung hat immer einen).",
+  "ConnectionFolders.ChooseThePrivateKeyFile": "Wählen Sie die Datei mit dem privaten Schlüssel (oder eine andere Anmeldemethode).",
+  "ConnectionFolders.ThePrivateKeyFileWas": "Die Datei mit dem privaten Schlüssel wurde nicht gefunden.",
+  "ConnectionManagerView.Required": "Erforderlich",
+  "ConnectionManagerView.ClearTheLog": "Protokoll leeren",
+  "ConnectionManagerView.NothingLoggedYetTheLog": "Noch nichts protokolliert: Das Protokoll füllt sich, wenn die Verbindung geöffnet oder getestet wird.",
+  "MainWindow.ConnectionError": "Verbindungsfehler",
+  "MainWindow.ShowTheLog": "Protokoll anzeigen",
+  "MainWindow.TheConnectionSLog": "Protokoll der Verbindung:",
+  "ConnectionManagerView.ConnectionName": "Verbindungsname",
+  "ConnectionManagerView.Next": "Weiter ›",
+  "ConnectionManagerView.NoNameGivenYet": "noch kein Name vergeben",
+  "ConnectionManagerView.EGProductionWebServer": "z. B. Produktiver Webserver",
+  "ConnectionManagerView.EnterANameFor": "Geben Sie einen Namen für die Verbindung ein.",
+  "ConnectionManagerView.AnotherConnectionHasThis": "Eine andere Verbindung hat diesen Namen; wählen Sie einen anderen.",
+  "ConnectionManagerView.FirstGiveTheConnection": "Geben Sie der Verbindung zuerst einen Namen: Die Liste zeigt sie unter diesem Namen, und ihr Protokoll wird darunter geführt.",
+  "ConnectionManagerView.Back": "‹ Zurück"
 }

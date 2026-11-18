@@ -78,6 +78,9 @@ public sealed partial class ConnectionManagerView : UserControl
     private readonly HashSet<string> _expanded = new(StringComparer.Ordinal);
     private readonly HashSet<RemoteConnection> _newOnes = [];
     private readonly HashSet<RemoteConnection> _untyped = [];
+
+    /// <summary>New connections whose name has not been given yet (the first step of a new connection).</summary>
+    private readonly HashSet<RemoteConnection> _unnamed = [];
     private readonly Dictionary<RemoteConnection, (bool Ok, string Text)> _tests = [];
     private readonly Stack<(List<RemoteConnection> Connections, List<ConnectionFolder> Folders)> _undo = new();
     private int _chip;
@@ -172,6 +175,9 @@ public sealed partial class ConnectionManagerView : UserControl
 
     public bool IsClosed => _done.Task.IsCompleted;
 
+    /// <summary>Puts the focus into the list of connections (its page is shown).</summary>
+    public void FocusTree() => _tree.Focus();
+
     /// <summary>Closes the manager: unfinished new connections are dropped, the rest saved.</summary>
     public void Close()
     {
@@ -244,19 +250,8 @@ public sealed partial class ConnectionManagerView : UserControl
         Grid.SetColumn(main, 2);
         grid.Children.AddRange([sideBorder, splitter, main]);
 
-        // the title row: what this is, and how to go back to the files
-        var close = new Button { Content = "✕", Padding = new Thickness(8, 2), Background = Brushes.Transparent, Focusable = false };
-        ToolTip.SetTip(close, "Close (Esc)");
-        close.Click += (_, _) => Close();
-        var title = new DockPanel { Margin = new Thickness(12, 6) };
-        DockPanel.SetDock(close, Dock.Right);
-        var caption = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
-        caption.Children.AddRange([GlyphIcon("MiGlobe", 16, new SolidColorBrush(Color.Parse("#4C8DFF"))),
-            new TextBlock { Text = "Connection manager", FontWeight = FontWeight.SemiBold, VerticalAlignment = VerticalAlignment.Center }]);
-        title.Children.AddRange([close, caption]);
-        var titleBorder = new Border { Child = title, BorderThickness = new Thickness(0, 0, 0, 1) };
-        titleBorder[!Border.BorderBrushProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SystemControlForegroundBaseLowBrush");
-        titleBorder[!Border.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("FmPanelHeaderBrush");
+        // the title row of every page: what this is, and how to go back to the files
+        var titleBorder = PageHeader.Create(MenuIcons.Create("nc_RemoteConnection"), "Connection manager", "Close (Esc)", Close);
         var root = new DockPanel();
         DockPanel.SetDock(titleBorder, Dock.Top);
         root.Children.AddRange([titleBorder, grid]);
@@ -403,12 +398,20 @@ public sealed partial class ConnectionManagerView : UserControl
             text.Children.Add(new TextBlock { Text = c.Name, TextTrimming = TextTrimming.CharacterEllipsis });
             text.Children.Add(new TextBlock
             {
-                Text = _untyped.Contains(c) ? Core.Localization.Localizer.T("no type chosen") : ConnectionChecks.Address(c),
+                Text = _unnamed.Contains(c) ? Core.Localization.Localizer.T("no name given yet")
+                    : _untyped.Contains(c) ? Core.Localization.Localizer.T("no type chosen") : ConnectionChecks.Address(c),
                 FontSize = 11, Opacity = 0.6, TextTrimming = TextTrimming.CharacterEllipsis,
             });
             if (c.Favorite)
             {
                 trailing.Children.Add(new TextBlock { Text = "★", Foreground = new SolidColorBrush(Color.Parse("#F0B232")) });
+            }
+            if (!_untyped.Contains(c) && !_unnamed.Contains(c) && ConnectionChecks.Problem(c) is { } problem)
+            {
+                // something that must be filled in is missing (or wrong): it cannot connect yet
+                var mark = new TextBlock { Text = "!", FontWeight = FontWeight.Bold, Foreground = new SolidColorBrush(Color.Parse("#ED4245")), Classes = { "noloc" } };
+                ToolTip.SetTip(mark, Core.Localization.Localizer.T(problem));
+                trailing.Children.Add(mark);
             }
             trailing.Children.Add(StatusDot(c));
         }
@@ -583,6 +586,7 @@ public sealed partial class ConnectionManagerView : UserControl
         };
         _settings.Connections.Add(connection);
         _newOnes.Add(connection);
+        _unnamed.Add(connection); // its name is asked first (user's request, 18 November 2026)
         if (protocol is null)
         {
             _untyped.Add(connection);
@@ -714,12 +718,12 @@ public sealed partial class ConnectionManagerView : UserControl
     /// <summary>Opens connections (valid ones only) and closes the window.</summary>
     public void Connect(IReadOnlyList<RemoteConnection> connections, bool right)
     {
-        var usable = connections.Where(c => !_untyped.Contains(c) && ConnectionChecks.Problem(c) is null).ToList();
+        var usable = connections.Where(c => !_untyped.Contains(c) && !_unnamed.Contains(c) && ConnectionChecks.Problem(c) is null).ToList();
         if (usable.Count == 0)
         {
-            if (connections.Count == 1 && ConnectionChecks.Problem(connections[0]) is { } problem)
+            if (connections.Count == 1)
             {
-                ShowProblem(problem);
+                ShowProblems(connections[0]);
             }
             return;
         }
@@ -730,9 +734,9 @@ public sealed partial class ConnectionManagerView : UserControl
     /// <summary>Writes the settings to the disk.</summary>
     public void Save()
     {
-        if (Current is { } c && ConnectionChecks.Problem(c) is { } problem)
+        if (Current is { } c && ConnectionChecks.Problem(c) is not null)
         {
-            ShowProblem(problem);
+            ShowProblems(c);
             return;
         }
         if (Current is { } named)
@@ -748,7 +752,7 @@ public sealed partial class ConnectionManagerView : UserControl
     /// <summary>Closing: new connections that were never filled in are dropped, the rest is saved.</summary>
     private void Finish()
     {
-        foreach (var c in _newOnes.Where(c => _untyped.Contains(c) || ConnectionChecks.Problem(c) is not null).ToList())
+        foreach (var c in _newOnes.Where(c => _untyped.Contains(c) || _unnamed.Contains(c) || ConnectionChecks.Problem(c) is not null).ToList())
         {
             _settings.Connections.Remove(c);
         }

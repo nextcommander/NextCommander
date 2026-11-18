@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using NextCommander.Core.Config;
+using NextCommander.Core.Net;
 using NextCommander.Core.Vfs;
 
 namespace NextCommander.Vfs.Remote;
@@ -17,6 +18,9 @@ public interface IRemoteProvider
     Task DisconnectAsync(VfsPath path);
 
     bool IsConnected(VfsPath path);
+
+    /// <summary>The connection settings used for a path (its log, its errors).</summary>
+    RemoteConnection ConnectionOf(VfsPath path);
 }
 
 public abstract class RemoteProviderBase<TClient> : IFileSystemProvider, IRemoteProvider, IAsyncDisposable
@@ -70,6 +74,7 @@ public abstract class RemoteProviderBase<TClient> : IFileSystemProvider, IRemote
         if (_servers.TryRemove(path.Scheme + "://" + path.Authority, out var server) && server.Pool is { } pool)
         {
             await pool.DisposeAsync().ConfigureAwait(false);
+            ConnectionLog.Info(server.Connection, "Disconnected.");
         }
     }
 
@@ -83,12 +88,53 @@ public abstract class RemoteProviderBase<TClient> : IFileSystemProvider, IRemote
         {
             return await server.Pool.RentAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex) when (ex is not (OperationCanceledException or IOException) && Translate(ex, path.Path) is { } translated)
+        catch (OperationCanceledException)
         {
-            // Cannot connect (host unreachable, refused, TLS failure...): an IO error like any other.
-            throw new IOException($"Could not connect to {server.Connection.Host}:{server.Connection.EffectivePort}: {translated.Message}", ex);
+            throw;
+        }
+        catch (LoginCancelledException ex)
+        {
+            ConnectionLog.Info(server.Connection, ex.Message);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Cannot connect (host unreachable, refused, TLS failure...): an IO error like any other, in the connection's log.
+            var failure = ex is not IOException && Translate(ex, path.Path) is { } translated
+                ? new IOException($"Could not connect to {server.Connection.Host}:{server.Connection.EffectivePort}: {translated.Message}", ex)
+                : ex;
+            ConnectionLog.Error(server.Connection, failure is IOException ? failure.Message : $"Could not connect: {failure.Message}", ex);
+            if (ReferenceEquals(failure, ex))
+            {
+                throw;
+            }
+            throw failure;
         }
     }
+
+    /// <summary>"Connecting to sftp://deploy@host:22 through bastion, via SOCKS5 proxy proxy:1080".</summary>
+    private static string ConnectingText(RemoteConnection connection)
+    {
+        var text = "Connecting to " + ConnectionLog.AddressOf(connection);
+        if (!string.IsNullOrWhiteSpace(connection.JumpHost))
+        {
+            text += " through the jump host " + connection.JumpHost.Trim();
+        }
+        if (connection.Proxy == NextCommander.Core.Net.ConnectionProxy.Custom)
+        {
+            text += $" via its own {connection.ProxyKind} proxy {connection.ProxyHost}" + (connection.ProxyPort > 0 ? ":" + connection.ProxyPort : string.Empty);
+        }
+        else if (connection.Proxy == NextCommander.Core.Net.ConnectionProxy.None)
+        {
+            text += " (no proxy)";
+        }
+        var login = !string.IsNullOrEmpty(connection.KeyFile) ? "key file " + Path.GetFileName(connection.KeyFile)
+            : connection.UseSshAgent ? "SSH agent" : null;
+        return login is null ? text + " ..." : text + $" (login: {login}) ...";
+    }
+
+    /// <summary>The user cancelled the login (logged as a step, not as an error).</summary>
+    private sealed class LoginCancelledException(string message) : IOException(message);
 
     private async Task<TClient> LoginAsync(Server server, CancellationToken cancellationToken)
     {
@@ -106,6 +152,8 @@ public abstract class RemoteProviderBase<TClient> : IFileSystemProvider, IRemote
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                var started = System.Diagnostics.Stopwatch.StartNew();
+                ConnectionLog.Info(connection, ConnectingText(connection));
                 try
                 {
                     var pinned = string.IsNullOrWhiteSpace(connection.PinnedFingerprint) ? null : connection.PinnedFingerprint.Trim();
@@ -116,6 +164,7 @@ public abstract class RemoteProviderBase<TClient> : IFileSystemProvider, IRemote
                         await succeeded(connection, server.Password).ConfigureAwait(false);
                     }
                     server.PasswordKnown = true;
+                    ConnectionLog.Info(connection, $"Connected and logged in ({started.ElapsedMilliseconds} ms).");
                     return client;
                 }
                 catch (UntrustedServerException ex) when (!string.IsNullOrWhiteSpace(connection.PinnedFingerprint))
@@ -129,15 +178,18 @@ public abstract class RemoteProviderBase<TClient> : IFileSystemProvider, IRemote
                 }
                 catch (UntrustedServerException ex)
                 {
+                    ConnectionLog.Info(connection, $"The server's key or certificate is {(ex.Changed ? "changed" : "not known yet")}: {ex.Fingerprint}");
                     var accepted = Hooks.ConfirmFingerprint is { } confirm && await confirm(connection, ex.Fingerprint, ex.Description, ex.Changed).ConfigureAwait(false);
                     if (!accepted)
                     {
                         throw new IOException($"{connection.Host}: server key/certificate was not accepted.", ex);
                     }
+                    ConnectionLog.Info(connection, "The server's key or certificate was accepted.");
                     server.TrustedFingerprint = ex.Fingerprint;
                 }
                 catch (Exception ex) when (IsAuthenticationFailure(ex))
                 {
+                    ConnectionLog.Error(connection, $"Login failed: {ex.Message}", ex);
                     var retry = server.PasswordKnown && (server.Password is not null || !string.IsNullOrEmpty(connection.KeyFile));
                     server.Password = await AskPasswordAsync(connection, retry).ConfigureAwait(false);
                     server.PasswordKnown = true;
@@ -154,7 +206,7 @@ public abstract class RemoteProviderBase<TClient> : IFileSystemProvider, IRemote
     {
         var password = Hooks.GetPassword is null ? null : await Hooks.GetPassword(connection, retry).ConfigureAwait(false);
         // A connection problem (not an access right of one folder): the panel reports it and stays where it was.
-        return password ?? throw new IOException($"{connection.User}@{connection.Host}: login cancelled.");
+        return password ?? throw new LoginCancelledException($"{connection.User}@{connection.Host}: login cancelled.");
     }
 
     /// <summary>Opens and logs in one client. Throws <see cref="UntrustedServerException"/> for keys / certificates not in <paramref name="trustedFingerprint"/>.</summary>
@@ -185,6 +237,7 @@ public abstract class RemoteProviderBase<TClient> : IFileSystemProvider, IRemote
             catch (Exception ex) when (ex is not OperationCanceledException && Translate(ex, path.Path) is { } translated)
             {
                 lease.Broken |= IsConnectionFailure(ex);
+                LogFailure(path, translated, ex);
                 throw translated;
             }
             catch (OperationCanceledException)
@@ -192,6 +245,15 @@ public abstract class RemoteProviderBase<TClient> : IFileSystemProvider, IRemote
                 lease.Broken = true; // a transfer interrupted mid-way leaves the connection in an unknown state
                 throw;
             }
+        }
+    }
+
+    /// <summary>An operation on the server failed: in the connection's log (a missing file is an answer, not an error).</summary>
+    private void LogFailure(VfsPath path, Exception translated, Exception original)
+    {
+        if (translated is not (FileNotFoundException or DirectoryNotFoundException))
+        {
+            ConnectionLog.Error(ServerOf(path).Connection, $"{path.Path}: {translated.Message}", original);
         }
     }
 
@@ -215,6 +277,7 @@ public abstract class RemoteProviderBase<TClient> : IFileSystemProvider, IRemote
         {
             lease.Broken |= IsConnectionFailure(ex);
             await lease.DisposeAsync().ConfigureAwait(false);
+            LogFailure(path, translated, ex);
             throw translated;
         }
         catch

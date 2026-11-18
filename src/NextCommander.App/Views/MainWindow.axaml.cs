@@ -198,29 +198,30 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// The connection manager in place of the left file panel, whichever panel is active (user's request, 15 November
-    /// 2026); the panel comes back when it closes (connecting, Esc or its close button). A manager already open is closed first.
+    /// The connection manager as a page of its own with a tab, like the maximized internal terminal (user's request, 18
+    /// November 2026; before: in place of the left panel); the page goes when it closes (connecting, Esc, its × or its
+    /// tab's ×). A manager already open is closed first.
     /// </summary>
     public async Task<Connections.ConnectionManagerResult?> ShowConnectionManagerAsync(Connections.ConnectionManagerView view)
     {
-        foreach (var side in new[] { LeftSideView, RightSideView })
-        {
-            if (side.Overlay is Connections.ConnectionManagerView open)
-            {
-                open.Close();
-            }
-        }
-        var host = LeftSideView;
-        host.ShowOverlay(view);
+        ConnectionManager?.Close();
+        ConnectionsHost.Child = view;
+        SelectPage(WorkspacePage.Connections);
         try
         {
             return await view.Done;
         }
         finally
         {
-            if (ReferenceEquals(host.Overlay, view))
+            if (ReferenceEquals(ConnectionsHost.Child, view))
             {
-                host.HideOverlay();
+                ConnectionsHost.Child = null;
+                var wasShown = _page == WorkspacePage.Connections;
+                ApplyPage();
+                if (wasShown)
+                {
+                    ActiveView.FocusList();
+                }
             }
         }
     }

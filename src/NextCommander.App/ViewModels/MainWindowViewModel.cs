@@ -318,6 +318,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         panel.ResolveNetworkTarget = ResolveNetworkTargetAsync;
         panel.PropertyChanged += OnPanelPropertyChanged;
         panel.ErrorOccurred += OnPanelError;
+        panel.ConnectionFailed += OnConnectionFailed;
         panel.PermissionNeeded += OnPermissionNeeded;
         panel.Navigated += OnPanelNavigated;
         panel.ViewModeSwitched += (_, e) =>
@@ -652,6 +653,59 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
 
     private async void OnPanelError(object? sender, string message) =>
         await _dialogs.ShowMessageAsync("Error", message);
+
+    /// <summary>A server could not be opened: the connection, the error with its causes and its log (the log can be shown).</summary>
+    private async void OnConnectionFailed(object? sender, ConnectionError error) =>
+        await ShowConnectionErrorAsync(error.Connection, error.Path.ToDisplayString(), error.Error);
+
+    /// <summary>
+    /// The error of a connection on the screen (user's request, 18 November 2026): which connection (name and address),
+    /// where, the error with its causes and where its log is; "Show the log" opens the log in the Lister.
+    /// </summary>
+    public async Task ShowConnectionErrorAsync(RemoteConnection connection, string? where, Exception error)
+    {
+        var text = ConnectionErrorText(connection, where, error);
+        if (NextCommander.Core.Net.ConnectionLog.FileOf(connection) is { } file && File.Exists(file))
+        {
+            if (await _dialogs.ConfirmAsync("Connection error", text, "Show the log"))
+            {
+                ShowConnectionLog(connection);
+            }
+            return;
+        }
+        await _dialogs.ShowMessageAsync("Connection error", text);
+    }
+
+    /// <summary>The text of a connection's error: the connection, the place, the causes, the log file.</summary>
+    public static string ConnectionErrorText(RemoteConnection connection, string? where, Exception error)
+    {
+        var address = NextCommander.Core.Net.ConnectionLog.AddressOf(connection);
+        var lines = new List<string> { $"{NextCommander.Core.Net.ConnectionLog.NameOf(connection)} · {address}" };
+        if (!string.IsNullOrEmpty(where) && !where.StartsWith(address, StringComparison.Ordinal))
+        {
+            lines.Add(where);
+        }
+        lines.Add(string.Empty);
+        lines.Add(NextCommander.Core.Net.ConnectionLog.Causes(error));
+        if (NextCommander.Core.Net.ConnectionLog.FileOf(connection) is { } file)
+        {
+            lines.Add(string.Empty);
+            lines.Add(NextCommander.Core.Localization.Localizer.T("The connection's log:") + " " + file);
+        }
+        return string.Join('\n', lines);
+    }
+
+    /// <summary>A connection's log file in the Lister.</summary>
+    public void ShowConnectionLog(RemoteConnection connection)
+    {
+        if (NextCommander.Core.Net.ConnectionLog.FileOf(connection) is not { } file || !File.Exists(file))
+        {
+            return;
+        }
+        var info = new FileInfo(file);
+        var entry = new VfsEntry { Name = info.Name, Path = VfsPath.Local(file), Size = info.Length, LastWriteTime = info.LastWriteTime };
+        _dialogs.ShowLister(new ListerRequest([entry], 0, Tools));
+    }
 
     /// <summary>
     /// A folder the system's privacy settings keep the application out of (the macOS Trash without Full Disk Access):
@@ -2813,11 +2867,13 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         {
             try
             {
+                NextCommander.Core.Net.ConnectionLog.Info(connection, "Opening in the VNC viewer ...");
                 await NextCommander.Platform.VncLauncher.LaunchAsync(connection);
             }
             catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception or IOException or UnauthorizedAccessException)
             {
-                await _dialogs.ShowMessageAsync("VNC", ex.Message);
+                NextCommander.Core.Net.ConnectionLog.Error(connection, "The VNC viewer could not be opened: " + ex.Message, ex);
+                await ShowConnectionErrorAsync(connection, null, ex);
             }
             return;
         }
@@ -2853,11 +2909,13 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         }
         try
         {
+            NextCommander.Core.Net.ConnectionLog.Info(connection, "Opening in the system's remote desktop client ...");
             await NextCommander.Platform.RemoteDesktopLauncher.LaunchAsync(connection, password, folder);
         }
         catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception or IOException or UnauthorizedAccessException)
         {
-            await _dialogs.ShowMessageAsync("Remote desktop", ex.Message);
+            NextCommander.Core.Net.ConnectionLog.Error(connection, "The remote desktop client could not be opened: " + ex.Message, ex);
+            await ShowConnectionErrorAsync(connection, null, ex);
         }
     }
 
@@ -4660,3 +4718,6 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
 
 /// <summary>An RDP session for a tab of the main window: the connection, its password and the shared folder (or null).</summary>
 public sealed record RemoteDesktopRequest(RemoteConnection Connection, string? Password, string? Folder);
+
+/// <summary>A server's folder could not be opened: its connection, the folder and the error.</summary>
+public sealed record ConnectionError(RemoteConnection Connection, VfsPath Path, Exception Error);

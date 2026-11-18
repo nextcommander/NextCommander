@@ -269,15 +269,8 @@ public sealed class SyncDirsView : UserControl
         var options = new DockPanel();
         DockPanel.SetDock(compare, Dock.Right);
         options.Children.AddRange([compare, chips]);
-        var close = new Button { Content = "×", Classes = { "tabclose" }, FontSize = 18, Padding = new Thickness(8, 0), Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Top };
-        ToolTip.SetTip(close, "Close (Esc)");
-        Avalonia.Automation.AutomationProperties.SetName(close, "Close");
-        close.Click += (_, _) => Close();
-        var pathRow = new DockPanel();
-        DockPanel.SetDock(close, Dock.Right);
-        pathRow.Children.AddRange([close, paths]);
         var top = new StackPanel { Spacing = 12, Margin = new Thickness(18, 14, 18, 12) };
-        top.Children.AddRange([pathRow, options]);
+        top.Children.AddRange([paths, options]);
 
         // the filters and the name filter
         var filters = new WrapPanel { ItemSpacing = 8, LineSpacing = 8, VerticalAlignment = VerticalAlignment.Center };
@@ -352,6 +345,8 @@ public sealed class SyncDirsView : UserControl
         foot.Children.AddRange([_sync, _plan]);
 
         var root = new DockPanel();
+        // the title bar of every page: the internal terminal's top line, the name, ✕ at the right
+        root.Children.Add(PageHeader.Create(Services.MenuIcons.Create("nc_SyncDirs"), Title, "Close (Esc)", Close));
         var topBorder = Bordered(top, new Thickness(0, 0, 0, 1));
         var summaryBorder = Bordered(summary, new Thickness(0, 0, 0, 1));
         var footBorder = Bordered(foot, new Thickness(0, 1, 0, 0));

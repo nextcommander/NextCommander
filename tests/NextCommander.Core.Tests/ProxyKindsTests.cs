@@ -192,7 +192,7 @@ public sealed class ProxyKindsTests : IDisposable
     [Fact]
     public void The_connections_own_proxy_is_checked_with_the_connection()
     {
-        var c = new RemoteConnection { Host = "files.example.com", Proxy = ConnectionProxy.Custom, ProxyKind = ProxyKind.Socks5 };
+        var c = new RemoteConnection { Host = "files.example.com", User = "deploy", Proxy = ConnectionProxy.Custom, ProxyKind = ProxyKind.Socks5 };
         Assert.Equal("The proxy server is empty.", ConnectionChecks.Problem(c));
         c.ProxyHost = "proxy.corp";
         Assert.Null(ConnectionChecks.Problem(c));

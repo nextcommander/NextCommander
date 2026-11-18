@@ -127,7 +127,19 @@ public sealed class RemoteDialogsTests : IDisposable
         await SettleAsync();
         var created = window.NewConnection(null);
         await SettleAsync();
+        // first its name (not empty, not another connection's), then its type
+        Assert.True(Shown(window, "First give the connection a name: the list shows it by this name, and its log is kept under it."));
+        Assert.Equal("Enter a name for the connection.", window.ApplyName(created, "  "));
+        Assert.Equal("Another connection has this name; choose another.", window.ApplyName(created, "PROD-web-01"));
+        Click(ButtonOf(window, "Next ›"));
+        await SettleAsync();
+        Assert.Equal("Enter a name for the connection.", window.ProblemText);
+        window.GetVisualDescendants().OfType<TextBox>().First(t => t.PlaceholderText == "e.g. Production web server").Text = "My storage";
+        Click(ButtonOf(window, "Next ›"));
+        await SettleAsync();
+        Assert.Equal("My storage", created.Name);
         Assert.True(Shown(window, "Choose the type, or paste an address"));
+        created.Name = "New connection"; // as if unnamed: the type names it below
         Assert.Contains(window.GetVisualDescendants().OfType<Button>(), b => b.Content is StackPanel p && p.Children.OfType<StackPanel>().Any(s => s.Children.OfType<TextBlock>().Any(t => t.Text == "Azure Files")));
 
         window.ChooseType(created, RemoteProtocol.S3);
@@ -238,6 +250,7 @@ public sealed class RemoteDialogsTests : IDisposable
 
         // Azure: key or Entra ID
         var azure = window.NewConnection(RemoteProtocol.AzureBlob);
+        Assert.Null(window.ApplyName(azure, "blobs")); // the type is known: its settings come after the name
         await SettleAsync();
         window.GetVisualDescendants().OfType<TabControl>().Single().SelectedIndex = 1;
         await SettleAsync();
@@ -300,6 +313,9 @@ public sealed class RemoteDialogsTests : IDisposable
         var (window, _) = Open(settings, RemoteProtocol.Dropbox);
         await SettleAsync();
         Assert.Equal(RemoteProtocol.Dropbox, window.Current!.Protocol);
+        Assert.True(Shown(window, "New connection")); // the name first
+        Assert.Null(window.ApplyName(window.Current, "My Dropbox"));
+        await SettleAsync();
         window.GetVisualDescendants().OfType<TabControl>().Single().SelectedIndex = 1;
         await SettleAsync();
         Assert.True(Shown(window, "Application id"));
