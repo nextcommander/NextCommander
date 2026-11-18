@@ -405,7 +405,7 @@ public static partial class OfficeHtml
     }
 
     /// <summary>A sheet as an HTML table with the column letters above and the row numbers on the left.</summary>
-    private static void Grid(Writer w, int rows, int columns, Func<int, int, string?> value)
+    private static void Grid(Writer w, int rows, int columns, Func<int, int, string?> value, Func<int, int, bool>? bold = null)
     {
         w.Raw("<table><tr><th></th>");
         for (var c = 1; c <= columns; c++)
@@ -420,7 +420,8 @@ public static partial class OfficeHtml
             {
                 var text = value(r, c);
                 var number = text is not null && double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out _);
-                w.Raw(number ? "<td style=\"text-align: right\">" : "<td>").Escaped(text).Raw("</td>");
+                var strong = text is not null && bold?.Invoke(r, c) == true;
+                w.Raw(number ? "<td style=\"text-align: right\">" : "<td>").Raw(strong ? "<b>" : string.Empty).Escaped(text).Raw(strong ? "</b>" : string.Empty).Raw("</td>");
             }
             w.Raw("</tr>");
         }

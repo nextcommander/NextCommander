@@ -1,7 +1,9 @@
 using System.Globalization;
 using System.IO.Compression;
 using System.Text;
+using Avalonia;
 using Avalonia.Headless;
+using Avalonia.Input;
 using Avalonia.Headless.XUnit;
 using NextCommander.App.Services;
 using NextCommander.App.Views.Lister;
@@ -150,6 +152,26 @@ public sealed class DocumentPreviewUiTests : IDisposable
         {
             await SettleAsync(6);
             window.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "lister-pdf-find.png"));
+        }
+
+        // a mouse drag selects across pages; Shift+click extends from where it started
+        window.Height = 1300;
+        await SettleAsync(4);
+        Point At(int page, int character) => pages.TranslatePoint(pages.PointOf(page, character)!.Value, window)!.Value;
+        window.MouseDown(At(4, 0), MouseButton.Left);
+        window.MouseMove(At(5, 3), RawInputModifiers.LeftMouseButton);
+        window.MouseUp(At(5, 3), MouseButton.Left);
+        Assert.Equal((5, 6), pages.SelectedPages);
+        Assert.Equal("Total due 4" + Environment.NewLine + "Page", pages.SelectedText);
+        window.MouseDown(At(5, 1), MouseButton.Left, RawInputModifiers.Shift);
+        window.MouseUp(At(5, 1), MouseButton.Left, RawInputModifiers.Shift);
+        Assert.Equal("Total due 4" + Environment.NewLine + "Pa", pages.SelectedText);
+        pages.Select(4, 6, 5, 1);
+        Assert.Equal("due 4" + Environment.NewLine + "Pa", pages.SelectedText);
+        if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } across)
+        {
+            await SettleAsync(6);
+            window.CaptureRenderedFrame()!.SavePng(Path.Combine(across, "lister-pdf-select-pages.png"));
         }
 
         // a protected PDF asks for its password: a wrong one asks again, cancelling shows why it is not shown

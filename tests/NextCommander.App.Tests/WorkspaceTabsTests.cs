@@ -204,4 +204,59 @@ public sealed class WorkspaceTabsTests : IDisposable
             Assert.False(icon is PathIcon p && ReferenceEquals(p.Data, plain));
         }
     }
+
+    [AvaloniaFact]
+    public async Task A_remote_desktop_opens_in_a_tab_of_its_own()
+    {
+        var (w, vm) = await _fx.OpenAsync();
+        vm.CanEmbedRemoteDesktop = () => true;
+        var office = new Core.Config.RemoteConnection { Name = "office pc", Protocol = Core.Config.RemoteProtocol.Rdp, Host = "pc.corp", User = "ali" };
+        var lab = new Core.Config.RemoteConnection { Name = "lab", Protocol = Core.Config.RemoteProtocol.Rdp, Host = "lab.corp" };
+        _fx.Dialogs.Logins.Enqueue(("secret", false)); // no saved password: asked first
+        await vm.OpenSessionAsync(office);
+        await SettleAsync(2);
+        Assert.Empty(_fx.Dialogs.Logins);
+        var desktop = Assert.Single(w.RemoteDesktops);
+        Assert.Same(office, desktop.Connection);
+        Assert.Equal(WorkspacePage.RemoteDesktop, w.CurrentPage);
+        Assert.True(desktop.IsEffectivelyVisible);
+        Assert.Equal(RemoteDesktopState.Connecting, desktop.State);
+        Assert.Contains(Tabs(w), t => t.GetVisualDescendants().OfType<TextBlock>().Any(b => b.Text == "office pc"));
+
+        _fx.Dialogs.Logins.Enqueue(("other", false));
+        await vm.OpenSessionAsync(lab);
+        await SettleAsync(2);
+        Assert.Equal([WorkspacePage.Files, WorkspacePage.RemoteDesktop, WorkspacePage.RemoteDesktop], w.OpenPages);
+        Assert.Same(w.RemoteDesktops[1], w.CurrentRemoteDesktop);
+        Assert.False(desktop.IsEffectivelyVisible); // the first one keeps its session, hidden
+        w.SelectNextPage(); // around: the files
+        Assert.Equal(WorkspacePage.Files, w.CurrentPage);
+        w.SelectNextPage();
+        Assert.Same(desktop, w.CurrentRemoteDesktop);
+        Assert.True(desktop.IsEffectivelyVisible);
+
+        // the session ends: the tab says so and offers to connect again
+        desktop.Ended("The remote desktop session ended.");
+        await SettleAsync();
+        Assert.Equal(RemoteDesktopState.Ended, desktop.State);
+        Assert.Equal("The remote desktop session ended.", desktop.EndedText);
+        desktop.Start();
+        Assert.Equal(RemoteDesktopState.Connecting, desktop.State);
+        Assert.Null(desktop.EndedText);
+
+        // its tab's ×: the session ends, the next one is shown; the last one closed: the files
+        w.ClosePage(WorkspacePage.RemoteDesktop);
+        await SettleAsync();
+        Assert.Same(w.RemoteDesktops.Single(), w.CurrentRemoteDesktop);
+        Assert.Equal(WorkspacePage.RemoteDesktop, w.CurrentPage);
+        w.CurrentRemoteDesktop!.Close();
+        await SettleAsync();
+        Assert.Empty(w.RemoteDesktops);
+        Assert.Equal([WorkspacePage.Files], w.OpenPages);
+        Assert.Equal(WorkspacePage.Files, w.CurrentPage);
+
+        // its own window asked for: not in a tab (the system's client starts; none here is fine)
+        vm.CanEmbedRemoteDesktop = () => false;
+        Assert.False(Core.Net.RemoteDesktop.OpensInTab(new Core.Config.RemoteConnection { Protocol = Core.Config.RemoteProtocol.Rdp, RdpOwnWindow = true }));
+    }
 }

@@ -72,6 +72,37 @@ public static partial class RemoteDesktopLauncher
         throw new InvalidOperationException("No remote desktop client found. Install FreeRDP (the freerdp3-x11 or freerdp2-x11 package) or Remmina.");
     }
 
+    /// <summary>The FreeRDP that can draw into another program's window (the X11 client: /parent-window), or null.</summary>
+    public static string? EmbeddingFreeRdp => OperatingSystem.IsLinux() ? FindProgram(["xfreerdp3", "xfreerdp"]) : null;
+
+    /// <summary>
+    /// Whether a session can be shown in a tab of NextCommander: Windows' Remote Desktop control, or the X11 FreeRDP on
+    /// Linux. macOS has neither (its client opens a window of its own).
+    /// </summary>
+    public static bool CanEmbed => OperatingSystem.IsWindows() ? Windows.RemoteDesktopControl.IsAvailable : EmbeddingFreeRdp is not null;
+
+    /// <summary>
+    /// Linux: FreeRDP drawing the session into the X11 window <paramref name="window"/> of <paramref name="width"/> ×
+    /// <paramref name="height"/> pixels; the password (when given) goes to its standard input.
+    /// </summary>
+    public static async Task<Process> StartEmbeddedAsync(RemoteConnection connection, string? password, string? folder, ulong window, int width, int height)
+    {
+        var freeRdp = EmbeddingFreeRdp ?? throw new InvalidOperationException("No remote desktop client found. Install FreeRDP (the freerdp3-x11 or freerdp2-x11 package).");
+        var stdin = !string.IsNullOrEmpty(password);
+        var info = new ProcessStartInfo(freeRdp) { UseShellExecute = false, RedirectStandardInput = stdin };
+        foreach (var arg in RemoteDesktop.EmbeddedFreeRdpArguments(connection, stdin, folder, window, width, height))
+        {
+            info.ArgumentList.Add(arg);
+        }
+        var process = Start(info);
+        if (stdin)
+        {
+            await process.StandardInput.WriteLineAsync(password).ConfigureAwait(false);
+            process.StandardInput.Close();
+        }
+        return process;
+    }
+
     private static Process Start(ProcessStartInfo info) =>
         Process.Start(info) ?? throw new InvalidOperationException("The remote desktop client did not start: " + info.FileName);
 

@@ -55,6 +55,42 @@ public sealed class ConnectionTypeOptionsTests
     }
 
     [Fact]
+    public void Rdp_in_a_tab_sets_the_control_and_freerdp_for_the_tab()
+    {
+        var c = new RemoteConnection { Protocol = RemoteProtocol.Rdp, Host = "pc.corp", Port = 3390, User = @"CORP\ali", RdpGateway = "gw.corp", RdpAudio = RdpAudio.None, RdpShareFolder = true };
+        Assert.True(RemoteDesktop.OpensInTab(c));
+        var settings = RemoteDesktop.ControlSettings(c, 1600, 900);
+        object? Value(RdpControlPart part, string name) => settings.Single(s => s.Part == part && s.Property == name).Value;
+        Assert.Equal("pc.corp", Value(RdpControlPart.Client, "Server"));
+        Assert.Equal(("CORP", "ali"), (Value(RdpControlPart.Client, "Domain"), Value(RdpControlPart.Client, "UserName")));
+        Assert.Equal((1600, 900), (Value(RdpControlPart.Client, "DesktopWidth"), Value(RdpControlPart.Client, "DesktopHeight"))); // the tab's size
+        Assert.Equal(3390, Value(RdpControlPart.Advanced, "RDPPort"));
+        Assert.Equal(true, Value(RdpControlPart.Advanced, "RedirectDrives")); // the control shares all drives for the folder
+        Assert.Equal(false, Value(RdpControlPart.Advanced, "SmartSizing"));
+        Assert.Equal(2, Value(RdpControlPart.Secured, "AudioRedirectionMode"));
+        Assert.Equal("gw.corp", Value(RdpControlPart.Transport, "GatewayHostname"));
+        Assert.DoesNotContain(settings, s => s.Property == "ConnectToAdministerServer");
+
+        var args = RemoteDesktop.EmbeddedFreeRdpArguments(c, true, "/home/ali/Reports", 0x3a00007, 1600, 900);
+        Assert.Equal(["/v:pc.corp:3390", "/parent-window:60817415", "/size:1600x900"], args.Take(3));
+        Assert.DoesNotContain("/dynamic-resolution", args);
+        Assert.Contains("/drive:Reports,/home/ali/Reports", args);
+        Assert.Contains("/from-stdin:force", args);
+
+        // a fixed size is scaled into the tab; a tiny tab still gets a usable desktop
+        c.RdpWidth = 1280;
+        c.RdpHeight = 720;
+        Assert.Equal((1280, 720), (RemoteDesktop.ControlSettings(c, 10, 10).Single(s => s.Property == "DesktopWidth").Value, RemoteDesktop.ControlSettings(c, 10, 10).Single(s => s.Property == "DesktopHeight").Value));
+        Assert.Equal(true, RemoteDesktop.ControlSettings(c, 1600, 900).Single(s => s.Property == "SmartSizing").Value);
+        Assert.Equal(["/size:1280x720", "/smart-sizing:1600x900"], RemoteDesktop.EmbeddedFreeRdpArguments(c, false, null, 7, 1600, 900).Skip(2).Take(2));
+        Assert.Equal(200, RemoteDesktop.ControlSettings(new RemoteConnection { Protocol = RemoteProtocol.Rdp, Host = "x" }, 10, 10).Single(s => s.Property == "DesktopWidth").Value);
+
+        // its own window: full screen, or the connection asks for it
+        Assert.False(RemoteDesktop.OpensInTab(new RemoteConnection { Protocol = RemoteProtocol.Rdp, FullScreen = true }));
+        Assert.False(RemoteDesktop.OpensInTab(new RemoteConnection { Protocol = RemoteProtocol.Rdp, RdpOwnWindow = true }));
+    }
+
+    [Fact]
     public void S3_uploads_carry_the_storage_class_acl_and_encryption()
     {
         var c = new RemoteConnection { Protocol = RemoteProtocol.S3, S3StorageClass = "STANDARD_IA", S3Acl = "bucket-owner-full-control", S3Encryption = S3Encryption.Aes256 };

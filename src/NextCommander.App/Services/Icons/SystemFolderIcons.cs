@@ -116,14 +116,31 @@ public static class SystemFolderIcons
     // ------------------------------------------------------------ macOS
 
     /// <summary>NSWorkspace iconForFile: the Finder icon of the folder as PNG.</summary>
-    internal static Bitmap? MacIcon(string path)
+    internal static Bitmap? MacIcon(string path) => MacImage(() =>
+    {
+        var workspace = Send(Class("NSWorkspace"), Sel("sharedWorkspace"));
+        var nsPath = WithUtf8(path, p => Send(Class("NSString"), Sel("stringWithUTF8String:"), p));
+        return Send(workspace, Sel("iconForFile:"), nsPath);
+    });
+
+    /// <summary>
+    /// A named image of AppKit (<c>[NSImage imageNamed:]</c>, e.g. "NSTrashEmpty" / "NSTrashFull": the Dock's and
+    /// Finder's Trash) as PNG; the Trash folder itself (~/.Trash) only has a plain folder icon.
+    /// </summary>
+    internal static Bitmap? MacNamedIcon(string name) => MacImage(() =>
+    {
+        var nsName = WithUtf8(name, p => Send(Class("NSString"), Sel("stringWithUTF8String:"), p));
+        var image = Send(Class("NSImage"), Sel("imageNamed:"), nsName);
+        // a shared image: draw a copy so setSize: does not change the system's one
+        return image == IntPtr.Zero ? IntPtr.Zero : Send(Send(image, Sel("copy")), Sel("autorelease"));
+    });
+
+    private static Bitmap? MacImage(Func<IntPtr> imageOf)
     {
         var pool = objc_autoreleasePoolPush();
         try
         {
-            var workspace = Send(Class("NSWorkspace"), Sel("sharedWorkspace"));
-            var nsPath = WithUtf8(path, p => Send(Class("NSString"), Sel("stringWithUTF8String:"), p));
-            var image = Send(workspace, Sel("iconForFile:"), nsPath);
+            var image = imageOf();
             if (image == IntPtr.Zero)
             {
                 return null;

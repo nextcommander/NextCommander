@@ -6,8 +6,9 @@ namespace NextCommander.Core.Documents;
 
 /// <summary>
 /// The old binary Office formats (Word 97-2003 .doc, Excel 97-2003 .xls, PowerPoint 97-2003 .ppt) read without Office or
-/// LibreOffice, at the level of their text: the main text of a document in paragraphs, the visible sheets of a workbook
-/// as tables (text, numbers, dates, formula results), the texts of the slides. Protected files say so.
+/// LibreOffice, at the level of their text: the main text of a document in paragraphs, headings and tables with its
+/// runs' bold / italic / underline, the visible sheets of a workbook as tables (text, numbers, dates, formula results,
+/// bold cells), the texts of the slides. Protected files say so.
 /// </summary>
 public static partial class OfficeHtml
 {
@@ -90,6 +91,7 @@ public static partial class OfficeHtml
         var plc = at + 5;
         var pieces = (lcb - 4) / 12;
         var text = new StringBuilder();
+        var positions = new List<int>(); // each character's place in the WordDocument stream: its formatting is found by it
         for (var i = 0; i < pieces && text.Length < ccpText; i++)
         {
             var cpStart = (int)U32(table, plc + i * 4);
@@ -106,42 +108,214 @@ public static partial class OfficeHtml
                 if (offset >= 0 && offset + count <= document.Length)
                 {
                     text.Append(s_ansi.GetString(document, offset, count)); // 8-bit text (cp1252)
+                    positions.AddRange(Enumerable.Range(offset, count));
                 }
             }
             else if (fc + count * 2 <= document.Length)
             {
                 text.Append(Encoding.Unicode.GetString(document, (int)fc, count * 2));
+                positions.AddRange(Enumerable.Range(0, count).Select(k => (int)fc + k * 2));
             }
         }
-        WordText(w, text.ToString());
+        WordText(w, text.ToString(), positions, new DocFormats(document, table, fcLcb));
     }
 
-    /// <summary>Word's text with its marks: paragraphs (CR), cells (7), line breaks (11), fields (19 code 20 result 21).</summary>
-    private static void WordText(Writer w, string text)
+    /// <summary>The formatting of a character run: what is drawn of it.</summary>
+    private readonly record struct DocRun(bool Bold, bool Italic, bool Underline, bool Strike);
+
+    /// <summary>The properties of a paragraph used here: its style (1-9: Heading 1-9), in a table, a table row's end.</summary>
+    private readonly record struct DocParagraph(int Style, bool InTable, bool RowEnd);
+
+    /// <summary>
+    /// The direct formatting of a Word 97-2003 document: the character runs (bold, italic, underline, strikethrough) and
+    /// the paragraphs (style, table cell, row end) from the formatted disk pages (FKPs) of the CHPX and PAPX bin tables,
+    /// by place in the WordDocument stream.
+    /// </summary>
+    private sealed class DocFormats
     {
-        var paragraph = new StringBuilder();
-        var fieldDepth = 0;
-        var inCode = new Stack<bool>();
-        void Flush()
+        private readonly List<(int Start, int End, DocRun Run)> _runs = [];
+        private readonly List<(int Start, int End, DocParagraph Paragraph)> _paragraphs = [];
+
+        public DocFormats(byte[] document, byte[] table, int fcLcb)
         {
-            var line = paragraph.ToString().Trim();
-            if (line.Length > 0)
+            // FibRgFcLcb97: fcPlcfBteChpx / lcbPlcfBteChpx are its 13th pair, fcPlcfBtePapx / lcbPlcfBtePapx the 14th
+            foreach (var (pages, characters) in new[] { (Pages(document, table, fcLcb + 12 * 8), true), (Pages(document, table, fcLcb + 13 * 8), false) })
             {
-                w.Raw("<p>").Escaped(line).Raw("</p>");
+                foreach (var page in pages)
+                {
+                    if (characters)
+                    {
+                        ReadCharacters(document, page);
+                    }
+                    else
+                    {
+                        ReadParagraphs(document, page);
+                    }
+                }
             }
-            paragraph.Clear();
+            _runs.Sort((a, b) => a.Start.CompareTo(b.Start));
+            _paragraphs.Sort((a, b) => a.Start.CompareTo(b.Start));
         }
-        foreach (var ch in text)
+
+        /// <summary>Whether the document gave paragraph properties (else tables are guessed from the cell marks).</summary>
+        public bool HasParagraphs => _paragraphs.Count > 0;
+
+        /// <summary>The offsets of the 512-byte pages a bin table (PlcfBte) points to.</summary>
+        private static IEnumerable<int> Pages(byte[] document, byte[] table, int pair)
         {
-            if (w.Full)
+            var fc = (int)U32(document, pair);
+            var lcb = (int)U32(document, pair + 4);
+            if (lcb < 12 || fc < 0 || fc + lcb > table.Length)
             {
-                w.Cut = true;
-                return;
+                yield break;
             }
+            var count = (lcb - 4) / 8;
+            for (var i = 0; i < count; i++)
+            {
+                var page = (int)(U32(table, fc + (count + 1) * 4 + i * 4) & 0x3FFFFF) * 512;
+                if (page > 0 && page + 512 <= document.Length)
+                {
+                    yield return page;
+                }
+            }
+        }
+
+        private void ReadCharacters(byte[] document, int page)
+        {
+            var count = document[page + 511];
+            for (var i = 0; i < count && (count + 1) * 4 + count <= 511; i++)
+            {
+                var (bold, italic, underline, strike) = (false, false, false, false);
+                var offset = document[page + (count + 1) * 4 + i] * 2;
+                if (offset > 0)
+                {
+                    var at = page + offset;
+                    Sprms(document, at + 1, document[at], (sprm, operand) =>
+                    {
+                        switch (sprm)
+                        {
+                            case 0x0835: // sprmCFBold: 1 on, 0x81 the style's opposite (taken as on)
+                                bold = document[operand] is 1 or 0x81;
+                                break;
+                            case 0x0836: // sprmCFItalic
+                                italic = document[operand] is 1 or 0x81;
+                                break;
+                            case 0x0837: // sprmCFStrike
+                                strike = document[operand] is 1 or 0x81;
+                                break;
+                            case 0x2A3E: // sprmCKul: the kind of underline, 0 none
+                                underline = document[operand] != 0;
+                                break;
+                        }
+                    });
+                }
+                _runs.Add(((int)U32(document, page + i * 4), (int)U32(document, page + (i + 1) * 4), new DocRun(bold, italic, underline, strike)));
+            }
+        }
+
+        private void ReadParagraphs(byte[] document, int page)
+        {
+            var count = document[page + 511];
+            for (var i = 0; i < count && (count + 1) * 4 + count * 13 <= 511; i++)
+            {
+                var offset = document[page + (count + 1) * 4 + i * 13] * 2;
+                var (style, inTable, rowEnd) = (0, false, false);
+                if (offset > 0)
+                {
+                    var at = page + offset;
+                    var (start, length) = document[at] != 0 ? (at + 1, document[at] * 2 - 1) : (at + 2, document[at + 1] * 2);
+                    style = U16(document, start);
+                    Sprms(document, start + 2, length - 2, (sprm, operand) =>
+                    {
+                        switch (sprm)
+                        {
+                            case 0x2416: // sprmPFInTable
+                                inTable |= document[operand] != 0;
+                                break;
+                            case 0x2417: // sprmPFTtp: the mark ending a table row
+                                rowEnd |= document[operand] != 0;
+                                break;
+                            case 0x6649: // sprmPItap: the table depth
+                                inTable |= U32(document, operand) > 0;
+                                break;
+                        }
+                    });
+                }
+                _paragraphs.Add(((int)U32(document, page + i * 4), (int)U32(document, page + (i + 1) * 4), new DocParagraph(style, inTable, rowEnd)));
+            }
+        }
+
+        /// <summary>The single property modifiers (sprms) of a grpprl: each one's code and where its operand starts.</summary>
+        private static void Sprms(byte[] data, int at, int length, Action<ushort, int> each)
+        {
+            var end = Math.Min(data.Length, at + Math.Max(0, length));
+            while (at + 2 <= end)
+            {
+                var sprm = U16(data, at);
+                at += 2;
+                var size = (sprm >> 13) switch
+                {
+                    0 or 1 => 1,
+                    2 or 4 or 5 => 2,
+                    3 => 4,
+                    7 => 3,
+                    _ when sprm == 0xD608 => U16(data, at) + 1, // sprmTDefTable: a 2-byte size
+                    _ when sprm == 0xC615 && at < end && data[at] == 0xFF => -1, // sprmPChgTabs of the long kind: stop here
+                    _ => at < end ? data[at] + 1 : -1, // variable: a size byte, then the operand
+                };
+                if (size < 0 || at + size > end)
+                {
+                    return;
+                }
+                each(sprm, (sprm >> 13) == 6 && sprm != 0xD608 ? at + 1 : at);
+                at += size;
+            }
+        }
+
+        public DocRun RunAt(int position) => Find(_runs, position)?.Value ?? default;
+
+        public DocParagraph? ParagraphAt(int position) => Find(_paragraphs, position)?.Value;
+
+        private static (int Start, int End, T Value)? Find<T>(List<(int Start, int End, T Value)> list, int position)
+        {
+            var (low, high) = (0, list.Count - 1);
+            while (low <= high)
+            {
+                var middle = (low + high) / 2;
+                var (start, end, value) = list[middle];
+                if (position < start)
+                {
+                    high = middle - 1;
+                }
+                else if (position >= end)
+                {
+                    low = middle + 1;
+                }
+                else
+                {
+                    return (start, end, value);
+                }
+            }
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Word's text with its marks: paragraphs (CR; a page break 12), table cells (7; the row's end mark is a paragraph of
+    /// its own), line breaks (11), fields (19 code 20 result 21: the result is shown). Paragraphs of the heading styles
+    /// become headings, the runs' bold / italic / underline / strikethrough is kept.
+    /// </summary>
+    private static void WordText(Writer w, string text, List<int> positions, DocFormats formats)
+    {
+        // the characters shown: the fields' codes left out
+        var shown = new List<(char Char, int Position)>(text.Length);
+        var inCode = new Stack<bool>();
+        for (var i = 0; i < text.Length; i++)
+        {
+            var ch = text[i];
             switch (ch)
             {
                 case '\x13':
-                    fieldDepth++;
                     inCode.Push(true);
                     continue;
                 case '\x14':
@@ -156,44 +330,170 @@ public static partial class OfficeHtml
                     {
                         inCode.Pop();
                     }
-                    fieldDepth = Math.Max(0, fieldDepth - 1);
                     continue;
             }
-            if (inCode.Count > 0 && inCode.Peek())
+            if (inCode.Count == 0 || !inCode.Peek())
             {
-                continue; // the field's code (HYPERLINK "...", PAGE ...): its result is shown
-            }
-            switch (ch)
-            {
-                case '\r':
-                    Flush();
-                    break;
-                case '\x07':
-                    paragraph.Append("   ·   "); // the end of a table cell
-                    break;
-                case '\x0B':
-                    paragraph.Append(' ');
-                    break;
-                case '\x0C':
-                    Flush();
-                    break;
-                case '\x1E':
-                    paragraph.Append('-');
-                    break;
-                case '\x01' or '\x08' or '\x1F' or '\x05' or '\x02' or '\x03' or '\x04':
-                    break; // pictures, drawn objects, optional hyphens, notes and their marks
-                case '\t':
-                    paragraph.Append("    ");
-                    break;
-                default:
-                    if (!char.IsControl(ch))
-                    {
-                        paragraph.Append(ch);
-                    }
-                    break;
+                shown.Add((ch, i < positions.Count ? positions[i] : -1));
             }
         }
-        Flush();
+
+        var (tableOpen, rowOpen, cellOpen, cellHasText) = (false, false, false, false);
+        var previousMark = '\0';
+        void CloseTable()
+        {
+            if (cellOpen)
+            {
+                w.Raw("</td>");
+            }
+            if (rowOpen)
+            {
+                w.Raw("</tr>");
+            }
+            if (tableOpen)
+            {
+                w.Raw("</table>");
+            }
+            (tableOpen, rowOpen, cellOpen, cellHasText) = (false, false, false, false);
+        }
+
+        var paragraph = new List<(char Char, int Position)>();
+        for (var i = 0; i <= shown.Count; i++)
+        {
+            if (w.Full)
+            {
+                w.Cut = true;
+                return;
+            }
+            var (ch, position) = i < shown.Count ? shown[i] : ('\r', -1);
+            if (ch is not ('\r' or '\x07' or '\x0C'))
+            {
+                paragraph.Add((ch, position));
+                continue;
+            }
+            // a paragraph ends: its properties are those of its mark
+            var properties = formats.ParagraphAt(position);
+            var empty = paragraph.TrueForAll(c => char.IsWhiteSpace(c.Char) || char.IsControl(c.Char));
+            bool inTable, rowEnd;
+            if (formats.HasParagraphs && properties is { } known)
+            {
+                (inTable, rowEnd) = (known.InTable || known.RowEnd, known.RowEnd);
+            }
+            else
+            {
+                // no properties: a cell mark makes a table; a cell mark right after one ends the row
+                rowEnd = ch == '\x07' && empty && previousMark == '\x07' && !cellOpen;
+                inTable = ch == '\x07' || cellOpen;
+            }
+            previousMark = ch;
+            if (rowEnd)
+            {
+                if (cellOpen)
+                {
+                    w.Raw("</td>");
+                }
+                if (rowOpen)
+                {
+                    w.Raw("</tr>");
+                }
+                (rowOpen, cellOpen) = (false, false);
+            }
+            else if (inTable)
+            {
+                if (!tableOpen)
+                {
+                    w.Raw("<table>");
+                }
+                if (!rowOpen)
+                {
+                    w.Raw("<tr>");
+                }
+                if (!cellOpen)
+                {
+                    w.Raw("<td>");
+                    cellHasText = false;
+                }
+                else if (cellHasText && !empty)
+                {
+                    w.Raw("<br>"); // the next paragraph of the cell
+                }
+                (tableOpen, rowOpen, cellOpen) = (true, true, true);
+                if (!empty)
+                {
+                    DocRuns(w, paragraph, formats);
+                    cellHasText = true;
+                }
+                if (ch == '\x07')
+                {
+                    w.Raw("</td>");
+                    cellOpen = false;
+                }
+            }
+            else
+            {
+                CloseTable();
+                if (!empty)
+                {
+                    var tag = properties is { Style: >= 1 and <= 9 } heading ? $"h{Math.Min(heading.Style, 6)}" : "p";
+                    w.Raw($"<{tag}>");
+                    DocRuns(w, paragraph, formats);
+                    w.Raw($"</{tag}>");
+                }
+            }
+            paragraph.Clear();
+        }
+        CloseTable();
+    }
+
+    /// <summary>The characters of a paragraph in runs of the same formatting, the spaces at its ends left out.</summary>
+    private static void DocRuns(Writer w, List<(char Char, int Position)> paragraph, DocFormats formats)
+    {
+        var first = paragraph.FindIndex(c => !char.IsWhiteSpace(c.Char) && !char.IsControl(c.Char));
+        var last = paragraph.FindLastIndex(c => !char.IsWhiteSpace(c.Char) && !char.IsControl(c.Char));
+        DocRun? open = null;
+        var run = new StringBuilder();
+        void Close()
+        {
+            if (open is not { } r)
+            {
+                return;
+            }
+            w.Raw(r.Bold ? "<b>" : string.Empty).Raw(r.Italic ? "<i>" : string.Empty).Raw(r.Underline ? "<u>" : string.Empty).Raw(r.Strike ? "<s>" : string.Empty);
+            w.Escaped(run.ToString());
+            w.Raw(r.Strike ? "</s>" : string.Empty).Raw(r.Underline ? "</u>" : string.Empty).Raw(r.Italic ? "</i>" : string.Empty).Raw(r.Bold ? "</b>" : string.Empty);
+            run.Clear();
+            open = null;
+        }
+        for (var i = Math.Max(0, first); first >= 0 && i <= last; i++)
+        {
+            var (ch, position) = paragraph[i];
+            var piece = ch switch
+            {
+                '\x0B' => "\n", // a line break
+                '\t' => "    ",
+                '\x1E' => "-", // a non-breaking hyphen
+                _ when char.IsControl(ch) => null, // pictures, drawn objects, optional hyphens, notes and their marks
+                _ => ch.ToString(),
+            };
+            if (piece is null)
+            {
+                continue;
+            }
+            var format = formats.RunAt(position);
+            if (open != format)
+            {
+                Close();
+                open = format;
+            }
+            if (piece == "\n")
+            {
+                Close();
+                w.Raw("<br>");
+                continue;
+            }
+            run.Append(piece);
+        }
+        Close();
     }
 
     // ---------------------------------------------------------------- Excel 97-2003
@@ -206,6 +506,8 @@ public static partial class OfficeHtml
         var sheets = new List<(string Name, int Position, bool Visible)>();
         var formats = new Dictionary<int, string>();
         var cellFormats = new List<int>();
+        var fonts = new List<bool>(); // FONT records: bold or not
+        var boldStyles = new HashSet<int>();
         var date1904 = false;
         // the workbook globals: up to the first EOF
         for (var i = 0; i < records.Count; i++)
@@ -229,7 +531,19 @@ public static partial class OfficeHtml
                 case 0x041E when length >= 3:
                     formats[U16(book, start)] = XlString(book, start + 2, start + length, byteLength: false).Text;
                     break;
-                case 0x00E0 when length >= 4:
+                case 0x0031 when length >= 8: // FONT: its weight (700 bold)
+                    fonts.Add(U16(book, start + 6) >= 700);
+                    if (fonts.Count == 4)
+                    {
+                        fonts.Add(false); // font index 4 is never used: the fifth record is font 5
+                    }
+                    break;
+                case 0x00E0 when length >= 4: // XF: its font and number format
+                    var font = U16(book, start);
+                    if (font < fonts.Count && fonts[font])
+                    {
+                        boldStyles.Add(cellFormats.Count);
+                    }
                     cellFormats.Add(U16(book, start + 2));
                     break;
                 case 0x0022 when length >= 2:
@@ -258,13 +572,20 @@ public static partial class OfficeHtml
                 continue;
             }
             w.Raw("<h3>").Escaped(name).Raw("</h3>");
-            var cells = ExcelSheet(book, records, position, strings, dateStyles, date1904, w);
+            var bold = new HashSet<(int Row, int Column)>();
+            var cells = ExcelSheet(book, records, position, strings, dateStyles, date1904, w, (row, column, xf) =>
+            {
+                if (boldStyles.Contains(xf))
+                {
+                    bold.Add((row, column));
+                }
+            });
             if (cells.Count == 0)
             {
                 w.Raw("<p><i>(empty)</i></p>");
                 continue;
             }
-            Grid(w, cells.Keys.Max(k => k.Row), cells.Keys.Max(k => k.Column), (r, c) => cells.GetValueOrDefault((r, c)));
+            Grid(w, cells.Keys.Max(k => k.Row), cells.Keys.Max(k => k.Column), (r, c) => cells.GetValueOrDefault((r, c)), (r, c) => bold.Contains((r, c)));
         }
     }
 
@@ -396,9 +717,12 @@ public static partial class OfficeHtml
         return result;
     }
 
-    /// <summary>The non-empty cells of a sheet (its records from the BOF at <paramref name="position"/> to its EOF).</summary>
+    /// <summary>
+    /// The non-empty cells of a sheet (its records from the BOF at <paramref name="position"/> to its EOF);
+    /// <paramref name="style"/> is told each cell's XF (1-based row and column).
+    /// </summary>
     private static Dictionary<(int Row, int Column), string> ExcelSheet(byte[] book, List<(int Type, int Start, int Length)> records, int position,
-        List<string> strings, HashSet<int> dateStyles, bool date1904, Writer w)
+        List<string> strings, HashSet<int> dateStyles, bool date1904, Writer w, Action<int, int, int> style)
     {
         var cells = new Dictionary<(int Row, int Column), string>();
         var first = records.FindIndex(r => r.Start - 4 == position);
@@ -407,6 +731,7 @@ public static partial class OfficeHtml
             return cells;
         }
         (int Row, int Column)? formulaCell = null;
+        var xf = -1; // the XF of the cell being read
         void Put(int row, int column, string text)
         {
             if (text.Length == 0)
@@ -419,6 +744,10 @@ public static partial class OfficeHtml
                 return;
             }
             cells[(row + 1, column + 1)] = text;
+            if (xf >= 0)
+            {
+                style(row + 1, column + 1, xf);
+            }
         }
         string Number(double value, int xf) =>
             dateStyles.Contains(xf) && value is > -657435 and < 2958466
@@ -435,6 +764,7 @@ public static partial class OfficeHtml
             int Row() => U16(book, start);
             int Column() => U16(book, start + 2);
             int Xf() => U16(book, start + 4);
+            xf = type is 0x00FD or 0x0203 or 0x027E or 0x0204 or 0x0205 or 0x0006 ? Xf() : -1;
             switch (type)
             {
                 case 0x00FD when length >= 10: // LABELSST
@@ -452,7 +782,8 @@ public static partial class OfficeHtml
                     var pairs = (length - 6) / 6;
                     for (var p = 0; p < pairs; p++)
                     {
-                        Put(Row(), columnFirst + p, Number(Rk(U32(book, start + 4 + p * 6 + 2)), U16(book, start + 4 + p * 6)));
+                        xf = U16(book, start + 4 + p * 6);
+                        Put(Row(), columnFirst + p, Number(Rk(U32(book, start + 4 + p * 6 + 2)), xf));
                     }
                     break;
                 case 0x0204 when length >= 8: // LABEL

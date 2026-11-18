@@ -410,6 +410,9 @@
       <!-- Synchronize directories as a page of its own (MainWindow.Workspace.cs) -->
       <Border x:Name="SyncHost" Grid.Column="0" Grid.ColumnSpan="3" Grid.RowSpan="3" ZIndex="25" IsVisible="False"
               Background="{DynamicResource SystemControlBackgroundAltHighBrush}" />
+      <!-- Remote desktop sessions, each a page of its own (MainWindow.Workspace.cs); the hidden ones keep running -->
+      <Panel x:Name="RemoteDesktopHost" Grid.Column="0" Grid.ColumnSpan="3" Grid.RowSpan="3" ZIndex="26" IsVisible="False"
+             Background="{DynamicResource SystemControlBackgroundAltHighBrush}" />
       <!-- Ctrl+Tab list mode (Configuration > Folder tabs): shown while Ctrl is held -->
       <Border x:Name="TabSwitcherHost" Grid.Column="0" Grid.ColumnSpan="3" ZIndex="20" HorizontalAlignment="Center" VerticalAlignment="Center"
               MinWidth="320" MaxWidth="640" MaxHeight="480" Padding="4" BorderThickness="1" CornerRadius="4"

@@ -98,7 +98,8 @@ public sealed class DriveIconConverter : IValueConverter
             }
             if (OperatingSystem.IsMacOS())
             {
-                return MacPath(drive) is { } path ? SystemFolderIcons.MacIcon(path) : null;
+                return drive.Kind == DriveKind.Trash ? SystemFolderIcons.MacNamedIcon(MacTrashImage(MacTrashFull()))
+                    : MacPath(drive) is { } path ? SystemFolderIcons.MacIcon(path) : null;
             }
             if (OperatingSystem.IsLinux())
             {
@@ -113,10 +114,29 @@ public sealed class DriveIconConverter : IValueConverter
         return null;
     }
 
-    /// <summary>macOS: the path Finder shows the icon of (volumes, the Trash, the start disk for Computer).</summary>
+    /// <summary>macOS: AppKit's image of the Trash, empty or full (NSImageNameTrashEmpty / NSImageNameTrashFull).</summary>
+    public static string MacTrashImage(bool full) => full ? "NSTrashFull" : "NSTrashEmpty";
+
+    /// <summary>
+    /// macOS: whether the user's Trash holds anything (Finder's .DS_Store aside). Reading ~/.Trash needs Full Disk
+    /// Access; without it the Trash counts as empty.
+    /// </summary>
+    private static bool MacTrashFull()
+    {
+        try
+        {
+            var trash = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".Trash");
+            return Directory.EnumerateFileSystemEntries(trash).Any(e => !Path.GetFileName(e).Equals(".DS_Store", StringComparison.Ordinal));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>macOS: the path Finder shows the icon of (volumes, the start disk for Computer).</summary>
     private static string? MacPath(DriveItem drive) => drive.Kind switch
     {
-        DriveKind.Trash => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".Trash"),
         DriveKind.Computer => "/",
         DriveKind.NetworkPlaces => null,
         _ when drive.RootPath.Length == 0 || drive.RootPath.Contains("://", StringComparison.Ordinal) => null,

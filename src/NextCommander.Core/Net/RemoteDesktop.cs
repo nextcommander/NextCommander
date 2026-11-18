@@ -6,6 +6,19 @@ namespace NextCommander.Core.Net;
 /// What the system's RDP clients are given for a connection: the .rdp file of Remote Desktop Connection (Windows) and
 /// Microsoft's Windows App (macOS), and the command line of FreeRDP (Linux). The password never goes on a command line.
 /// </summary>
+/// <summary>Where a property of the Remote Desktop ActiveX control is set.</summary>
+public enum RdpControlPart
+{
+    /// <summary>The control itself (IMsRdpClient).</summary>
+    Client,
+    /// <summary>Its AdvancedSettings object.</summary>
+    Advanced,
+    /// <summary>Its SecuredSettings object.</summary>
+    Secured,
+    /// <summary>Its TransportSettings object (the gateway).</summary>
+    Transport,
+}
+
 public static class RemoteDesktop
 {
     /// <summary>The FreeRDP programs looked for on Linux, the newest first.</summary>
@@ -26,6 +39,9 @@ public static class RemoteDesktop
     }
 
     private static bool FixedSize(RemoteConnection c) => !c.FullScreen && c.RdpWidth > 0 && c.RdpHeight > 0;
+
+    /// <summary>Whether the remote desktop follows the size of its window or tab (no fixed size chosen).</summary>
+    public static bool FollowsWindow(RemoteConnection c) => !FixedSize(c);
 
     private static string Number(int value) => value.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
@@ -154,6 +170,81 @@ public static class RemoteDesktop
         if (passwordOnStdin)
         {
             args.Add("/from-stdin:force");
+        }
+        return args;
+    }
+
+    /// <summary>
+    /// Whether the connection opens in a tab of NextCommander (where the system allows it) rather than in the client's
+    /// own window: not when the connection asks for its own window or for full screen.
+    /// </summary>
+    public static bool OpensInTab(RemoteConnection c) => !c.RdpOwnWindow && !c.FullScreen;
+
+    /// <summary>The smallest and largest desktop size the clients take.</summary>
+    private static int DesktopSide(int pixels) => Math.Clamp(pixels, 200, 8192);
+
+    /// <summary>
+    /// The properties of Windows' Remote Desktop ActiveX control (MsTscAx) for a connection in a tab of
+    /// <paramref name="width"/> × <paramref name="height"/> pixels, in the order they are set before connecting: the
+    /// control's own, its advanced settings (port, CredSSP, scaling, redirections), its secured settings (sound) and its
+    /// transport settings (the gateway). A fixed size is scaled into the tab.
+    /// </summary>
+    public static IReadOnlyList<(RdpControlPart Part, string Property, object Value)> ControlSettings(RemoteConnection c, int width, int height)
+    {
+        var settings = new List<(RdpControlPart, string, object)> { (RdpControlPart.Client, "Server", c.Host.Trim()) };
+        if (c.User.Length > 0)
+        {
+            var slash = c.User.IndexOf('\\', StringComparison.Ordinal);
+            if (slash > 0)
+            {
+                settings.Add((RdpControlPart.Client, "Domain", c.User[..slash]));
+            }
+            settings.Add((RdpControlPart.Client, "UserName", c.User[(slash + 1)..]));
+        }
+        var (w, h) = FixedSize(c) ? (c.RdpWidth, c.RdpHeight) : (width, height);
+        settings.Add((RdpControlPart.Client, "DesktopWidth", DesktopSide(w)));
+        settings.Add((RdpControlPart.Client, "DesktopHeight", DesktopSide(h)));
+        if (c.RdpColorDepth > 0)
+        {
+            settings.Add((RdpControlPart.Client, "ColorDepth", c.RdpColorDepth));
+        }
+        if (c.EffectivePort != RemoteConnection.DefaultPort(RemoteProtocol.Rdp))
+        {
+            settings.Add((RdpControlPart.Advanced, "RDPPort", c.EffectivePort));
+        }
+        settings.Add((RdpControlPart.Advanced, "EnableCredSspSupport", true));
+        settings.Add((RdpControlPart.Advanced, "AuthenticationLevel", 2)); // the server's certificate: warn
+        settings.Add((RdpControlPart.Advanced, "SmartSizing", FixedSize(c)));
+        settings.Add((RdpControlPart.Advanced, "RedirectDrives", c.RdpDrives || c.RdpShareFolder)); // the control shares all drives or none
+        settings.Add((RdpControlPart.Advanced, "RedirectPrinters", c.RdpPrinters));
+        settings.Add((RdpControlPart.Advanced, "RedirectClipboard", c.RdpClipboard));
+        if (c.RdpAdmin)
+        {
+            settings.Add((RdpControlPart.Advanced, "ConnectToAdministerServer", true));
+        }
+        settings.Add((RdpControlPart.Secured, "AudioRedirectionMode", c.RdpAudio switch { RdpAudio.Remote => 1, RdpAudio.None => 2, _ => 0 }));
+        if (!string.IsNullOrWhiteSpace(c.RdpGateway))
+        {
+            settings.Add((RdpControlPart.Transport, "GatewayHostname", c.RdpGateway.Trim()));
+            settings.Add((RdpControlPart.Transport, "GatewayUsageMethod", 1)); // always through the gateway
+            settings.Add((RdpControlPart.Transport, "GatewayProfileUsageMethod", 1)); // the settings given here
+        }
+        return settings;
+    }
+
+    /// <summary>
+    /// FreeRDP's arguments for a session drawn into a window of NextCommander (X11 <paramref name="parentWindow"/>): the
+    /// connection's arguments with the tab's size (a fixed size scaled into it) in place of a window of its own.
+    /// </summary>
+    public static IReadOnlyList<string> EmbeddedFreeRdpArguments(RemoteConnection c, bool passwordOnStdin, string? folder, ulong parentWindow, int width, int height)
+    {
+        var args = FreeRdpArguments(c, passwordOnStdin, folder).Where(a => a is not ("/f" or "/multimon" or "/dynamic-resolution") && !a.StartsWith("/size:", StringComparison.Ordinal)).ToList();
+        var (w, h) = FixedSize(c) ? (c.RdpWidth, c.RdpHeight) : (width, height);
+        args.Insert(1, "/parent-window:" + parentWindow.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        args.Insert(2, "/size:" + Number(DesktopSide(w)) + "x" + Number(DesktopSide(h)));
+        if (FixedSize(c))
+        {
+            args.Insert(3, "/smart-sizing:" + Number(DesktopSide(width)) + "x" + Number(DesktopSide(height)));
         }
         return args;
     }
