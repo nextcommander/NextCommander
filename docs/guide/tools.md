@@ -46,15 +46,17 @@ Lister shows a file without changing it. The number keys switch between its view
   - **PDF:** the pages one below the other; only the pages near the view are drawn, so big PDFs open at once.
     Ctrl+mouse wheel (or Ctrl + / Ctrl -) zooms, Ctrl+0 fits the width again; the status line shows the page.
     **F7** finds text in the pages (F3 / Shift+F3 the next / previous match, which is marked and scrolled to);
-    drag with the mouse to select text within a page, Ctrl+A selects the page's text, Ctrl+C copies it. A
-    protected PDF asks for its password (again when it is wrong).
+    drag with the mouse to select text, also across pages (dragging past the top or bottom scrolls; Shift+click
+    extends the selection), Ctrl+A selects the page's text, Ctrl+C copies it (each page's part on a line of its own).
+    A protected PDF asks for its password (again when it is wrong).
   - **Word, Excel, PowerPoint** (docx, xlsx, pptx and their macro / template kinds) and **OpenDocument** (odt, ods,
     odp) are read without Office: text with headings, emphasis, lists, tables and pictures; every visible sheet of a
     workbook as a table with column letters and row numbers (dates as dates); the slides with their titles and texts.
     It is a preview of the content, not of the layout; long documents are cut (the end shows "(…)").
   - **Old Office files** (doc, xls, ppt of Office 97-2003): with LibreOffice installed they are converted to PDF
-    (the real layout); without it their text is read directly: the document's paragraphs, the visible sheets of a
-    workbook (texts, numbers, dates, formula results), the slides' titles and texts.
+    (the real layout); without it their text is read directly: the document's paragraphs with its headings, tables
+    and the bold / italic / underlined / struck-through words, the visible sheets of a workbook (texts, numbers,
+    dates, formula results; bold cells), the slides' titles and texts.
   - **Other documents** (Visio, Publisher, WordPerfect, Keynote ...) are converted to PDF by **LibreOffice** when it
     is installed (once: the PDF is kept in the temporary folder); otherwise they show as binary.
   - *Configuration > Edit and view > Open PDF, Office, HTML, Markdown and RTF files with preview* off opens them as

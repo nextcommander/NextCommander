@@ -2787,6 +2787,12 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     /// <summary>A Telnet, SSH or rsh connection to open in a tab of the internal terminal (the window opens it).</summary>
     public event EventHandler<RemoteConnection>? TerminalSessionRequested; // also serial ports
 
+    /// <summary>An RDP session to show in a tab of the main window.</summary>
+    public event EventHandler<RemoteDesktopRequest>? RemoteDesktopRequested;
+
+    /// <summary>Whether RDP sessions can be shown in a tab here (Windows' control, Linux's X11 FreeRDP); tests set it.</summary>
+    public Func<bool> CanEmbedRemoteDesktop { get; set; } = () => NextCommander.Platform.RemoteDesktopLauncher.CanEmbed;
+
     /// <summary>
     /// A remote session: Telnet, SSH and rsh in the internal terminal, RDP in the system's remote desktop client, VNC in
     /// the system's VNC viewer. A saved RDP password (or one asked when the client cannot ask itself) is handed to the client.
@@ -2817,13 +2823,15 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         }
         string? password = null;
         var secrets = Remote?.Secrets;
-        if (NextCommander.Platform.RemoteDesktopLauncher.TakesPassword)
+        // in a tab of the main window where the system allows it (the session's own window when the connection says so)
+        var inTab = RemoteDesktopRequested is not null && CanEmbedRemoteDesktop() && NextCommander.Core.Net.RemoteDesktop.OpensInTab(connection);
+        if (NextCommander.Platform.RemoteDesktopLauncher.TakesPassword || inTab)
         {
             if (connection.SavePassword && secrets is not null && secrets.Contains(connection.SecretId))
             {
                 password = await secrets.GetAsync(connection.SecretId);
             }
-            if (password is null && (connection.SavePassword || NextCommander.Platform.RemoteDesktopLauncher.NeedsPassword))
+            if (password is null && (connection.SavePassword || NextCommander.Platform.RemoteDesktopLauncher.NeedsPassword || inTab))
             {
                 if (await _dialogs.PromptLoginAsync(connection, false) is not { } login)
                 {
@@ -2836,10 +2844,15 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
                 }
             }
         }
+        // the active panel's folder, when the connection shares it (a local folder only)
+        var folder = connection.RdpShareFolder && ActivePanel.CurrentPath is { IsLocal: true } here ? here.Path : null;
+        if (inTab)
+        {
+            RemoteDesktopRequested!.Invoke(this, new RemoteDesktopRequest(connection, password, folder));
+            return;
+        }
         try
         {
-            // the active panel's folder, when the connection shares it (a local folder only)
-            var folder = connection.RdpShareFolder && ActivePanel.CurrentPath is { IsLocal: true } here ? here.Path : null;
             await NextCommander.Platform.RemoteDesktopLauncher.LaunchAsync(connection, password, folder);
         }
         catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception or IOException or UnauthorizedAccessException)
@@ -4644,3 +4657,6 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         }
     }
 }
+
+/// <summary>An RDP session for a tab of the main window: the connection, its password and the shared folder (or null).</summary>
+public sealed record RemoteDesktopRequest(RemoteConnection Connection, string? Password, string? Folder);

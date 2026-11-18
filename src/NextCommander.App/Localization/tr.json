@@ -2871,7 +2871,18 @@
   "PdfPasswordException.ThePasswordIsNotRight": "Parola doğru değil.",
   "OfficeHtml.DocumentProtected": "Belge parolayla korunuyor.",
   "OfficeHtml.WorkbookProtected": "Çalışma kitabı parolayla korunuyor.",
-  "ConnectionManagerWindow.ShareActivePanelFolderMstsc": "Etkin panelin klasörünü paylaş (Uzak Masaüstü Bağlantısı sürücüsünü paylaşır)",
+  "ConnectionManagerWindow.ShareActivePanelFolderMstsc": "Etkin panelin klasörünü paylaş (Uzak Masaüstü Bağlantısı: sürücüsünü; sekmede: tüm sürücüleri)",
   "ConnectionManagerWindow.ShareActivePanelFolder": "Etkin panelin klasörünü paylaş",
-  "ConnectionManagerWindow.FilesSmb": "Dosyalar (SMB)"
+  "ConnectionManagerWindow.FilesSmb": "Dosyalar (SMB)",
+  "ConnectionManagerWindow.OpenInClientOwnWindow": "İstemcinin kendi penceresinde aç (sekmede değil)",
+  "MainWindow.ConnectingTo": "{0} sunucusuna bağlanılıyor ...",
+  "MainWindow.ConnectedTo": "{0} sunucusuna bağlı",
+  "MainWindow.DisconnectAndClose": "Bağlantıyı kes ve kapat",
+  "RemoteDesktopView.SessionEnded": "Uzak masaüstü oturumu sona erdi.",
+  "RemoteDesktopView.ConnectAgain": "Yeniden bağlan",
+  "RemoteDesktopView.ConnectionFailedReason": "{0} ile bağlantı kurulamadı (neden {1}).",
+  "RemoteDesktopView.ConnectionFailed": "{0} ile bağlantı kurulamadı.",
+  "RemoteDesktopView.ConnectionFailedFreeRdp": "{0} ile bağlantı kurulamadı (FreeRDP çıkış kodu {1}).",
+  "RemoteDesktopView.CannotShowHere": "Uzak masaüstü burada gösterilemedi: {0}",
+  "RemoteDesktopView.SessionCouldNotStart": "Oturum başlatılamadı: {0}"
 }

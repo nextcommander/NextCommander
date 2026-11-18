@@ -10,13 +10,17 @@ using NextCommander.Core.Vfs;
 
 namespace NextCommander.App.Views;
 
-/// <summary>A page of the main window: the two file panels, the options, synchronize directories or the maximized internal terminal.</summary>
+/// <summary>
+/// A page of the main window: the two file panels, the options, synchronize directories, the maximized internal
+/// terminal or a remote desktop session (one page each).
+/// </summary>
 public enum WorkspacePage
 {
     Files,
     Options,
     Sync,
     Terminal,
+    RemoteDesktop,
 }
 
 /// <summary>
@@ -29,6 +33,14 @@ public partial class MainWindow
 {
     private WorkspacePage _page = WorkspacePage.Files;
     private PanelViewModel? _workspacePanel;
+    private readonly List<RemoteDesktopView> _desktops = [];
+    private RemoteDesktopView? _desktop;
+
+    /// <summary>The remote desktop sessions open in tabs, in the order of their tabs.</summary>
+    public IReadOnlyList<RemoteDesktopView> RemoteDesktops => _desktops;
+
+    /// <summary>The remote desktop shown (on the remote desktop page) or last shown.</summary>
+    public RemoteDesktopView? CurrentRemoteDesktop => _desktop;
 
     /// <summary>The page shown now.</summary>
     public WorkspacePage CurrentPage => _page;
@@ -51,8 +63,21 @@ public partial class MainWindow
             {
                 pages.Add(WorkspacePage.Terminal);
             }
+            pages.AddRange(_desktops.Select(_ => WorkspacePage.RemoteDesktop));
             return pages;
         }
+    }
+
+    /// <summary>The tabs: each page, with its session for a remote desktop.</summary>
+    private List<(WorkspacePage Page, RemoteDesktopView? Desktop)> PageEntries()
+    {
+        var entries = new List<(WorkspacePage, RemoteDesktopView?)>();
+        var desktops = 0;
+        foreach (var page in OpenPages)
+        {
+            entries.Add((page, page == WorkspacePage.RemoteDesktop ? _desktops[desktops++] : null));
+        }
+        return entries;
     }
 
     /// <summary>The internal terminal is open and maximized: a page of its own.</summary>
@@ -62,6 +87,10 @@ public partial class MainWindow
     public void SelectPage(WorkspacePage page)
     {
         _page = OpenPages.Contains(page) ? page : WorkspacePage.Files;
+        if (_page == WorkspacePage.RemoteDesktop && (_desktop is null || !_desktops.Contains(_desktop)))
+        {
+            _desktop = _desktops[^1];
+        }
         ApplyPage();
         switch (_page)
         {
@@ -74,17 +103,79 @@ public partial class MainWindow
             case WorkspacePage.Terminal:
                 _terminal?.Activate();
                 break;
+            case WorkspacePage.RemoteDesktop:
+                _desktop?.Focus();
+                break;
             default:
                 ActiveView.FocusList();
                 break;
         }
     }
 
+    /// <summary>Shows the page of a remote desktop session.</summary>
+    public void SelectRemoteDesktop(RemoteDesktopView desktop)
+    {
+        _desktop = desktop;
+        SelectPage(WorkspacePage.RemoteDesktop);
+    }
+
     /// <summary>The next open page (nc_SwitchWorkspaceTab), around to the files after the last one.</summary>
     public void SelectNextPage()
     {
-        var pages = OpenPages;
-        SelectPage(pages[(pages.ToList().IndexOf(_page) + 1) % pages.Count]);
+        var entries = PageEntries();
+        var current = entries.FindIndex(e => e.Page == _page && (e.Page != WorkspacePage.RemoteDesktop || ReferenceEquals(e.Desktop, _desktop)));
+        var (page, desktop) = entries[(current + 1) % entries.Count];
+        if (desktop is not null)
+        {
+            SelectRemoteDesktop(desktop);
+        }
+        else
+        {
+            SelectPage(page);
+        }
+    }
+
+    /// <summary>
+    /// A remote desktop session in a page of its own (with a tab of the connection's name), shown at once; its tab's
+    /// × or its Close button ends it.
+    /// </summary>
+    public void ShowRemoteDesktop(RemoteDesktopView desktop)
+    {
+        _desktops.Add(desktop);
+        RemoteDesktopHost.Children.Add(desktop);
+        desktop.StateChanged += (_, _) => UpdateWorkspaceTabs();
+        desktop.Closed += (_, _) =>
+        {
+            if (!_desktops.Remove(desktop))
+            {
+                return;
+            }
+            RemoteDesktopHost.Children.Remove(desktop);
+            desktop.Dispose();
+            var wasShown = _page == WorkspacePage.RemoteDesktop && ReferenceEquals(_desktop, desktop);
+            if (ReferenceEquals(_desktop, desktop))
+            {
+                _desktop = _desktops.LastOrDefault();
+            }
+            if (wasShown)
+            {
+                SelectPage(_desktop is not null ? WorkspacePage.RemoteDesktop : WorkspacePage.Files);
+            }
+            else
+            {
+                ApplyPage();
+            }
+        };
+        SelectRemoteDesktop(desktop);
+    }
+
+    /// <summary>Ends every remote desktop session (the main window closes).</summary>
+    private void CloseRemoteDesktops()
+    {
+        foreach (var desktop in _desktops.ToList())
+        {
+            desktop.Close();
+        }
     }
 
     /// <summary>
@@ -101,6 +192,11 @@ public partial class MainWindow
         PanelsGrid.IsVisible = !terminalPage;
         SettingsHost.IsVisible = _page == WorkspacePage.Options;
         SyncHost.IsVisible = _page == WorkspacePage.Sync;
+        RemoteDesktopHost.IsVisible = _page == WorkspacePage.RemoteDesktop;
+        foreach (var desktop in _desktops)
+        {
+            desktop.IsVisible = ReferenceEquals(desktop, _desktop); // the others keep their sessions, hidden
+        }
         if (IsTerminalMaximizedPage)
         {
             // the maximized terminal is shown on its own page only (the shells keep running)
@@ -143,17 +239,23 @@ public partial class MainWindow
         {
             return;
         }
-        foreach (var page in pages)
+        foreach (var (page, desktop) in PageEntries())
         {
-            WorkspaceTabs.Children.Add(PageTab(page));
+            WorkspaceTabs.Children.Add(PageTab(page, desktop));
         }
     }
 
-    private Button PageTab(WorkspacePage page)
+    private Button PageTab(WorkspacePage page, RemoteDesktopView? desktop = null)
     {
         var panel = _vm?.ActivePanel;
         var (icon, title, tip, noloc) = page switch
         {
+            WorkspacePage.RemoteDesktop when desktop is not null => (BrandIcons.Create(RemoteProtocol.Rdp), desktop.Title, desktop.State switch
+            {
+                RemoteDesktopState.Connecting => $"Connecting to {desktop.Connection.Host} ...",
+                RemoteDesktopState.Connected => $"Connected to {desktop.Connection.Host}",
+                _ => "The remote desktop session ended.",
+            }, true),
             WorkspacePage.Options => (MenuIcons.Create("nc_Config") ?? new Panel(), "Options", "Options", false),
             WorkspacePage.Terminal => (MenuIcons.Create("nc_MaximizeTerminal") ?? new Panel(), "Terminal", "Internal terminal", false),
             WorkspacePage.Sync => (MenuIcons.Create("nc_SyncDirs") ?? new Panel(), "Synchronize", Tools.SyncDirsView.Title, false),
@@ -181,12 +283,20 @@ public partial class MainWindow
             {
                 WorkspacePage.Options => "Close the options (Esc)",
                 WorkspacePage.Sync => "Close (Esc)",
+                WorkspacePage.RemoteDesktop => "Disconnect and close",
                 _ => "Back to its place below the panels",
             });
             close.Click += (_, e) =>
             {
                 e.Handled = true;
-                ClosePage(page);
+                if (desktop is not null)
+                {
+                    desktop.Close();
+                }
+                else
+                {
+                    ClosePage(page);
+                }
             };
             content.Children.Add(close);
         }
@@ -198,13 +308,23 @@ public partial class MainWindow
             Tag = page,
             MaxWidth = 260,
         };
-        if (page == _page)
+        if (page == _page && (desktop is null || ReferenceEquals(desktop, _desktop)))
         {
             tab.Classes.Add("current");
             tab.Classes.Add("focused");
         }
         ToolTip.SetTip(tab, tip);
-        tab.Click += (_, _) => SelectPage(page);
+        tab.Click += (_, _) =>
+        {
+            if (desktop is not null)
+            {
+                SelectRemoteDesktop(desktop);
+            }
+            else
+            {
+                SelectPage(page);
+            }
+        };
         return tab;
     }
 
@@ -222,6 +342,9 @@ public partial class MainWindow
             case WorkspacePage.Terminal:
                 RestoreTerminalSize();
                 ActiveView.FocusList();
+                break;
+            case WorkspacePage.RemoteDesktop:
+                _desktop?.Close();
                 break;
         }
     }

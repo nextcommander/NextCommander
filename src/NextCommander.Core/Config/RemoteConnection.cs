@@ -365,6 +365,12 @@ public sealed class RemoteConnection
     /// </summary>
     public bool RdpShareFolder { get; set; }
 
+    /// <summary>
+    /// RDP: the session opens in the client's own window (Remote Desktop Connection, FreeRDP) instead of a tab of
+    /// NextCommander (Windows and Linux; macOS always uses the client's window).
+    /// </summary>
+    public bool RdpOwnWindow { get; set; }
+
     /// <summary>RDP: the administrative (console) session.</summary>
     public bool RdpAdmin { get; set; }
 

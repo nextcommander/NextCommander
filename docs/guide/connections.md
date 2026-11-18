@@ -25,7 +25,7 @@ Supported types:
 | Android over ADB | Phones with USB debugging on (also when MTP is not available) |
 | PC link | Another computer running NextCommander, over a USB or Ethernet cable or the network: see [PC link](#pc-link) |
 | rclone remotes | Every remote you set up with `rclone config` (70+ services); the rclone plugin shipped with the program |
-| Remote desktop (RDP) | The desktop of a Windows computer (or a Linux one with xrdp), in the system's RDP client: see [Remote sessions](#remote-sessions-rdp-vnc-ssh-telnet-rsh) |
+| Remote desktop (RDP) | The desktop of a Windows computer (or a Linux one with xrdp), in a tab of NextCommander or the system's RDP client: see [Remote sessions](#remote-sessions-rdp-vnc-ssh-telnet-rsh) |
 | VNC | The screen of another computer (any system with a VNC server), in a VNC viewer |
 | SSH | A shell on a server in the internal terminal |
 | Telnet | A text session in the internal terminal (routers, switches, old systems) |
@@ -249,7 +249,16 @@ stops it when it closes. Files are transferred through temporary files and keep 
 These are sessions on another computer, not folders: choosing one in the connection manager (or *Net > Saved
 connections*, `nc_OpenConnection name`) does not change the panel.
 
-- **Remote desktop (RDP)** opens in the system's client: *Remote Desktop Connection* (mstsc) on Windows, Microsoft's
+- **Remote desktop in a tab** (Windows and Linux): the session opens in a tab of the main window, beside the files
+  tab (like the options), and its desktop follows the tab's size (a fixed *Size in a window* is scaled into it).
+  Windows draws it with its own Remote Desktop control (the engine of Remote Desktop Connection), Linux with the X11
+  FreeRDP (`xfreerdp3` or `xfreerdp`). Several sessions can be open, each with a tab of the connection's name; the
+  hidden ones keep running. Click into the desktop to type there (the keys then go to the remote computer); the tabs
+  above switch back. A password is asked when none is saved. When the session ends the tab says so and offers
+  *Connect again* or *Close*; the tab's × disconnects. *Full screen* and *Open in the client's own window* open the
+  client's own window instead, as described next. In a tab on Windows, *Share the active panel's folder* shares all
+  drives (the control shares all drives or none). macOS has no way to show it in a tab: the Windows App opens.
+- **Remote desktop (RDP)** in its own window opens in the system's client: *Remote Desktop Connection* (mstsc) on Windows, Microsoft's
   **Windows App** on macOS (from the App Store), **FreeRDP** (`xfreerdp3`, `sdl-freerdp3`, `xfreerdp`) or **Remmina**
   on Linux; without one you are told what to install. Settings: server, port (3389), user (`DOMAIN\user`), *Full
   screen* (otherwise a window whose desktop follows its size), and *Save password*. A saved password is handed to
@@ -307,7 +316,7 @@ options of its type:
 | Azure | Access tier of uploaded blobs (Hot, Cool, Cold, Archive); plain HTTP; TLS version, pinned certificate. |
 | SMB | Show the hidden administrative shares (C$, ADMIN$). |
 | Google Drive, OneDrive, Box | Delete permanently instead of to the service's trash (OneDrive: work / school accounts; personal ones keep the recycle bin). Google Drive: Google documents as Office, OpenDocument or PDF files. |
-| Remote desktop | Full screen, all monitors, size in a window, colors, sound (here, on the remote computer, none), Remote Desktop Gateway, shared clipboard, drives, printers and the active panel's folder, administrative session. |
+| Remote desktop | In a tab or the client's own window, full screen, all monitors, size in a window, colors, sound (here, on the remote computer, none), Remote Desktop Gateway, shared clipboard, drives, printers and the active panel's folder, administrative session. |
 | Telnet | Terminal type, character set, what Backspace (DEL or Ctrl+H) and Enter (CR LF, CR NUL, LF) send, local echo, keep-alive. |
 | SSH | Jump host, keep-alive, pinned host key, command when it opens, terminal type, character set. |
 | VNC | Full screen, view only. |

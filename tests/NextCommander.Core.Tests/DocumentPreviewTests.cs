@@ -222,8 +222,27 @@ public sealed class DocumentPreviewTests : IDisposable
         Assert.Contains("<p>Quarterly report</p>", html, StringComparison.Ordinal);
         Assert.Contains("<p>See the site now.</p>", html, StringComparison.Ordinal);
         Assert.DoesNotContain("HYPERLINK", html, StringComparison.Ordinal);
-        Assert.Contains("Region", html, StringComparison.Ordinal);
+        Assert.Contains("<table><tr><td>Region</td><td>Total</td></tr></table>", html, StringComparison.Ordinal); // no paragraph properties: the cell marks make the table
         Assert.True(OfficeHtml.Supports("DOC"));
+    }
+
+    [Fact]
+    public void An_old_word_document_keeps_its_headings_bold_runs_and_tables()
+    {
+        //                      0      7                       29          36
+        const string text = "Report\rPlain and bold words.\rA1\u0007B1\u0007\u0007After\r";
+        byte[] bold = [0x35, 0x08, 0x01]; // sprmCFBold on
+        byte[] italic = [0x36, 0x08, 0x01];
+        byte[] heading = [0x01, 0x00]; // istd 1: Heading 1
+        byte[] cell = [0x00, 0x00, 0x16, 0x24, 0x01]; // sprmPFInTable
+        byte[] rowEnd = [0x00, 0x00, 0x16, 0x24, 0x01, 0x17, 0x24, 0x01]; // sprmPFInTable, sprmPFTtp
+        var doc = TestDocuments.Doc(text,
+            runs: [(17, null), (21, bold), (22, null), (27, italic), (text.Length, null)],
+            paragraphs: [(7, heading), (29, null), (32, cell), (35, cell), (36, rowEnd), (text.Length, null)]);
+        var html = OfficeHtml.ToHtml("doc", new MemoryStream(doc));
+        Assert.Contains("<h1>Report</h1>", html, StringComparison.Ordinal);
+        Assert.Contains("<p>Plain and <b>bold</b> <i>words</i>.</p>", html, StringComparison.Ordinal);
+        Assert.Contains("<table><tr><td>A1</td><td>B1</td></tr></table><p>After</p>", html, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -233,7 +252,7 @@ public sealed class DocumentPreviewTests : IDisposable
         Assert.Contains("<h3>Data</h3>", html, StringComparison.Ordinal);
         Assert.DoesNotContain("Secret", html, StringComparison.Ordinal);
         Assert.DoesNotContain("hidden", html, StringComparison.Ordinal);
-        Assert.Contains("<td>Item</td>", html, StringComparison.Ordinal);
+        Assert.Contains("<td><b>Item</b></td>", html, StringComparison.Ordinal); // its font is bold
         Assert.Contains(3.5.ToString("G15", CultureInfo.CurrentCulture), html, StringComparison.Ordinal);
         Assert.Contains(">42</td>", html, StringComparison.Ordinal); // an RK number
         Assert.Contains("Ünlü " + new string('x', 30), System.Net.WebUtility.HtmlDecode(html), StringComparison.Ordinal); // a shared string that goes on in a CONTINUE record

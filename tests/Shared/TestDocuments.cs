@@ -222,11 +222,13 @@ public static class TestDocuments
 
     /// <summary>
     /// A Word 97-2003 document of a text (Word's marks: \r paragraphs, \u0007 cells, \u0013 \u0014 \u0015 fields), stored
-    /// as UTF-16 in one piece.
+    /// as UTF-16 in one piece. <paramref name="runs"/> gives character formatting (each run's end, exclusive, and its
+    /// sprms or null), <paramref name="paragraphs"/> paragraph properties (each paragraph's end, exclusive, and its istd
+    /// followed by sprms, or null): they go to one CHPX and one PAPX formatted disk page.
     /// </summary>
-    public static byte[] Doc(string text)
+    public static byte[] Doc(string text, (int End, byte[]? Sprms)[]? runs = null, (int End, byte[]? Properties)[]? paragraphs = null)
     {
-        var document = new byte[0x800 + text.Length * 2 + 64];
+        var document = new byte[0xE00 + text.Length * 2];
         BitConverter.GetBytes((ushort)0xA5EC).CopyTo(document, 0);
         BitConverter.GetBytes((ushort)0x0200).CopyTo(document, 0x0A); // the table stream is 1Table
         BitConverter.GetBytes((ushort)14).CopyTo(document, 32); // csw
@@ -236,6 +238,20 @@ public static class TestDocuments
         BitConverter.GetBytes(0).CopyTo(document, 154 + 33 * 8); // fcClx
         BitConverter.GetBytes(21).CopyTo(document, 154 + 33 * 8 + 4); // lcbClx
         Encoding.Unicode.GetBytes(text).CopyTo(document, 0x800);
+        // the bin tables (in the table stream after the CLX) point to the pages 5 (CHPX) and 6 (PAPX)
+        var textEnd = 0x800 + text.Length * 2;
+        if (runs is not null)
+        {
+            BitConverter.GetBytes(21).CopyTo(document, 154 + 12 * 8);
+            BitConverter.GetBytes(12).CopyTo(document, 154 + 12 * 8 + 4);
+            Fkp(document, 0xA00, runs, 1);
+        }
+        if (paragraphs is not null)
+        {
+            BitConverter.GetBytes(33).CopyTo(document, 154 + 13 * 8);
+            BitConverter.GetBytes(12).CopyTo(document, 154 + 13 * 8 + 4);
+            Fkp(document, 0xC00, paragraphs, 13);
+        }
         var table = new MemoryStream();
         table.WriteByte(0x02);
         table.Write(BitConverter.GetBytes(16)); // lcb: 2 CPs + 1 PCD
@@ -244,7 +260,42 @@ public static class TestDocuments
         table.Write(new byte[2]);
         table.Write(BitConverter.GetBytes(0x800)); // fc: UTF-16 at 0x800
         table.Write(new byte[2]);
+        foreach (var page in new[] { 5, 6 })
+        {
+            table.Write(BitConverter.GetBytes(0x800));
+            table.Write(BitConverter.GetBytes(textEnd));
+            table.Write(BitConverter.GetBytes(page));
+        }
         return CompoundFile(("WordDocument", document), ("1Table", table.ToArray()));
+    }
+
+    /// <summary>
+    /// A formatted disk page at <paramref name="page"/>: the FCs of the entries, their offsets (CHPX: one byte each;
+    /// PAPX: a 13-byte BxPap) and the properties from the end of the page down.
+    /// </summary>
+    private static void Fkp(byte[] document, int page, (int End, byte[]? Data)[] entries, int offsetSize)
+    {
+        var count = entries.Length;
+        var start = 0;
+        var free = 511;
+        for (var i = 0; i < count; i++)
+        {
+            BitConverter.GetBytes(0x800 + start * 2).CopyTo(document, page + i * 4);
+            start = entries[i].End;
+            if (entries[i].Data is not { } data)
+            {
+                continue;
+            }
+            // CHPX: cb, grpprl; PAPX: cb with 2 * cb - 1 bytes (istd + grpprl), padded to that length
+            var cb = offsetSize == 1 ? data.Length : (data.Length + 2) / 2;
+            var size = offsetSize == 1 ? data.Length + 1 : 2 * cb;
+            free = (free - size) & ~1;
+            document[page + free] = (byte)cb;
+            data.CopyTo(document, page + free + 1);
+            document[page + (count + 1) * 4 + i * offsetSize] = (byte)(free / 2);
+        }
+        BitConverter.GetBytes(0x800 + start * 2).CopyTo(document, page + count * 4);
+        document[page + 511] = (byte)count;
     }
 
     private static byte[] Record(int type, byte[] data) => [.. BitConverter.GetBytes((ushort)type), .. BitConverter.GetBytes((ushort)data.Length), .. data];
@@ -252,7 +303,7 @@ public static class TestDocuments
     private static byte[] Cell(int row, int column, int xf) => [.. BitConverter.GetBytes((ushort)row), .. BitConverter.GetBytes((ushort)column), .. BitConverter.GetBytes((ushort)xf)];
 
     /// <summary>
-    /// An Excel 97-2003 workbook: a visible sheet "Data" (A1 "Item", B1 3.5, A2 42 (an RK), B2 a long text whose shared
+    /// An Excel 97-2003 workbook: a visible sheet "Data" (A1 "Item" in bold, B1 3.5, A2 42 (an RK), B2 a long text whose shared
     /// string goes on in a CONTINUE record, A3 the date 2025-01-01, B3 a formula's text "ok") and a hidden sheet "Secret".
     /// </summary>
     public static byte[] Xls()
@@ -266,7 +317,9 @@ public static class TestDocuments
         sst.AddRange([.. BitConverter.GetBytes((ushort)4), 0x00, .. Encoding.ASCII.GetBytes("Item")]);
         sst.AddRange([.. BitConverter.GetBytes((ushort)longText.Length), 0x01, .. Encoding.Unicode.GetBytes(longText[..10])]);
         byte[] continued = [0x00, .. Encoding.Latin1.GetBytes(longText[10..])]; // the rest as 8-bit characters
-        var xf = Enumerable.Range(0, 2).Select(i => Record(0x00E0, [0, 0, (byte)(i == 1 ? 14 : 0), 0, .. new byte[16]])).SelectMany(r => r).ToArray();
+        // the fonts 0 (regular) and 1 (bold); the XFs 0 (general), 1 (a date), 2 (font 1: bold)
+        var fonts = new[] { 400, 700 }.Select(weight => Record(0x0031, [.. BitConverter.GetBytes((ushort)200), 0, 0, 0xFF, 0x7F, .. BitConverter.GetBytes((ushort)weight), .. new byte[6], 5, 0, .. Encoding.ASCII.GetBytes("Arial")])).SelectMany(r => r).ToArray();
+        var xf = Enumerable.Range(0, 3).Select(i => Record(0x00E0, [(byte)(i == 2 ? 1 : 0), 0, (byte)(i == 1 ? 14 : 0), 0, .. new byte[16]])).SelectMany(r => r).ToArray();
         byte[] Globals(int dataPosition, int secretPosition) =>
         [
             .. Record(0x0809, [0x00, 0x06, 0x05, 0x00, .. new byte[12]]),
@@ -274,6 +327,7 @@ public static class TestDocuments
             .. Record(0x0085, [.. BitConverter.GetBytes(secretPosition), 1, 0, 6, 0, .. Encoding.ASCII.GetBytes("Secret")]),
             .. Record(0x00FC, [.. sst]),
             .. Record(0x003C, continued),
+            .. fonts,
             .. xf,
             .. Record(0x000A, []),
         ];
@@ -281,7 +335,7 @@ public static class TestDocuments
         byte[] data =
         [
             .. Record(0x0809, [0x00, 0x06, 0x10, 0x00, .. new byte[12]]),
-            .. Record(0x00FD, [.. Cell(0, 0, 0), .. BitConverter.GetBytes(0)]),
+            .. Record(0x00FD, [.. Cell(0, 0, 2), .. BitConverter.GetBytes(0)]),
             .. Record(0x0203, [.. Cell(0, 1, 0), .. BitConverter.GetBytes(3.5)]),
             .. Record(0x027E, [.. Cell(1, 0, 0), .. BitConverter.GetBytes((42 << 2) | 2)]),
             .. Record(0x00FD, [.. Cell(1, 1, 0), .. BitConverter.GetBytes(1)]),

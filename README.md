@@ -47,8 +47,8 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
 - Web server folder listings (`http://`, `https://`) open like folders; the remotes of an installed rclone too.
 - Android phones over ADB (USB debugging) as drives; shortcuts to the local folders of OneDrive, iCloud Drive,
   Dropbox, Google Drive ... and to WSL distributions.
-- Remote desktop (RDP) and VNC connections open in the system's client (mstsc, Windows App, FreeRDP / Remmina;
-  TigerVNC, RealVNC, TightVNC, Screen Sharing); SSH, Telnet and rsh / rlogin sessions and serial port consoles in a tab
+- Remote desktop (RDP) sessions in a tab of the main window (Windows, Linux) or the system's client (mstsc, Windows
+  App, FreeRDP / Remmina); VNC in the system's viewer (TigerVNC, RealVNC, TightVNC, Screen Sharing); SSH, Telnet and rsh / rlogin sessions and serial port consoles in a tab
   of the internal terminal.
 - PC link: two computers running NextCommander work on each other's shared folders over a USB or Ethernet cable
   (or the network), encrypted, paired once with a code shown on both screens.

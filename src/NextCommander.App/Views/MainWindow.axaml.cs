@@ -294,6 +294,7 @@ public partial class MainWindow : Window
         _vm.ButtonBarFocusRequested += (_, _) => _topBar.FocusFirst();
         _vm.DropDownMenuRequested += (_, kind) => ShowDropDownMenu(kind);
         _vm.TerminalSessionRequested += (_, connection) => OpenTerminalSession(connection);
+        _vm.RemoteDesktopRequested += (_, request) => ShowRemoteDesktop(new RemoteDesktopView(request.Connection, request.Password, request.Folder));
         _vm.NextPageRequested += (_, _) => SelectNextPage();
         _vm.HotlistMenuRequested += (_, _) => ShowHotlistMenu();
         _vm.ButtonBarsChanged += (_, _) => UpdateButtonBars();
@@ -539,6 +540,7 @@ public partial class MainWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _titleTimer.Stop();
+        CloseRemoteDesktops(); // their sessions end with the window
         base.OnClosed(e);
         _vm?.Dispose();
     }
