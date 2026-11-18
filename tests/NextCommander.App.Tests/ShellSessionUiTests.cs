@@ -222,11 +222,11 @@ public sealed class ShellSessionUiTests : IDisposable
         Assert.True(Shown("Jump host"));
         Assert.True(Shown("Command when it opens"));
         Assert.True(Shown("Pinned host key"));
-        Assert.Equal(4, Tabs().ItemCount); // with Proxy
+        Assert.Equal(5, Tabs().ItemCount); // with Proxy (and the log)
 
         view.Reveal(vnc);
         await SettleAsync();
-        Assert.Equal(3, Tabs().ItemCount); // the viewer connects itself: no Proxy tab
+        Assert.Equal(4, Tabs().ItemCount); // the viewer connects itself: no Proxy tab
         Tabs().SelectedIndex = 2;
         await SettleAsync();
         view.GetVisualDescendants().OfType<CheckBox>().First(b => Equals(b.Content, "View only (no keys or mouse sent)")).IsChecked = true;

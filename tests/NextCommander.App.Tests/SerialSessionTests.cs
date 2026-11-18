@@ -118,7 +118,7 @@ public sealed class SerialSessionTests : IDisposable
         TabControl Tabs() => view.GetVisualDescendants().OfType<TabControl>().Single();
         ComboBox ChoiceWith(string item) => view.GetVisualDescendants().OfType<ComboBox>().First(c => c.ItemsSource is IEnumerable<string> items && items.Contains(item));
 
-        Assert.Equal(3, Tabs().ItemCount); // no Proxy tab
+        Assert.Equal(4, Tabs().ItemCount); // no Proxy tab (General, Login, Advanced, Log)
         Assert.Equal("COM3", view.GetVisualDescendants().OfType<AutoCompleteBox>().Single().Text);
         ChoiceWith("115200").SelectedIndex = 8;
         Assert.Equal(115200, serial.BaudRate);

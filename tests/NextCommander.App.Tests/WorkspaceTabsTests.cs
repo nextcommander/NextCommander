@@ -170,7 +170,7 @@ public sealed class WorkspaceTabsTests : IDisposable
         var again = new Views.Tools.SyncDirsView(VfsPath.Local(_fx.L()), VfsPath.Local(_fx.R()), vm.Tools);
         w.ShowSync(again);
         await SettleAsync(4);
-        Click(again.GetVisualDescendants().OfType<Button>().Single(b => Equals(b.Content, "×")));
+        Click(again.GetVisualDescendants().OfType<Button>().Single(b => b.Classes.Contains("pageclose")));
         await SettleAsync();
         Assert.Null(w.Sync);
 

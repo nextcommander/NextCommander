@@ -29,6 +29,7 @@ public sealed class RemoteDesktopView : UserControl, IDisposable
     private readonly Grid _layers = new();
     private readonly Border _ended;
     private readonly TextBlock _message = new() { TextWrapping = Avalonia.Media.TextWrapping.Wrap, HorizontalAlignment = HorizontalAlignment.Center, TextAlignment = Avalonia.Media.TextAlignment.Center };
+    private readonly SelectableTextBlock _logFile = new() { TextWrapping = Avalonia.Media.TextWrapping.Wrap, HorizontalAlignment = HorizontalAlignment.Center, TextAlignment = Avalonia.Media.TextAlignment.Center, FontSize = 11, Opacity = 0.65 };
     private readonly Border _connecting;
     private SessionHost? _host;
     private RemoteDesktopState _state;
@@ -57,6 +58,7 @@ public sealed class RemoteDesktopView : UserControl, IDisposable
                 Children =
                 {
                     _message,
+                    _logFile,
                     new StackPanel { Classes = { "buttonrow" }, Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Center, Children = { again, close } },
                 },
             },
@@ -70,7 +72,9 @@ public sealed class RemoteDesktopView : UserControl, IDisposable
         };
         _connecting.Bind(Border.BackgroundProperty, _connecting.GetResourceObservable("SystemControlBackgroundBaseLowBrush"));
         DockPanel.SetDock(_connecting, Dock.Top);
-        Content = new DockPanel { Children = { _connecting, _layers } };
+        // the title bar of every page: the internal terminal's top line, the session's name, ✕ (disconnect) at the right
+        var header = PageHeader.Create(Services.Icons.BrandIcons.Create(RemoteProtocol.Rdp), Title, "Disconnect and close", Close, out _, translate: false);
+        Content = new DockPanel { Children = { header, _connecting, _layers } };
         Focusable = true;
         Start();
     }
@@ -114,6 +118,7 @@ public sealed class RemoteDesktopView : UserControl, IDisposable
         StopHost();
         _ended.IsVisible = false;
         State = RemoteDesktopState.Connecting;
+        Core.Net.ConnectionLog.Info(Connection, "Connecting (remote desktop in a tab) ...");
         _host = new SessionHost(this);
         _layers.Children.Insert(0, _host);
     }
@@ -129,12 +134,27 @@ public sealed class RemoteDesktopView : UserControl, IDisposable
     internal void Ended(string message)
     {
         StopHost();
+        // a plain end is a step of the log; a failure an error (the message has its reason)
+        if (message == "The remote desktop session ended.")
+        {
+            Core.Net.ConnectionLog.Info(Connection, message);
+        }
+        else
+        {
+            Core.Net.ConnectionLog.Error(Connection, message);
+        }
         _message.Text = message;
+        _logFile.Text = Core.Net.ConnectionLog.FileOf(Connection) is { } file ? Core.Localization.Localizer.T("The connection's log:") + " " + file : null;
+        _logFile.IsVisible = _logFile.Text is not null;
         _ended.IsVisible = true;
         State = RemoteDesktopState.Ended;
     }
 
-    private void Connected() => State = RemoteDesktopState.Connected;
+    private void Connected()
+    {
+        Core.Net.ConnectionLog.Info(Connection, "Connected.");
+        State = RemoteDesktopState.Connected;
+    }
 
     private void StopHost()
     {

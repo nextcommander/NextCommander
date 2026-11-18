@@ -1,6 +1,7 @@
 using System.Net.Sockets;
 using System.Text;
 using NextCommander.Core.Config;
+using NextCommander.Core.Net;
 
 namespace NextCommander.App.Services.Terminal;
 
@@ -55,6 +56,7 @@ public abstract class StreamTerminal : PseudoTerminal
         try
         {
             Show(Core.Localization.Localizer.T("Connecting to {0}...").Replace("{0}", Target, StringComparison.Ordinal) + "\r\n");
+            ConnectionLog.Info(Connection, $"Connecting to {Target} (a tab of the internal terminal) ...");
             using (var connect = CancellationTokenSource.CreateLinkedTokenSource(_stop.Token))
             {
                 // the login may ask for a password: the time limit is the connection's, at least a minute then
@@ -68,6 +70,7 @@ public abstract class StreamTerminal : PseudoTerminal
                     throw new TimeoutException(Core.Localization.Localizer.T("The server did not answer in time."));
                 }
             }
+            ConnectionLog.Info(Connection, "Connected.");
             Opened(_stream);
             var buffer = new byte[16384];
             using var reading = CancellationTokenSource.CreateLinkedTokenSource(_stop.Token, _ended.Token);
@@ -86,6 +89,7 @@ public abstract class StreamTerminal : PseudoTerminal
                 if (read == 0)
                 {
                     Show("\r\n" + Core.Localization.Localizer.T("The connection was closed by the server.") + "\r\n");
+                    ConnectionLog.Info(Connection, "The connection was closed by the server.");
                     break;
                 }
                 Screen(buffer, read);
@@ -93,15 +97,19 @@ public abstract class StreamTerminal : PseudoTerminal
         }
         catch (OperationCanceledException) when (_stop.IsCancellationRequested)
         {
+            ConnectionLog.Info(Connection, "Closed here.");
         }
         catch (ObjectDisposedException) when (_stop.IsCancellationRequested)
         {
+            ConnectionLog.Info(Connection, "Closed here.");
         }
         catch (Exception ex) when (ex is IOException or SocketException or TimeoutException or ObjectDisposedException or InvalidOperationException
             or Renci.SshNet.Common.SshException)
         {
             code = 1;
-            Show("\r\n" + ex.Message + "\r\n");
+            // the causes and where the log is, on the terminal's screen
+            ConnectionLog.Error(Connection, ex.Message, ex);
+            Show("\r\n" + ConnectionLog.Causes(ex).Replace("\n", "\r\n", StringComparison.Ordinal) + "\r\n" + LogLine(Connection));
         }
         finally
         {
@@ -122,6 +130,10 @@ public abstract class StreamTerminal : PseudoTerminal
         var bytes = Encoding.UTF8.GetBytes(chars, 0, length);
         RaiseOutput(bytes, bytes.Length);
     }
+
+    /// <summary>"The connection's log: ..." for a terminal's screen (empty without a log folder).</summary>
+    public static string LogLine(RemoteConnection connection) =>
+        ConnectionLog.FileOf(connection) is { } file ? Core.Localization.Localizer.T("The connection's log:") + " " + file + "\r\n" : string.Empty;
 
     protected void Show(string text)
     {

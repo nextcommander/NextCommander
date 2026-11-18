@@ -10,7 +10,7 @@ using static NextCommander.App.Tests.UiFixture;
 
 namespace NextCommander.App.Tests;
 
-/// <summary>What happens inside a file panel: the connection manager in place of the left panel, and renaming in the list.</summary>
+/// <summary>The connection manager and the configuration as pages of the main window, and renaming in the list.</summary>
 public sealed class PanelToolsTests : IDisposable
 {
     private readonly UiFixture _fx = new();
@@ -18,19 +18,22 @@ public sealed class PanelToolsTests : IDisposable
     public void Dispose() => _fx.Dispose();
 
     [AvaloniaFact]
-    public async Task The_connection_manager_opens_in_place_of_the_left_panel()
+    public async Task The_connection_manager_opens_as_a_page_with_a_tab()
     {
         var (w, vm) = await _fx.OpenAsync();
-        vm.ActivateSide(vm.RightSide); // even when the right panel is the active one
         var settings = new AppSettings();
         var view = new ConnectionManagerView(new ConnectionManagerRequest(settings, () => { }, (_, _) => Task.FromResult(string.Empty), _ => false,
             _ => Task.CompletedTask, (_, _) => Task.CompletedTask, _ => Task.FromResult<string?>(null)));
         var shown = w.ShowConnectionManagerAsync(view);
         await SettleAsync();
+        // a page of its own in place of both panels, like the maximized terminal; a tab for it next to the files
+        Assert.Same(view, w.ConnectionManager);
+        Assert.Equal(Views.WorkspacePage.Connections, w.CurrentPage);
+        Assert.Equal([Views.WorkspacePage.Files, Views.WorkspacePage.Connections], w.OpenPages);
         Assert.True(view.IsEffectivelyVisible);
-        Assert.False(w.LeftPanel.IsEffectivelyVisible); // always the left panel's place
-        Assert.True(w.RightPanel.IsEffectivelyVisible);
-        Assert.Same(w.LeftPanel.FindAncestorOfType<Views.PanelSideView>(), view.FindAncestorOfType<Views.PanelSideView>());
+        Assert.Null(view.FindAncestorOfType<Views.PanelSideView>());
+        var panels = w.FindControl<Grid>("PanelsGrid")!;
+        Assert.Equal(panels.Bounds.Width, view.Bounds.Width, 1);
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
         {
             settings.Connections.Add(new RemoteConnection { Name = "web", Host = "server.example.com", User = "deploy", Folder = "Work" });
@@ -38,10 +41,19 @@ public sealed class PanelToolsTests : IDisposable
             view.Reveal(settings.Connections[0]);
             await SettleAsync();
             Directory.CreateDirectory(dir);
-            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(w)!.SavePng(Path.Combine(dir, "manager-in-panel.png"));
+            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(w)!.SavePng(Path.Combine(dir, "manager-page.png"));
             settings.Connections.Clear();
             view.RefreshTree();
         }
+
+        // the files tab switches back; the manager stays open in its tab
+        w.SelectPage(Views.WorkspacePage.Files);
+        await SettleAsync();
+        Assert.False(view.IsEffectivelyVisible);
+        Assert.True(w.LeftPanel.IsEffectivelyVisible);
+        Assert.False(shown.IsCompleted);
+        w.SelectPage(Views.WorkspacePage.Connections);
+        await SettleAsync();
 
         // keys typed in the manager stay there (Ctrl+N: a new connection, not a window command)
         view.Focus();
@@ -49,10 +61,12 @@ public sealed class PanelToolsTests : IDisposable
         await SettleAsync();
         Assert.Single(settings.Connections);
 
-        // Esc closes it: the file panel is back
+        // Esc closes it: the page and its tab go, the files are back
         Press(w, Key.Escape);
         Assert.Null(await shown);
         await SettleAsync();
+        Assert.Null(w.ConnectionManager);
+        Assert.Equal(Views.WorkspacePage.Files, w.CurrentPage);
         Assert.True(w.LeftPanel.IsEffectivelyVisible);
         Assert.Empty(settings.Connections); // the new connection was never filled in
     }

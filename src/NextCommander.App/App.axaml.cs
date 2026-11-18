@@ -34,6 +34,15 @@ public partial class App : Application
             s_logDirectory = Path.Combine(store.Directory, "logs");
             ApplyProgramLog(settings.ProgramLog);
             NextCommander.App.Services.OperationLog.DefaultFile = Path.Combine(s_logDirectory, "operations.log");
+            // each connection's own log; its errors go to the program log too
+            NextCommander.Core.Net.ConnectionLog.Folder = Path.Combine(s_logDirectory, "connections");
+            NextCommander.Core.Net.ConnectionLog.Written += (_, entry) =>
+            {
+                if (entry.Level == NextCommander.Core.Net.ConnectionLogLevel.Error)
+                {
+                    Log.Warning("Connection {Connection} ({Address}): {Message} {Details}", entry.Connection, entry.Address, entry.Message, entry.Details);
+                }
+            };
             NextCommander.App.Services.ColorThemes.UserDirectory = Path.Combine(store.Directory, "themes");
             NextCommander.App.Services.Icons.IconPacks.UserDirectory = Path.Combine(store.Directory, "iconpacks");
             ThumbnailCachePath = ThumbnailCacheDirectory(store);

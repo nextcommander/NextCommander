@@ -2887,5 +2887,22 @@
   "RemoteDesktopView.SessionCouldNotStart": "无法启动会话：{0}",
   "RemoteDesktopView.SessionEndedBecause": "远程桌面会话已结束：{0}",
   "RemoteDesktopView.ConnectionFailedBecause": "无法连接到 {0}：{1}",
-  "RemoteDesktopView.SessionEndedReason": "远程桌面会话已结束（原因 {0}）。"
+  "RemoteDesktopView.SessionEndedReason": "远程桌面会话已结束（原因 {0}）。",
+  "ConnectionFolders.EnterTheUserNameAn": "请输入用户名（SSH 登录总是需要用户名）。",
+  "ConnectionFolders.ChooseThePrivateKeyFile": "请选择私钥文件（或其他登录方式）。",
+  "ConnectionFolders.ThePrivateKeyFileWas": "找不到私钥文件。",
+  "ConnectionManagerView.Required": "必填",
+  "ConnectionManagerView.ClearTheLog": "清空日志",
+  "ConnectionManagerView.NothingLoggedYetTheLog": "尚无日志：打开或测试连接时会写入日志。",
+  "MainWindow.ConnectionError": "连接错误",
+  "MainWindow.ShowTheLog": "显示日志",
+  "MainWindow.TheConnectionSLog": "连接日志：",
+  "ConnectionManagerView.ConnectionName": "连接名称",
+  "ConnectionManagerView.Next": "下一步 ›",
+  "ConnectionManagerView.NoNameGivenYet": "尚未命名",
+  "ConnectionManagerView.EGProductionWebServer": "例如：生产 Web 服务器",
+  "ConnectionManagerView.EnterANameFor": "请输入连接名称。",
+  "ConnectionManagerView.AnotherConnectionHasThis": "已有连接使用此名称，请换一个。",
+  "ConnectionManagerView.FirstGiveTheConnection": "请先为连接命名：列表按此名称显示它，其日志也以此名称保存。",
+  "ConnectionManagerView.Back": "‹ 上一步"
 }

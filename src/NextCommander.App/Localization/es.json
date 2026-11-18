@@ -2887,5 +2887,22 @@
   "RemoteDesktopView.SessionCouldNotStart": "No se pudo iniciar la sesión: {0}",
   "RemoteDesktopView.SessionEndedBecause": "La sesión de escritorio remoto ha terminado: {0}",
   "RemoteDesktopView.ConnectionFailedBecause": "No se pudo establecer la conexión con {0}: {1}",
-  "RemoteDesktopView.SessionEndedReason": "La sesión de escritorio remoto ha terminado (motivo {0})."
+  "RemoteDesktopView.SessionEndedReason": "La sesión de escritorio remoto ha terminado (motivo {0}).",
+  "ConnectionFolders.EnterTheUserNameAn": "Introduzca el nombre de usuario (un inicio de sesión SSH siempre tiene uno).",
+  "ConnectionFolders.ChooseThePrivateKeyFile": "Elija el archivo de clave privada (u otro método de inicio de sesión).",
+  "ConnectionFolders.ThePrivateKeyFileWas": "No se encontró el archivo de clave privada.",
+  "ConnectionManagerView.Required": "Obligatorio",
+  "ConnectionManagerView.ClearTheLog": "Vaciar el registro",
+  "ConnectionManagerView.NothingLoggedYetTheLog": "Aún no hay nada registrado: el registro se llena cuando se abre o se prueba la conexión.",
+  "MainWindow.ConnectionError": "Error de conexión",
+  "MainWindow.ShowTheLog": "Mostrar el registro",
+  "MainWindow.TheConnectionSLog": "Registro de la conexión:",
+  "ConnectionManagerView.ConnectionName": "Nombre de la conexión",
+  "ConnectionManagerView.Next": "Siguiente ›",
+  "ConnectionManagerView.NoNameGivenYet": "aún sin nombre",
+  "ConnectionManagerView.EGProductionWebServer": "p. ej. Servidor web de producción",
+  "ConnectionManagerView.EnterANameFor": "Introduzca un nombre para la conexión.",
+  "ConnectionManagerView.AnotherConnectionHasThis": "Otra conexión tiene este nombre; elija otro.",
+  "ConnectionManagerView.FirstGiveTheConnection": "Primero dé un nombre a la conexión: la lista la muestra con este nombre y su registro se guarda con él.",
+  "ConnectionManagerView.Back": "‹ Atrás"
 }

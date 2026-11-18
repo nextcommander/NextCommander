@@ -107,68 +107,123 @@ public static class ConnectionFolders
     }
 }
 
+/// <summary>The field of the connection editor a problem belongs to (it is marked there).</summary>
+public enum ConnectionField
+{
+    Host,
+    Port,
+    User,
+    ClientId,
+    ClientSecret,
+    KeyFile,
+    JumpHost,
+    Proxy,
+    ActivePorts,
+    Other,
+}
+
+/// <summary>What is wrong with one field of a connection.</summary>
+public sealed record ConnectionProblem(ConnectionField Field, string Text);
+
 /// <summary>What keeps a connection from being saved or used.</summary>
 public static class ConnectionChecks
 {
     /// <summary>The first problem of a connection (null: it can be used).</summary>
-    public static string? Problem(RemoteConnection connection)
+    public static string? Problem(RemoteConnection connection) => Problems(connection) is [var first, ..] ? first.Text : null;
+
+    /// <summary>
+    /// Every problem of a connection, with the field it belongs to: what must be filled in for its type (the server,
+    /// the user of an SSH login, the key file chosen as the login, a cloud drive's application id ...) and values that
+    /// cannot be right (user's request, 18 November 2026).
+    /// </summary>
+    public static IReadOnlyList<ConnectionProblem> Problems(RemoteConnection connection)
     {
-        if (OptionProblem(connection) is { } option)
-        {
-            return option;
-        }
-        var cloud = connection.IsCloudDrive;
-        if (cloud)
+        var problems = new List<ConnectionProblem>();
+        void Add(ConnectionField field, string text) => problems.Add(new ConnectionProblem(field, text));
+        OptionProblems(connection, Add);
+        if (connection.IsCloudDrive)
         {
             if (string.IsNullOrWhiteSpace(connection.ClientId))
             {
-                return "An application (client) id is needed; how to get one is written in the note.";
+                Add(ConnectionField.ClientId, "An application (client) id is needed; how to get one is written in the note.");
             }
             if (connection.Protocol == RemoteProtocol.Box && string.IsNullOrWhiteSpace(connection.ClientSecret))
             {
-                return "Box needs the client secret of the application too.";
+                Add(ConnectionField.ClientSecret, "Box needs the client secret of the application too.");
             }
-            return null;
+            return problems;
         }
         var host = connection.Host.Trim();
         if (connection.Protocol == RemoteProtocol.Serial)
         {
             // a port name: COM3, /dev/ttyUSB0
-            return host.Length == 0 || host.Contains(' ', StringComparison.Ordinal) ? "Enter the serial port (e.g. COM3 or /dev/ttyUSB0)." : null;
+            if (host.Length == 0 || host.Contains(' ', StringComparison.Ordinal))
+            {
+                Add(ConnectionField.Host, "Enter the serial port (e.g. COM3 or /dev/ttyUSB0).");
+            }
+            return problems;
         }
         if (host.Length == 0 || host.Contains('/', StringComparison.Ordinal) || host.Contains(' ', StringComparison.Ordinal))
         {
-            return "Enter a valid server name (e.g. server.example.com).";
+            Add(ConnectionField.Host, "Enter a valid server name (e.g. server.example.com).");
         }
-        if (host.Contains("ACCOUNT_ID", StringComparison.Ordinal) || host.Contains("REGION", StringComparison.Ordinal))
+        else if (host.Contains("ACCOUNT_ID", StringComparison.Ordinal) || host.Contains("REGION", StringComparison.Ordinal))
         {
-            return "Replace the part in capitals of the server name (as the note says).";
+            Add(ConnectionField.Host, "Replace the part in capitals of the server name (as the note says).");
         }
         if (connection.Port is < 0 or > 65535)
         {
-            return "Port must be between 1 and 65535.";
+            Add(ConnectionField.Port, "Port must be between 1 and 65535.");
         }
         if (connection.Protocol == RemoteProtocol.S3 && string.IsNullOrWhiteSpace(connection.User) && string.IsNullOrWhiteSpace(connection.AwsProfile))
         {
-            return "S3 needs an access key id or an AWS profile.";
+            Add(ConnectionField.User, "S3 needs an access key id or an AWS profile.");
         }
         if (connection.Protocol is RemoteProtocol.AzureBlob or RemoteProtocol.AzureFiles && string.IsNullOrWhiteSpace(connection.User))
         {
-            return "Azure needs the name of the storage account.";
+            Add(ConnectionField.User, "Azure needs the name of the storage account.");
         }
-        if (!string.IsNullOrWhiteSpace(connection.JumpHost) && connection.Protocol is RemoteProtocol.Sftp or RemoteProtocol.Scp)
+        var ssh = connection.Protocol is RemoteProtocol.Sftp or RemoteProtocol.Scp or RemoteProtocol.Ssh;
+        if (ssh && string.IsNullOrWhiteSpace(connection.User))
+        {
+            Add(ConnectionField.User, "Enter the user name (an SSH login always has one).");
+        }
+        if (ssh && connection.KeyFile is { } key)
+        {
+            // the key file was chosen as the login: it must be there (a path of this computer)
+            if (key.Trim().Length == 0)
+            {
+                Add(ConnectionField.KeyFile, "Choose the private key file (or another login method).");
+            }
+            else if (Path.IsPathFullyQualified(key.Trim()) && !File.Exists(key.Trim()))
+            {
+                Add(ConnectionField.KeyFile, "The private key file was not found.");
+            }
+        }
+        if (!string.IsNullOrWhiteSpace(connection.JumpHost) && ssh)
         {
             var jump = RemoteConnection.FromAuthority("sftp", connection.JumpHost.Trim());
             if (jump.Host.Length == 0 || jump.Host.Contains('/', StringComparison.Ordinal) || jump.Host.Contains(' ', StringComparison.Ordinal))
             {
-                return "Enter the jump host as user@host:port.";
+                Add(ConnectionField.JumpHost, "Enter the jump host as user@host:port.");
             }
         }
-        return null;
+        return problems;
     }
+
+    /// <summary>The problem of one field (null: none).</summary>
+    public static string? ProblemOf(RemoteConnection connection, ConnectionField field) =>
+        Problems(connection).FirstOrDefault(p => p.Field == field)?.Text;
 
     /// <summary>What is wrong with the options of the Advanced and Proxy tabs (own proxy, FTP ports, sizes), or null.</summary>
     public static string? OptionProblem(RemoteConnection connection)
+    {
+        string? first = null;
+        OptionProblems(connection, (_, text) => first ??= text);
+        return first;
+    }
+
+    private static void OptionProblems(RemoteConnection connection, Action<ConnectionField, string> add)
     {
         if (connection.Proxy == Net.ConnectionProxy.Custom)
         {
@@ -176,22 +231,21 @@ public static class ConnectionChecks
                 connection.ProxyPort > 0 ? connection.ProxyPort : Net.ProxyOptions.DefaultPort(connection.ProxyKind), Kind: connection.ProxyKind);
             if (own.Problem is { } problem)
             {
-                return problem;
+                add(ConnectionField.Proxy, problem);
             }
         }
         if (!string.IsNullOrWhiteSpace(connection.FtpActivePorts) && PortRange(connection.FtpActivePorts) is null)
         {
-            return "Enter the active mode ports as a range, e.g. 50000-50100.";
+            add(ConnectionField.ActivePorts, "Enter the active mode ports as a range, e.g. 50000-50100.");
         }
         if (connection.Protocol == RemoteProtocol.Serial && (connection.BaudRate is < 50 or > 4_000_000 || connection.DataBits is < 5 or > 8))
         {
-            return "The speed must be between 50 and 4000000 bits per second, the data bits between 5 and 8.";
+            add(ConnectionField.Other, "The speed must be between 50 and 4000000 bits per second, the data bits between 5 and 8.");
         }
         if (connection.RdpWidth < 0 || connection.RdpHeight < 0 || (connection.RdpWidth > 0) != (connection.RdpHeight > 0))
         {
-            return "Enter both the width and the height of the remote desktop, or neither.";
+            add(ConnectionField.Other, "Enter both the width and the height of the remote desktop, or neither.");
         }
-        return null;
     }
 
     /// <summary>"50000-50100" → the ports (null: not a range of valid ports).</summary>

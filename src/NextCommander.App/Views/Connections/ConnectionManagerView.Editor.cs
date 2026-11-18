@@ -2,6 +2,8 @@ using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
 using NextCommander.App.Services.Icons;
@@ -78,10 +80,108 @@ public sealed partial class ConnectionManagerView
         _problem.IsVisible = true;
     }
 
+    private static readonly IBrush s_problemBrush = new SolidColorBrush(Color.Parse("#ED4245"));
+
+    /// <summary>The fields of the shown connection that are checked: the field, its input and the line for its problem.</summary>
+    private readonly List<(ConnectionField Field, Control Input, TextBlock Message)> _marks = [];
+
+    /// <summary>New connections whose problems are shown at their fields (after the first change, Save, Connect or Test).</summary>
+    private readonly HashSet<RemoteConnection> _checking = [];
+
+    /// <summary>The fields with a problem of the shown connection (tests).</summary>
+    public IReadOnlyList<ConnectionField> MarkedFields => [.. _marks.Where(m => m.Message.IsVisible).Select(m => m.Field)];
+
+    /// <summary>
+    /// A field that is checked (user's request, 18 November 2026): a red * after the caption when it must be filled in
+    /// for the type, and what is wrong with it in red under it (its input framed in red).
+    /// </summary>
+    private Control Checked(string caption, Control control, ConnectionField field, bool required = true, string? note = null)
+    {
+        var head = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3 };
+        head.Children.Add(new TextBlock { Text = caption, FontSize = 12, Opacity = 0.7 });
+        if (required)
+        {
+            var star = new TextBlock { Text = "*", FontSize = 12, FontWeight = FontWeight.Bold, Foreground = s_problemBrush, Classes = { "noloc" } };
+            ToolTip.SetTip(star, "Required");
+            head.Children.Add(star);
+        }
+        var message = new TextBlock { FontSize = 11, Foreground = s_problemBrush, TextWrapping = TextWrapping.Wrap, IsVisible = false };
+        var panel = new StackPanel { Spacing = 5, Margin = new Thickness(0, 0, 14, 12) };
+        panel.Children.AddRange([head, control, message]);
+        if (note is not null)
+        {
+            panel.Children.Add(new TextBlock { Text = note, FontSize = 11, Opacity = 0.6, TextWrapping = TextWrapping.Wrap });
+        }
+        _marks.Add((field, control, message));
+        return panel;
+    }
+
+    /// <summary>Shows the problems of the connection at its fields (a new one only once it is being filled in).</summary>
+    private void MarkFields(RemoteConnection c)
+    {
+        var problems = !_newOnes.Contains(c) || _checking.Contains(c) ? ConnectionChecks.Problems(c) : [];
+        foreach (var (field, input, message) in _marks)
+        {
+            var problem = problems.FirstOrDefault(p => p.Field == field);
+            message.Text = problem is null ? string.Empty : Core.Localization.Localizer.T(problem.Text);
+            message.IsVisible = problem is not null;
+            foreach (var box in Avalonia.LogicalTree.LogicalExtensions.GetSelfAndLogicalDescendants(input).OfType<TextBox>())
+            {
+                box.Classes.Set(Dialogs.SettingsView.InvalidJsonClass, problem is not null);
+            }
+        }
+    }
+
+    /// <summary>The editor's tab of a field (General, Login, Advanced, Proxy).</summary>
+    private static int TabOf(ConnectionField field) => field switch
+    {
+        ConnectionField.Host or ConnectionField.Port => 0,
+        ConnectionField.User or ConnectionField.ClientId or ConnectionField.ClientSecret or ConnectionField.KeyFile => 1,
+        ConnectionField.Proxy => 3,
+        _ => 2,
+    };
+
+    /// <summary>
+    /// The connection cannot be saved or used yet: its problems are marked at their fields, the tab of the first one is
+    /// shown with the focus in it, and the first problem under the editor.
+    /// </summary>
+    private void ShowProblems(RemoteConnection c)
+    {
+        if (ConnectionChecks.Problems(c) is not [var first, ..])
+        {
+            return;
+        }
+        _checking.Add(c);
+        if (ReferenceEquals(Current, c))
+        {
+            var tab = TabOf(first.Field);
+            if (tab != _tab || !_marks.Any(m => m.Field == first.Field))
+            {
+                // its tab, built again (a field that came with a changed setting, such as the key file)
+                _tab = tab;
+                ShowDetail();
+            }
+            else
+            {
+                MarkFields(c);
+            }
+            if (_marks.FirstOrDefault(m => m.Field == first.Field).Input is { } input)
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    var box = Avalonia.LogicalTree.LogicalExtensions.GetSelfAndLogicalDescendants(input).OfType<InputElement>().FirstOrDefault(e => e.Focusable);
+                    (box ?? input).Focus();
+                }, Avalonia.Threading.DispatcherPriority.Loaded);
+            }
+        }
+        ShowProblem(first.Text);
+    }
+
     /// <summary>Builds the right side for the selected row.</summary>
     private void ShowDetail()
     {
         _problem = NewProblem();
+        _marks.Clear();
         _footerLeft.Children.Clear();
         _footerRight.Children.Clear();
         switch (Selected)
@@ -92,11 +192,15 @@ public sealed partial class ConnectionManagerView
             case { Folder: { } folder }:
                 _detail.Content = FolderDetail(folder);
                 break;
+            case { Connection: { } c } when _unnamed.Contains(c):
+                _detail.Content = NameStep(c);
+                break;
             case { Connection: { } c } when _untyped.Contains(c):
                 _detail.Content = TypeChoice(c);
                 break;
             case { Connection: { } c }:
                 _detail.Content = ConnectionDetail(c);
+                MarkFields(c);
                 break;
         }
     }
@@ -238,12 +342,162 @@ public sealed partial class ConnectionManagerView
         return card;
     }
 
+    // ---------------------------------------------------------------- name (the first step of a new connection)
+
+    /// <summary>"1 Name › 2 Type › 3 Settings" above the steps of a new connection, the current one stressed.</summary>
+    private static Control Steps(int current, bool withType)
+    {
+        var steps = withType ? new[] { "Name", "Type", "Settings" } : ["Name", "Settings"];
+        var line = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 0, 0, 14) };
+        for (var i = 0; i < steps.Length; i++)
+        {
+            if (i > 0)
+            {
+                line.Children.Add(new TextBlock { Text = "›", Opacity = 0.5, Classes = { "noloc" }, VerticalAlignment = VerticalAlignment.Center });
+            }
+            var number = new Border
+            {
+                Width = 20, Height = 20, CornerRadius = new CornerRadius(10),
+                Background = i == current ? new SolidColorBrush(Color.Parse("#4C8DFF")) : new SolidColorBrush(Color.FromArgb(48, 128, 128, 128)),
+                Child = new TextBlock
+                {
+                    Text = (i + 1).ToString(CultureInfo.InvariantCulture), FontSize = 11, Classes = { "noloc" },
+                    HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+                    Foreground = i == current ? Brushes.White : null,
+                },
+            };
+            line.Children.Add(number);
+            line.Children.Add(new TextBlock
+            {
+                Text = steps[i], VerticalAlignment = VerticalAlignment.Center,
+                FontWeight = i == current ? FontWeight.SemiBold : FontWeight.Normal, Opacity = i == current ? 1 : 0.6,
+            });
+        }
+        return line;
+    }
+
+    /// <summary>
+    /// The first step of a new connection (user's request, 18 November 2026): its name, which it is found by in the
+    /// list and its log is named after; then its type and its settings.
+    /// </summary>
+    private Control NameStep(RemoteConnection c)
+    {
+        var panel = new StackPanel { MaxWidth = 560, HorizontalAlignment = HorizontalAlignment.Left };
+        panel.Children.Add(Crumb(c.Folder.Trim('/')));
+        panel.Children.Add(Steps(0, withType: true));
+        panel.Children.Add(new TextBlock { Text = "New connection", FontSize = 20, FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 0, 0, 6) });
+        panel.Children.Add(new TextBlock
+        {
+            Text = "First give the connection a name: the list shows it by this name, and its log is kept under it.",
+            TextWrapping = TextWrapping.Wrap, Opacity = 0.75, Margin = new Thickness(0, 0, 0, 16),
+        });
+        // back from a later step: the name given is there to change
+        var name = new TextBox { Text = HasPlaceholderName(c) ? null : c.Name, PlaceholderText = Core.Localization.Localizer.T("e.g. Production web server"), FontSize = 15, Classes = { "noloc" } };
+        name.AttachedToVisualTree += (_, _) => name.SelectAll();
+        _nameBox = name;
+        void Next()
+        {
+            if (ApplyName(c, name.Text) is { } problem)
+            {
+                ShowProblem(problem);
+                name.Focus();
+            }
+        }
+        name.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                Next();
+            }
+        };
+        name.TextChanged += (_, _) => _problem.IsVisible = false;
+        panel.Children.Add(Checked("Connection name", name, ConnectionField.Other));
+        panel.Children.Add(_problem);
+        // Cancel at the left; ‹ Back and Next › at the right, as in a wizard (Back on the first step: no new connection after all)
+        AddFooter(FooterButton("Cancel", () => CancelNew(c)), right: false);
+        AddFooter(FooterButton("Next ›", Next, accent: true, right: true), right: true);
+        AddFooter(FooterButton("‹ Back", () => GoBack(c), right: true), right: true);
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => name.Focus(), Avalonia.Threading.DispatcherPriority.Loaded);
+        return panel;
+    }
+
+    /// <summary>New connections whose type was chosen in the type step (‹ Back from their settings goes there).</summary>
+    private readonly HashSet<RemoteConnection> _choseType = [];
+
+    /// <summary>
+    /// ‹ Back in the steps of a new connection: from its settings to its type (or its name when the type was given),
+    /// from its type to its name (kept, to change), from its name: no new connection after all.
+    /// </summary>
+    public void GoBack(RemoteConnection c)
+    {
+        if (_unnamed.Contains(c))
+        {
+            CancelNew(c);
+            return;
+        }
+        if (_untyped.Contains(c) || !_choseType.Remove(c))
+        {
+            _unnamed.Add(c);
+        }
+        else
+        {
+            _untyped.Add(c);
+        }
+        _problem.IsVisible = false;
+        RefreshTree();
+        ShowDetail();
+    }
+
+    /// <summary>
+    /// The name of a new connection is given: it must not be empty nor the name of another connection; then comes its
+    /// type (or its settings when the type is known). Returns the problem, or null.
+    /// </summary>
+    public string? ApplyName(RemoteConnection c, string? text)
+    {
+        var name = text?.Trim() ?? string.Empty;
+        if (name.Length == 0)
+        {
+            return "Enter a name for the connection.";
+        }
+        if (_settings.Connections.Any(o => !ReferenceEquals(o, c) && string.Equals(o.Name.Trim(), name, StringComparison.OrdinalIgnoreCase)))
+        {
+            return "Another connection has this name; choose another.";
+        }
+        c.Name = name;
+        _unnamed.Remove(c);
+        _tab = 0;
+        RefreshTree();
+        ShowDetail();
+        return null;
+    }
+
+    /// <summary>A new connection not wanted after all: removed.</summary>
+    private void CancelNew(RemoteConnection c)
+    {
+        _settings.Connections.Remove(c);
+        _untyped.Remove(c);
+        _unnamed.Remove(c);
+        _choseType.Remove(c);
+        _newOnes.Remove(c);
+        RefreshTree();
+        ShowDetail();
+    }
+
+    /// <summary>The name a new connection has until one is given ("New connection", "New SFTP").</summary>
+    private static bool HasPlaceholderName(RemoteConnection c) =>
+        c.Name == "New connection" || s_types.Any(t => c.Name == $"New {t.Name}");
+
     // ---------------------------------------------------------------- type choice
 
     private Control TypeChoice(RemoteConnection c)
     {
         var panel = new StackPanel();
         panel.Children.Add(Crumb(c.Folder.Trim('/')));
+        if (_newOnes.Contains(c))
+        {
+            panel.Children.Add(Steps(1, withType: true));
+        }
         panel.Children.Add(Header(new TextBlock { Text = "?", FontSize = 22, Width = 40, TextAlignment = TextAlignment.Center }, c.Name,
             Core.Localization.Localizer.T("Choose the type, or paste an address"), name => Rename(c, name)));
         var url = new TextBox { PlaceholderText = "sftp://user@server:22/folder · s3://key@endpoint/bucket · ftp://..." };
@@ -266,14 +520,8 @@ public sealed partial class ConnectionManagerView
             }
             panel.Children.Add(cards);
         }
-        AddFooter(FooterButton("Cancel", () =>
-        {
-            _settings.Connections.Remove(c);
-            _untyped.Remove(c);
-            _newOnes.Remove(c);
-            RefreshTree();
-            ShowDetail();
-        }), right: true);
+        AddFooter(FooterButton("Cancel", () => CancelNew(c)), right: false);
+        AddFooter(FooterButton("‹ Back", () => GoBack(c), right: true), right: true);
         return panel;
     }
 
@@ -281,7 +529,15 @@ public sealed partial class ConnectionManagerView
     public void ChooseType(RemoteConnection c, RemoteProtocol protocol)
     {
         c.Protocol = protocol;
-        c.Name = $"New {TypeName(protocol)}";
+        if (HasPlaceholderName(c))
+        {
+            c.Name = $"New {TypeName(protocol)}"; // the name given in the first step stays
+        }
+        _unnamed.Remove(c);
+        if (_newOnes.Contains(c))
+        {
+            _choseType.Add(c);
+        }
         if (protocol == RemoteProtocol.Serial)
         {
             c.TelnetEnter = TelnetEnter.Cr; // a device console wants a carriage return
@@ -307,8 +563,16 @@ public sealed partial class ConnectionManagerView
         c.Port = parsed.Port;
         c.User = parsed.User;
         c.InitialPath = path.Path.Length > 0 ? path.Path : "/";
-        c.Name = ConnectionChecks.DefaultName(c, TypeName(c.Protocol));
+        if (HasPlaceholderName(c))
+        {
+            c.Name = ConnectionChecks.DefaultName(c, TypeName(c.Protocol));
+        }
         _untyped.Remove(c);
+        _unnamed.Remove(c);
+        if (_newOnes.Contains(c))
+        {
+            _choseType.Add(c);
+        }
         _tab = 0;
         RefreshTree();
         ShowDetail();
@@ -327,6 +591,10 @@ public sealed partial class ConnectionManagerView
     {
         var panel = new StackPanel();
         panel.Children.Add(Crumb(c.Folder.Trim('/')));
+        if (_newOnes.Contains(c))
+        {
+            panel.Children.Add(Steps(2, withType: true)); // a new connection: its settings are the last step
+        }
         var type = s_types.First(t => t.Protocol == c.Protocol);
         panel.Children.Add(Header(new Viewbox { Width = 40, Height = 40, Child = BrandIcons.Create(c.Protocol, 40) }, c.Name,
             Core.Localization.Localizer.T(type.Description) + " · " + ConnectionChecks.Address(c), name => Rename(c, name)));
@@ -348,7 +616,8 @@ public sealed partial class ConnectionManagerView
         {
             tabs.Items.Add(Tab("Proxy", ProxyTab(c)));
         }
-        tabs.SelectedIndex = _tab;
+        tabs.Items.Add(Tab("Log", LogTab(c)));
+        tabs.SelectedIndex = Math.Min(_tab, tabs.Items.Count - 1);
         tabs.SelectionChanged += (_, _) => _tab = Math.Max(0, tabs.SelectedIndex);
         panel.Children.Add(tabs);
         panel.Children.Add(_problem);
@@ -365,6 +634,10 @@ public sealed partial class ConnectionManagerView
         }
         AddFooter(FooterButton("Connect", () => Connect([c], right: false), accent: true, right: true), right: true);
         AddFooter(FooterButton("Save", Save, right: true), right: true);
+        if (_newOnes.Contains(c))
+        {
+            AddFooter(FooterButton("‹ Back", () => GoBack(c), right: true), right: true); // a new connection: back to its type or its name
+        }
         return panel;
     }
 
@@ -381,6 +654,11 @@ public sealed partial class ConnectionManagerView
     {
         _problem.Text = string.Empty;
         _tests.Remove(c);
+        _checking.Add(c);
+        if (ReferenceEquals(Current, c))
+        {
+            MarkFields(c);
+        }
         if (_address is not null)
         {
             _address.Text = Core.Localization.Localizer.T(s_types.First(t => t.Protocol == c.Protocol).Description) + " · " + ConnectionChecks.Address(c);
@@ -445,7 +723,16 @@ public sealed partial class ConnectionManagerView
         {
             box.Classes.Add("noloc");
         }
-        box.TextChanged += (_, _) => set(box.Text ?? string.Empty);
+        // TextChanged also comes (later) for the first text: only a change by the user counts
+        var typed = false;
+        box.TextChanged += (_, _) =>
+        {
+            if (typed || (box.Text ?? string.Empty) != (value ?? string.Empty))
+            {
+                typed = true;
+                set(box.Text ?? string.Empty);
+            }
+        };
         return box;
     }
 
@@ -465,10 +752,17 @@ public sealed partial class ConnectionManagerView
 
     private TextBox Number(int value, Action<int> set, string placeholder)
     {
-        var box = new TextBox { Text = value > 0 ? value.ToString(CultureInfo.InvariantCulture) : string.Empty, PlaceholderText = placeholder, Classes = { "noloc" } };
+        var initial = value > 0 ? value.ToString(CultureInfo.InvariantCulture) : string.Empty;
+        var box = new TextBox { Text = initial, PlaceholderText = placeholder, Classes = { "noloc" } };
+        var typed = false;
         box.TextChanged += (_, _) =>
         {
             var text = box.Text?.Trim() ?? string.Empty;
+            if (!typed && text == initial)
+            {
+                return; // the first text, not a change
+            }
+            typed = true;
             if (text.Length == 0)
             {
                 set(0);
@@ -539,7 +833,7 @@ public sealed partial class ConnectionManagerView
         }
         if (c.Protocol == RemoteProtocol.Serial)
         {
-            fields.Add(Field("Serial port", SerialPortBox(c), Core.Localization.Localizer.T("COM3 on Windows; /dev/ttyUSB0, /dev/ttyACM0 on Linux; /dev/cu.usbserial-... on macOS.")));
+            fields.Add(Checked("Serial port", SerialPortBox(c), ConnectionField.Host, note: Core.Localization.Localizer.T("COM3 on Windows; /dev/ttyUSB0, /dev/ttyACM0 on Linux; /dev/cu.usbserial-... on macOS.")));
             fields.Add(Field("Speed (bits per second)", Choice([.. s_baudRates.Select(b => b.ToString(CultureInfo.InvariantCulture))],
                 Math.Max(0, Array.IndexOf(s_baudRates, c.BaudRate)), i =>
                 {
@@ -562,12 +856,12 @@ public sealed partial class ConnectionManagerView
                 RemoteProtocol.WebDav or RemoteProtocol.WebDavs => "cloud.example.com",
                 _ => "server.example.com",
             });
-            fields.Add(Field("Server", host));
-            fields.Add(Field("Port", Number(c.Port, v =>
+            fields.Add(Checked("Server", host, ConnectionField.Host));
+            fields.Add(Checked("Port", Number(c.Port, v =>
             {
                 c.Port = v;
                 Changed(c);
-            }, Core.Localization.Localizer.T("default") + " " + RemoteConnection.DefaultPort(c.Protocol))));
+            }, Core.Localization.Localizer.T("default") + " " + RemoteConnection.DefaultPort(c.Protocol)), ConnectionField.Port, required: false));
         }
         if (c.Protocol == RemoteProtocol.S3)
         {
@@ -662,7 +956,9 @@ public sealed partial class ConnectionManagerView
                 c.User = v.Trim();
                 Changed(c);
             }, placeholder);
-            fields.Add(Field(caption, box));
+            // an SSH login, S3's access key and Azure's account cannot be left out
+            var required = IsSsh(c.Protocol) || IsAzure(c.Protocol) || c.Protocol == RemoteProtocol.S3;
+            fields.Add(Checked(caption, box, ConnectionField.User, required));
             return box;
         }
         CheckBox Remember(string text) => Check(text, c.SavePassword, v => c.SavePassword = v);
@@ -733,10 +1029,18 @@ public sealed partial class ConnectionManagerView
         if (c.IsCloudDrive)
         {
             User("Account name", Core.Localization.Localizer.T("e.g. personal, work (tells several accounts apart)"));
-            fields.Add(Field("Application id", Text(c.ClientId, v => c.ClientId = v.Trim(), Core.Localization.Localizer.T("id of the registered application"))));
+            fields.Add(Checked("Application id", Text(c.ClientId, v =>
+            {
+                c.ClientId = v.Trim();
+                Changed(c);
+            }, Core.Localization.Localizer.T("id of the registered application")), ConnectionField.ClientId));
             if (c.Protocol is RemoteProtocol.GoogleDrive or RemoteProtocol.Box)
             {
-                fields.Add(Field("Client secret", Text(c.ClientSecret, v => c.ClientSecret = string.IsNullOrWhiteSpace(v) ? null : v.Trim())));
+                fields.Add(Checked("Client secret", Text(c.ClientSecret, v =>
+                {
+                    c.ClientSecret = string.IsNullOrWhiteSpace(v) ? null : v.Trim();
+                    Changed(c);
+                }), ConnectionField.ClientSecret, required: c.Protocol == RemoteProtocol.Box));
             }
             fields.Add(null);
             fields.Add(Remember("Remember the sign-in (sign in once in the browser)"));
@@ -747,7 +1051,11 @@ public sealed partial class ConnectionManagerView
             User("User");
             if (c.KeyFile is not null)
             {
-                var key = Text(c.KeyFile, v => c.KeyFile = v.Trim(), Core.Localization.Localizer.T("OpenSSH or PuTTY private key"));
+                var key = Text(c.KeyFile, v =>
+                {
+                    c.KeyFile = v.Trim();
+                    Changed(c);
+                }, Core.Localization.Localizer.T("OpenSSH or PuTTY private key"));
                 var browse = new Button { Content = "...", Margin = new Thickness(6, 0, 0, 0) };
                 browse.Click += async (_, _) =>
                 {
@@ -759,7 +1067,7 @@ public sealed partial class ConnectionManagerView
                 var row = new DockPanel();
                 DockPanel.SetDock(browse, Dock.Right);
                 row.Children.AddRange([browse, key]);
-                fields.Add(Field("Private key", row, Core.Localization.Localizer.T("A passphrase is asked as the password when the key has one.")));
+                fields.Add(Checked("Private key", row, ConnectionField.KeyFile, note: Core.Localization.Localizer.T("A passphrase is asked as the password when the key has one.")));
                 fields.Add(null);
                 fields.Add(Remember("Save the passphrase (asked on first connect)"));
             }
@@ -861,11 +1169,12 @@ public sealed partial class ConnectionManagerView
         }
         if (IsSsh(c.Protocol))
         {
-            fields.Add(Field("Jump host", Text(c.JumpHost, v =>
+            fields.Add(Checked("Jump host", Text(c.JumpHost, v =>
             {
                 c.JumpHost = string.IsNullOrWhiteSpace(v) ? null : v.Trim();
                 Changed(c);
-            }, "user@bastion.example.com:22"), Core.Localization.Localizer.T("The connection goes through this SSH server; it logs in with the same key file, agent or password.")));
+            }, "user@bastion.example.com:22"), ConnectionField.JumpHost, required: false,
+                Core.Localization.Localizer.T("The connection goes through this SSH server; it logs in with the same key file, agent or password.")));
             if (c.Protocol == RemoteProtocol.Sftp)
             {
                 fields.Add(Field("Request size (KB)", Number(c.SftpBufferKb, v => c.SftpBufferKb = v, "32"),
@@ -889,7 +1198,7 @@ public sealed partial class ConnectionManagerView
                 Changed(c);
             }, Core.Localization.Localizer.T("the program's setting"));
             active.IsEnabled = !c.Passive;
-            fields.Add(Field("Active mode ports", active, Core.Localization.Localizer.T("A range such as 50000-50100 (only in active mode).")));
+            fields.Add(Checked("Active mode ports", active, ConnectionField.ActivePorts, required: false, Core.Localization.Localizer.T("A range such as 50000-50100 (only in active mode).")));
             if (c.Protocol != RemoteProtocol.Ftp)
             {
                 fields.Add(null);
@@ -1106,8 +1415,12 @@ public sealed partial class ConnectionManagerView
         };
         box.TextChanged += (_, _) =>
         {
-            c.Host = box.Text?.Trim() ?? string.Empty;
-            Changed(c);
+            var port = box.Text?.Trim() ?? string.Empty;
+            if (port != c.Host)
+            {
+                c.Host = port;
+                Changed(c);
+            }
         };
         box.GotFocus += (_, _) => box.IsDropDownOpen = true; // the ports found, without typing
         return box;
@@ -1184,11 +1497,11 @@ public sealed partial class ConnectionManagerView
             ShowDetail(); // the port's placeholder and the key file follow the kind
         })));
         fields.Add(null);
-        fields.Add(Field("Server", Text(c.ProxyHost, v =>
+        fields.Add(Checked("Server", Text(c.ProxyHost, v =>
         {
             c.ProxyHost = string.IsNullOrWhiteSpace(v) ? null : v.Trim();
             Changed(c);
-        }, "proxy.example.com")));
+        }, "proxy.example.com"), ConnectionField.Proxy));
         port = Number(c.ProxyPort, v =>
         {
             c.ProxyPort = v;
@@ -1261,6 +1574,105 @@ public sealed partial class ConnectionManagerView
         return preset is not null ? Core.Localization.Localizer.T(preset.Hint) + (note.Length > 0 ? "\n\n" + Core.Localization.Localizer.T(note) : string.Empty) : note;
     }
 
+    // ---------------------------------------------------------------- log
+
+    /// <summary>The Log tab's index (the last tab).</summary>
+    public int LogTabIndex(RemoteConnection c) => HasProxy(c.Protocol) ? 4 : 3;
+
+    /// <summary>Shows a connection's log tab (the connection selected).</summary>
+    public void ShowLog(RemoteConnection c)
+    {
+        Reveal(c);
+        _tab = LogTabIndex(c);
+        ShowDetail();
+    }
+
+    /// <summary>The text of the Log tab of the shown connection (tests).</summary>
+    public string? LogText { get; private set; }
+
+    /// <summary>
+    /// The connection's log (user's request, 18 November 2026): connecting, logging in, the server's key, the end of
+    /// sessions and the errors with their causes, errors in red; it follows new entries while it is shown.
+    /// </summary>
+    private Control LogTab(RemoteConnection c)
+    {
+        var lines = new SelectableTextBlock
+        {
+            FontFamily = new FontFamily("Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, monospace"),
+            FontSize = 11.5,
+            TextWrapping = TextWrapping.Wrap,
+            Classes = { "noloc" },
+        };
+        var scroller = new ScrollViewer { Content = lines, MaxHeight = 420, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled };
+        void Fill()
+        {
+            var text = Core.Net.ConnectionLog.Read(c);
+            LogText = text;
+            lines.Inlines?.Clear();
+            lines.Inlines ??= [];
+            if (text.Length == 0)
+            {
+                lines.Inlines.Add(new Avalonia.Controls.Documents.Run(Core.Localization.Localizer.T("Nothing logged yet: the log fills when the connection is opened or tested.")) { FontStyle = FontStyle.Italic });
+                return;
+            }
+            var error = false;
+            foreach (var line in text.TrimEnd('\n').Split('\n'))
+            {
+                // an entry starts with its time; the lines under an error (its causes) stay red
+                if (line.Length > 24 && char.IsDigit(line[0]))
+                {
+                    error = line.AsSpan(24).StartsWith("ERROR", StringComparison.Ordinal);
+                }
+                var run = new Avalonia.Controls.Documents.Run(line + "\n");
+                if (error)
+                {
+                    run.Foreground = s_problemBrush;
+                }
+                lines.Inlines.Add(run);
+            }
+            Avalonia.Threading.Dispatcher.UIThread.Post(scroller.ScrollToEnd, Avalonia.Threading.DispatcherPriority.Loaded);
+        }
+        Fill();
+        var name = Core.Net.ConnectionLog.NameOf(c);
+        void OnWritten(object? sender, Core.Net.ConnectionLogEntry entry)
+        {
+            if (entry.Connection == name)
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(Fill);
+            }
+        }
+        lines.AttachedToVisualTree += (_, _) => Core.Net.ConnectionLog.Written += OnWritten;
+        lines.DetachedFromVisualTree += (_, _) => Core.Net.ConnectionLog.Written -= OnWritten;
+
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 12, 0, 8) };
+        var refresh = new Button { Content = "Refresh" };
+        refresh.Click += (_, _) => Fill();
+        var copy = new Button { Content = "Copy" };
+        copy.Click += (_, _) => _ = TopLevel.GetTopLevel(this)?.Clipboard?.SetTextAsync(Core.Net.ConnectionLog.Read(c));
+        var clear = new Button { Content = "Clear the log" };
+        clear.Click += (_, _) =>
+        {
+            Core.Net.ConnectionLog.Clear(c);
+            Fill();
+        };
+        buttons.Children.AddRange([refresh, copy, clear]);
+        var panel = new StackPanel();
+        panel.Children.Add(buttons);
+        if (Core.Net.ConnectionLog.FileOf(c) is { } file)
+        {
+            panel.Children.Add(new SelectableTextBlock { Text = file, FontSize = 11, Opacity = 0.6, Margin = new Thickness(0, 0, 0, 8), Classes = { "noloc" }, TextWrapping = TextWrapping.Wrap });
+        }
+        panel.Children.Add(new Border
+        {
+            Child = scroller,
+            Padding = new Thickness(10, 8),
+            CornerRadius = new CornerRadius(6),
+            BorderThickness = new Thickness(1),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(64, 128, 128, 128)),
+        });
+        return panel;
+    }
+
     // ---------------------------------------------------------------- test
 
     private static Control TestResult(bool ok, string text) => new Border
@@ -1273,22 +1685,26 @@ public sealed partial class ConnectionManagerView
     /// <summary>Connects with the current settings and lists the start folder; the result shows under the tabs.</summary>
     public async Task TestAsync(RemoteConnection c)
     {
-        if (ConnectionChecks.Problem(c) is { } problem)
+        if (ConnectionChecks.Problem(c) is not null)
         {
-            ShowProblem(problem);
+            ShowProblems(c);
             return;
         }
         _testCts?.Cancel();
         var cts = _testCts = new CancellationTokenSource(TimeSpan.FromMinutes(6));
         Toast("Testing ...");
+        Core.Net.ConnectionLog.Info(c, "Test ...");
         (bool, string) result;
         try
         {
             result = (true, await _request.Test(c, cts.Token));
+            Core.Net.ConnectionLog.Info(c, "Test succeeded: " + result.Item2.ReplaceLineEndings(" "));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or OperationCanceledException or NotSupportedException or ArgumentException)
         {
-            result = (false, ex is OperationCanceledException ? Core.Localization.Localizer.T("Timed out.") : ex.Message);
+            // the whole chain of causes on the screen, as in the log
+            result = (false, ex is OperationCanceledException ? Core.Localization.Localizer.T("Timed out.") : Core.Net.ConnectionLog.Causes(ex));
+            Core.Net.ConnectionLog.Error(c, "Test failed: " + (ex is OperationCanceledException ? "timed out" : ex.Message), ex);
         }
         _tests[c] = result;
         if (ReferenceEquals(Current, c))

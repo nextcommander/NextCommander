@@ -199,22 +199,12 @@ public sealed class SettingsView : UserControl
         body.Children.Add(navBorder);
         Grid.SetColumn(main, 1);
         body.Children.Add(main);
-        // above: a line like the internal terminal's top edge and a close button at the right, like its title bar
-        var close = new Button { Content = "✕", FontSize = 11, Padding = new Thickness(8, 1), MinHeight = 0, Background = Brushes.Transparent, Focusable = false, Classes = { "noloc" } };
-        ToolTip.SetTip(close, "Close (Esc)");
-        AutomationProperties.SetName(close, "Close");
-        close.Click += (_, _) => Close();
-        var titleBar = new DockPanel { LastChildFill = false, Margin = new Thickness(0, 2, 4, 2) };
-        DockPanel.SetDock(close, Dock.Right);
-        titleBar.Children.Add(close);
-        var top = new Border { Child = titleBar, Classes = { "settingsnav" }, BorderThickness = new Thickness(0, 0, 0, 1) };
-        top[!Border.BorderBrushProperty] = Resource("SystemControlForegroundBaseLowBrush");
+        // above: the title bar of every page (the internal terminal's top line, the name, ✕ at the right)
+        var top = PageHeader.Create(Services.MenuIcons.Create("nc_Config"), "Options", "Close (Esc)", Close, out var close);
         CloseButton = close;
         var frame = new DockPanel();
-        DockPanel.SetDock(top, Dock.Top);
         frame.Children.AddRange([top, body]);
-        var root = new Border { Child = frame, Classes = { "settingspage" }, BorderThickness = new Thickness(0, 1, 0, 0) };
-        root[!Border.BorderBrushProperty] = Resource("FmActiveAccentBrush");
+        var root = new Border { Child = frame, Classes = { "settingspage" } };
         Content = root;
         ApplyLook();
         ActualThemeVariantChanged += (_, _) =>

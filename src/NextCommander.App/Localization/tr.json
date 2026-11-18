@@ -2887,5 +2887,22 @@
   "RemoteDesktopView.SessionCouldNotStart": "Oturum başlatılamadı: {0}",
   "RemoteDesktopView.SessionEndedBecause": "Uzak masaüstü oturumu sona erdi: {0}",
   "RemoteDesktopView.ConnectionFailedBecause": "{0} ile bağlantı kurulamadı: {1}",
-  "RemoteDesktopView.SessionEndedReason": "Uzak masaüstü oturumu sona erdi (neden {0})."
+  "RemoteDesktopView.SessionEndedReason": "Uzak masaüstü oturumu sona erdi (neden {0}).",
+  "ConnectionFolders.EnterTheUserNameAn": "Kullanıcı adını girin (SSH oturumunun her zaman bir kullanıcısı vardır).",
+  "ConnectionFolders.ChooseThePrivateKeyFile": "Özel anahtar dosyasını seçin (ya da başka bir giriş yöntemi).",
+  "ConnectionFolders.ThePrivateKeyFileWas": "Özel anahtar dosyası bulunamadı.",
+  "ConnectionManagerView.Required": "Zorunlu",
+  "ConnectionManagerView.ClearTheLog": "Günlüğü temizle",
+  "ConnectionManagerView.NothingLoggedYetTheLog": "Henüz kayıt yok: günlük, bağlantı açıldığında ya da sınandığında dolar.",
+  "MainWindow.ConnectionError": "Bağlantı hatası",
+  "MainWindow.ShowTheLog": "Günlüğü göster",
+  "MainWindow.TheConnectionSLog": "Bağlantının günlüğü:",
+  "ConnectionManagerView.ConnectionName": "Bağlantı adı",
+  "ConnectionManagerView.Next": "İleri ›",
+  "ConnectionManagerView.NoNameGivenYet": "henüz ad verilmedi",
+  "ConnectionManagerView.EGProductionWebServer": "örn. Canlı web sunucusu",
+  "ConnectionManagerView.EnterANameFor": "Bağlantı için bir ad girin.",
+  "ConnectionManagerView.AnotherConnectionHasThis": "Bu ad başka bir bağlantıda kullanılıyor; başka bir ad seçin.",
+  "ConnectionManagerView.FirstGiveTheConnection": "Önce bağlantıya bir ad verin: liste onu bu adla gösterir, günlüğü de bu adla tutulur.",
+  "ConnectionManagerView.Back": "‹ Geri"
 }
