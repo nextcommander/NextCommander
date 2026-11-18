@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NextCommander.Core.Config;
 using NextCommander.Core.Net;
@@ -7,19 +8,41 @@ namespace NextCommander.Platform.Windows;
 /// <summary>
 /// Windows' Remote Desktop ActiveX control (MsTscAx, the engine of mstsc) in a child window: ATL's control host
 /// window (AtlAxWin of atl.dll) creates it, and it is driven through its IDispatch (late bound, without the .NET COM
-/// interop the app leaves out): the connection's settings, the password through IMsTscNonScriptable, Connect,
-/// Disconnect, the state and resizing the session. Windows only (Create refuses elsewhere); used on the UI (STA) thread.
+/// interop the app leaves out): the connection's settings, the password through IMsTscNonScriptable, one drive shared
+/// through IMsRdpClientNonScriptable3's drive list, Connect, Disconnect, the state and resizing the session. Its events
+/// (IMsTscAxEvents: connected, disconnected with the reason) come to a small COM object of its own. The vtable slots
+/// are those of the type library in mstscax.dll. Windows only (Create refuses elsewhere); used on the UI (STA) thread.
 /// </summary>
 public sealed partial class RemoteDesktopControl : IDisposable
 {
     private nint _window;
     private Dispatch? _client;
+    private nint _sink;
+    private nint _connectionPoint;
+    private uint _cookie;
 
     private RemoteDesktopControl(nint window, Dispatch client)
     {
         _window = window;
         _client = client;
+        try
+        {
+            Advise();
+        }
+        catch (InvalidOperationException)
+        {
+            ReleaseEvents(); // no events: the owner polls the state
+        }
     }
+
+    /// <summary>Whether the control's events arrive (else <see cref="State"/> is to be polled).</summary>
+    public bool HasEvents => _cookie != 0;
+
+    /// <summary>The session is connected (OnConnected / OnLoginComplete).</summary>
+    public event EventHandler? Connected;
+
+    /// <summary>The session ended or could not be made (OnDisconnected): its reason and the control's words for it.</summary>
+    public event EventHandler<RemoteDesktopDisconnect>? Disconnected;
 
     /// <summary>The child window holding the control.</summary>
     public nint Window => _window;
@@ -67,7 +90,8 @@ public sealed partial class RemoteDesktopControl : IDisposable
     /// does not know is left out) and the password, then connects.
     /// </summary>
     /// <returns>The settings the control did not take ("Advanced.RedirectClipboard"), for the log.</returns>
-    public IReadOnlyList<string> Connect(RemoteConnection connection, string? password, int width, int height)
+    /// <param name="drive">The one drive to share ("D:\\", <see cref="RemoteDesktop.ControlDrive"/>), or null.</param>
+    public IReadOnlyList<string> Connect(RemoteConnection connection, string? password, int width, int height, string? drive = null)
     {
         var client = _client ?? throw new ObjectDisposedException(nameof(RemoteDesktopControl));
         var parts = new Dictionary<RdpControlPart, Dispatch?>();
@@ -95,6 +119,10 @@ public sealed partial class RemoteDesktopControl : IDisposable
             if (!string.IsNullOrEmpty(password))
             {
                 SetPassword(client, password);
+            }
+            if (drive is not null && !ShareDrive(client, drive))
+            {
+                refused.Add("Drive " + drive);
             }
             client.Call("Connect");
             return refused;
@@ -141,6 +169,7 @@ public sealed partial class RemoteDesktopControl : IDisposable
     public void Dispose()
     {
         Disconnect();
+        ReleaseEvents();
         _client?.Dispose();
         _client = null;
         if (_window != 0)
@@ -150,10 +179,271 @@ public sealed partial class RemoteDesktopControl : IDisposable
         }
     }
 
-    // ---------------------------------------------------------------- the password
+    // ---------------------------------------------------------------- the password, the drive
 
+    private static readonly Guid IidUnknown = new("00000000-0000-0000-C000-000000000046");
     private static readonly Guid IidDispatch = new("00020400-0000-0000-C000-000000000046");
     private static readonly Guid IidMsTscNonScriptable = new("C1E6743A-41C1-4A74-832A-0DD06C1C7A0E");
+    private static readonly Guid IidMsRdpClientNonScriptable3 = new("B3378D90-0728-45C7-8ED7-B6159FB92219");
+    private static readonly Guid IidConnectionPointContainer = new("B196B284-BAB4-101A-B69C-00AA00341D07");
+    private static readonly Guid DiidMsTscAxEvents = new("336D5562-EFA8-482E-8CB3-C5C0FC7A7DB6");
+
+    /// <summary>Another interface of a COM object (its own reference), or 0.</summary>
+    private static unsafe nint QueryInterface(nint unknown, Guid iid)
+    {
+        var vtable = *(nint**)unknown;
+        nint result;
+        var hr = ((delegate* unmanaged[Stdcall]<nint, Guid*, nint*, int>)vtable[0])(unknown, &iid, &result);
+        return hr < 0 ? 0 : result;
+    }
+
+    /// <summary>
+    /// Shares one drive of this computer: IMsRdpClientNonScriptable3's DriveCollection (slot 30), its drives
+    /// (DriveCount slot 5, DriveByIndex slot 4) by name (IMsRdpDrive Name slot 3, "Data (D:)"), RedirectionState (slot 4).
+    /// </summary>
+    private static unsafe bool ShareDrive(Dispatch client, string drive)
+    {
+        var letter = char.ToUpperInvariant(drive[0]) + ":";
+        var settings = QueryInterface(client.Pointer, IidMsRdpClientNonScriptable3);
+        if (settings == 0)
+        {
+            return false;
+        }
+        nint collection = 0;
+        try
+        {
+            if (((delegate* unmanaged[Stdcall]<nint, nint*, int>)(*(nint**)settings)[30])(settings, &collection) < 0 || collection == 0)
+            {
+                return false;
+            }
+            var methods = *(nint**)collection;
+            uint count;
+            if (((delegate* unmanaged[Stdcall]<nint, uint*, int>)methods[5])(collection, &count) < 0)
+            {
+                return false;
+            }
+            for (uint i = 0; i < count; i++)
+            {
+                nint item;
+                if (((delegate* unmanaged[Stdcall]<nint, uint, nint*, int>)methods[4])(collection, i, &item) < 0 || item == 0)
+                {
+                    continue;
+                }
+                try
+                {
+                    var itemMethods = *(nint**)item;
+                    nint name;
+                    if (((delegate* unmanaged[Stdcall]<nint, nint*, int>)itemMethods[3])(item, &name) < 0)
+                    {
+                        continue;
+                    }
+                    var text = name == 0 ? string.Empty : Marshal.PtrToStringBSTR(name);
+                    Marshal.FreeBSTR(name);
+                    if (text.Contains(letter, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return ((delegate* unmanaged[Stdcall]<nint, short, int>)itemMethods[4])(item, -1) >= 0;
+                    }
+                }
+                finally
+                {
+                    Release(item);
+                }
+            }
+            return false;
+        }
+        finally
+        {
+            if (collection != 0)
+            {
+                Release(collection);
+            }
+            Release(settings);
+        }
+    }
+
+    // ---------------------------------------------------------------- events
+
+    /// <summary>Connects the event object to the control's IMsTscAxEvents connection point.</summary>
+    private unsafe void Advise()
+    {
+        var client = _client!;
+        var container = QueryInterface(client.Pointer, IidConnectionPointContainer);
+        if (container == 0)
+        {
+            throw new InvalidOperationException("The remote desktop control has no events.");
+        }
+        try
+        {
+            var iid = DiidMsTscAxEvents;
+            nint point;
+            Check(((delegate* unmanaged[Stdcall]<nint, Guid*, nint*, int>)(*(nint**)container)[4])(container, &iid, &point)); // FindConnectionPoint
+            _connectionPoint = point;
+            _sink = EventSink.Create(this);
+            uint cookie;
+            Check(((delegate* unmanaged[Stdcall]<nint, nint, uint*, int>)(*(nint**)point)[5])(point, _sink, &cookie)); // Advise
+            _cookie = cookie;
+        }
+        finally
+        {
+            Release(container);
+        }
+    }
+
+    private unsafe void ReleaseEvents()
+    {
+        if (_connectionPoint != 0)
+        {
+            if (_cookie != 0)
+            {
+                _ = ((delegate* unmanaged[Stdcall]<nint, uint, int>)(*(nint**)_connectionPoint)[6])(_connectionPoint, _cookie); // Unadvise
+                _cookie = 0;
+            }
+            Release(_connectionPoint);
+            _connectionPoint = 0;
+        }
+        if (_sink != 0)
+        {
+            EventSink.Detach(_sink);
+            Release(_sink);
+            _sink = 0;
+        }
+    }
+
+    /// <summary>An event of the control (IMsTscAxEvents' DISPIDs: 2 OnConnected, 3 OnLoginComplete, 4 OnDisconnected).</summary>
+    private void OnEvent(int id, int argument)
+    {
+        switch (id)
+        {
+            case 2 or 3:
+                Connected?.Invoke(this, EventArgs.Empty);
+                break;
+            case 4:
+                var extended = ExtendedDisconnectReason;
+                var description = _client?.TryCall("GetErrorDescription", argument, extended) as string;
+                Disconnected?.Invoke(this, new RemoteDesktopDisconnect(argument, extended, string.IsNullOrWhiteSpace(description) ? null : description.Trim()));
+                break;
+        }
+    }
+
+    /// <summary>
+    /// The COM object that receives the control's events: a dispinterface (IDispatch) made by hand, as the app has no
+    /// built-in COM interop: a vtable of seven functions, a reference count and a handle of its control.
+    /// </summary>
+    private static unsafe class EventSink
+    {
+        private const int NoInterface = unchecked((int)0x80004002), NotImplemented = unchecked((int)0x80004001);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct Native
+        {
+            public nint* Vtable;
+            public int References;
+            public nint Owner; // a GCHandle of the control; 0 once detached
+        }
+
+        private static readonly nint* s_vtable = CreateVtable();
+
+        private static nint* CreateVtable()
+        {
+            var vtable = (nint*)NativeMemory.Alloc(7, (nuint)sizeof(nint));
+            vtable[0] = (nint)(delegate* unmanaged[Stdcall]<Native*, Guid*, nint*, int>)&QueryInterface;
+            vtable[1] = (nint)(delegate* unmanaged[Stdcall]<Native*, uint>)&AddRef;
+            vtable[2] = (nint)(delegate* unmanaged[Stdcall]<Native*, uint>)&Release;
+            vtable[3] = (nint)(delegate* unmanaged[Stdcall]<Native*, uint*, int>)&GetTypeInfoCount;
+            vtable[4] = (nint)(delegate* unmanaged[Stdcall]<Native*, uint, uint, nint*, int>)&GetTypeInfo;
+            vtable[5] = (nint)(delegate* unmanaged[Stdcall]<Native*, Guid*, nint*, uint, uint, int*, int>)&GetIDsOfNames;
+            vtable[6] = (nint)(delegate* unmanaged[Stdcall]<Native*, int, Guid*, uint, ushort, DispParams*, Variant*, byte*, uint*, int>)&Invoke;
+            return vtable;
+        }
+
+        public static nint Create(RemoteDesktopControl owner)
+        {
+            var native = (Native*)NativeMemory.AllocZeroed((nuint)sizeof(Native));
+            native->Vtable = s_vtable;
+            native->References = 1;
+            native->Owner = GCHandle.ToIntPtr(GCHandle.Alloc(owner));
+            return (nint)native;
+        }
+
+        /// <summary>The control is gone: later events (and the last Release) find no owner.</summary>
+        public static void Detach(nint sink)
+        {
+            var native = (Native*)sink;
+            if (native->Owner != 0)
+            {
+                GCHandle.FromIntPtr(native->Owner).Free();
+                native->Owner = 0;
+            }
+        }
+
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+        private static int QueryInterface(Native* self, Guid* iid, nint* result)
+        {
+            if (*iid == IidUnknown || *iid == IidDispatch || *iid == DiidMsTscAxEvents)
+            {
+                Interlocked.Increment(ref self->References);
+                *result = (nint)self;
+                return 0;
+            }
+            *result = 0;
+            return NoInterface;
+        }
+
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+        private static uint AddRef(Native* self) => (uint)Interlocked.Increment(ref self->References);
+
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+        private static uint Release(Native* self)
+        {
+            var left = Interlocked.Decrement(ref self->References);
+            if (left == 0)
+            {
+                if (self->Owner != 0)
+                {
+                    GCHandle.FromIntPtr(self->Owner).Free();
+                }
+                NativeMemory.Free(self);
+            }
+            return (uint)left;
+        }
+
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+        private static int GetTypeInfoCount(Native* self, uint* count)
+        {
+            *count = 0;
+            return 0;
+        }
+
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+        private static int GetTypeInfo(Native* self, uint index, uint locale, nint* info)
+        {
+            *info = 0;
+            return NotImplemented;
+        }
+
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+        private static int GetIDsOfNames(Native* self, Guid* iid, nint* names, uint count, uint locale, int* ids) => NotImplemented;
+
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+        private static int Invoke(Native* self, int id, Guid* iid, uint locale, ushort flags, DispParams* parameters, Variant* result, byte* exception, uint* argumentError)
+        {
+            if (self->Owner == 0 || GCHandle.FromIntPtr(self->Owner).Target is not RemoteDesktopControl owner)
+            {
+                return 0;
+            }
+            // the first argument (the last in the array); OnDisconnected's reason is a VT_I4
+            var argument = parameters is not null && parameters->Count > 0 ? (int)parameters->Arguments[parameters->Count - 1].Value : 0;
+            try
+            {
+                owner.OnEvent(id, argument);
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or ObjectDisposedException or ArgumentException)
+            {
+                // an event handler's failure must not go back into the control
+            }
+            return 0;
+        }
+    }
 
     /// <summary>IMsTscNonScriptable::put_ClearTextPassword (the 4th method: after IUnknown's three).</summary>
     private static unsafe void SetPassword(Dispatch client, string password)
@@ -426,3 +716,6 @@ public sealed partial class RemoteDesktopControl : IDisposable
     [LibraryImport("oleaut32.dll")]
     private static unsafe partial int VariantClear(Variant* variant);
 }
+
+/// <summary>Why a remote desktop session ended: the control's reason, its extended reason and its description (or null).</summary>
+public sealed record RemoteDesktopDisconnect(int Reason, int ExtendedReason, string? Description);

@@ -180,6 +180,18 @@ public static class RemoteDesktop
     /// </summary>
     public static bool OpensInTab(RemoteConnection c) => !c.RdpOwnWindow && !c.FullScreen;
 
+    /// <summary>
+    /// The one drive the Remote Desktop control shares for the active panel's folder ("D:\\"), or null: when the
+    /// connection shares the folder but not all drives already.
+    /// </summary>
+    public static string? ControlDrive(RemoteConnection c, string? folder) => c.RdpShareFolder && !c.RdpDrives ? DriveOf(folder) : null;
+
+    /// <summary>
+    /// Whether the Remote Desktop control's disconnect reason is a plain end, not a failure: closed here (1), logged off
+    /// or disconnected on the remote computer (2), or by the server (3).
+    /// </summary>
+    public static bool IsPlainEnd(int reason) => reason is 1 or 2 or 3;
+
     /// <summary>The smallest and largest desktop size the clients take.</summary>
     private static int DesktopSide(int pixels) => Math.Clamp(pixels, 200, 8192);
 
@@ -215,7 +227,7 @@ public static class RemoteDesktop
         settings.Add((RdpControlPart.Advanced, "EnableCredSspSupport", true));
         settings.Add((RdpControlPart.Advanced, "AuthenticationLevel", 2)); // the server's certificate: warn
         settings.Add((RdpControlPart.Advanced, "SmartSizing", FixedSize(c)));
-        settings.Add((RdpControlPart.Advanced, "RedirectDrives", c.RdpDrives || c.RdpShareFolder)); // the control shares all drives or none
+        settings.Add((RdpControlPart.Advanced, "RedirectDrives", c.RdpDrives)); // all drives; the panel's folder: its drive alone (ControlDrive)
         settings.Add((RdpControlPart.Advanced, "RedirectPrinters", c.RdpPrinters));
         settings.Add((RdpControlPart.Advanced, "RedirectClipboard", c.RdpClipboard));
         if (c.RdpAdmin)
@@ -238,7 +250,8 @@ public static class RemoteDesktop
     /// </summary>
     public static IReadOnlyList<string> EmbeddedFreeRdpArguments(RemoteConnection c, bool passwordOnStdin, string? folder, ulong parentWindow, int width, int height)
     {
-        var args = FreeRdpArguments(c, passwordOnStdin, folder).Where(a => a is not ("/f" or "/multimon" or "/dynamic-resolution") && !a.StartsWith("/size:", StringComparison.Ordinal)).ToList();
+        // the window of its own goes; a desktop that follows the window keeps /dynamic-resolution (the tab resizes FreeRDP's window)
+        var args = FreeRdpArguments(c, passwordOnStdin, folder).Where(a => a is not ("/f" or "/multimon") && !a.StartsWith("/size:", StringComparison.Ordinal)).ToList();
         var (w, h) = FixedSize(c) ? (c.RdpWidth, c.RdpHeight) : (width, height);
         args.Insert(1, "/parent-window:" + parentWindow.ToString(System.Globalization.CultureInfo.InvariantCulture));
         args.Insert(2, "/size:" + Number(DesktopSide(w)) + "x" + Number(DesktopSide(h)));

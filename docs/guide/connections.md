@@ -253,11 +253,13 @@ connections*, `nc_OpenConnection name`) does not change the panel.
   tab (like the options), and its desktop follows the tab's size (a fixed *Size in a window* is scaled into it).
   Windows draws it with its own Remote Desktop control (the engine of Remote Desktop Connection), Linux with the X11
   FreeRDP (`xfreerdp3` or `xfreerdp`). Several sessions can be open, each with a tab of the connection's name; the
-  hidden ones keep running. Click into the desktop to type there (the keys then go to the remote computer); the tabs
-  above switch back. A password is asked when none is saved. When the session ends the tab says so and offers
-  *Connect again* or *Close*; the tab's × disconnects. *Full screen* and *Open in the client's own window* open the
-  client's own window instead, as described next. In a tab on Windows, *Share the active panel's folder* shares all
-  drives (the control shares all drives or none). macOS has no way to show it in a tab: the Windows App opens.
+  hidden ones keep running; when the tab's size changes the remote desktop follows (Windows 8.1 / Server 2012 R2 and
+  later; Linux: FreeRDP's window in the tab is resized). Click into the desktop to type there (the keys then go to the
+  remote computer); the tabs above switch back. A password is asked when none is saved. When the session ends the tab
+  says so (why it could not connect, in the system's words) and offers *Connect again* or *Close*; the tab's ×
+  disconnects. *Full screen* and *Open in the client's own window* open the client's own window instead, as described
+  next. On Windows *Share the active panel's folder* shares the folder's drive. macOS has no way to show it in a tab:
+  the Windows App opens.
 - **Remote desktop (RDP)** in its own window opens in the system's client: *Remote Desktop Connection* (mstsc) on Windows, Microsoft's
   **Windows App** on macOS (from the App Store), **FreeRDP** (`xfreerdp3`, `sdl-freerdp3`, `xfreerdp`) or **Remmina**
   on Linux; without one you are told what to install. Settings: server, port (3389), user (`DOMAIN\user`), *Full

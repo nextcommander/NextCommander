@@ -1072,7 +1072,7 @@ public sealed partial class ConnectionManagerView
         fields.Add(Check("Share this computer's drives", c.RdpDrives, v => c.RdpDrives = v));
         fields.Add(Check("Share this computer's printers", c.RdpPrinters, v => c.RdpPrinters = v));
         fields.Add(Check(OperatingSystem.IsWindows()
-            ? "Share the active panel's folder (Remote Desktop Connection: its drive; in a tab: all drives)"
+            ? "Share the active panel's folder (Remote Desktop Connection shares its drive)"
             : "Share the active panel's folder", c.RdpShareFolder, v => c.RdpShareFolder = v));
         fields.Add(Check("Administrative session (console)", c.RdpAdmin, v => c.RdpAdmin = v));
     }

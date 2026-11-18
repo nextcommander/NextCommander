@@ -103,6 +103,64 @@ public static partial class RemoteDesktopLauncher
         return process;
     }
 
+    /// <summary>
+    /// Linux: the windows FreeRDP made in the tab's X11 window (its children) get the tab's new size; FreeRDP then
+    /// tells the server (dynamic resolution) or scales the desktop (smart sizing). Without X11 nothing happens.
+    /// </summary>
+    public static void ResizeEmbedded(ulong window, int width, int height)
+    {
+        if (!OperatingSystem.IsLinux() || width < 1 || height < 1)
+        {
+            return;
+        }
+        try
+        {
+            var display = XOpenDisplay(0);
+            if (display == 0)
+            {
+                return;
+            }
+            try
+            {
+                if (XQueryTree(display, window, out _, out _, out var children, out var count) != 0 && children != 0)
+                {
+                    for (var i = 0; i < count; i++)
+                    {
+                        _ = XResizeWindow(display, (ulong)Marshal.ReadInt64(children, i * 8), (uint)width, (uint)height);
+                    }
+                    _ = XFree(children);
+                }
+                _ = XFlush(display);
+            }
+            finally
+            {
+                _ = XCloseDisplay(display);
+            }
+        }
+        catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException)
+        {
+            // no libX11: FreeRDP keeps its first size
+        }
+    }
+
+    [LibraryImport("libX11.so.6")]
+    private static partial nint XOpenDisplay(nint name);
+
+    [LibraryImport("libX11.so.6")]
+    private static partial int XQueryTree(nint display, ulong window, out ulong root, out ulong parent, out nint children, out uint count);
+
+    [LibraryImport("libX11.so.6")]
+    private static partial int XResizeWindow(nint display, ulong window, uint width, uint height);
+
+    [LibraryImport("libX11.so.6")]
+    private static partial int XFree(nint data);
+
+    [LibraryImport("libX11.so.6")]
+    private static partial int XFlush(nint display);
+
+    [LibraryImport("libX11.so.6")]
+    private static partial int XCloseDisplay(nint display);
+
     private static Process Start(ProcessStartInfo info) =>
         Process.Start(info) ?? throw new InvalidOperationException("The remote desktop client did not start: " + info.FileName);
 

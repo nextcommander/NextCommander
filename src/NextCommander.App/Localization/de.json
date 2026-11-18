@@ -2871,7 +2871,7 @@
   "PdfPasswordException.ThePasswordIsNotRight": "Das Passwort ist falsch.",
   "OfficeHtml.DocumentProtected": "Das Dokument ist durch ein Passwort geschützt.",
   "OfficeHtml.WorkbookProtected": "Die Arbeitsmappe ist durch ein Passwort geschützt.",
-  "ConnectionManagerWindow.ShareActivePanelFolderMstsc": "Ordner des aktiven Panels freigeben (Remotedesktopverbindung: sein Laufwerk; im Tab: alle Laufwerke)",
+  "ConnectionManagerWindow.ShareActivePanelFolderMstsc": "Ordner des aktiven Panels freigeben (Remotedesktopverbindung gibt sein Laufwerk frei)",
   "ConnectionManagerWindow.ShareActivePanelFolder": "Ordner des aktiven Panels freigeben",
   "ConnectionManagerWindow.FilesSmb": "Dateien (SMB)",
   "ConnectionManagerWindow.OpenInClientOwnWindow": "Im eigenen Fenster des Clients öffnen (nicht in einem Tab)",
@@ -2884,5 +2884,8 @@
   "RemoteDesktopView.ConnectionFailed": "Die Verbindung mit {0} konnte nicht hergestellt werden.",
   "RemoteDesktopView.ConnectionFailedFreeRdp": "Die Verbindung mit {0} konnte nicht hergestellt werden (FreeRDP-Exitcode {1}).",
   "RemoteDesktopView.CannotShowHere": "Der Remotedesktop konnte hier nicht angezeigt werden: {0}",
-  "RemoteDesktopView.SessionCouldNotStart": "Die Sitzung konnte nicht gestartet werden: {0}"
+  "RemoteDesktopView.SessionCouldNotStart": "Die Sitzung konnte nicht gestartet werden: {0}",
+  "RemoteDesktopView.SessionEndedBecause": "Die Remotedesktopsitzung wurde beendet: {0}",
+  "RemoteDesktopView.ConnectionFailedBecause": "Die Verbindung mit {0} konnte nicht hergestellt werden: {1}",
+  "RemoteDesktopView.SessionEndedReason": "Die Remotedesktopsitzung wurde beendet (Grund {0})."
 }

@@ -2871,7 +2871,7 @@
   "PdfPasswordException.ThePasswordIsNotRight": "密码不正确。",
   "OfficeHtml.DocumentProtected": "该文档受密码保护。",
   "OfficeHtml.WorkbookProtected": "该工作簿受密码保护。",
-  "ConnectionManagerWindow.ShareActivePanelFolderMstsc": "共享活动面板的文件夹（远程桌面连接：其驱动器；在标签页中：所有驱动器）",
+  "ConnectionManagerWindow.ShareActivePanelFolderMstsc": "共享活动面板的文件夹（远程桌面连接会共享其驱动器）",
   "ConnectionManagerWindow.ShareActivePanelFolder": "共享活动面板的文件夹",
   "ConnectionManagerWindow.FilesSmb": "文件（SMB）",
   "ConnectionManagerWindow.OpenInClientOwnWindow": "在客户端自己的窗口中打开（不在标签页中）",
@@ -2884,5 +2884,8 @@
   "RemoteDesktopView.ConnectionFailed": "无法连接到 {0}。",
   "RemoteDesktopView.ConnectionFailedFreeRdp": "无法连接到 {0}（FreeRDP 退出代码 {1}）。",
   "RemoteDesktopView.CannotShowHere": "无法在此显示远程桌面：{0}",
-  "RemoteDesktopView.SessionCouldNotStart": "无法启动会话：{0}"
+  "RemoteDesktopView.SessionCouldNotStart": "无法启动会话：{0}",
+  "RemoteDesktopView.SessionEndedBecause": "远程桌面会话已结束：{0}",
+  "RemoteDesktopView.ConnectionFailedBecause": "无法连接到 {0}：{1}",
+  "RemoteDesktopView.SessionEndedReason": "远程桌面会话已结束（原因 {0}）。"
 }
