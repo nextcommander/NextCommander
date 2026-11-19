@@ -48,6 +48,18 @@ public enum DescriptionEncoding
     Utf16,
 }
 
+/// <summary>Groups of the file list (Show > Group by): headers between the files, one group can be folded.</summary>
+public enum PanelGrouping
+{
+    None,
+    /// <summary>The kind of file: documents, images, archives ... (folders first).</summary>
+    Type,
+    /// <summary>The date of change: today, yesterday, earlier this week ... older years (folders first).</summary>
+    Date,
+    /// <summary>The first letter of the name; digits and other characters in groups of their own (folders first).</summary>
+    FirstLetter,
+}
+
 public enum SortColumn
 {
     Name,
@@ -168,6 +180,9 @@ public sealed class PanelSettings
     public SortColumn SortColumn { get; set; } = SortColumn.Name;
 
     public bool SortDescending { get; set; }
+
+    /// <summary>Show > Group by: groups of this tab's file list.</summary>
+    public PanelGrouping Grouping { get; set; }
 
     /// <summary>Custom column set chosen for this tab (null = automatic by path, "" = standard columns).</summary>
     public string? ColumnSet { get; set; }

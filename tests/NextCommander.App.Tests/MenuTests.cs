@@ -218,10 +218,11 @@ public sealed class MenuTests : IDisposable
         var top = w.GetLogicalDescendants().OfType<Menu>().First().Items.OfType<MenuItem>().Select(m => (string)m.Header!).ToList();
         Assert.Equal(["_Files", "_Edit", "_Mark", "_Commands", "_Net", "_Show", "C_onfiguration", "_Start", "_Help"], top);
         // related options in submenus; navigation and tabs (formerly under "Other") on the menu itself
-        Assert.Equal(["Display", "Tree", "Quick view panel", "Panels", "File filter", "Sort", "What is shown", "Navigation", "Tabs",
+        Assert.Equal(["Display", "Tree", "Quick view panel", "Panels", "File filter", "Sort", "Group by", "What is shown", "Navigation", "Tabs",
             "Reread source"], Headers(w, "_Show"));
         Assert.Equal(["Brief", "Full", "Comments", "Thumbnails view", "Custom columns mode", "Custom view modes", "Choose column set..."], Headers(w, "Display"));
         Assert.Equal(["Name", "Extension", "Time", "Size", "Unsorted", "Reversed order"], Headers(w, "Sort"));
+        Assert.Equal(["No groups", "Type", "Date", "First letter of the name"], Headers(w, "Group by"));
         Assert.Equal(["All files", "Programs", "*.*", "Custom...", "Only selected files"], Headers(w, "File filter"));
         Assert.Contains("New folder tab", Headers(w, "Tabs"));
         Assert.Equal(["Options...", "Plugins...", "Button bar...", "Button bar 2 (vertical)...", "Dark <-> Normal",

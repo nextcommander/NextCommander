@@ -2962,5 +2962,22 @@
   "Settings.Link.AllowThroughTheFirewall": "Güvenlik duvarında izin ver",
   "Settings.Link.NothingToOpenOnThisSystem": "Bu sistemde açılacak bir şey yok.",
   "Settings.Link.TheFirewallLetsPcLinkThrough": "Güvenlik duvarı PC link’e izin veriyor (port {0}).",
-  "Settings.Link.NotChangedCancelled": "Değiştirilmedi (iptal edildi veya izin verilmedi)."
+  "Settings.Link.NotChangedCancelled": "Değiştirilmedi (iptal edildi veya izin verilmedi).",
+  "Menu.GroupBy": "Grupla",
+  "Menu.nc_GroupByNone": "Gruplama yok",
+  "Menu.nc_GroupByName": "Adın ilk harfi",
+  "Command.nc_GroupByType": "Türe göre grupla",
+  "Command.nc_GroupByDate": "Tarihe göre grupla",
+  "Command.nc_GroupByName": "İlk harfe göre grupla",
+  "PanelGroups.Videos": "Videolar",
+  "PanelGroups.Code": "Kod",
+  "PanelGroups.UnknownDate": "Bilinmeyen tarih",
+  "PanelGroups.InTheFuture": "Gelecekte",
+  "PanelGroups.Today": "Bugün",
+  "PanelGroups.Yesterday": "Dün",
+  "PanelGroups.EarlierThisWeek": "Bu hafta",
+  "PanelGroups.LastWeek": "Geçen hafta",
+  "PanelGroups.EarlierThisMonth": "Bu ay",
+  "PanelGroups.LastMonth": "Geçen ay",
+  "PanelGroups.EarlierThisYear": "Bu yıl"
 }

@@ -1199,6 +1199,10 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         c.Register("nc_SrcThumbs", "Thumbnails view", () => ActivePanel.ViewMode = PanelViewMode.Thumbnails);
         c.Register("nc_SrcByName", "Sort by name", () => ActivePanel.SetSort(SortColumn.Name));
         c.Register("nc_SrcByExt", "Sort by extension", () => ActivePanel.SetSort(SortColumn.Extension));
+        c.Register("nc_GroupByNone", "No groups", () => ActivePanel.SetGrouping(PanelGrouping.None));
+        c.Register("nc_GroupByType", "Group by type", () => ActivePanel.SetGrouping(PanelGrouping.Type));
+        c.Register("nc_GroupByDate", "Group by date", () => ActivePanel.SetGrouping(PanelGrouping.Date));
+        c.Register("nc_GroupByName", "Group by first letter", () => ActivePanel.SetGrouping(PanelGrouping.FirstLetter));
         c.Register("nc_SrcByDateTime", "Sort by date", () => ActivePanel.SetSort(SortColumn.Date));
         c.Register("nc_SrcBySize", "Sort by size", () => ActivePanel.SetSort(SortColumn.Size));
         c.Register("nc_DirBranch", "Branch View (files in all subfolders)", _ => ActivePanel.ToggleBranchViewAsync(selectedOnly: false));

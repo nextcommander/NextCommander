@@ -2962,5 +2962,22 @@
   "Settings.Link.AllowThroughTheFirewall": "Allow through the firewall",
   "Settings.Link.NothingToOpenOnThisSystem": "Nothing to open on this system.",
   "Settings.Link.TheFirewallLetsPcLinkThrough": "The firewall lets PC link through (port {0}).",
-  "Settings.Link.NotChangedCancelled": "Not changed (cancelled or not allowed)."
+  "Settings.Link.NotChangedCancelled": "Not changed (cancelled or not allowed).",
+  "Menu.GroupBy": "Group by",
+  "Menu.nc_GroupByNone": "No groups",
+  "Menu.nc_GroupByName": "First letter of the name",
+  "Command.nc_GroupByType": "Group by type",
+  "Command.nc_GroupByDate": "Group by date",
+  "Command.nc_GroupByName": "Group by first letter",
+  "PanelGroups.Videos": "Videos",
+  "PanelGroups.Code": "Code",
+  "PanelGroups.UnknownDate": "Unknown date",
+  "PanelGroups.InTheFuture": "In the future",
+  "PanelGroups.Today": "Today",
+  "PanelGroups.Yesterday": "Yesterday",
+  "PanelGroups.EarlierThisWeek": "Earlier this week",
+  "PanelGroups.LastWeek": "Last week",
+  "PanelGroups.EarlierThisMonth": "Earlier this month",
+  "PanelGroups.LastMonth": "Last month",
+  "PanelGroups.EarlierThisYear": "Earlier this year"
 }
