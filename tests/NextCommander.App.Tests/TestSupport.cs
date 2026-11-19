@@ -373,6 +373,14 @@ internal sealed class FakeDialogs : IDialogService
 
     public NextCommander.App.Views.Dialogs.FolderHistoryRequest? LastFolderHistory { get; private set; }
 
+    public NextCommander.App.Views.Dialogs.CommandBrowserRequest? LastCommandBrowser { get; private set; }
+
+    public Task ShowCommandBrowserAsync(NextCommander.App.Views.Dialogs.CommandBrowserRequest request)
+    {
+        LastCommandBrowser = request;
+        return Task.CompletedTask;
+    }
+
     public Task ShowFolderHistoryAsync(NextCommander.App.Views.Dialogs.FolderHistoryRequest request)
     {
         LastFolderHistory = request;

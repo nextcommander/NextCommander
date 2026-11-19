@@ -219,6 +219,17 @@ public sealed class DialogService : IDialogService
         await dialog.ShowDialog(RequireOwner());
     }
 
+    public async Task ShowCommandBrowserAsync(CommandBrowserRequest request)
+    {
+        var owner = RequireOwner();
+        if (owner is Views.MainWindow main)
+        {
+            request = request with { Categories = main.CommandCategories(), FunctionKeys = main.FunctionKeyCommands() };
+        }
+        var dialog = new CommandBrowserWindow(request);
+        await dialog.ShowDialog(owner);
+    }
+
     public async Task ShowFolderHistoryAsync(FolderHistoryRequest request)
     {
         var dialog = new FolderHistoryDialog(request);

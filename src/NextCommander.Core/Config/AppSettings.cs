@@ -925,6 +925,12 @@ public sealed class AppSettings
     /// <summary>Folders pinned to the top of the folder history (Alt+Down), in their order.</summary>
     public List<string> PinnedFolders { get; set; } = [];
 
+    /// <summary>Commands marked as favorites in the commands and shortcuts window.</summary>
+    public List<string> FavoriteCommands { get; set; } = [];
+
+    /// <summary>Commands run from the commands and shortcuts window, the latest first.</summary>
+    public List<string> RecentCommands { get; set; } = [];
+
     public List<string> RightFolderHistory { get; set; } = [];
 
     /// <summary>Most frequently used folders are kept between sessions.</summary>
