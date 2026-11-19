@@ -118,7 +118,8 @@ click it or press Enter. **...** next to it chooses a program instead, and in th
 
 The Configuration menu also has:
 
-- **Plugins...:** the loaded plugins and any errors.
+- **Plugins...:** the plugins window: the installed plugins and their state, turning them on / off, installing one
+  from a zip file.
 - **Dark <-> Normal:** switches between the system colors and the Dark theme.
 - **Save position** and **Save settings:** save the window position and all settings now.
 - **Commands and shortcuts...:** every command with its shortcut; assign and remove shortcuts

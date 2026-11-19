@@ -14,9 +14,14 @@ public sealed partial class TreeNodeViewModel : ObservableObject
     [ObservableProperty]
     private bool _isExpanded;
 
-    private TreeNodeViewModel(string name, VfsPath path, Func<VfsPath, Task<IReadOnlyList<VfsEntry>>> listDirectories, bool placeholder = false)
+    /// <summary>Shown in the tree (the folder tree window's filter and hidden folders hide nodes).</summary>
+    [ObservableProperty]
+    private bool _isShown = true;
+
+    private TreeNodeViewModel(string name, VfsPath path, Func<VfsPath, Task<IReadOnlyList<VfsEntry>>> listDirectories, bool placeholder = false, bool hidden = false)
     {
         Name = name;
+        IsHiddenFolder = hidden;
         Path = path;
         _listDirectories = listDirectories;
         IsPlaceholder = placeholder;
@@ -27,6 +32,12 @@ public sealed partial class TreeNodeViewModel : ObservableObject
     }
 
     public string Name { get; }
+
+    /// <summary>A hidden (or system) folder.</summary>
+    public bool IsHiddenFolder { get; }
+
+    /// <summary>Whether the children were read.</summary>
+    public bool IsLoaded => _loaded;
 
     public VfsPath Path { get; }
 
@@ -59,6 +70,9 @@ public sealed partial class TreeNodeViewModel : ObservableObject
 
     public Task LoadAsync() => _loading ??= LoadCoreAsync();
 
+    /// <summary>The children were read (the folder tree window filters them).</summary>
+    public static event EventHandler? Loaded;
+
     /// <summary>Forgets the children so they are re-read on the next expansion (after create/rename/delete).</summary>
     public void Invalidate()
     {
@@ -82,9 +96,10 @@ public sealed partial class TreeNodeViewModel : ObservableObject
         Children.Clear();
         foreach (var dir in dirs)
         {
-            Children.Add(new TreeNodeViewModel(dir.Name, dir.Path, _listDirectories));
+            Children.Add(new TreeNodeViewModel(dir.Name, dir.Path, _listDirectories, hidden: dir.IsHidden || dir.IsSystem));
         }
         _loaded = true;
+        Loaded?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>

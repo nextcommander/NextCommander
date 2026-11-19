@@ -922,6 +922,9 @@ public sealed class AppSettings
     /// <summary>Saved folder history of the left / right panel.</summary>
     public List<string> LeftFolderHistory { get; set; } = [];
 
+    /// <summary>Folders pinned to the top of the folder history (Alt+Down), in their order.</summary>
+    public List<string> PinnedFolders { get; set; } = [];
+
     public List<string> RightFolderHistory { get; set; } = [];
 
     /// <summary>Most frequently used folders are kept between sessions.</summary>

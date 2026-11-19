@@ -367,6 +367,30 @@ internal sealed class FakeDialogs : IDialogService
 
     public VfsPath? NextTreePath { get; set; }
 
+    public NextCommander.App.Views.Dialogs.PluginsRequest? LastPlugins { get; private set; }
+
+    public NextCommander.App.Views.Dialogs.SystemInfo? LastSystemInfo { get; private set; }
+
+    public NextCommander.App.Views.Dialogs.FolderHistoryRequest? LastFolderHistory { get; private set; }
+
+    public Task ShowFolderHistoryAsync(NextCommander.App.Views.Dialogs.FolderHistoryRequest request)
+    {
+        LastFolderHistory = request;
+        return Task.CompletedTask;
+    }
+
+    public Task ShowSystemInfoAsync(NextCommander.App.Views.Dialogs.SystemInfo info, Func<Task> openSettingsFolder)
+    {
+        LastSystemInfo = info;
+        return Task.CompletedTask;
+    }
+
+    public Task ShowPluginsAsync(NextCommander.App.Views.Dialogs.PluginsRequest request)
+    {
+        LastPlugins = request;
+        return Task.CompletedTask;
+    }
+
     public Task<QuickListResult?> ShowQuickListAsync(string title, IReadOnlyList<QuickListItem> items, IReadOnlyList<string>? actions = null)
     {
         LastQuickList = items;

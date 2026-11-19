@@ -1040,6 +1040,20 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
     /// <summary>Removes a directory from this panel's history list.</summary>
     public void ForgetHistory(VfsPath path) => _recent.Remove(path);
 
+    /// <summary>Puts a folder back into the history at its place (Undo in the folder history).</summary>
+    public void RestoreHistoryAt(VfsPath path, int index)
+    {
+        _recent.Remove(path);
+        _recent.Insert(Math.Clamp(index, 0, _recent.Count), path);
+    }
+
+    /// <summary>The whole history at once (clearing it, and its Undo).</summary>
+    public void SetHistory(IEnumerable<VfsPath> paths)
+    {
+        _recent.Clear();
+        _recent.AddRange(paths);
+    }
+
     /// <summary>Re-reads the directory keeping cursor and marks. Walks up if the directory vanished.</summary>
     public async Task RefreshAsync()
     {

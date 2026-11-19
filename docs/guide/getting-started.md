@@ -79,6 +79,12 @@ shown:
 - **Tab** switches to the other panel.
 - **Alt+Left / Alt+Right** go back and forward; **Alt+Down** shows the folder history, and
   **Alt+Shift+Down** your most frequently used folders.
+- The **folder history** window groups the folders into *Pinned*, *Today*, *Yesterday* and *Earlier*, with when you
+  were last there and how often. Search it, show one drive only, and per folder: pin it to the top (Ctrl+P), open it
+  in the other panel (Shift+Enter) or a new tab (Ctrl+Enter), or remove it (Del). 1–9 open the first nine folders at
+  once. Removing a folder or clearing the history can be undone; pinned folders stay.
+- **Alt+F10** opens the **folder tree** window: filter the folders read so far, show or hide hidden folders, jump to
+  Home, Desktop, Documents or Downloads, and see the chosen folder's path at the bottom.
 - **Ctrl+D** opens the **Hotlist**, your list of favorite folders. *Show > Navigation > Add this folder to the
   Hotlist...* adds the current folder.
 - **Ctrl+Left / Ctrl+Right** opens the folder under the cursor in the left or right panel.

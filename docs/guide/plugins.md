@@ -58,13 +58,28 @@ unchecked, until you check it again (the list is the `DisabledPlugins` setting).
 ### The Plugins menu
 
 The **Plugins** button of the button bar (next to the connection manager) lists the places the plugins offer, such
-as *rclone > rclone remotes*, and ends with **Plugins...**, the list of the loaded plugins. The button shows only while
+as *rclone > rclone remotes*, and ends with **Plugins...**, the plugins window. The button shows only while
 at least one plugin is loaded; *Configuration > Options > Layout > Button bars > Plugins button* hides it for good. The command
-is `nc_PluginsMenu` (for a shortcut or the command line); `nc_Plugins` opens the plugin list.
+is `nc_PluginsMenu` (for a shortcut or the command line); `nc_Plugins` opens the plugins window.
+
+### The plugins window
+
+**Plugins...** lists every installed plugin: its name, version and description, its state (*Enabled*, *Disabled*,
+*Error*, or *On / Off after a restart* when it was changed since the start), what it adds (file systems, column
+providers, packers, viewers) and its folder.
+- **Search** (Ctrl+F) by name, kind or folder; the chips **All**, **File systems**, **Column providers** and
+  **Disabled** filter the list and show how many plugins each has.
+- On a plugin: **copy its path**, **open its folder** in the panel, or **turn it on / off** (the same as
+  *Configuration > Plugins*). A plugin turned off whose folder is gone can be removed from the list.
+- **+** installs a plugin from a zip file (with its `plugin.json` at the top or in one folder) or from a
+  `plugin.json` file: it is copied to the plugins folder of the settings folder, under its name; an older copy there is
+  replaced (turn a loaded plugin off and restart before replacing it, its files are in use).
+- Plugins are loaded at the start: after a change the window offers **Restart now**.
+- **Open** (Enter, or a double click) opens the plugin's place when it has one (rclone remotes ...), otherwise its folder.
 
 ### When a plugin does not load
 
-**Plugins...** marks each plugin with ✔ or ✘. A ✘ comes with the reason, for example:
+The plugins window marks such a plugin as *Error*; the reason is in the tool tip of the state, for example:
 
 | Message | Meaning |
 |---|---|

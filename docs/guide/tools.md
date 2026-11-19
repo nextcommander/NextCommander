@@ -192,14 +192,17 @@ two panels.
 
 ![Duplicate files](../screenshots/duplicates.png)
 
-- Choose the folders to search (the two panels' folders to start with).
+- Choose the folders to search (the two panels' folders to start with): each is a chip with ✕; **Add folder** and
+  **Panel folders** add more.
 - Compare by content, by name and size, or by name only; set a file mask and a minimum size.
-- Results come in groups, the group wasting the most space first. The status line shows how much space the extra
-  copies take.
-- Mark files by hand, or with **Mark**: keep the newest, oldest, shortest path or longest path in each group,
-  and so on. Rules always leave at least one copy of each file; you are warned if you marked all copies of a
-  group yourself.
-- Then **Move to trash**, **Delete permanently**, **Move to folder...**, or **Feed to panel**.
+- After the search, four numbers sum it up: duplicate groups, duplicate files, the space you could free and the
+  files scanned.
+- Results come in groups, the group wasting the most space first. Each group shows the file's size, how many copies
+  there are and the extra space they take; click its header (or Space / Enter) to fold it, or **Collapse all**.
+- Mark files by hand, or with **Smart mark**: keep the newest, oldest, shortest path or longest path in each group,
+  and so on. Every file shows *Keep* or *Remove*. Rules always leave at least one copy of each file; you are warned
+  if you marked all copies of a group yourself.
+- Then **Move to trash**, **Delete permanently**, **Move to folder**, or **Feed to panel**.
 
 ## Folder sizes
 
@@ -248,7 +251,9 @@ anew. *Rescan* reads it again, the ✕ button or Esc puts the panel back.
   Shift+Enter (*Open with...*) offers a list of programs.
 - **Background transfer manager...** (*Commands*): running and waiting jobs with their speed and time left;
   pause, stop after the current file, or cancel.
-- **System information...** (*Commands*): operating system, memory and drives.
+- **System information...** (*Commands*): the program's version, the operating system, computer, user, CPU
+  cores, memory, uptime, the settings folder (copy or open it) and every drive with how full it is. **Copy details**
+  (Ctrl+C) copies all of it as text for a problem report.
 - **Branch View** (Ctrl+B): all files of all subfolders in one list. Ctrl+Shift+B does the same for the selected
   folders only.
 
