@@ -254,26 +254,31 @@
         <MenuItem Header="Reread source" InputGesture="Ctrl+R" Command="{Binding RunCommandCommand}" CommandParameter="nc_RereadSource" />
       </MenuItem>
       <MenuItem Header="C_onfiguration">
+        <!-- grouped by type (user's request, 19 November 2026): main settings, look, button bars, commands and lists,
+             saving / moving / backups -->
         <MenuItem Header="Options..." InputGesture="Ctrl+Alt+S" Command="{Binding RunCommandCommand}" CommandParameter="nc_Config" />
         <MenuItem Header="Plugins..." Command="{Binding RunCommandCommand}" CommandParameter="nc_Plugins" />
-        <MenuItem Header="Button bar..." Command="{Binding RunCommandCommand}" CommandParameter="nc_ButtonConfig" />
-        <MenuItem Header="Button bar 2 (vertical)..." Command="{Binding RunCommandCommand}" CommandParameter="nc_VertButtonConfig" />
+        <Separator />
+        <MenuItem x:Name="ColorThemeMenu" Header="Color theme" Tag="nc_SetColorScheme">
+          <MenuItem Header="System colors" Command="{Binding RunCommandCommand}" CommandParameter="nc_SetColorScheme" />
+        </MenuItem>
         <MenuItem Header="Dark &lt;-&gt; Normal" ToggleType="CheckBox" IsChecked="{Binding IsDarkTheme, Mode=OneWay}" InputGesture="Ctrl+Shift+D"
                   Command="{Binding RunCommandCommand}" CommandParameter="nc_SwitchDarkNormal" />
+        <MenuItem Header="Edit column sets..." Command="{Binding RunCommandCommand}" CommandParameter="nc_EditColumnSets" />
+        <Separator />
+        <MenuItem Header="Button bar..." Command="{Binding RunCommandCommand}" CommandParameter="nc_ButtonConfig" />
+        <MenuItem Header="Button bar 2 (vertical)..." Command="{Binding RunCommandCommand}" CommandParameter="nc_VertButtonConfig" />
+        <MenuItem Header="Add button to button bar..." Command="{Binding RunCommandCommand}" CommandParameter="nc_AddButton" />
+        <Separator />
+        <MenuItem Header="Commands and shortcuts..." InputGesture="Ctrl+Shift+F12" Command="{Binding RunCommandCommand}" CommandParameter="nc_CommandBrowser" />
+        <MenuItem Header="Add user command (uc_)..." Command="{Binding RunCommandCommand}" CommandParameter="nc_AddUserCommand" />
+        <MenuItem Header="Edit Hotlist..." Command="{Binding RunCommandCommand}" CommandParameter="nc_ConfigDirHotlist" />
+        <Separator />
         <MenuItem Header="Save position" Command="{Binding RunCommandCommand}" CommandParameter="nc_SavePosition" />
         <MenuItem Header="Save settings" Command="{Binding RunCommandCommand}" CommandParameter="nc_SaveSettings" />
         <MenuItem Header="Export settings..." Command="{Binding RunCommandCommand}" CommandParameter="nc_ExportSettings" />
         <MenuItem Header="Import settings..." Command="{Binding RunCommandCommand}" CommandParameter="nc_ImportSettings" />
         <MenuItem Header="Restore settings from a backup..." Command="{Binding RunCommandCommand}" CommandParameter="nc_RestoreSettings" />
-        <Separator />
-        <MenuItem Header="Commands and shortcuts..." InputGesture="Ctrl+Shift+F12" Command="{Binding RunCommandCommand}" CommandParameter="nc_CommandBrowser" />
-        <MenuItem Header="Add button to button bar..." Command="{Binding RunCommandCommand}" CommandParameter="nc_AddButton" />
-        <MenuItem Header="Add user command (uc_)..." Command="{Binding RunCommandCommand}" CommandParameter="nc_AddUserCommand" />
-        <MenuItem Header="Edit Hotlist..." Command="{Binding RunCommandCommand}" CommandParameter="nc_ConfigDirHotlist" />
-        <MenuItem Header="Edit column sets..." Command="{Binding RunCommandCommand}" CommandParameter="nc_EditColumnSets" />
-        <MenuItem x:Name="ColorThemeMenu" Header="Color theme" Tag="nc_SetColorScheme">
-          <MenuItem Header="System colors" Command="{Binding RunCommandCommand}" CommandParameter="nc_SetColorScheme" />
-        </MenuItem>
       </MenuItem>
       <MenuItem x:Name="StartMenuRoot" Header="_Start">
         <MenuItem Header="Change start menu..." Command="{Binding RunCommandCommand}" CommandParameter="nc_ConfigStartMenu" />
