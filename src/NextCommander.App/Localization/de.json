@@ -2956,5 +2956,11 @@
   "MainWindow.TheseAreTheSettingsInUse": "Das sind die Einstellungen, die gerade verwendet werden.",
   "MainWindow.TheSettingsOfReplaceTheCurrent": "Die Einstellungen vom {0} ersetzen die aktuellen (diese werden ebenfalls als Sicherung aufbewahrt), und NextCommander startet neu.",
   "MainWindow.RestoreAndRestart": "Wiederherstellen und neu starten",
-  "MainWindow.TheSettingsWereRestoredStart": "Die Einstellungen wurden wiederhergestellt. Starten Sie NextCommander neu, um sie zu verwenden."
+  "MainWindow.TheSettingsWereRestoredStart": "Die Einstellungen wurden wiederhergestellt. Starten Sie NextCommander neu, um sie zu verwenden.",
+  "Settings.Link.Firewall": "Firewall",
+  "Settings.Link.Firewall.Description": "Wird der andere Computer nicht gefunden (oder kann er sich nicht verbinden), blockiert vielleicht die Firewall dieses Computers die Verbindung: dies öffnet ihren Port für alle Netzwerke (Windows Defender Firewall; Linux: ufw oder firewalld). Fragt nach Administratorrechten.",
+  "Settings.Link.AllowThroughTheFirewall": "Durch die Firewall zulassen",
+  "Settings.Link.NothingToOpenOnThisSystem": "Auf diesem System ist nichts zu öffnen.",
+  "Settings.Link.TheFirewallLetsPcLinkThrough": "Die Firewall lässt PC-Link durch (Port {0}).",
+  "Settings.Link.NotChangedCancelled": "Nicht geändert (abgebrochen oder nicht erlaubt)."
 }

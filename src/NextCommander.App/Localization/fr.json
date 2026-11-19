@@ -2956,5 +2956,11 @@
   "MainWindow.TheseAreTheSettingsInUse": "Ce sont les paramètres utilisés actuellement.",
   "MainWindow.TheSettingsOfReplaceTheCurrent": "Les paramètres du {0} remplacent les paramètres actuels (conservés eux aussi en sauvegarde) et NextCommander redémarre.",
   "MainWindow.RestoreAndRestart": "Restaurer et redémarrer",
-  "MainWindow.TheSettingsWereRestoredStart": "Les paramètres ont été restaurés. Redémarrez NextCommander pour les utiliser."
+  "MainWindow.TheSettingsWereRestoredStart": "Les paramètres ont été restaurés. Redémarrez NextCommander pour les utiliser.",
+  "Settings.Link.Firewall": "Pare-feu",
+  "Settings.Link.Firewall.Description": "Si l’autre ordinateur est introuvable (ou ne peut pas se connecter), le pare-feu de cet ordinateur bloque peut-être la liaison : ceci ouvre son port pour tous les réseaux (Pare-feu Windows Defender ; Linux : ufw ou firewalld). Demande les droits d’administrateur.",
+  "Settings.Link.AllowThroughTheFirewall": "Autoriser dans le pare-feu",
+  "Settings.Link.NothingToOpenOnThisSystem": "Rien à ouvrir sur ce système.",
+  "Settings.Link.TheFirewallLetsPcLinkThrough": "Le pare-feu laisse passer PC link (port {0}).",
+  "Settings.Link.NotChangedCancelled": "Inchangé (annulé ou non autorisé)."
 }

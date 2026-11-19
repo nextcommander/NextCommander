@@ -204,11 +204,23 @@ public sealed class MtpProviderTests : IDisposable
     }
 
     [Theory]
-    [InlineData("mtp:host=SAMSUNG_SAMSUNG_Android_R5CX10ABC", "SAMSUNG SAMSUNG Android R5CX10ABC")]
+    [InlineData("mtp:host=SAMSUNG_SAMSUNG_Android_R5CX10ABC", "SAMSUNG Android")]
+    [InlineData("mtp:host=SAMSUNG_SAMSUNG_Android_R5CX15QTV5J", "SAMSUNG Android")]
+    [InlineData("mtp:host=Google_Pixel_8_1A2B3C4D5E", "Google Pixel 8")]
+    [InlineData("mtp:host=SAMSUNG_Galaxy_S24", "SAMSUNG Galaxy S24")]
     [InlineData("gphoto2:host=%5Busb%3A001%2C007%5D", "Camera [usb:001,007]")]
     [InlineData("smb-share:server=nas,share=photos", null)]
     [InlineData("sftp:host=example.org", null)]
     public void GvfsFolderNames(string folder, string? expected) => Assert.Equal(expected, MtpDeviceNames.FromGvfsFolder(folder));
+
+    [Fact]
+    public void GioDisplayNames()
+    {
+        const string info = "display name: x\n  standard::display-name: Galaxy S24 Ultra\n  standard::icon: phone\n";
+        Assert.Equal("Galaxy S24 Ultra", MtpDeviceNames.FromGioInfo(info, "mtp:host=SAMSUNG_SAMSUNG_Android_R5CX15QTV5J"));
+        Assert.Null(MtpDeviceNames.FromGioInfo("standard::display-name: mtp:host=SAMSUNG_X\n", "mtp:host=SAMSUNG_X"));
+        Assert.Null(MtpDeviceNames.FromGioInfo(string.Empty, "mtp:host=SAMSUNG_X"));
+    }
 
     [Fact]
     public async Task CopyJobToThePhoneAndBack()
