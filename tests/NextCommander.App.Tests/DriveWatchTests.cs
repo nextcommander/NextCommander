@@ -85,7 +85,9 @@ public class DriveWatchTests
         await UiFixture.WaitUntilAsync(() => vm.Left.FreeSpaceText.StartsWith("[Internal storage]", StringComparison.Ordinal));
         Assert.StartsWith("[Internal storage]", vm.Left.FreeSpaceText, StringComparison.Ordinal);
 
-        await vm.OnDrivesChangedAsync(); // the real drive list has no such phone: it was unplugged
+        // the real drive list has no such phone: it was unplugged. A real phone on the machine running the tests was
+        // there from the start, so it is no "new" phone the tab would follow: the tab goes home.
+        await vm.OnDrivesChangedAsync();
         Assert.Equal(VfsPath.Local(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)), vm.Left.CurrentPath);
     }
 
