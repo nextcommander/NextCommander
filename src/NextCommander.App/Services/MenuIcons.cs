@@ -147,6 +147,10 @@ public static class MenuIcons
         ["editor.bom"] = new("T:BOM", Purple),
         ["editor.reinterpret"] = new("MiRefresh", Orange),
         // the right-click menu of Lister (its view modes; the rest is shared with the editor)
+        ["hotlist.folder"] = new("MiFolderOpen", Yellow),
+        ["hotlist.command"] = new("MiTerminal", Purple),
+        ["hotlist.submenu"] = new("MiStacked", Blue),
+        ["hotlist.separator"] = new("MiMinusCircle", Gray),
         ["dup.keepnewest"] = new("MiHistory", Green, "OvCheck", Green),
         ["dup.keepoldest"] = new("MiHistory", Gray, "OvCheck", Green),
         ["dup.keepshortest"] = new("MiArrowLeft", Blue, "OvCheck", Green),

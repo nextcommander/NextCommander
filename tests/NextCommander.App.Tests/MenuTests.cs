@@ -302,6 +302,36 @@ public sealed class MenuTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task Hotlist_menu_has_submenus_separators_menu_keys_and_the_other_panel()
+    {
+        var (w, vm) = await _fx.OpenAsync();
+        Directory.CreateDirectory(_fx.L("sub", "deep"));
+        vm.Settings.Hotlist.AddRange([
+            new Core.Config.HotlistEntry { Name = "&Left", Path = _fx.L() },
+            new Core.Config.HotlistEntry { Name = "-" },
+            new Core.Config.HotlistEntry { Name = "A/B/Deep_1", Path = _fx.L("sub", "deep"), Target = _fx.R() },
+            new Core.Config.HotlistEntry { Name = "Empty/" },
+        ]);
+        await vm.ExecuteAsync("nc_DirectoryHotlist");
+        await SettleAsync();
+        var items = w.HotlistMenu!.Items;
+        Assert.Equal("_Left", ((MenuItem)items[0]!).Header); // its own menu key, no number
+        Assert.IsType<Separator>(items[1]);
+        var a = (MenuItem)items[2]!;
+        Assert.Equal("A", a.Header);
+        var deep = (MenuItem)((MenuItem)a.Items[0]!).Items[0]!;
+        Assert.Equal("Deep__1", deep.Header); // "_" stays a "_"
+        Assert.Equal("Empty", ((MenuItem)items[3]!).Header);
+        w.HotlistMenu.Hide();
+
+        // the folder in the active panel, its other-panel folder in the other one
+        vm.ActivateSide(vm.LeftSide);
+        await vm.NavigateToHotlistEntryAsync(vm.Settings.Hotlist[2]);
+        Assert.Equal(Core.Vfs.VfsPath.Local(_fx.L("sub", "deep")), vm.Left.CurrentPath);
+        Assert.Equal(Core.Vfs.VfsPath.Local(_fx.R()), vm.Right.CurrentPath);
+    }
+
+    [AvaloniaFact]
     public async Task Hotlist_menu_opens_below_the_star_button_or_at_the_file_list()
     {
         var (w, vm) = await _fx.OpenAsync();

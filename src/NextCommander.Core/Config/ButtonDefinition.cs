@@ -98,11 +98,67 @@ public sealed class ButtonDefinition
     ];
 }
 
+/// <summary>
+/// An entry of the directory hotlist (Ctrl+D). The name holds the submenus: "Projects/Web/&amp;Site" is in Projects > Web,
+/// "Projects/" alone is an empty submenu, a last part "-" is a separator line. An "&amp;" marks the menu key ("&amp;&amp;" is
+/// an "&amp;"). The path is a folder, or a command ("nc_..." / "uc_..." with its parameters).
+/// </summary>
 public sealed class HotlistEntry
 {
     /// <summary>Display name; "Group/Name" puts the entry in a submenu.</summary>
     public string Name { get; set; } = string.Empty;
 
-    /// <summary>Directory (environment variables and %NC_PATH% allowed).</summary>
+    /// <summary>Directory (environment variables and %NC_PATH% allowed), or a command line.</summary>
     public string Path { get; set; } = string.Empty;
+
+    /// <summary>A folder opened in the other panel at the same time (optional).</summary>
+    public string? Target { get; set; }
+
+    /// <summary>The submenus the entry is in (an empty submenu: all its parts).</summary>
+    public IReadOnlyList<string> Groups()
+    {
+        var parts = Name.Split('/', StringSplitOptions.TrimEntries);
+        return IsMenuOnly() ? [.. parts.Where(p => p.Length > 0)] : [.. parts[..^1].Where(p => p.Length > 0)];
+    }
+
+    /// <summary>The entry's own name (after the last "/").</summary>
+    public string Leaf() => Name.Split('/', StringSplitOptions.TrimEntries)[^1];
+
+    /// <summary>"Group/": a submenu without entries yet.</summary>
+    public bool IsMenuOnly() => Name.TrimEnd().EndsWith('/');
+
+    /// <summary>A line between groups.</summary>
+    public bool IsSeparator() => !IsMenuOnly() && Leaf() == "-";
+
+    /// <summary>Runs a command instead of opening a folder.</summary>
+    public bool IsCommand()
+    {
+        var path = Path.TrimStart();
+        return path.StartsWith("nc_", StringComparison.OrdinalIgnoreCase) || path.StartsWith("uc_", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>A folder entry (not a separator, submenu or command; the folder may still be empty).</summary>
+    public bool IsFolder() => !IsMenuOnly() && !IsSeparator() && !IsCommand();
+
+    /// <summary>A name without its menu key mark: "&amp;Movie" → "Movie", "A &amp;&amp; B" → "A &amp; B".</summary>
+    public static string Plain(string name) =>
+        name.Replace("&&", "\u0001", StringComparison.Ordinal).Replace("&", string.Empty, StringComparison.Ordinal).Replace("\u0001", "&", StringComparison.Ordinal);
+
+    /// <summary>The menu key of a name ("&amp;Movie" → 'm'), or null.</summary>
+    public static char? MenuKey(string name)
+    {
+        for (var i = 0; i < name.Length - 1; i++)
+        {
+            if (name[i] == '&')
+            {
+                if (name[i + 1] == '&')
+                {
+                    i++;
+                    continue;
+                }
+                return char.ToLowerInvariant(name[i + 1]);
+            }
+        }
+        return null;
+    }
 }

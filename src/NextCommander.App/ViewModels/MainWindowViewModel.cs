@@ -1260,7 +1260,13 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         c.Register("nc_FrequentDirectories", "Most frequently used folders", _ => ShowFrequentAsync());
         c.Register("nc_DirectoryHotlist", "Directory hotlist", () => HotlistMenuRequested?.Invoke(this, EventArgs.Empty));
         c.Register("nc_AddToHotlist", "Add this folder to the Hotlist", _ => AddToHotlistAsync());
-        c.Register("nc_ConfigDirHotlist", "Edit Hotlist", _ => _dialogs.EditHotlistAsync(_settings.Hotlist));
+        c.Register("nc_ConfigDirHotlist", "Edit Hotlist", async _ =>
+        {
+            if (await _dialogs.EditHotlistAsync(_settings.Hotlist, ActivePanel.CurrentPath?.ToDisplayString(), OtherPanel.CurrentPath?.ToDisplayString()))
+            {
+                SaveSettings();
+            }
+        });
         c.Register("nc_SyncChangeDir", "Toggle synchronous directory changing", ToggleSyncChangeDir);
         c.Register("nc_CdTree", "Go to path", p => p is null ? Task.CompletedTask : ActivePanel.NavigateToTextAsync(p));
         c.Register("LOADLIST", "Show items from list file in panel (LOADLIST file)", p => LoadListAsync(p));
@@ -1815,15 +1821,27 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     public static string ExpandHotlistPath(string path) =>
         Environment.ExpandEnvironmentVariables(path.Replace("%NC_PATH%", AppContext.BaseDirectory.TrimEnd('/', '\\'), StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>A hotlist entry: runs its command, or opens its folder (and its other-panel folder in the other panel).</summary>
     public async Task NavigateToHotlistEntryAsync(HotlistEntry entry)
     {
-        var text = ExpandHotlistPath(entry.Path);
-        if (text.StartsWith("nc_", StringComparison.OrdinalIgnoreCase) || text.StartsWith("uc_", StringComparison.OrdinalIgnoreCase))
+        if (entry.IsMenuOnly() || entry.IsSeparator())
+        {
+            return;
+        }
+        var text = ExpandHotlistPath(entry.Path).Trim();
+        if (entry.IsCommand())
         {
             await ExecuteAsync(text);
             return;
         }
-        await ActivePanel.NavigateToTextAsync(text);
+        if (text.Length > 0)
+        {
+            await ActivePanel.NavigateToTextAsync(text);
+        }
+        if (!string.IsNullOrWhiteSpace(entry.Target))
+        {
+            await OtherPanel.NavigateToTextAsync(ExpandHotlistPath(entry.Target).Trim());
+        }
     }
 
     private async Task AddToHotlistAsync()
@@ -4129,10 +4147,9 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         {
             Add(recent);
         }
-        foreach (var hot in _settings.Hotlist.Take(20))
+        foreach (var hot in _settings.Hotlist.Where(h => h.IsFolder() && !string.IsNullOrWhiteSpace(h.Path)).Take(20))
         {
             var expanded = ExpandHotlistPath(hot.Path);
-            if (!expanded.StartsWith("nc_", StringComparison.OrdinalIgnoreCase))
             {
                 Add(expanded.TrimEnd('/', '\\') + Path.DirectorySeparatorChar);
             }

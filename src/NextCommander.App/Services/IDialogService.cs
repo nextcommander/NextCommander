@@ -160,8 +160,8 @@ public interface IDialogService
     Task<Views.Dialogs.ButtonBarEdit?> EditButtonBarAsync(string title, IReadOnlyList<ButtonDefinition> buttons, int iconSize, bool vertical,
         Func<ButtonDefinition, int, Avalonia.Controls.Control?> icon);
 
-    /// <summary>Edits the directory hotlist in place.</summary>
-    Task EditHotlistAsync(List<HotlistEntry> hotlist);
+    /// <summary>The hotlist window: edits a copy, writes it back on OK (true).</summary>
+    Task<bool> EditHotlistAsync(List<HotlistEntry> hotlist, string? activeFolder = null, string? otherFolder = null);
 
     /// <summary>Alt+F10: directory tree of the panel's drive; returns the chosen directory.</summary>
     Task<VfsPath?> ShowTreeAsync(PanelViewModel panel);
