@@ -277,6 +277,33 @@ public partial class MainWindow
         CommandLineRow.IsEnabled = files;
     }
 
+    /// <summary>Command → the main menu it is in ("Files", "Show" ...; the first one when it is in several), for the commands window.</summary>
+    public IReadOnlyDictionary<string, string> CommandCategories()
+    {
+        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        void Walk(MenuItem item, string category)
+        {
+            if (item.CommandParameter is string command)
+            {
+                map.TryAdd(command.Split(' ', 2)[0], category);
+            }
+            foreach (var child in item.Items.OfType<MenuItem>())
+            {
+                Walk(child, category);
+            }
+        }
+        foreach (var top in MainMenu.Items.OfType<MenuItem>())
+        {
+            var name = (top.Header as string ?? string.Empty).Replace("_", string.Empty, StringComparison.Ordinal);
+            Walk(top, name);
+        }
+        return map;
+    }
+
+    /// <summary>The commands of the function key bar.</summary>
+    public IReadOnlySet<string> FunctionKeyCommands() =>
+        FunctionKeys.Children.OfType<Button>().Select(b => b.CommandParameter as string).OfType<string>().ToHashSet(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Turns off a menu item whose command needs the panels (a submenu when none of its items works); true when it stays on.</summary>
     private bool KeepOnPage(MenuItem item)
     {

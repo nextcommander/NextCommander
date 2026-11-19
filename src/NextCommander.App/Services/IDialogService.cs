@@ -138,6 +138,9 @@ public interface IDialogService
     /// <summary>Searchable list with optional extra action buttons.</summary>
     Task<QuickListResult?> ShowQuickListAsync(string title, IReadOnlyList<QuickListItem> items, IReadOnlyList<string>? actions = null);
 
+    /// <summary>Commands and shortcuts (nc_CommandBrowser): browse, search, run, change shortcuts, add to the button bar.</summary>
+    Task ShowCommandBrowserAsync(Views.Dialogs.CommandBrowserRequest request);
+
     /// <summary>Alt+Down: the folder history (pins, sections, drives; open here, in the other panel or a new tab).</summary>
     Task ShowFolderHistoryAsync(Views.Dialogs.FolderHistoryRequest request);
 

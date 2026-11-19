@@ -177,11 +177,21 @@ Operation > Selection (with Num +)* > *Also select directories* makes them take 
 
 ## Changing shortcuts
 
-Open *Configuration > Commands and shortcuts...* (Ctrl+Shift+F12). The window lists every command with its
-description and its current shortcut. Pick a command to assign a new shortcut or remove one; shortcuts you
-changed are marked with `*`. From the same window you can also add a command to the button bar.
+Open *Configuration > Commands and shortcuts...* (Ctrl+Shift+F12).
 
-When a shortcut is given to another command, the default one is replaced. If you remove a default shortcut, the
-key does nothing in the panels any more.
+- **On the left**, the categories: *All commands* (grouped by the main menu they are in), *Favorites*,
+  *Recently used* (run from this window), *Modified* (shortcuts that differ from the defaults), then one per
+  menu; commands in no menu are under *Other*.
+- **At the top**, the search: words in any order over names, descriptions and shortcuts (`files hidden`,
+  `F5`). **By shortcut** turns the box into a key catcher: press a combination to see which command uses it.
+- **In the middle**, the commands with their description, name and shortcuts; a star marks favorites, a dot
+  changed shortcuts. ↑ ↓ move, Enter (or a double click) runs the command, F2 adds a shortcut.
+- **On the right**, the chosen command: its shortcuts (*Default* or *Custom*) with ✕ to remove one,
+  **Add a shortcut** (press the keys; Esc cancels) and **Default** to go back to the original ones. When the
+  keys are used by another command, a warning names it: **Use it here instead** moves them. Below are the
+  category, where else the command is (button bars, the function key bar), **Run now** and **Add to button
+  bar**; the star adds it to the favorites and the copy button copies its name.
+
+Changes are saved at once. If you remove a default shortcut, the key does nothing in the panels any more.
 
 Back to: [Getting started](getting-started.md)

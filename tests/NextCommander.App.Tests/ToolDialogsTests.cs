@@ -156,6 +156,88 @@ public sealed class ToolDialogsTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task The_commands_window_searches_and_changes_shortcuts()
+    {
+        var settings = new NextCommander.Core.Config.AppSettings();
+        var hotkeys = new NextCommander.App.Services.HotkeyMap(settings);
+        Task Nothing(string? _) => Task.CompletedTask;
+        NextCommander.Core.Commands.CommandDefinition[] commands =
+        [
+            new("nc_Copy", "Copy files", Nothing), new("nc_RenMov", "Rename or move files", Nothing), new("nc_SrcThumbs", "Thumbnails view", Nothing),
+            new("nc_SwitchHidSys", "Show or hide hidden and system files", Nothing), new("nc_About", "About", Nothing), new("nc_LinkConnect", "Connect to a PC", Nothing),
+        ];
+        var saved = 0;
+        string? ran = null;
+        (string, string)? added = null;
+        var request = new CommandBrowserRequest(commands, hotkeys, settings, () => saved++, c =>
+        {
+            ran = c;
+            return Task.CompletedTask;
+        }, (c, d) => added = (c, d),
+            new Dictionary<string, string> { ["nc_Copy"] = "Edit", ["nc_RenMov"] = "Edit", ["nc_SrcThumbs"] = "Show", ["nc_SwitchHidSys"] = "Show", ["nc_About"] = "Help" },
+            new HashSet<string> { "nc_Copy" });
+        var dialog = _fx.Track(new CommandBrowserWindow(request));
+        dialog.Show();
+        await SettleAsync(4);
+        Assert.Equal(6, dialog.Shown.Count);
+        dialog.Select("nc_Copy");
+        await SettleAsync();
+        Shot(dialog, "commands");
+
+        // categories from the menus; commands in no menu are "Other"
+        dialog.Category = "Show";
+        Assert.Equal(["nc_SrcThumbs", "nc_SwitchHidSys"], dialog.Shown);
+        dialog.Category = "Other";
+        Assert.Equal(["nc_LinkConnect"], dialog.Shown);
+        dialog.Category = "all";
+
+        // words in any order, over names, descriptions and shortcuts
+        dialog.Search("files hidden");
+        Assert.Equal(["nc_SwitchHidSys"], dialog.Shown);
+        dialog.Search("F5");
+        Assert.Equal("nc_Copy", dialog.Shown[0]);
+        dialog.Search(string.Empty);
+        dialog.ByShortcut = true;
+        dialog.Search("F6");
+        Assert.Equal(["nc_RenMov"], dialog.Shown);
+        dialog.ByShortcut = false;
+
+        // keys of another command: a warning first, then they move
+        dialog.Select("nc_SrcThumbs");
+        dialog.AssignShortcut("F5");
+        Assert.Equal(("F5", "nc_Copy"), dialog.Conflict);
+        Assert.DoesNotContain("F5", dialog.KeysOf("nc_SrcThumbs"));
+        dialog.AssignShortcut("F5", force: true);
+        Assert.Contains("F5", dialog.KeysOf("nc_SrcThumbs"));
+        Assert.DoesNotContain("F5", dialog.KeysOf("nc_Copy"));
+        Assert.True(dialog.IsModified("nc_SrcThumbs"));
+        Assert.True(saved > 0);
+        dialog.Category = "mod";
+        Assert.Contains("nc_SrcThumbs", dialog.Shown);
+        dialog.Category = "all";
+
+        // back to the defaults; a default key can be turned off
+        dialog.ResetShortcuts();
+        Assert.DoesNotContain("F5", dialog.KeysOf("nc_SrcThumbs"));
+        Assert.False(dialog.IsModified("nc_SrcThumbs"));
+        dialog.Select("nc_RenMov");
+        dialog.RemoveShortcut("F6");
+        Assert.DoesNotContain("F6", dialog.KeysOf("nc_RenMov"));
+        Assert.Equal(string.Empty, settings.Hotkeys["F6"]);
+
+        // favorites, the button bar; Run closes and remembers the command
+        dialog.ToggleFavorite("nc_About");
+        dialog.Category = "fav";
+        Assert.Equal(["nc_About"], dialog.Shown);
+        dialog.Category = "all";
+        dialog.Select("nc_About");
+        await dialog.RunAsync();
+        Assert.Equal("nc_About", ran);
+        Assert.Equal(["nc_About"], settings.RecentCommands);
+        Assert.Null(added);
+    }
+
+    [AvaloniaFact]
     public async Task The_column_sets_window_edits_a_copy_until_applied()
     {
         var sets = new List<NextCommander.Core.Columns.ColumnSet>

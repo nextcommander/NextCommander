@@ -1847,38 +1847,16 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         _settings.Hotlist.Add(new HotlistEntry { Name = name.Trim(), Path = text });
     }
 
-    private async Task ShowCommandBrowserAsync()
-    {
-        var gestures = Hotkeys.Bindings.GroupBy(b => b.Command, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => string.Join(", ", g.Select(b => Hotkeys.IsRedefined(b.Gesture) ? b.Gesture + " *" : b.Gesture)),
-                StringComparer.OrdinalIgnoreCase);
-        var items = Commands.All.OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(c => new QuickListItem(c.Name, c.Description + (gestures.TryGetValue(c.Name, out var g) ? "   [" + g + "]" : string.Empty), c.Name))
-            .ToList();
-        var result = await _dialogs.ShowQuickListAsync("Commands and shortcuts (* = modified)", items, ["Assign shortcut...", "Add to button bar"]);
-        if (result?.Item.Value is not string command)
-        {
-            return;
-        }
-        switch (result.Action)
-        {
-            case 0:
-                var gesture = await _dialogs.CaptureHotkeyAsync(command);
-                if (gesture is not null)
-                {
-                    _settings.Hotkeys[gesture] = command;
-                    Hotkeys.Rebuild();
-                }
-                break;
-            case 1:
-                _settings.ButtonBar.Add(new ButtonDefinition { Command = command, Tooltip = result.Item.Detail });
+    /// <summary>The commands and shortcuts window: categories, search (also by pressing keys), shortcuts, favorites, run.</summary>
+    private Task ShowCommandBrowserAsync() =>
+        _dialogs.ShowCommandBrowserAsync(new Views.Dialogs.CommandBrowserRequest(
+            [.. Commands.All], Hotkeys, _settings, SaveSettings, command => ExecuteAsync(command),
+            (command, description) =>
+            {
+                _settings.ButtonBar.Add(new ButtonDefinition { Command = command, Tooltip = description });
                 ButtonBarsChanged?.Invoke(this, EventArgs.Empty);
-                break;
-            default:
-                await ExecuteAsync(command);
-                break;
-        }
-    }
+                SaveSettings();
+            }));
 
     /// <summary>A directory's children changed through the tree (the views reload that branch).</summary>
     public event EventHandler<VfsPath>? TreeChanged;
