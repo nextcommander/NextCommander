@@ -90,6 +90,24 @@ public sealed class LinuxDisksTests
     }
 
     [Fact]
+    public void Default_partition_names_and_id_folders_are_not_names()
+    {
+        // Windows' NTFS data partition without a label, mounted by the desktop under its serial number
+        const string json = """
+            {"blockdevices": [
+               {"path":"/dev/sdb", "name":"sdb", "label":null, "partlabel":null, "size":500107862016, "fstype":null, "mountpoints":[null], "type":"disk", "rm":false, "hotplug":false,
+                  "children": [
+                     {"path":"/dev/sdb2", "name":"sdb2", "label":null, "partlabel":"Basic data partition", "size":500000000000, "fstype":"ntfs", "mountpoints":["/run/media/ali/ACE84A32E849FB5A"], "type":"part", "rm":false, "hotplug":false},
+                     {"path":"/dev/sdb3", "name":"sdb3", "label":null, "partlabel":"Linux filesystem", "size":7000000000, "fstype":"ext4", "mountpoints":["/run/media/ali/0f3c2b1a-4d5e-4f60-8a9b-0c1d2e3f4a5b"], "type":"part", "rm":false, "hotplug":false}
+                  ]}
+            ]}
+            """;
+        Assert.Equal([LinuxDisks.SizeText(500000000000) + " volume", LinuxDisks.SizeText(7000000000) + " volume"], LinuxDisks.Parse(json).Select(d => d.Name));
+        Assert.True(LinuxDisks.LooksLikeVolumeId("1234-ABCD"));
+        Assert.False(LinuxDisks.LooksLikeVolumeId("disk1"));
+    }
+
+    [Fact]
     public void Without_lsblk_labels_come_from_the_by_label_links()
     {
         const string mounts = "/dev/sdb1 /media/ali/My\\040Disk ext4 rw 0 0\n/dev/sdc1 /mnt/usb vfat rw 0 0\nproc /proc proc rw 0 0\n";
