@@ -32,6 +32,9 @@ public sealed class LinkDiscovery
     /// <summary>Tests: the addresses probed instead of the broadcast addresses of the interfaces.</summary>
     public IReadOnlyList<IPEndPoint>? Targets { get; set; }
 
+    /// <summary>What a search did: the addresses it went out from and to, the answers (for the log; the search's own failures).</summary>
+    public Action<string>? Log { get; set; }
+
     /// <summary>The computers that answered last time.</summary>
     public IReadOnlyList<LinkPeerInfo> Known => [.. _peers.Values.OrderBy(p => p.Name, StringComparer.CurrentCultureIgnoreCase)];
 
@@ -44,6 +47,7 @@ public sealed class LinkDiscovery
         var port = _port();
         var found = new ConcurrentDictionary<string, LinkPeerInfo>(StringComparer.OrdinalIgnoreCase);
         var sockets = new List<UdpClient>();
+        var sent = new List<string>();
         try
         {
             foreach (var (local, targets) in Senders(port))
@@ -53,8 +57,9 @@ public sealed class LinkDiscovery
                 {
                     udp = new UdpClient(local) { EnableBroadcast = local.AddressFamily == AddressFamily.InterNetwork };
                 }
-                catch (SocketException)
+                catch (SocketException ex)
                 {
+                    Log?.Invoke($"PC link search: {local.Address} cannot send ({ex.Message})");
                     continue; // an interface that went away
                 }
                 sockets.Add(udp);
@@ -63,10 +68,11 @@ public sealed class LinkDiscovery
                     try
                     {
                         await udp.SendAsync(Probe, target, cancellationToken).ConfigureAwait(false);
+                        sent.Add($"{local.Address} → {target}");
                     }
-                    catch (SocketException)
+                    catch (SocketException ex)
                     {
-                        // no route on this interface
+                        Log?.Invoke($"PC link search: {local.Address} → {target} not sent ({ex.Message})"); // no route on this interface
                     }
                 }
             }
@@ -86,6 +92,11 @@ public sealed class LinkDiscovery
         {
             _peers[peer.Name] = peer;
         }
+        Log?.Invoke(sent.Count == 0
+            ? "PC link search: no network interface to search on (none is up with an address)"
+            : $"PC link search on UDP port {port}: {sent.Count} probes ({string.Join(", ", sent)}); "
+              + (found.IsEmpty ? "no answer (sharing off there, or a firewall drops the UDP port on one side)"
+                  : "answers from " + string.Join(", ", found.Values.Select(p => $"{p.Name} ({p.EndPoint})"))));
         return [.. found.Values.OrderBy(p => p.Name, StringComparer.CurrentCultureIgnoreCase)];
     }
 
@@ -146,7 +157,10 @@ public sealed class LinkDiscovery
         var senders = new List<(IPEndPoint, List<IPEndPoint>)>();
         foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
         {
-            if (nic.OperationalStatus != OperationalStatus.Up || nic.NetworkInterfaceType is NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel)
+            // not only "Up": Linux reads /sys/class/net/*/operstate, where Wi-Fi and bridges often say "unknown" or
+            // "dormant" while they work (user's report: Ubuntu not found, 19 November 2026); only the ones that are down are left out
+            if (nic.OperationalStatus is OperationalStatus.Down or OperationalStatus.NotPresent or OperationalStatus.LowerLayerDown
+                || nic.NetworkInterfaceType is NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel)
             {
                 continue;
             }
@@ -204,8 +218,12 @@ public sealed class LinkResponder : IDisposable
     private readonly CancellationTokenSource _stop = new();
     private readonly byte[] _answer;
 
-    public LinkResponder(int port, string name, int tcpPort, string fingerprint, bool loopbackOnly = false)
+    private readonly Action<string>? _log;
+    private readonly ConcurrentDictionary<IPAddress, bool> _answered = new();
+
+    public LinkResponder(int port, string name, int tcpPort, string fingerprint, bool loopbackOnly = false, Action<string>? log = null)
     {
+        _log = log;
         _answer = Encoding.UTF8.GetBytes(new JsonObject { ["nclink"] = LinkProtocol.Version, ["name"] = name, ["port"] = tcpPort, ["fp"] = fingerprint }.ToJsonString());
         Bind(new IPEndPoint(loopbackOnly ? IPAddress.Loopback : IPAddress.Any, port));
         if (!loopbackOnly && Socket.OSSupportsIPv6)
@@ -254,6 +272,11 @@ public sealed class LinkResponder : IDisposable
                 if (received.Buffer.AsSpan().SequenceEqual(LinkDiscovery.Probe))
                 {
                     await udp.SendAsync(_answer, received.RemoteEndPoint, _stop.Token).ConfigureAwait(false);
+                    if (_answered.TryAdd(received.RemoteEndPoint.Address, true))
+                    {
+                        // once per computer: the search reached this one (if it is not found there, the answer was dropped on the way back)
+                        _log?.Invoke($"PC link: answered a search from {received.RemoteEndPoint.Address}");
+                    }
                 }
             }
             catch (Exception ex) when (ex is OperationCanceledException or ObjectDisposedException)

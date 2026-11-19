@@ -231,7 +231,9 @@ public abstract class PlatformServiceBase : IPlatformService
             if (d.IsReady)
             {
                 ready = true;
-                label = d.VolumeLabel;
+                // only Windows has volume labels here: on Linux and macOS .NET gives the mount point as the label
+                // ("/media/user/Data"), which would show in place of the disk's label (user's report, 19 November 2026)
+                label = OperatingSystem.IsWindows() ? d.VolumeLabel : null;
                 total = d.TotalSize;
                 free = d.AvailableFreeSpace;
             }
