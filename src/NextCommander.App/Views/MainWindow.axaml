@@ -257,6 +257,7 @@
         <MenuItem Header="Save settings" Command="{Binding RunCommandCommand}" CommandParameter="nc_SaveSettings" />
         <MenuItem Header="Export settings..." Command="{Binding RunCommandCommand}" CommandParameter="nc_ExportSettings" />
         <MenuItem Header="Import settings..." Command="{Binding RunCommandCommand}" CommandParameter="nc_ImportSettings" />
+        <MenuItem Header="Restore settings from a backup..." Command="{Binding RunCommandCommand}" CommandParameter="nc_RestoreSettings" />
         <Separator />
         <MenuItem Header="Commands and shortcuts..." InputGesture="Ctrl+Shift+F12" Command="{Binding RunCommandCommand}" CommandParameter="nc_CommandBrowser" />
         <MenuItem Header="Add button to button bar..." Command="{Binding RunCommandCommand}" CommandParameter="nc_AddButton" />

@@ -108,7 +108,7 @@ click it or press Enter. **...** next to it chooses a program instead, and in th
 | **Ignore list** | Files and folders never shown in the panels. |
 | **History** | Length of the folder and command line history, frequently used folders. |
 | **Log file** | Whether file operations are logged, where the log goes, which operations, starting a new log file; whether NextCommander writes its own program log. |
-| **Misc.** | Ask before closing, the built-in terminal (shell, real terminal), the Start menu, confirmations, a sound when an operation ends, and buttons for *Shortcuts and commands...*, *Hotlist...*, *Column sets...*, *Master password...*, *Export settings...*, *Import settings...* and *Open settings folder*. |
+| **Misc.** | Ask before closing, the built-in terminal (shell, real terminal), the Start menu, confirmations, a sound when an operation ends, and buttons for *Shortcuts and commands...*, *Hotlist...*, *Column sets...*, *Master password...*, *Export settings...*, *Import settings...*, *Restore settings from a backup...* and *Open settings folder*. |
 
 | | |
 |---|---|

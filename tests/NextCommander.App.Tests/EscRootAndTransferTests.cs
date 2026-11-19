@@ -152,4 +152,41 @@ public sealed class EscRootAndTransferTests : IDisposable
         await vm.ExecuteAsync("nc_ImportSettings");
         Assert.Contains(_fx.Dialogs.Messages, m => m.Contains("not a NextCommander settings export", StringComparison.Ordinal));
     }
+
+    [AvaloniaFact]
+    public async Task Settings_are_restored_from_a_backup_with_a_restart()
+    {
+        var (_, vm) = await _fx.OpenAsync();
+        var store = new SettingsStore(Path.Combine(_fx.Root, "settings"));
+        double FontSize() => store.Load(backups: false).PanelFontSize;
+
+        // no backup yet: said so
+        await vm.ExecuteAsync("nc_RestoreSettings");
+        Assert.Contains(_fx.Dialogs.Messages, m => m.StartsWith("There is no backup yet", StringComparison.Ordinal));
+
+        // two configurations that loaded (as at two starts), then one more in use now
+        vm.Settings.PanelFontSize = 15;
+        vm.SaveSettings();
+        store.Load();
+        vm.Settings.PanelFontSize = 17;
+        vm.SaveSettings();
+        store.Load();
+        vm.Settings.PanelFontSize = 21;
+
+        var restarted = false;
+        vm.Restart = () => restarted = true;
+        _fx.Dialogs.QuickListHandler = items => new QuickListResult(items[^1], -1); // the oldest
+        await vm.ExecuteAsync("nc_RestoreSettings");
+        // the list: the two kept, the newest first, with what each holds; the settings now (21) join the backups on restoring
+        Assert.Equal(2, _fx.Dialogs.LastQuickList.Count);
+        Assert.All(_fx.Dialogs.LastQuickList, i => Assert.Contains("connections", i.Detail, StringComparison.Ordinal));
+        Assert.True(restarted);
+        Assert.True(vm.SettingsImported);
+        Assert.Equal(15, FontSize());
+        Assert.Contains(store.Backups(), b => File.ReadAllText(b).Contains("\"PanelFontSize\": 21", StringComparison.Ordinal));
+
+        // the running program does not write over the restored settings any more
+        vm.SaveSettings();
+        Assert.Equal(15, FontSize());
+    }
 }

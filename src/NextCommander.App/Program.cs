@@ -57,7 +57,7 @@ internal static class Program
             {
                 return false; // the separate find process runs on its own (and sends results to the main window)
             }
-            if (!store.Load().SingleInstance)
+            if (!store.Load(backups: false).SingleInstance) // a quick look: the backups are the program's when it starts
             {
                 return false;
             }

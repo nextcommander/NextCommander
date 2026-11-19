@@ -2940,5 +2940,21 @@
   "ConnectionManagerView.DesktopCompositionTransparency": "桌面组合（透明、阴影）",
   "ConnectionManagerView.ShowWindowContentsWhile": "拖动时显示窗口内容",
   "ConnectionManagerView.MenuAndWindowAnimations": "菜单和窗口动画",
-  "ConnectionManagerView.VisualStyles": "视觉样式"
+  "ConnectionManagerView.VisualStyles": "视觉样式",
+  "MainWindow.SettingsRestored": "设置已恢复",
+  "MainWindow.TheSettingsFileCouldNotBeRead": "无法读取设置文件；已从最后一个成功加载的备份恢复设置。",
+  "MainWindow.TheDamagedFileWasKeptAs": "损坏的文件已保存为：",
+  "Menu.nc_RestoreSettings": "从备份恢复设置...",
+  "Command.nc_RestoreSettings": "从最近成功加载的配置之一恢复设置（重新启动程序）",
+  "MainWindow.RestoreSettings": "恢复设置",
+  "MainWindow.RestoreSettingsFromABackup": "从备份恢复设置",
+  "MainWindow.ThereIsNoBackupYet": "尚无备份：每次启动时成功加载设置都会保留一个备份。",
+  "MainWindow.DamagedItCannotBeRestored": "已损坏：无法恢复",
+  "MainWindow.ConnectionsHotlistEntries": "{0} 个连接，{1} 个收藏夹条目",
+  "MainWindow.TheSettingsNow": "当前设置",
+  "MainWindow.ThisBackupCannotBeRead": "此备份已无法读取，请选择其他备份。",
+  "MainWindow.TheseAreTheSettingsInUse": "这就是当前正在使用的设置。",
+  "MainWindow.TheSettingsOfReplaceTheCurrent": "{0} 的设置将替换当前设置（当前设置也会作为备份保留），NextCommander 将重新启动。",
+  "MainWindow.RestoreAndRestart": "恢复并重新启动",
+  "MainWindow.TheSettingsWereRestoredStart": "设置已恢复。请重新启动 NextCommander 以使用它们。"
 }

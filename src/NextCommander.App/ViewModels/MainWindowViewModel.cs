@@ -456,7 +456,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         {
             if (!complete && (!_settings.SaveDirsOnExit || !_settings.SavePanelViewsOnExit || !_settings.SaveCommandLineHistoryOnExit))
             {
-                KeepSavedState(_store.Load());
+                KeepSavedState(_store.Load(backups: false)); // what is on the disk now (it was kept among the backups at the start)
             }
             _store.Save(_settings);
         }
@@ -653,6 +653,13 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
 
     private async void OnPanelError(object? sender, string message) =>
         await _dialogs.ShowMessageAsync("Error", message);
+
+    /// <summary>The settings file could not be read at the start: the settings came from a backup (the damaged file is kept).</summary>
+    public Task ShowSettingsRestoredAsync(string settingsFile, string backup) =>
+        _dialogs.ShowMessageAsync("Settings restored",
+            NextCommander.Core.Localization.Localizer.T("The settings file could not be read; the settings were restored from the last backup that loaded.")
+            + $"\n\n{Path.GetFileName(backup)}\n\n"
+            + NextCommander.Core.Localization.Localizer.T("The damaged file was kept as:") + " " + settingsFile + ".corrupt");
 
     /// <summary>A server could not be opened: the connection, the error with its causes and its log (the log can be shown).</summary>
     private async void OnConnectionFailed(object? sender, ConnectionError error) =>
@@ -1129,6 +1136,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         c.Register("nc_MasterPassword", "Set / change master password", _ => MasterPasswordAsync());
         c.Register("nc_ExportSettings", "Export settings (options, connections, Hotlist, own themes ...) to a file for another installation", _ => ExportSettingsAsync());
         c.Register("nc_ImportSettings", "Import settings exported from another installation (restarts the program)", _ => ImportSettingsAsync());
+        c.Register("nc_RestoreSettings", "Restore the settings from one of the last configurations that loaded (restarts the program)", _ => RestoreSettingsAsync());
         c.Register("nc_MultiRenameFiles", "Multi-Rename Tool (Ctrl+M)", _ => MultiRenameAsync());
         c.Register("nc_SyncDirs", "Synchronize directories", _ => SyncDirsAsync());
         c.Register("nc_FindDuplicates", "Find duplicate files (choosing folders)", _ => FindDuplicatesAsync());
@@ -2427,6 +2435,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             ("Master password...", () => ExecuteAsync("nc_MasterPassword")),
             ("Export settings...", () => ExecuteAsync("nc_ExportSettings")),
             ("Import settings...", () => ExecuteAsync("nc_ImportSettings")),
+            ("Restore settings from a backup...", () => ExecuteAsync("nc_RestoreSettings")),
             ("Open settings folder", () =>
             {
                 _platform.OpenWithDefaultApp(_store.Directory);
@@ -3109,6 +3118,62 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         if (!Restart())
         {
             await _dialogs.ShowMessageAsync("Import settings", "The settings were imported. Start NextCommander again to use them.");
+        }
+        ExitRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// Configuration > Restore settings from a backup (user's request, 19 November 2026): the last configurations that
+    /// loaded, the newest first; the one chosen becomes the settings (the settings as they are now are kept as a backup
+    /// first) and NextCommander starts again.
+    /// </summary>
+    private async Task RestoreSettingsAsync()
+    {
+        SaveSettings(complete: true); // the settings as they are now, so that they can be kept and compared
+        var backups = _store.BackupList();
+        if (backups.Count == 0)
+        {
+            await _dialogs.ShowMessageAsync("Restore settings", "There is no backup yet: one is kept each time the settings load at the start.");
+            return;
+        }
+        var items = backups.Select(b => new QuickListItem(
+            b.Time.ToString("g", CultureInfo.CurrentCulture),
+            b.Damaged ? NextCommander.Core.Localization.Localizer.T("damaged: it cannot be restored")
+                : NextCommander.Core.Localization.Localizer.T("{0} connections, {1} Hotlist entries")
+                    .Replace("{0}", b.Connections.ToString(CultureInfo.CurrentCulture), StringComparison.Ordinal)
+                    .Replace("{1}", b.HotlistEntries.ToString(CultureInfo.CurrentCulture), StringComparison.Ordinal)
+                  + (b.IsCurrent ? " · " + NextCommander.Core.Localization.Localizer.T("the settings now") : string.Empty),
+            b)).ToList();
+        if (await _dialogs.ShowQuickListAsync("Restore settings from a backup", items) is not { Item.Value: NextCommander.Core.Config.SettingsBackup chosen })
+        {
+            return;
+        }
+        if (chosen.Damaged || chosen.IsCurrent)
+        {
+            await _dialogs.ShowMessageAsync("Restore settings", chosen.Damaged
+                ? "This backup cannot be read any more; choose another one."
+                : "These are the settings in use now.");
+            return;
+        }
+        if (!await _dialogs.ConfirmAsync("Restore settings",
+                NextCommander.Core.Localization.Localizer.T("The settings of {0} replace the current ones (they are kept as a backup too) and NextCommander starts again.").Replace("{0}", chosen.Time.ToString("g", CultureInfo.CurrentCulture), StringComparison.Ordinal),
+                "Restore and restart"))
+        {
+            return;
+        }
+        try
+        {
+            _store.RestoreFrom(chosen.Path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or NotSupportedException)
+        {
+            await _dialogs.ShowMessageAsync("Restore settings", ex.Message);
+            return;
+        }
+        SettingsImported = true; // nothing is saved over the restored file before the restart
+        if (!Restart())
+        {
+            await _dialogs.ShowMessageAsync("Restore settings", "The settings were restored. Start NextCommander again to use them.");
         }
         ExitRequested?.Invoke(this, EventArgs.Empty);
     }

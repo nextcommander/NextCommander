@@ -2,7 +2,7 @@
 
 A cross-platform (Windows / Linux / macOS) dual-pane file manager with keyboard-driven panels. For personal use.
 C# / .NET 10, Avalonia 12.1, Fluent theme. The UI language of the code is English; the translations (Turkish, German, Spanish, French, Chinese; others as user files) are applied at run time.
-Formerly FileManager (renamed NextCommander on 8 November 2026). The settings folder is `NextCommander`; if it is missing, the old `FileManager` folder is copied on first start (`SettingsStore.CopyLegacyFolder`).
+Formerly FileManager (renamed NextCommander on 8 November 2026). The settings folder is `NextCommander`; if it is missing, the old `FileManager` folder is copied on first start (`SettingsStore.CopyLegacyFolder`). The last 7 different `settings.json` files that loaded are kept in `backups/` (`SettingsStore.BackupCount`; user's request, 19 November 2026); a damaged file is set aside as `.corrupt` and the newest backup that loads takes its place (`RestoredBackup`, a message at the start). `Load(backups: false)` is a quick look (the single-instance check, saving). Configuration > Restore settings from a backup (`nc_RestoreSettings`: `BackupList`, `RestoreFrom` keeps the current file as a backup first, then restarts like an import).
 Commands are named `nc_*` (built in) and `uc_*` (user commands); the names of earlier versions (`cm_*`, `em_*`, `%COMMANDER_PATH%`) are converted when settings are read and still run (`Core/Commands/LegacyNames.cs`).
 
 This file gathers what is needed to continue the project on another machine or in a new session. Details:

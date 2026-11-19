@@ -38,6 +38,18 @@ stick and take your settings with you.
 The `themes`, `iconpacks` and `languages` folders are created when you first need them; you can also create them
 yourself. A file in one of them replaces a built-in file with the same name.
 
+## Automatic backups
+
+Each time NextCommander starts and its settings load, `settings.json` is copied into `backups/` inside the settings
+folder (`settings-<date>-<time>.json`), unless it is the same as the newest copy there; the last **7** different ones
+are kept. If `settings.json` is damaged, it is kept as `settings.json.corrupt` and the newest backup that loads takes
+its place; a message at the start says which one.
+
+*Configuration > Restore settings from a backup...* (also a button on the *Misc.* page of the Configuration window)
+lists them, the newest first, with their connections and Hotlist entries; the one in use now is marked. The one you
+choose becomes the settings and NextCommander starts again; the settings as they were are kept as a backup too, so
+the step can be undone the same way.
+
 ## Backing up and moving to another computer
 
 The easiest way: *Configuration > Export settings...* writes one zip file with `settings.json` (all options,
