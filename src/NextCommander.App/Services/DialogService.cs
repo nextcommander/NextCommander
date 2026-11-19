@@ -213,10 +213,21 @@ public sealed class DialogService : IDialogService
         return dialog.Result;
     }
 
-    public async Task EditColumnSetsAsync(List<NextCommander.Core.Columns.ColumnSet> sets, IReadOnlyList<NextCommander.Core.Columns.ColumnField> fields)
+    public async Task EditColumnSetsAsync(List<NextCommander.Core.Columns.ColumnSet> sets, IReadOnlyList<NextCommander.Core.Columns.ColumnField> fields, Action? applied = null)
     {
-        var dialog = new ColumnSetDialog(sets, fields);
+        var dialog = new ColumnSetDialog(sets, fields, applied);
         await dialog.ShowDialog(RequireOwner());
+    }
+
+    public async Task ShowCommandBrowserAsync(CommandBrowserRequest request)
+    {
+        var owner = RequireOwner();
+        if (owner is Views.MainWindow main)
+        {
+            request = request with { Categories = main.CommandCategories(), FunctionKeys = main.FunctionKeyCommands() };
+        }
+        var dialog = new CommandBrowserWindow(request);
+        await dialog.ShowDialog(owner);
     }
 
     public async Task ShowFolderHistoryAsync(FolderHistoryRequest request)

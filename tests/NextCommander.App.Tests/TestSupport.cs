@@ -257,7 +257,7 @@ internal sealed class FakeDialogs : IDialogService
 
     public Action<List<NextCommander.Core.Columns.ColumnSet>>? ColumnSetEditor { get; set; }
 
-    public Task EditColumnSetsAsync(List<NextCommander.Core.Columns.ColumnSet> sets, IReadOnlyList<NextCommander.Core.Columns.ColumnField> fields)
+    public Task EditColumnSetsAsync(List<NextCommander.Core.Columns.ColumnSet> sets, IReadOnlyList<NextCommander.Core.Columns.ColumnField> fields, Action? applied = null)
     {
         ColumnSetEditor?.Invoke(sets);
         return Task.CompletedTask;
@@ -372,6 +372,14 @@ internal sealed class FakeDialogs : IDialogService
     public NextCommander.App.Views.Dialogs.SystemInfo? LastSystemInfo { get; private set; }
 
     public NextCommander.App.Views.Dialogs.FolderHistoryRequest? LastFolderHistory { get; private set; }
+
+    public NextCommander.App.Views.Dialogs.CommandBrowserRequest? LastCommandBrowser { get; private set; }
+
+    public Task ShowCommandBrowserAsync(NextCommander.App.Views.Dialogs.CommandBrowserRequest request)
+    {
+        LastCommandBrowser = request;
+        return Task.CompletedTask;
+    }
 
     public Task ShowFolderHistoryAsync(NextCommander.App.Views.Dialogs.FolderHistoryRequest request)
     {

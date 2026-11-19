@@ -122,7 +122,7 @@ The Configuration menu also has:
   from a zip file.
 - **Dark <-> Normal:** switches between the system colors and the Dark theme.
 - **Save position** and **Save settings:** save the window position and all settings now.
-- **Commands and shortcuts...:** every command with its shortcut; assign and remove shortcuts
+- **Commands and shortcuts...:** every command by menu, with search, favorites and its shortcuts; assign and remove shortcuts
   (see [Keyboard shortcuts](keyboard-shortcuts.md#changing-shortcuts)).
 - **Add button to button bar...**, **Add user command (uc_)...**, **Edit Hotlist...**, **Edit column sets...**
 - **Color theme:** a quick theme switch.

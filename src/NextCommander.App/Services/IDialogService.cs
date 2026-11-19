@@ -107,7 +107,7 @@ public interface IDialogService
     Task<(string? Current, string? New)?> ShowMasterPasswordDialogAsync(bool hasMaster);
 
     /// <summary>Edits the custom column sets in place.</summary>
-    Task EditColumnSetsAsync(List<NextCommander.Core.Columns.ColumnSet> sets, IReadOnlyList<NextCommander.Core.Columns.ColumnField> fields);
+    Task EditColumnSetsAsync(List<NextCommander.Core.Columns.ColumnSet> sets, IReadOnlyList<NextCommander.Core.Columns.ColumnField> fields, Action? applied = null);
 
     /// <summary>Settings window (modal); <paramref name="changed"/> runs after each change; <paramref name="search"/> pre-fills the search.</summary>
     Task ShowSettingsAsync(AppSettings settings, Action changed, IReadOnlyList<(string Text, Func<Task> Action)> extraActions, string? search = null);
@@ -137,6 +137,9 @@ public interface IDialogService
 
     /// <summary>Searchable list with optional extra action buttons.</summary>
     Task<QuickListResult?> ShowQuickListAsync(string title, IReadOnlyList<QuickListItem> items, IReadOnlyList<string>? actions = null);
+
+    /// <summary>Commands and shortcuts (nc_CommandBrowser): browse, search, run, change shortcuts, add to the button bar.</summary>
+    Task ShowCommandBrowserAsync(Views.Dialogs.CommandBrowserRequest request);
 
     /// <summary>Alt+Down: the folder history (pins, sections, drives; open here, in the other panel or a new tab).</summary>
     Task ShowFolderHistoryAsync(Views.Dialogs.FolderHistoryRequest request);

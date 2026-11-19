@@ -378,10 +378,13 @@ public sealed class Phase2Tests : IDisposable
     public async Task CommandBrowser_AssignsHotkey()
     {
         var (w, vm) = await _fx.OpenAsync();
-        _fx.Dialogs.QuickListHandler = items => new QuickListResult(items.Single(i => i.Text == "nc_SrcThumbs"), 0);
-        _fx.Dialogs.NextHotkey = "Ctrl+Shift+K";
         await vm.ExecuteAsync("nc_CommandBrowser");
+        var browser = _fx.Track(new NextCommander.App.Views.Dialogs.CommandBrowserWindow(_fx.Dialogs.LastCommandBrowser!));
+        browser.Show();
+        browser.Select("nc_SrcThumbs");
+        browser.AssignShortcut("Ctrl+Shift+K");
         Assert.Equal("nc_SrcThumbs", vm.Settings.Hotkeys["Ctrl+Shift+K"]);
+        browser.Close();
 
         Press(w, Key.K, RawInputModifiers.Control | RawInputModifiers.Shift);
         Assert.True(vm.Left.IsThumbnails);
