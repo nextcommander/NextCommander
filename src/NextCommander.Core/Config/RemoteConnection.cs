@@ -135,6 +135,40 @@ public enum RdpAudio
     None,
 }
 
+/// <summary>The quality of a remote desktop's sound (the values of Remote Desktop: audioqualitymode).</summary>
+public enum RdpAudioQuality
+{
+    /// <summary>As the connection allows.</summary>
+    Automatic = 0,
+    /// <summary>Compressed (less bandwidth).</summary>
+    Medium = 1,
+    /// <summary>Not compressed (for a fast network).</summary>
+    High = 2,
+}
+
+/// <summary>The connection's speed a remote desktop is tuned for (its visual effects follow it).</summary>
+public enum RdpConnectionSpeed
+{
+    /// <summary>Detected by the client and the server.</summary>
+    Automatic,
+    Lan,
+    Wan,
+    Broadband,
+    LowSpeedBroadband,
+    Modem,
+}
+
+/// <summary>Where Windows key combinations (Alt+Tab, the Windows key ...) go in a remote desktop.</summary>
+public enum RdpKeyboard
+{
+    /// <summary>To this computer.</summary>
+    Local = 0,
+    /// <summary>To the remote computer.</summary>
+    Remote = 1,
+    /// <summary>To the remote computer in full screen only.</summary>
+    FullScreenOnly = 2,
+}
+
 /// <summary>What the Backspace key sends in a Telnet session.</summary>
 public enum TelnetBackspace
 {
@@ -349,6 +383,42 @@ public sealed class RemoteConnection
 
     /// <summary>RDP: where the remote computer's sound plays.</summary>
     public RdpAudio RdpAudio { get; set; }
+
+    /// <summary>RDP: the quality of the sound played here.</summary>
+    public RdpAudioQuality RdpAudioQuality { get; set; }
+
+    /// <summary>RDP: this computer's microphone is used in the remote session.</summary>
+    public bool RdpMicrophone { get; set; }
+
+    /// <summary>RDP: this computer's smart cards are used in the remote session (to log in with one).</summary>
+    public bool RdpSmartCards { get; set; }
+
+    /// <summary>RDP: the connection's speed (automatic: detected; otherwise the visual effects below are as chosen).</summary>
+    public RdpConnectionSpeed RdpSpeed { get; set; }
+
+    /// <summary>RDP: the remote desktop's background picture (with a chosen speed).</summary>
+    public bool RdpWallpaper { get; set; } = true;
+
+    /// <summary>RDP: font smoothing (ClearType) (with a chosen speed).</summary>
+    public bool RdpFontSmoothing { get; set; } = true;
+
+    /// <summary>RDP: desktop composition: transparency, shadows (with a chosen speed).</summary>
+    public bool RdpDesktopComposition { get; set; } = true;
+
+    /// <summary>RDP: a window's contents shown while it is dragged (with a chosen speed).</summary>
+    public bool RdpWindowDrag { get; set; } = true;
+
+    /// <summary>RDP: menu and window animations (with a chosen speed).</summary>
+    public bool RdpAnimations { get; set; } = true;
+
+    /// <summary>RDP: visual styles (themes) (with a chosen speed).</summary>
+    public bool RdpThemes { get; set; } = true;
+
+    /// <summary>RDP: where Windows key combinations go.</summary>
+    public RdpKeyboard RdpKeyboard { get; set; } = RdpKeyboard.FullScreenOnly;
+
+    /// <summary>RDP: a dropped connection is made again by itself.</summary>
+    public bool RdpAutoReconnect { get; set; } = true;
 
     /// <summary>RDP: the clipboard is shared with the remote computer.</summary>
     public bool RdpClipboard { get; set; } = true;

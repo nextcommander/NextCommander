@@ -125,14 +125,35 @@ public sealed class ConnectionOptionsTests : IDisposable
 
         view.Reveal(rdp);
         await SettleAsync();
+        // a remote desktop has pages of its own: Display, Local resources, Experience
+        Assert.Equal(["General", "Login", "Advanced", "Display", "Local resources", "Experience", "Log"], TabNames(view));
         Tabs(view).SelectedIndex = 2;
         await SettleAsync();
-        ChoiceWith(view, "1920 × 1080").SelectedIndex = Core.Net.RemoteDesktop.Sizes.ToList().IndexOf((1920, 1080));
-        ChoiceWith(view, "Do not play").SelectedIndex = 2;
-        Assert.Equal((1920, 1080, RdpAudio.None), (rdp.RdpWidth, rdp.RdpHeight, rdp.RdpAudio));
         BoxWith(view, "gateway.example.com").Text = "gw.corp";
+        ChoiceWith(view, "On the remote computer in full screen only").SelectedIndex = 1;
         await SettleAsync();
         Assert.Contains("gatewayhostname:s:gw.corp", Core.Net.RemoteDesktop.RdpFile(rdp), StringComparison.Ordinal);
+        Assert.Equal(RdpKeyboard.Remote, rdp.RdpKeyboard);
+        Tabs(view).SelectedIndex = 3;
+        await SettleAsync();
+        ChoiceWith(view, "1920 × 1080").SelectedIndex = Core.Net.RemoteDesktop.Sizes.ToList().IndexOf((1920, 1080));
+        Tabs(view).SelectedIndex = 4;
+        await SettleAsync();
+        var quality = ChoiceWith(view, "High (a fast network)");
+        ChoiceWith(view, "Do not play").SelectedIndex = 2;
+        Assert.False(quality.IsEnabled); // no sound here: no quality
+        Assert.Equal((1920, 1080, RdpAudio.None), (rdp.RdpWidth, rdp.RdpHeight, rdp.RdpAudio));
+        Tabs(view).SelectedIndex = 5;
+        await SettleAsync();
+        // the detected speed leaves the effects to the client and the server; a chosen one fills them in
+        var wallpaper = view.GetVisualDescendants().OfType<CheckBox>().First(b => Equals(b.Content, "Desktop background"));
+        Assert.False(wallpaper.IsEnabled);
+        ChoiceWith(view, "Modem (56 kbit/s)").SelectedIndex = (int)RdpConnectionSpeed.Modem;
+        await SettleAsync();
+        Assert.True(wallpaper.IsEnabled);
+        Assert.Equal((RdpConnectionSpeed.Modem, false, false), (rdp.RdpSpeed, rdp.RdpWallpaper, rdp.RdpThemes));
+        wallpaper.IsChecked = true;
+        Assert.True(rdp.RdpWallpaper);
 
         view.Reveal(telnet);
         await SettleAsync();

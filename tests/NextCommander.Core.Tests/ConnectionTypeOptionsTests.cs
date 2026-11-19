@@ -26,7 +26,7 @@ public sealed class ConnectionTypeOptionsTests
         {
             Assert.Contains(line + "\r\n", file, StringComparison.Ordinal);
         }
-        Assert.Equal(["/v:pc.example.com", "/u:ali", "/size:1280x720", "/bpp:16", "-clipboard", "/audio-mode:2", "/drive:home,~", "/printer", "/admin", "/gateway:g:gw.example.com", "/cert:tofu"],
+        Assert.Equal(["/v:pc.example.com", "/u:ali", "/size:1280x720", "/bpp:16", "-clipboard", "/audio-mode:2", "+auto-reconnect", "/network:auto", "/drive:home,~", "/printer", "/admin", "/gateway:g:gw.example.com", "/cert:tofu"],
             RemoteDesktop.FreeRdpArguments(c, false));
 
         // full screen wins over the size; all monitors only with it
@@ -37,6 +37,59 @@ public sealed class ConnectionTypeOptionsTests
         var args = RemoteDesktop.FreeRdpArguments(c, false);
         Assert.Contains("/multimon", args);
         Assert.DoesNotContain(args, a => a.StartsWith("/size:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Rdp_sound_devices_and_experience_reach_every_client()
+    {
+        // the defaults: the speed detected (no effects written), reconnecting, Windows keys in full screen
+        var plain = new RemoteConnection { Protocol = RemoteProtocol.Rdp, Host = "pc" };
+        var file = RemoteDesktop.RdpFile(plain);
+        Assert.Contains("connection type:i:7\r\n", file, StringComparison.Ordinal);
+        Assert.Contains("networkautodetect:i:1\r\n", file, StringComparison.Ordinal);
+        Assert.Contains("autoreconnection enabled:i:1\r\n", file, StringComparison.Ordinal);
+        Assert.Contains("keyboardhook:i:2\r\n", file, StringComparison.Ordinal);
+        Assert.DoesNotContain("disable wallpaper", file, StringComparison.Ordinal);
+        var args = RemoteDesktop.FreeRdpArguments(plain, passwordOnStdin: false);
+        Assert.Contains("/network:auto", args);
+        Assert.DoesNotContain(args, a => a.EndsWith("wallpaper", StringComparison.Ordinal));
+        var control = RemoteDesktop.ControlSettings(plain, 1000, 700);
+        Assert.Contains((RdpControlPart.Advanced, "NetworkConnectionType", (object)7), control);
+        Assert.Contains((RdpControlPart.Advanced, "BandwidthDetection", (object)true), control);
+        Assert.DoesNotContain(control, s => s.Property == "PerformanceFlags");
+
+        // sound, microphone, smart cards, a slow link with its own effects, Windows keys here, no reconnecting
+        var c = new RemoteConnection
+        {
+            Protocol = RemoteProtocol.Rdp, Host = "pc", RdpAudioQuality = RdpAudioQuality.High, RdpMicrophone = true, RdpSmartCards = true,
+            RdpSpeed = RdpConnectionSpeed.LowSpeedBroadband, RdpKeyboard = RdpKeyboard.Local, RdpAutoReconnect = false,
+        };
+        var e = RemoteDesktop.Effects(c.RdpSpeed);
+        (c.RdpWallpaper, c.RdpFontSmoothing, c.RdpDesktopComposition, c.RdpWindowDrag, c.RdpAnimations, c.RdpThemes) = (e.Wallpaper, e.FontSmoothing, e.Composition, e.WindowDrag, e.Animations, e.Themes);
+        file = RemoteDesktop.RdpFile(c);
+        foreach (var line in new[]
+        {
+            "audioqualitymode:i:2", "audiocapturemode:i:1", "redirectsmartcards:i:1", "keyboardhook:i:0", "autoreconnection enabled:i:0",
+            "connection type:i:2", "networkautodetect:i:0", "disable wallpaper:i:1", "allow font smoothing:i:1", "allow desktop composition:i:0",
+            "disable full window drag:i:1", "disable menu anims:i:1", "disable themes:i:0",
+        })
+        {
+            Assert.Contains(line + "\r\n", file, StringComparison.Ordinal);
+        }
+        args = RemoteDesktop.FreeRdpArguments(c, passwordOnStdin: false);
+        foreach (var arg in new[] { "/sound:quality:high", "/microphone", "/smartcard", "-auto-reconnect", "-grab-keyboard", "/network:broadband-low", "-wallpaper", "+fonts", "-aero", "-window-drag", "-menu-anims", "+themes" })
+        {
+            Assert.Contains(arg, args);
+        }
+        control = RemoteDesktop.ControlSettings(c, 1000, 700);
+        Assert.Contains((RdpControlPart.Advanced, "AudioQualityMode", (object)2), control);
+        Assert.Contains((RdpControlPart.Advanced, "AudioCaptureRedirectionMode", (object)true), control);
+        Assert.Contains((RdpControlPart.Advanced, "RedirectSmartCards", (object)true), control);
+        Assert.Contains((RdpControlPart.Advanced, "EnableAutoReconnect", (object)false), control);
+        Assert.Contains((RdpControlPart.Advanced, "NetworkConnectionType", (object)2), control);
+        Assert.Contains((RdpControlPart.Advanced, "PerformanceFlags", (object)(0x1 | 0x2 | 0x4 | 0x80)), control); // no wallpaper, drag, animations; font smoothing
+        Assert.Contains((RdpControlPart.Secured, "KeyboardHookMode", (object)0), control);
+        Assert.Equal((false, false, false, false, false, false), RemoteDesktop.Effects(RdpConnectionSpeed.Modem));
     }
 
     [Fact]

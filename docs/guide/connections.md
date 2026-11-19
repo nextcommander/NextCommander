@@ -282,7 +282,11 @@ connections*, `nc_OpenConnection name`) does not change the panel.
   later; Linux: FreeRDP's window in the tab is resized). Click into the desktop to type there (the keys then go to the
   remote computer); the tabs above switch back. A password is asked when none is saved. When the session ends the tab
   says so (why it could not connect, in the system's words) and offers *Connect again* or *Close*; the tab's ×
-  disconnects. *Full screen* and *Open in the client's own window* open the client's own window instead, as described
+  disconnects. The title bar above the session has its options: **⛶ Full screen** (Windows: the whole screen with
+  Remote Desktop's connection bar, whose restore button comes back to the tab and whose minimize button minimizes
+  NextCommander; a desktop that follows the tab gets the screen's size meanwhile), **⤢ Fit to the tab** (Windows:
+  scales the remote desktop into the tab) and **⟳ Reconnect**. *Full screen* and *Open in the client's own window*
+  in the connection's settings open the client's own window instead, as described
   next. On Windows *Share the active panel's folder* shares the folder's drive. macOS has no way to show it in a tab:
   the Windows App opens.
 - **Remote desktop (RDP)** in its own window opens in the system's client: *Remote Desktop Connection* (mstsc) on Windows, Microsoft's
@@ -343,7 +347,7 @@ options of its type:
 | Azure | Access tier of uploaded blobs (Hot, Cool, Cold, Archive); plain HTTP; TLS version, pinned certificate. |
 | SMB | Show the hidden administrative shares (C$, ADMIN$). |
 | Google Drive, OneDrive, Box | Delete permanently instead of to the service's trash (OneDrive: work / school accounts; personal ones keep the recycle bin). Google Drive: Google documents as Office, OpenDocument or PDF files. |
-| Remote desktop | In a tab or the client's own window, full screen, all monitors, size in a window, colors, sound (here, on the remote computer, none), Remote Desktop Gateway, shared clipboard, drives, printers and the active panel's folder, administrative session. |
+| Remote desktop | Tabs of their own. **Display:** in a tab or the client's own window, full screen, all monitors, size in a window, colors. **Local resources:** sound (here, on the remote computer, none) and its quality, the microphone, shared clipboard, printers, drives, the active panel's folder, smart cards. **Experience:** the connection's speed (detected, or LAN to modem) and the visual effects it allows (background, font smoothing, desktop composition, window contents while dragging, animations, visual styles; each can be changed with a chosen speed). **Advanced:** Remote Desktop Gateway, where Windows key combinations go, reconnecting by itself, administrative session. All go to Remote Desktop Connection's .rdp file, the control of a tab and FreeRDP's arguments. |
 | Telnet | Terminal type, character set, what Backspace (DEL or Ctrl+H) and Enter (CR LF, CR NUL, LF) send, local echo, keep-alive. |
 | SSH | Jump host, keep-alive, pinned host key, command when it opens, terminal type, character set. |
 | VNC | Full screen, view only. |
