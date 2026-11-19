@@ -2940,5 +2940,21 @@
   "ConnectionManagerView.DesktopCompositionTransparency": "Composición de escritorio (transparencia, sombras)",
   "ConnectionManagerView.ShowWindowContentsWhile": "Mostrar el contenido de la ventana al arrastrar",
   "ConnectionManagerView.MenuAndWindowAnimations": "Animaciones de menús y ventanas",
-  "ConnectionManagerView.VisualStyles": "Estilos visuales"
+  "ConnectionManagerView.VisualStyles": "Estilos visuales",
+  "MainWindow.SettingsRestored": "Configuración restaurada",
+  "MainWindow.TheSettingsFileCouldNotBeRead": "No se pudo leer el archivo de configuración; la configuración se restauró desde la última copia de seguridad que se cargó.",
+  "MainWindow.TheDamagedFileWasKeptAs": "El archivo dañado se guardó como:",
+  "Menu.nc_RestoreSettings": "Restaurar la configuración desde una copia de seguridad...",
+  "Command.nc_RestoreSettings": "Restaurar la configuración desde una de las últimas configuraciones que se cargaron (reinicia el programa)",
+  "MainWindow.RestoreSettings": "Restaurar la configuración",
+  "MainWindow.RestoreSettingsFromABackup": "Restaurar la configuración desde una copia de seguridad",
+  "MainWindow.ThereIsNoBackupYet": "Aún no hay copias de seguridad: se guarda una cada vez que la configuración se carga al iniciar.",
+  "MainWindow.DamagedItCannotBeRestored": "dañada: no se puede restaurar",
+  "MainWindow.ConnectionsHotlistEntries": "{0} conexiones, {1} entradas de Hotlist",
+  "MainWindow.TheSettingsNow": "la configuración actual",
+  "MainWindow.ThisBackupCannotBeRead": "Esta copia de seguridad ya no se puede leer; elija otra.",
+  "MainWindow.TheseAreTheSettingsInUse": "Esta es la configuración que se usa ahora.",
+  "MainWindow.TheSettingsOfReplaceTheCurrent": "La configuración del {0} sustituye a la actual (que también se guarda como copia de seguridad) y NextCommander se reinicia.",
+  "MainWindow.RestoreAndRestart": "Restaurar y reiniciar",
+  "MainWindow.TheSettingsWereRestoredStart": "La configuración se restauró. Vuelva a iniciar NextCommander para usarla."
 }

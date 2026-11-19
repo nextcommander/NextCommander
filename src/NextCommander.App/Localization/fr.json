@@ -2940,5 +2940,21 @@
   "ConnectionManagerView.DesktopCompositionTransparency": "Composition du bureau (transparence, ombres)",
   "ConnectionManagerView.ShowWindowContentsWhile": "Afficher le contenu des fenêtres pendant le déplacement",
   "ConnectionManagerView.MenuAndWindowAnimations": "Animations des menus et des fenêtres",
-  "ConnectionManagerView.VisualStyles": "Styles visuels"
+  "ConnectionManagerView.VisualStyles": "Styles visuels",
+  "MainWindow.SettingsRestored": "Paramètres restaurés",
+  "MainWindow.TheSettingsFileCouldNotBeRead": "Le fichier de paramètres n'a pas pu être lu ; les paramètres ont été restaurés à partir de la dernière sauvegarde qui s'est chargée.",
+  "MainWindow.TheDamagedFileWasKeptAs": "Le fichier endommagé a été conservé sous :",
+  "Menu.nc_RestoreSettings": "Restaurer les paramètres depuis une sauvegarde...",
+  "Command.nc_RestoreSettings": "Restaurer les paramètres depuis l'une des dernières configurations chargées (redémarre le programme)",
+  "MainWindow.RestoreSettings": "Restaurer les paramètres",
+  "MainWindow.RestoreSettingsFromABackup": "Restaurer les paramètres depuis une sauvegarde",
+  "MainWindow.ThereIsNoBackupYet": "Il n'y a pas encore de sauvegarde : une est conservée chaque fois que les paramètres se chargent au démarrage.",
+  "MainWindow.DamagedItCannotBeRestored": "endommagée : impossible à restaurer",
+  "MainWindow.ConnectionsHotlistEntries": "{0} connexions, {1} entrées de Hotlist",
+  "MainWindow.TheSettingsNow": "les paramètres actuels",
+  "MainWindow.ThisBackupCannotBeRead": "Cette sauvegarde ne peut plus être lue ; choisissez-en une autre.",
+  "MainWindow.TheseAreTheSettingsInUse": "Ce sont les paramètres utilisés actuellement.",
+  "MainWindow.TheSettingsOfReplaceTheCurrent": "Les paramètres du {0} remplacent les paramètres actuels (conservés eux aussi en sauvegarde) et NextCommander redémarre.",
+  "MainWindow.RestoreAndRestart": "Restaurer et redémarrer",
+  "MainWindow.TheSettingsWereRestoredStart": "Les paramètres ont été restaurés. Redémarrez NextCommander pour les utiliser."
 }

@@ -2940,5 +2940,21 @@
   "ConnectionManagerView.DesktopCompositionTransparency": "Masaüstü birleştirme (saydamlık, gölgeler)",
   "ConnectionManagerView.ShowWindowContentsWhile": "Sürüklerken pencere içeriğini göster",
   "ConnectionManagerView.MenuAndWindowAnimations": "Menü ve pencere animasyonları",
-  "ConnectionManagerView.VisualStyles": "Görsel stiller"
+  "ConnectionManagerView.VisualStyles": "Görsel stiller",
+  "MainWindow.SettingsRestored": "Ayarlar geri yüklendi",
+  "MainWindow.TheSettingsFileCouldNotBeRead": "Ayar dosyası okunamadı; ayarlar başarıyla yüklenen son yedekten geri yüklendi.",
+  "MainWindow.TheDamagedFileWasKeptAs": "Bozuk dosya şu adla saklandı:",
+  "Menu.nc_RestoreSettings": "Ayarları bir yedekten geri yükle...",
+  "Command.nc_RestoreSettings": "Ayarları başarıyla yüklenen son yapılandırmalardan birinden geri yükle (programı yeniden başlatır)",
+  "MainWindow.RestoreSettings": "Ayarları geri yükle",
+  "MainWindow.RestoreSettingsFromABackup": "Ayarları bir yedekten geri yükle",
+  "MainWindow.ThereIsNoBackupYet": "Henüz yedek yok: ayarlar açılışta her yüklendiğinde bir yedek alınır.",
+  "MainWindow.DamagedItCannotBeRestored": "bozuk: geri yüklenemez",
+  "MainWindow.ConnectionsHotlistEntries": "{0} bağlantı, {1} Hotlist girdisi",
+  "MainWindow.TheSettingsNow": "şu anki ayarlar",
+  "MainWindow.ThisBackupCannotBeRead": "Bu yedek artık okunamıyor; başka birini seçin.",
+  "MainWindow.TheseAreTheSettingsInUse": "Bunlar şu anda kullanılan ayarlar.",
+  "MainWindow.TheSettingsOfReplaceTheCurrent": "{0} tarihli ayarlar şu ankilerin yerine geçer (şu ankiler de yedek olarak saklanır) ve NextCommander yeniden başlar.",
+  "MainWindow.RestoreAndRestart": "Geri yükle ve yeniden başlat",
+  "MainWindow.TheSettingsWereRestoredStart": "Ayarlar geri yüklendi. Kullanmak için NextCommander'ı yeniden başlatın."
 }

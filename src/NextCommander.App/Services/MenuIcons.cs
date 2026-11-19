@@ -283,6 +283,7 @@ public static class MenuIcons
         ["nc_CheckForUpdates"] = new("MiRefresh", Blue, "OvArrowDown", Green),
         ["nc_ExportSettings"] = new("MiSave", Blue, "OvArrowRight", Green),
         ["nc_ImportSettings"] = new("MiFolderOpen", Yellow, "OvArrowDown", Green),
+        ["nc_RestoreSettings"] = new("MiHistory", Blue, "OvArrowLeft", Green),
         ["nc_AddUserCommand"] = new("MiTerminal", Blue, "OvPlus", Green),
     };
 

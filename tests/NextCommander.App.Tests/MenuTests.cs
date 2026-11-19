@@ -225,7 +225,7 @@ public sealed class MenuTests : IDisposable
         Assert.Equal(["All files", "Programs", "*.*", "Custom...", "Only selected files"], Headers(w, "File filter"));
         Assert.Contains("New folder tab", Headers(w, "Tabs"));
         Assert.Equal(["Options...", "Plugins...", "Button bar...", "Button bar 2 (vertical)...", "Dark <-> Normal",
-            "Save position", "Save settings", "Export settings...", "Import settings...", "Commands and shortcuts...", "Add button to button bar...", "Add user command (uc_)...", "Edit Hotlist...",
+            "Save position", "Save settings", "Export settings...", "Import settings...", "Restore settings from a backup...", "Commands and shortcuts...", "Add button to button bar...", "Add user command (uc_)...", "Edit Hotlist...",
             "Edit column sets...", "Color theme"], Headers(w, "C_onfiguration"));
 
         File.WriteAllText(_fx.L("run.exe"), "x");

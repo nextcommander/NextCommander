@@ -2940,5 +2940,21 @@
   "ConnectionManagerView.DesktopCompositionTransparency": "Desktop composition (transparency, shadows)",
   "ConnectionManagerView.ShowWindowContentsWhile": "Show window contents while dragging",
   "ConnectionManagerView.MenuAndWindowAnimations": "Menu and window animations",
-  "ConnectionManagerView.VisualStyles": "Visual styles"
+  "ConnectionManagerView.VisualStyles": "Visual styles",
+  "MainWindow.SettingsRestored": "Settings restored",
+  "MainWindow.TheSettingsFileCouldNotBeRead": "The settings file could not be read; the settings were restored from the last backup that loaded.",
+  "MainWindow.TheDamagedFileWasKeptAs": "The damaged file was kept as:",
+  "Menu.nc_RestoreSettings": "Restore settings from a backup...",
+  "Command.nc_RestoreSettings": "Restore the settings from one of the last configurations that loaded (restarts the program)",
+  "MainWindow.RestoreSettings": "Restore settings",
+  "MainWindow.RestoreSettingsFromABackup": "Restore settings from a backup",
+  "MainWindow.ThereIsNoBackupYet": "There is no backup yet: one is kept each time the settings load at the start.",
+  "MainWindow.DamagedItCannotBeRestored": "damaged: it cannot be restored",
+  "MainWindow.ConnectionsHotlistEntries": "{0} connections, {1} Hotlist entries",
+  "MainWindow.TheSettingsNow": "the settings now",
+  "MainWindow.ThisBackupCannotBeRead": "This backup cannot be read any more; choose another one.",
+  "MainWindow.TheseAreTheSettingsInUse": "These are the settings in use now.",
+  "MainWindow.TheSettingsOfReplaceTheCurrent": "The settings of {0} replace the current ones (they are kept as a backup too) and NextCommander starts again.",
+  "MainWindow.RestoreAndRestart": "Restore and restart",
+  "MainWindow.TheSettingsWereRestoredStart": "The settings were restored. Start NextCommander again to use them."
 }

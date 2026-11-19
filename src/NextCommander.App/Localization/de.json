@@ -2940,5 +2940,21 @@
   "ConnectionManagerView.DesktopCompositionTransparency": "Desktopgestaltung (Transparenz, Schatten)",
   "ConnectionManagerView.ShowWindowContentsWhile": "Fensterinhalt beim Ziehen anzeigen",
   "ConnectionManagerView.MenuAndWindowAnimations": "Menü- und Fensteranimationen",
-  "ConnectionManagerView.VisualStyles": "Visuelle Stile"
+  "ConnectionManagerView.VisualStyles": "Visuelle Stile",
+  "MainWindow.SettingsRestored": "Einstellungen wiederhergestellt",
+  "MainWindow.TheSettingsFileCouldNotBeRead": "Die Einstellungsdatei konnte nicht gelesen werden; die Einstellungen wurden aus der letzten Sicherung wiederhergestellt, die sich laden ließ.",
+  "MainWindow.TheDamagedFileWasKeptAs": "Die beschädigte Datei wurde aufbewahrt als:",
+  "Menu.nc_RestoreSettings": "Einstellungen aus einer Sicherung wiederherstellen...",
+  "Command.nc_RestoreSettings": "Die Einstellungen aus einer der letzten geladenen Konfigurationen wiederherstellen (startet das Programm neu)",
+  "MainWindow.RestoreSettings": "Einstellungen wiederherstellen",
+  "MainWindow.RestoreSettingsFromABackup": "Einstellungen aus einer Sicherung wiederherstellen",
+  "MainWindow.ThereIsNoBackupYet": "Es gibt noch keine Sicherung: Bei jedem Laden der Einstellungen beim Start wird eine aufbewahrt.",
+  "MainWindow.DamagedItCannotBeRestored": "beschädigt: kann nicht wiederhergestellt werden",
+  "MainWindow.ConnectionsHotlistEntries": "{0} Verbindungen, {1} Hotlist-Einträge",
+  "MainWindow.TheSettingsNow": "die aktuellen Einstellungen",
+  "MainWindow.ThisBackupCannotBeRead": "Diese Sicherung kann nicht mehr gelesen werden; wählen Sie eine andere.",
+  "MainWindow.TheseAreTheSettingsInUse": "Das sind die Einstellungen, die gerade verwendet werden.",
+  "MainWindow.TheSettingsOfReplaceTheCurrent": "Die Einstellungen vom {0} ersetzen die aktuellen (diese werden ebenfalls als Sicherung aufbewahrt), und NextCommander startet neu.",
+  "MainWindow.RestoreAndRestart": "Wiederherstellen und neu starten",
+  "MainWindow.TheSettingsWereRestoredStart": "Die Einstellungen wurden wiederhergestellt. Starten Sie NextCommander neu, um sie zu verwenden."
 }
