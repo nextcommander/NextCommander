@@ -222,6 +222,13 @@ public sealed class WorkspaceTabsTests : IDisposable
         Assert.True(desktop.IsEffectivelyVisible);
         Assert.Equal(RemoteDesktopState.Connecting, desktop.State);
         Assert.Contains(Tabs(w), t => t.GetVisualDescendants().OfType<TextBlock>().Any(b => b.Text == "office pc"));
+        // its title bar: the session's options (full screen and fitting where the control can: Windows; only while connected)
+        Button Option(string text) => desktop.GetVisualDescendants().OfType<Button>().Single(b => Equals(b.Content, text));
+        var full = Option("⛶ Full screen");
+        Assert.Equal(OperatingSystem.IsWindows(), full.IsVisible);
+        Assert.False(full.IsEnabled); // connecting
+        Assert.False(((Avalonia.Controls.Primitives.ToggleButton)Option("⤢ Fit to the tab")).IsChecked); // the tab's own size: not scaled
+        Assert.True(Option("⟳ Reconnect").IsEffectivelyVisible);
 
         _fx.Dialogs.Logins.Enqueue(("other", false));
         await vm.OpenSessionAsync(lab);

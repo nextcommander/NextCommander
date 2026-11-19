@@ -612,6 +612,13 @@ public sealed partial class ConnectionManagerView
         tabs.Items.Add(Tab("General", General(c)));
         tabs.Items.Add(Tab("Login", Login(c)));
         tabs.Items.Add(Tab("Advanced", Advanced(c)));
+        if (c.Protocol == RemoteProtocol.Rdp)
+        {
+            // a remote desktop's own pages (user's request, 19 November 2026)
+            tabs.Items.Add(Tab("Display", Fields([.. RdpDisplay(c)])));
+            tabs.Items.Add(Tab("Local resources", Fields([.. RdpResources(c)])));
+            tabs.Items.Add(Tab("Experience", Fields([.. RdpExperience(c)])));
+        }
         if (HasProxy(c.Protocol))
         {
             tabs.Items.Add(Tab("Proxy", ProxyTab(c)));
@@ -1344,10 +1351,24 @@ public sealed partial class ConnectionManagerView
     /// <summary>The types that can go through a proxy (RDP has its own client; PC link stays on the local network).</summary>
     private static bool HasProxy(RemoteProtocol p) => p is not (RemoteProtocol.Rdp or RemoteProtocol.Vnc or RemoteProtocol.Link or RemoteProtocol.Serial);
 
-    private void RdpFields(RemoteConnection c, List<Control?> fields)
+    /// <summary>A remote desktop's Advanced tab: the gateway, the console session, reconnecting, the Windows keys.</summary>
+    private static void RdpFields(RemoteConnection c, List<Control?> fields)
     {
-        ComboBox? size = null;
         fields.Add(null);
+        fields.Add(Field("Remote Desktop Gateway", Text(c.RdpGateway, v => c.RdpGateway = string.IsNullOrWhiteSpace(v) ? null : v.Trim(), "gateway.example.com"),
+            Core.Localization.Localizer.T("Empty: connect directly. The gateway uses the same user.")));
+        fields.Add(Field("Windows key combinations", Choice(["On this computer", "On the remote computer", "On the remote computer in full screen only"], (int)c.RdpKeyboard,
+            i => c.RdpKeyboard = (RdpKeyboard)i), Core.Localization.Localizer.T("Where Alt+Tab, the Windows key and the like go.")));
+        fields.Add(null);
+        fields.Add(Check("Reconnect by itself when the connection drops", c.RdpAutoReconnect, v => c.RdpAutoReconnect = v));
+        fields.Add(Check("Administrative session (console)", c.RdpAdmin, v => c.RdpAdmin = v));
+    }
+
+    /// <summary>A remote desktop's Display tab: where it opens, its size, its colors.</summary>
+    private static List<Control?> RdpDisplay(RemoteConnection c)
+    {
+        var fields = new List<Control?>();
+        ComboBox? size = null;
         if (RemoteDesktopView.IsSupported)
         {
             fields.Add(Check("Open in the client's own window (not in a tab)", c.RdpOwnWindow, v => c.RdpOwnWindow = v));
@@ -1373,17 +1394,76 @@ public sealed partial class ConnectionManagerView
                 16 => Core.Localization.Localizer.T("High color (16 bit)"),
                 _ => Core.Localization.Localizer.T("High color (15 bit)"),
             })], Math.Max(0, depths.ToList().IndexOf(c.RdpColorDepth)), i => c.RdpColorDepth = depths[i])));
-        fields.Add(Field("Sound", Choice(["Play on this computer", "Play on the remote computer", "Do not play"], (int)c.RdpAudio, i => c.RdpAudio = (RdpAudio)i)));
-        fields.Add(Field("Remote Desktop Gateway", Text(c.RdpGateway, v => c.RdpGateway = string.IsNullOrWhiteSpace(v) ? null : v.Trim(), "gateway.example.com"),
-            Core.Localization.Localizer.T("Empty: connect directly. The gateway uses the same user.")));
+        return fields;
+    }
+
+    /// <summary>A remote desktop's Local resources tab: sound, microphone, clipboard, drives, printers, smart cards.</summary>
+    private static List<Control?> RdpResources(RemoteConnection c)
+    {
+        var fields = new List<Control?>();
+        ComboBox? quality = null;
+        fields.Add(Field("Sound", Choice(["Play on this computer", "Play on the remote computer", "Do not play"], (int)c.RdpAudio, i =>
+        {
+            c.RdpAudio = (RdpAudio)i;
+            quality!.IsEnabled = c.RdpAudio == RdpAudio.Here;
+        })));
+        quality = Choice(["Automatic (as the connection allows)", "Medium (less bandwidth)", "High (a fast network)"], (int)c.RdpAudioQuality,
+            i => c.RdpAudioQuality = (RdpAudioQuality)i);
+        quality.IsEnabled = c.RdpAudio == RdpAudio.Here;
+        fields.Add(Field("Sound quality", quality));
+        fields.Add(null);
+        fields.Add(Check("Record from this computer (microphone)", c.RdpMicrophone, v => c.RdpMicrophone = v));
         fields.Add(null);
         fields.Add(Check("Share the clipboard", c.RdpClipboard, v => c.RdpClipboard = v));
-        fields.Add(Check("Share this computer's drives", c.RdpDrives, v => c.RdpDrives = v));
         fields.Add(Check("Share this computer's printers", c.RdpPrinters, v => c.RdpPrinters = v));
+        fields.Add(Check("Share this computer's drives", c.RdpDrives, v => c.RdpDrives = v));
         fields.Add(Check(OperatingSystem.IsWindows()
             ? "Share the active panel's folder (Remote Desktop Connection shares its drive)"
             : "Share the active panel's folder", c.RdpShareFolder, v => c.RdpShareFolder = v));
-        fields.Add(Check("Administrative session (console)", c.RdpAdmin, v => c.RdpAdmin = v));
+        fields.Add(Check("Smart cards (to log in with one)", c.RdpSmartCards, v => c.RdpSmartCards = v));
+        return fields;
+    }
+
+    /// <summary>
+    /// A remote desktop's Experience tab: the connection's speed and the visual effects it allows (detected with the
+    /// automatic speed: the effects then follow it; a chosen speed fills them in, and each can be changed).
+    /// </summary>
+    private static List<Control?> RdpExperience(RemoteConnection c)
+    {
+        var fields = new List<Control?>();
+        var effects = new List<CheckBox>();
+        void Fill(RdpConnectionSpeed speed)
+        {
+            var e = Core.Net.RemoteDesktop.Effects(speed);
+            bool[] values = [e.Wallpaper, e.FontSmoothing, e.Composition, e.WindowDrag, e.Animations, e.Themes];
+            for (var i = 0; i < effects.Count; i++)
+            {
+                effects[i].IsChecked = values[i];
+                effects[i].IsEnabled = speed != RdpConnectionSpeed.Automatic;
+            }
+        }
+        fields.Add(Field("Connection speed", Choice(
+            ["Detect automatically", "LAN (10 Mbit/s or more)", "WAN (10 Mbit/s or more, high latency)", "High-speed broadband (2 to 10 Mbit/s)", "Low-speed broadband (256 kbit/s to 2 Mbit/s)", "Modem (56 kbit/s)"],
+            (int)c.RdpSpeed, i =>
+            {
+                c.RdpSpeed = (RdpConnectionSpeed)i;
+                Fill(c.RdpSpeed); // the effects that suit the speed
+            }), Core.Localization.Localizer.T("The visual effects below follow it; with a chosen speed each can be changed.")));
+        fields.Add(null);
+        void Effect(string text, bool value, Action<bool> set)
+        {
+            var box = Check(text, value, set);
+            box.IsEnabled = c.RdpSpeed != RdpConnectionSpeed.Automatic;
+            effects.Add(box);
+            fields.Add(box);
+        }
+        Effect("Desktop background", c.RdpWallpaper, v => c.RdpWallpaper = v);
+        Effect("Font smoothing", c.RdpFontSmoothing, v => c.RdpFontSmoothing = v);
+        Effect("Desktop composition (transparency, shadows)", c.RdpDesktopComposition, v => c.RdpDesktopComposition = v);
+        Effect("Show window contents while dragging", c.RdpWindowDrag, v => c.RdpWindowDrag = v);
+        Effect("Menu and window animations", c.RdpAnimations, v => c.RdpAnimations = v);
+        Effect("Visual styles", c.RdpThemes, v => c.RdpThemes = v);
+        return fields;
     }
 
     /// <summary>The terminal type and character set of a session in the internal terminal (Telnet, SSH, rsh).</summary>
@@ -1577,7 +1657,7 @@ public sealed partial class ConnectionManagerView
     // ---------------------------------------------------------------- log
 
     /// <summary>The Log tab's index (the last tab).</summary>
-    public int LogTabIndex(RemoteConnection c) => HasProxy(c.Protocol) ? 4 : 3;
+    public int LogTabIndex(RemoteConnection c) => 3 + (c.Protocol == RemoteProtocol.Rdp ? 3 : 0) + (HasProxy(c.Protocol) ? 1 : 0);
 
     /// <summary>Shows a connection's log tab (the connection selected).</summary>
     public void ShowLog(RemoteConnection c)

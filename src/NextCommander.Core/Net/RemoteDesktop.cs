@@ -75,6 +75,24 @@ public static class RemoteDesktop
         lines.Add("use multimon:i:" + (c.RdpMultiMonitor ? "1" : "0"));
         lines.Add("redirectclipboard:i:" + (c.RdpClipboard ? "1" : "0"));
         lines.Add("audiomode:i:" + (c.RdpAudio switch { RdpAudio.Remote => "1", RdpAudio.None => "2", _ => "0" }));
+        lines.Add("audioqualitymode:i:" + Number((int)c.RdpAudioQuality));
+        lines.Add("audiocapturemode:i:" + (c.RdpMicrophone ? "1" : "0"));
+        lines.Add("redirectsmartcards:i:" + (c.RdpSmartCards ? "1" : "0"));
+        lines.Add("keyboardhook:i:" + Number((int)c.RdpKeyboard));
+        lines.Add("autoreconnection enabled:i:" + (c.RdpAutoReconnect ? "1" : "0"));
+        lines.Add("connection type:i:" + Number(ConnectionType(c.RdpSpeed)));
+        lines.Add("networkautodetect:i:" + (c.RdpSpeed == RdpConnectionSpeed.Automatic ? "1" : "0"));
+        lines.Add("bandwidthautodetect:i:1");
+        if (c.RdpSpeed != RdpConnectionSpeed.Automatic)
+        {
+            // the visual effects as chosen (with the automatic speed the client and the server choose them)
+            lines.Add("disable wallpaper:i:" + (c.RdpWallpaper ? "0" : "1"));
+            lines.Add("allow font smoothing:i:" + (c.RdpFontSmoothing ? "1" : "0"));
+            lines.Add("allow desktop composition:i:" + (c.RdpDesktopComposition ? "1" : "0"));
+            lines.Add("disable full window drag:i:" + (c.RdpWindowDrag ? "0" : "1"));
+            lines.Add("disable menu anims:i:" + (c.RdpAnimations ? "0" : "1"));
+            lines.Add("disable themes:i:" + (c.RdpThemes ? "0" : "1"));
+        }
         lines.Add("drivestoredirect:s:" + (c.RdpDrives ? "*" : c.RdpShareFolder && DriveOf(folder) is { } drive ? drive + ";" : string.Empty));
         lines.Add("redirectprinters:i:" + (c.RdpPrinters ? "1" : "0"));
         if (c.RdpAdmin)
@@ -142,8 +160,44 @@ public static class RemoteDesktop
         {
             RdpAudio.Remote => "/audio-mode:1",
             RdpAudio.None => "/audio-mode:2",
-            _ => "/sound",
+            _ => c.RdpAudioQuality switch
+            {
+                RdpAudioQuality.High => "/sound:quality:high",
+                RdpAudioQuality.Medium => "/sound:quality:medium",
+                _ => "/sound",
+            },
         });
+        if (c.RdpMicrophone)
+        {
+            args.Add("/microphone");
+        }
+        if (c.RdpSmartCards)
+        {
+            args.Add("/smartcard");
+        }
+        args.Add(c.RdpAutoReconnect ? "+auto-reconnect" : "-auto-reconnect");
+        if (c.RdpKeyboard != RdpKeyboard.FullScreenOnly)
+        {
+            args.Add(c.RdpKeyboard == RdpKeyboard.Remote ? "+grab-keyboard" : "-grab-keyboard");
+        }
+        args.Add("/network:" + (c.RdpSpeed switch
+        {
+            RdpConnectionSpeed.Lan => "lan",
+            RdpConnectionSpeed.Wan => "wan",
+            RdpConnectionSpeed.Broadband => "broadband-high",
+            RdpConnectionSpeed.LowSpeedBroadband => "broadband-low",
+            RdpConnectionSpeed.Modem => "modem",
+            _ => "auto",
+        }));
+        if (c.RdpSpeed != RdpConnectionSpeed.Automatic)
+        {
+            args.Add(c.RdpWallpaper ? "+wallpaper" : "-wallpaper");
+            args.Add(c.RdpFontSmoothing ? "+fonts" : "-fonts");
+            args.Add(c.RdpDesktopComposition ? "+aero" : "-aero");
+            args.Add(c.RdpWindowDrag ? "+window-drag" : "-window-drag");
+            args.Add(c.RdpAnimations ? "+menu-anims" : "-menu-anims");
+            args.Add(c.RdpThemes ? "+themes" : "-themes");
+        }
         if (c.RdpDrives)
         {
             args.Add("/drive:home,~"); // the home folder (FreeRDP has no "all drives" on Linux and macOS)
@@ -180,6 +234,9 @@ public static class RemoteDesktop
     /// </summary>
     public static bool OpensInTab(RemoteConnection c) => !c.RdpOwnWindow && !c.FullScreen;
 
+    /// <summary>Whether the remote desktop is scaled into the tab at the start (a fixed size; the tab's own size needs none).</summary>
+    public static bool ScalesIntoTab(RemoteConnection c) => FixedSize(c);
+
     /// <summary>
     /// The one drive the Remote Desktop control shares for the active panel's folder ("D:\\"), or null: when the
     /// connection shares the folder but not all drives already.
@@ -191,6 +248,34 @@ public static class RemoteDesktop
     /// or disconnected on the remote computer (2), or by the server (3).
     /// </summary>
     public static bool IsPlainEnd(int reason) => reason is 1 or 2 or 3;
+
+    /// <summary>Remote Desktop's connection type of a speed (1 modem ... 6 LAN, 7 detected).</summary>
+    public static int ConnectionType(RdpConnectionSpeed speed) => speed switch
+    {
+        RdpConnectionSpeed.Lan => 6,
+        RdpConnectionSpeed.Wan => 5,
+        RdpConnectionSpeed.Broadband => 4,
+        RdpConnectionSpeed.LowSpeedBroadband => 2,
+        RdpConnectionSpeed.Modem => 1,
+        _ => 7,
+    };
+
+    /// <summary>
+    /// The visual effects that suit a speed (as Remote Desktop Connection's experience page): background, font
+    /// smoothing, desktop composition, window contents while dragging, animations, visual styles.
+    /// </summary>
+    public static (bool Wallpaper, bool FontSmoothing, bool Composition, bool WindowDrag, bool Animations, bool Themes) Effects(RdpConnectionSpeed speed) => speed switch
+    {
+        RdpConnectionSpeed.Broadband => (false, true, true, true, true, true),
+        RdpConnectionSpeed.LowSpeedBroadband => (false, true, false, false, false, true),
+        RdpConnectionSpeed.Modem => (false, false, false, false, false, false),
+        _ => (true, true, true, true, true, true),
+    };
+
+    /// <summary>The control's PerformanceFlags of the chosen effects (TS_PERF_* bits).</summary>
+    public static int PerformanceFlags(RemoteConnection c) =>
+        (c.RdpWallpaper ? 0 : 0x1) | (c.RdpWindowDrag ? 0 : 0x2) | (c.RdpAnimations ? 0 : 0x4) | (c.RdpThemes ? 0 : 0x8)
+        | (c.RdpFontSmoothing ? 0x80 : 0) | (c.RdpDesktopComposition ? 0x100 : 0);
 
     /// <summary>The smallest and largest desktop size the clients take.</summary>
     private static int DesktopSide(int pixels) => Math.Clamp(pixels, 200, 8192);
@@ -234,7 +319,18 @@ public static class RemoteDesktop
         {
             settings.Add((RdpControlPart.Advanced, "ConnectToAdministerServer", true));
         }
+        settings.Add((RdpControlPart.Advanced, "AudioQualityMode", (int)c.RdpAudioQuality));
+        settings.Add((RdpControlPart.Advanced, "AudioCaptureRedirectionMode", c.RdpMicrophone));
+        settings.Add((RdpControlPart.Advanced, "RedirectSmartCards", c.RdpSmartCards));
+        settings.Add((RdpControlPart.Advanced, "EnableAutoReconnect", c.RdpAutoReconnect));
+        settings.Add((RdpControlPart.Advanced, "NetworkConnectionType", ConnectionType(c.RdpSpeed)));
+        settings.Add((RdpControlPart.Advanced, "BandwidthDetection", c.RdpSpeed == RdpConnectionSpeed.Automatic));
+        if (c.RdpSpeed != RdpConnectionSpeed.Automatic)
+        {
+            settings.Add((RdpControlPart.Advanced, "PerformanceFlags", PerformanceFlags(c)));
+        }
         settings.Add((RdpControlPart.Secured, "AudioRedirectionMode", c.RdpAudio switch { RdpAudio.Remote => 1, RdpAudio.None => 2, _ => 0 }));
+        settings.Add((RdpControlPart.Secured, "KeyboardHookMode", (int)c.RdpKeyboard));
         if (!string.IsNullOrWhiteSpace(c.RdpGateway))
         {
             settings.Add((RdpControlPart.Transport, "GatewayHostname", c.RdpGateway.Trim()));

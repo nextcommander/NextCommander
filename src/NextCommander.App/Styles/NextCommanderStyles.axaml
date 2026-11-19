@@ -308,6 +308,10 @@
     <Setter Property="MaxWidth" Value="200" />
   </Style>
   <!-- the selected tab: a faint line in the inactive panel (theme key Tabs.PassiveLine), the accent in the active one -->
+  <!-- The page tabs of the main window (files, options, connections ...): a little higher than folder tabs (user's request, 19 November 2026) -->
+  <Style Selector="Button.tab.pagetab">
+    <Setter Property="Padding" Value="12,6" />
+  </Style>
   <Style Selector="Button.tab.current">
     <Setter Property="Background" Value="{DynamicResource FmTabActiveBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource FmTabPassiveLineBrush}" />

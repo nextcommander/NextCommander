@@ -73,7 +73,21 @@ public sealed class RemoteDesktopView : UserControl, IDisposable
         _connecting.Bind(Border.BackgroundProperty, _connecting.GetResourceObservable("SystemControlBackgroundBaseLowBrush"));
         DockPanel.SetDock(_connecting, Dock.Top);
         // the title bar of every page: the internal terminal's top line, the session's name, ✕ (disconnect) at the right
-        var header = PageHeader.Create(Services.Icons.BrandIcons.Create(RemoteProtocol.Rdp), Title, "Disconnect and close", Close, out _, translate: false);
+        // the session's options in its title bar (user's request, 19 November 2026): full screen and fitting into the
+        // tab where the control can (Windows), connecting again everywhere
+        _fullScreen = PageHeader.Tool("⛶ Full screen", "Show the remote desktop on the whole screen (its connection bar comes back here)", () => _host?.EnterFullScreen());
+        _fit = new Avalonia.Controls.Primitives.ToggleButton
+        {
+            Content = "⤢ Fit to the tab", FontSize = 12, Padding = new Thickness(8, 2), MinHeight = 0, Focusable = false,
+            IsChecked = Core.Net.RemoteDesktop.ScalesIntoTab(connection),
+        };
+        ToolTip.SetTip(_fit, "Scale the remote desktop into the tab (when its size is not the tab's)");
+        _fit.IsCheckedChanged += (_, _) => _host?.FitToTab(_fit.IsChecked == true);
+        var reconnect = PageHeader.Tool("⟳ Reconnect", "Disconnect and connect again", Start);
+        _fullScreen.IsVisible = _fit.IsVisible = OperatingSystem.IsWindows(); // FreeRDP in a tab cannot change them while it runs
+        var header = PageHeader.Create(Services.Icons.BrandIcons.Create(RemoteProtocol.Rdp), Title, "Disconnect and close", Close, out _, translate: false,
+            tools: [_fullScreen, _fit, reconnect]);
+        UpdateTools();
         Content = new DockPanel { Children = { header, _connecting, _layers } };
         Focusable = true;
         Start();
@@ -99,9 +113,26 @@ public sealed class RemoteDesktopView : UserControl, IDisposable
             {
                 _state = value;
                 _connecting.IsVisible = value == RemoteDesktopState.Connecting;
+                UpdateTools();
                 StateChanged?.Invoke(this, EventArgs.Empty);
             }
         }
+    }
+
+    private readonly Button _fullScreen;
+    private readonly Avalonia.Controls.Primitives.ToggleButton _fit;
+
+    /// <summary>The title bar's options (tests): full screen, fit to the tab.</summary>
+    internal (Button FullScreen, Avalonia.Controls.Primitives.ToggleButton Fit) Tools => (_fullScreen, _fit);
+
+    /// <summary>Full screen and fitting work on a session that is connected.</summary>
+    private void UpdateTools()
+    {
+        if (_fullScreen is null)
+        {
+            return; // still being built
+        }
+        _fullScreen.IsEnabled = _fit.IsEnabled = _state == RemoteDesktopState.Connected;
     }
 
     /// <summary>The text shown when the session has ended (tests).</summary>
@@ -121,6 +152,10 @@ public sealed class RemoteDesktopView : UserControl, IDisposable
         Core.Net.ConnectionLog.Info(Connection, "Connecting (remote desktop in a tab) ...");
         _host = new SessionHost(this);
         _layers.Children.Insert(0, _host);
+        if (_fit is not null)
+        {
+            _fit.IsChecked = Core.Net.RemoteDesktop.ScalesIntoTab(Connection); // a new session starts as its settings say
+        }
     }
 
     /// <summary>Ends the session and closes the tab.</summary>
@@ -275,6 +310,14 @@ public sealed class RemoteDesktopView : UserControl, IDisposable
                     });
                     // the tab is ended after the control's event has returned (its window goes with the tab's host)
                     control.Disconnected += (_, end) => Dispatcher.UIThread.Post(() => EndedBy(end));
+                    control.FullScreenChanged += (_, on) => Dispatcher.UIThread.Post(() => FullScreenChanged(on));
+                    control.MinimizeRequested += (_, _) => Dispatcher.UIThread.Post(() =>
+                    {
+                        if (TopLevel.GetTopLevel(this) is Window window)
+                        {
+                            window.WindowState = WindowState.Minimized; // the connection bar's minimize: NextCommander goes with it
+                        }
+                    });
                     var drive = Core.Net.RemoteDesktop.ControlDrive(owner.Connection, owner.Folder);
                     if (control.Connect(owner.Connection, owner.Password, width, height, drive) is { Count: > 0 } refused)
                     {
@@ -298,6 +341,37 @@ public sealed class RemoteDesktopView : UserControl, IDisposable
             {
                 _ = StartFreeRdpAsync(width, height);
             }
+        }
+
+        /// <summary>Windows: the session on the whole screen (the control's own full screen with its connection bar).</summary>
+        public void EnterFullScreen()
+        {
+            if (_control?.EnterFullScreen() != true)
+            {
+                Log.Debug("The remote desktop control did not go to full screen");
+            }
+        }
+
+        /// <summary>Windows: the remote desktop scaled into the tab (smart sizing) or shown at its own size.</summary>
+        public void FitToTab(bool on) => _control?.SetFitToWindow(on);
+
+        /// <summary>
+        /// Full screen came or went: a session that follows its window gets the screen's size, then the tab's again.
+        /// </summary>
+        private void FullScreenChanged(bool on)
+        {
+            Core.Net.ConnectionLog.Info(owner.Connection, on ? "Full screen." : "Back in the tab.");
+            if (_control is not { } control || !Core.Net.RemoteDesktop.FollowsWindow(owner.Connection))
+            {
+                return;
+            }
+            if (on && TopLevel.GetTopLevel(this)?.Screens?.ScreenFromVisual(this) is { } screen)
+            {
+                control.UpdateSessionSize(screen.Bounds.Width, screen.Bounds.Height);
+                return;
+            }
+            var (width, height) = Pixels();
+            control.Resize(width, height, session: true);
         }
 
         /// <summary>

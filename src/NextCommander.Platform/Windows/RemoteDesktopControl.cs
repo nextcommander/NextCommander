@@ -158,6 +158,34 @@ public sealed partial class RemoteDesktopControl : IDisposable
         }
     }
 
+    /// <summary>
+    /// Full screen: the control shows the session on the whole monitor with its connection bar (its restore button
+    /// comes back to the tab; <see cref="FullScreenChanged"/> says both). False when the control refused.
+    /// </summary>
+    public bool EnterFullScreen() => State == 1 && _client?.TrySet("FullScreen", true) == true;
+
+    /// <summary>Whether the remote desktop is scaled into the window (smart sizing), switched while connected.</summary>
+    public bool SetFitToWindow(bool on)
+    {
+        using var advanced = _client?.Newest("AdvancedSettings", 9, 2);
+        return advanced?.TrySet("SmartSizing", on) == true;
+    }
+
+    /// <summary>Tells the session a new desktop size (Windows 8.1 / Server 2012 R2 and later servers), the window as it is.</summary>
+    public void UpdateSessionSize(int width, int height)
+    {
+        if (State == 1 && width > 0 && height > 0)
+        {
+            _client?.TryCall("UpdateSessionDisplaySettings", width, height, width, height, 0, 100, 100);
+        }
+    }
+
+    /// <summary>The session went to full screen (true) or came back into its window (false).</summary>
+    public event EventHandler<bool>? FullScreenChanged;
+
+    /// <summary>The connection bar's minimize button in full screen: the container is to be minimized.</summary>
+    public event EventHandler? MinimizeRequested;
+
     public void Disconnect()
     {
         if (State != 0)
@@ -309,13 +337,22 @@ public sealed partial class RemoteDesktopControl : IDisposable
         }
     }
 
-    /// <summary>An event of the control (IMsTscAxEvents' DISPIDs: 2 OnConnected, 3 OnLoginComplete, 4 OnDisconnected).</summary>
+    /// <summary>
+    /// An event of the control (IMsTscAxEvents' DISPIDs: 2 OnConnected, 3 OnLoginComplete, 4 OnDisconnected, 5
+    /// OnEnterFullScreenMode, 6 OnLeaveFullScreenMode, 14 OnRequestContainerMinimize).
+    /// </summary>
     private void OnEvent(int id, int argument)
     {
         switch (id)
         {
             case 2 or 3:
                 Connected?.Invoke(this, EventArgs.Empty);
+                break;
+            case 5 or 6:
+                FullScreenChanged?.Invoke(this, id == 5);
+                break;
+            case 14:
+                MinimizeRequested?.Invoke(this, EventArgs.Empty);
                 break;
             case 4:
                 var extended = ExtendedDisconnectReason;

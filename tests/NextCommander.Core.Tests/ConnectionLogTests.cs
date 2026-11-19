@@ -31,7 +31,17 @@ public sealed class ConnectionLogTests : IDisposable
         var web = new RemoteConnection { Name = "Web: prod/1", Host = "web.example.com", User = "deploy", Port = 2222 };
         var other = new RemoteConnection { Host = "db.example.com", User = "admin", Protocol = RemoteProtocol.Ftp };
         var entries = new List<ConnectionLogEntry>();
-        void Seen(object? sender, ConnectionLogEntry entry) => entries.Add(entry);
+        void Seen(object? sender, ConnectionLogEntry entry)
+        {
+            // the event is the whole program's: other tests' connections log at the same time
+            if (entry.Connection is "Web: prod/1" or "ftp db.example.com")
+            {
+                lock (entries)
+                {
+                    entries.Add(entry);
+                }
+            }
+        }
         ConnectionLog.Written += Seen;
         try
         {
