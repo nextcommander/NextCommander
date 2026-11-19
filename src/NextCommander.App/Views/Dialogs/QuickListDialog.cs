@@ -356,36 +356,3 @@ public sealed class HotlistEntryDialog : DialogWindow
     }
 }
 
-/// <summary>Alt+F10: choose a directory from a tree.</summary>
-public sealed class TreeDialog : DialogWindow
-{
-    private readonly DirectoryTreeView _tree = new() { Height = 460, NavigateOnSelect = false };
-
-    public TreeDialog()
-        : base("Folder tree", 520)
-    {
-        Body.Children.Add(_tree);
-        AddButton("Git", () =>
-        {
-            Result = _tree.SelectedPath;
-            Close();
-        }, isDefault: true);
-        AddButton("Cancel", Close, isCancel: true);
-        _tree.DirectoryActivated += (_, e) =>
-        {
-            if (e.Confirm)
-            {
-                Result = e.Path;
-                Close();
-            }
-        };
-    }
-
-    public Core.Vfs.VfsPath? Result { get; private set; }
-
-    public async Task InitializeAsync(Core.Vfs.VfsPath path, Func<Core.Vfs.VfsPath, Task<IReadOnlyList<Core.Vfs.VfsEntry>>> list)
-    {
-        await _tree.ShowAsync(path, list);
-        _tree.TreeControl.Focus();
-    }
-}

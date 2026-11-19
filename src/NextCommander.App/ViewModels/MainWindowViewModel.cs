@@ -1607,31 +1607,37 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
 
     private static readonly string[] s_historyActions = ["Open in other panel", "Open in new tab", "Remove from list"];
 
+    /// <summary>Alt+Down: the folder history window (sections, pins, drives, open in the other panel / a new tab).</summary>
     private async Task ShowHistoryAsync()
     {
         var panel = ActivePanel;
-        var items = panel.History.Where(p => p != panel.CurrentPath)
-            .Select(p => new QuickListItem(p.ToDisplayString(), null, p)).ToList();
-        var result = await _dialogs.ShowQuickListAsync("Folder history", items, s_historyActions);
-        if (result?.Item.Value is not VfsPath path)
+        var entries = panel.History.Where(p => p != panel.CurrentPath)
+            .Select(p => _frequent.Find(p.ToString()) is { } f ? new Views.Dialogs.FolderHistoryEntry(p, f.LastVisit, f.Visits) : new Views.Dialogs.FolderHistoryEntry(p, null, 0))
+            .ToList();
+        var request = new Views.Dialogs.FolderHistoryRequest(entries, _settings.PinnedFolders, SaveSettings, PlaceOf,
+            path => panel.NavigateAsync(path), path => OtherPanel.NavigateAsync(path), path => ActiveSide.OpenTabAsync(path),
+            panel.ForgetHistory, paths => panel.SetHistory(paths.Where(p => p != panel.CurrentPath).Prepend(panel.CurrentPath!).OfType<VfsPath>()));
+        await _dialogs.ShowFolderHistoryAsync(request);
+    }
+
+    /// <summary>
+    /// The drive or place of a folder (the folder history's chips): Windows "C:", elsewhere the drive bar's disk it is on
+    /// ("/" when none), a connection as its address.
+    /// </summary>
+    private string PlaceOf(VfsPath path)
+    {
+        if (!path.IsLocal)
         {
-            return;
+            return path.Scheme + "://" + path.Authority;
         }
-        switch (result.Action)
+        if (OperatingSystem.IsWindows())
         {
-            case 0:
-                await OtherPanel.NavigateAsync(path);
-                break;
-            case 1:
-                await ActiveSide.OpenTabAsync(path);
-                break;
-            case 2:
-                panel.ForgetHistory(path);
-                break;
-            default:
-                await panel.NavigateAsync(path);
-                break;
+            return (Path.GetPathRoot(path.Path) ?? path.Path).TrimEnd('\\');
         }
+        var drive = ActivePanel.Drives.Where(d => d.Kind is DriveKind.Fixed or DriveKind.Removable or DriveKind.Network or DriveKind.Optical
+                && d.RootPath.Length > 1 && (path.Path == d.RootPath.TrimEnd('/') || path.Path.StartsWith(d.RootPath.TrimEnd('/') + "/", StringComparison.Ordinal)))
+            .OrderByDescending(d => d.RootPath.Length).FirstOrDefault();
+        return drive?.Name ?? "/";
     }
 
     private async Task ShowFrequentAsync()
@@ -2087,25 +2093,61 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         sb.AppendLine($".NET: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}, NextCommander {UpdateChecker.DisplayVersion(typeof(MainWindowViewModel).Assembly)}");
         sb.AppendLine($"Settings folder: {_store.Directory}");
         sb.AppendLine();
-        foreach (var drive in DriveInfo.GetDrives())
+        foreach (var drive in SystemDrives())
         {
-            try
-            {
-                if (drive.IsReady)
-                {
-                    sb.AppendLine(string.Format(CultureInfo.CurrentCulture, "{0}  {1}  {2}: {3} free / {4}", drive.Name, drive.VolumeLabel, drive.DriveFormat,
-                        NextCommander.Core.Formatting.SizeFormatter.Human(drive.AvailableFreeSpace), NextCommander.Core.Formatting.SizeFormatter.Human(drive.TotalSize)));
-                }
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                sb.AppendLine($"{drive.Name}  (could not be read)");
-            }
+            sb.AppendLine(string.Format(CultureInfo.CurrentCulture, "{0}  {1}  {2}: {3} free / {4}", drive.Name, drive.Label, drive.Format,
+                NextCommander.Core.Formatting.SizeFormatter.Human(drive.Free), NextCommander.Core.Formatting.SizeFormatter.Human(drive.Total)));
         }
         return sb.ToString().TrimEnd();
     }
 
-    private Task SystemInfoAsync() => _dialogs.ShowMessageAsync("System information", SystemInfoText());
+    /// <summary>
+    /// The disks of the system information: the drives of the drive bar that have a size (not the pseudo file systems
+    /// .NET lists on Linux), with their file system when it can be read.
+    /// </summary>
+    private List<Views.Dialogs.SystemDrive> SystemDrives()
+    {
+        var result = new List<Views.Dialogs.SystemDrive>();
+        foreach (var drive in _platform.GetDrives().Where(d => d.Kind is DriveKind.Fixed or DriveKind.Removable or DriveKind.Network or DriveKind.Optical
+                     && d.IsReady && !string.IsNullOrEmpty(d.RootPath)))
+        {
+            long free = drive.FreeSpace, total = drive.TotalSize;
+            string? format = null;
+            try
+            {
+                var info = new DriveInfo(drive.RootPath);
+                if (info.IsReady)
+                {
+                    format = info.DriveFormat;
+                    free = info.AvailableFreeSpace;
+                    total = info.TotalSize;
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+            {
+                // the drive bar's numbers
+            }
+            if (total > 0)
+            {
+                result.Add(new Views.Dialogs.SystemDrive(drive.Name, drive.Label, format, free, total));
+            }
+        }
+        return result;
+    }
+
+    private Task SystemInfoAsync() => _dialogs.ShowSystemInfoAsync(new Views.Dialogs.SystemInfo(
+        UpdateChecker.DisplayVersion(typeof(MainWindowViewModel).Assembly),
+        System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription,
+        System.Runtime.InteropServices.RuntimeInformation.OSDescription,
+        System.Runtime.InteropServices.RuntimeInformation.OSArchitecture.ToString(),
+        Environment.MachineName,
+        Environment.UserName,
+        Environment.ProcessorCount,
+        GC.GetGCMemoryInfo().TotalAvailableMemoryBytes,
+        _store.Directory,
+        SystemDrives(),
+        SystemInfoText()),
+        () => ActivePanel.NavigateAsync(VfsPath.Local(_store.Directory)));
 
     private async Task OpenDesktopAsync()
     {
@@ -2701,16 +2743,35 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>The plugin folders: the settings folder's (where installing puts a plugin), then the program's.</summary>
+    private IReadOnlyList<string> PluginFolders => [Path.Combine(_store.Directory, "plugins"), Path.Combine(AppContext.BaseDirectory, "plugins")];
+
+    /// <summary>nc_Plugins: the plugins window (installed plugins, on / off, install from a file).</summary>
     private async Task ShowPluginsAsync()
     {
-        var items = Plugins.Select(p => new QuickListItem(
-            (p.Error is null ? "✔ " : "✘ ") + p.Name + (p.Manifest?.Version is { } v ? " " + v : string.Empty),
-            p.Error ?? $"{p.FileSystems.Count} file systems, {p.Columns.Count} column providers — {p.Folder}")).ToList();
-        if (items.Count == 0)
-        {
-            items.Add(new QuickListItem("No plugins loaded", "Plugins: <settings folder>/plugins/<name>/plugin.json (or the plugins folder next to the program)"));
-        }
-        await _dialogs.ShowQuickListAsync("Plugins", items);
+        var request = new Views.Dialogs.PluginsRequest(Plugins, PluginFolders, _settings, SaveSettings, _dialogs.PickOpenFileAsync,
+            async (plugin, folder) =>
+            {
+                // a plugin with an entry point (rclone remotes ...) opens there, any other one shows its folder
+                if (plugin?.FileSystems.OfType<NextCommander.Core.Plugins.IPluginEntryPoint>().FirstOrDefault() is { } entry)
+                {
+                    await OpenPluginEntryAsync(entry);
+                }
+                else
+                {
+                    await ActivePanel.NavigateAsync(VfsPath.Local(folder));
+                }
+            },
+            () =>
+            {
+                if (!Restart())
+                {
+                    return false;
+                }
+                ExitRequested?.Invoke(this, EventArgs.Empty);
+                return true;
+            });
+        await _dialogs.ShowPluginsAsync(request);
     }
 
     // ---------------------------------------------------------------- remote (phase 6)
@@ -4175,7 +4236,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         {
             return null;
         }
-        var dialog = new Views.Dialogs.TreeDialog();
+        var dialog = new Views.Dialogs.TreeDialog("Pick the target folder");
         var shown = dialog.ShowDialog(owner);
         await dialog.InitializeAsync(start, p => panel.ListSubdirectoriesAsync(p, max: 5000));
         await shown;

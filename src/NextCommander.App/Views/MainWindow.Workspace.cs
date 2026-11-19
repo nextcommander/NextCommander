@@ -212,10 +212,82 @@ public partial class MainWindow
             TerminalHost.IsVisible = terminalPage;
         }
         UpdateWorkspaceTabs();
+        ApplyPageAvailability();
         if (terminalPage)
         {
             FitMaximizedTerminal();
         }
+    }
+
+    /// <summary>Commands that make sense on every page (they do not work on the hidden file panels).</summary>
+    private static readonly HashSet<string> s_anyPageCommands = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "nc_SysInfo", "nc_SyncDirs", "nc_ToggleTerminal", "nc_MaximizeTerminal", "nc_BackgroundTransfers", "nc_ExecuteTerminal",
+        "nc_SearchStandalone", "nc_SwitchWorkspaceTab", "nc_Exit", "nc_RemoteConnection", "nc_ConnectionsMenu", "nc_PluginsMenu",
+        "nc_MasterPassword", "nc_LinkShare",
+    };
+
+    /// <summary>The menu items this window turned off for a page other than the files (turned on again on the files).</summary>
+    private readonly List<MenuItem> _pageDisabledItems = [];
+
+    /// <summary>The menus that never work on the panels: Configuration, Start, Help.</summary>
+    private bool IsAnyPageMenu(MenuItem top) =>
+        ReferenceEquals(top, StartMenuRoot) || top.Header is "C_onfiguration" or "_Help";
+
+    /// <summary>
+    /// Whether <paramref name="command"/> runs on the page shown now: everything on the files; elsewhere only the
+    /// commands that do not work on the (hidden) panels: those of Configuration, Start and Help, the terminal, the
+    /// connection manager, system information, synchronize directories ...
+    /// </summary>
+    public bool RunsOnThisPage(string command)
+    {
+        if (_page == WorkspacePage.Files || s_anyPageCommands.Contains(command))
+        {
+            return true;
+        }
+        static bool In(MenuItem item, string command) =>
+            item.CommandParameter is string c ? c.Equals(command, StringComparison.OrdinalIgnoreCase)
+                : item.Items.OfType<MenuItem>().Any(child => In(child, command));
+        return MainMenu.Items.OfType<MenuItem>().Where(IsAnyPageMenu).Any(top => In(top, command));
+    }
+
+    /// <summary>
+    /// Off while another page (options, synchronize, connections, terminal, remote desktop) is shown: the menu items,
+    /// buttons, drive bar, function keys and command line that work on the file panels (user's request, 19 November 2026).
+    /// </summary>
+    private void ApplyPageAvailability()
+    {
+        var files = _page == WorkspacePage.Files;
+        foreach (var item in _pageDisabledItems)
+        {
+            item.IsEnabled = true;
+        }
+        _pageDisabledItems.Clear();
+        if (!files)
+        {
+            foreach (var top in MainMenu.Items.OfType<MenuItem>().Where(t => !IsAnyPageMenu(t)))
+            {
+                KeepOnPage(top);
+            }
+        }
+        _topBar.SetAvailable(files ? null : RunsOnThisPage);
+        _verticalBar.SetAvailable(files ? null : RunsOnThisPage);
+        SharedDriveBarHost.IsEnabled = files;
+        FunctionKeys.IsEnabled = files;
+        CommandLineRow.IsEnabled = files;
+    }
+
+    /// <summary>Turns off a menu item whose command needs the panels (a submenu when none of its items works); true when it stays on.</summary>
+    private bool KeepOnPage(MenuItem item)
+    {
+        var keep = item.CommandParameter is string command ? RunsOnThisPage(command)
+            : item.Items.OfType<MenuItem>().ToList() is { Count: > 0 } children && children.Select(KeepOnPage).ToList().Contains(true);
+        if (!keep && item.IsEnabled)
+        {
+            item.IsEnabled = false;
+            _pageDisabledItems.Add(item);
+        }
+        return keep;
     }
 
     /// <summary>

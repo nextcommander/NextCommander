@@ -5,6 +5,7 @@
   <UserControl.Styles>
     <Style Selector="TreeViewItem" x:DataType="vm:TreeNodeViewModel">
       <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+      <Setter Property="IsVisible" Value="{Binding IsShown}" />
       <Setter Property="MinHeight" Value="22" />
       <Setter Property="Padding" Value="0" />
     </Style>

@@ -219,6 +219,24 @@ public sealed class DialogService : IDialogService
         await dialog.ShowDialog(RequireOwner());
     }
 
+    public async Task ShowFolderHistoryAsync(FolderHistoryRequest request)
+    {
+        var dialog = new FolderHistoryDialog(request);
+        await dialog.ShowDialog(RequireOwner());
+    }
+
+    public async Task ShowSystemInfoAsync(SystemInfo info, Func<Task> openSettingsFolder)
+    {
+        var dialog = new SystemInfoDialog(info, openSettingsFolder);
+        await dialog.ShowDialog(RequireOwner());
+    }
+
+    public async Task ShowPluginsAsync(PluginsRequest request)
+    {
+        var dialog = new PluginsDialog(request);
+        await dialog.ShowDialog(RequireOwner());
+    }
+
     public async Task ShowSettingsAsync(AppSettings settings, Action changed, IReadOnlyList<(string Text, Func<Task> Action)> extraActions, string? search = null)
     {
         var owner = RequireOwner();
