@@ -409,7 +409,7 @@ internal sealed class FakeDialogs : IDialogService
 
     public Task<ButtonDefinition?> EditButtonAsync(ButtonDefinition? existing) => Task.FromResult(NextButton);
 
-    public Task EditHotlistAsync(List<HotlistEntry> hotlist) => Task.CompletedTask;
+    public Task<bool> EditHotlistAsync(List<HotlistEntry> hotlist, string? activeFolder = null, string? otherFolder = null) => Task.FromResult(false);
 
     /// <summary>Answer of the button bar editor (null = cancel); the buttons it was given.</summary>
     public NextCommander.App.Views.Dialogs.ButtonBarEdit? NextButtonBar { get; set; }

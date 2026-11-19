@@ -76,7 +76,7 @@ You can also drop a program on the button bar to add it, or right click a button
 You never need to know a command's name: wherever a command can be given (the button bar, user commands, the
 hotlist, the commands of view modes, internal associations and the Start menu), **Command...** opens the list of
 all commands with their icons and descriptions. Type a part of a name or description to find one, then double
-click it or press Enter. **...** next to it chooses a program instead, and in the hotlist **Folder...** a folder.
+click it or press Enter. **...** next to it chooses a program instead.
 
 ## The pages
 

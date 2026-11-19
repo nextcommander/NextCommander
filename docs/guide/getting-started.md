@@ -89,6 +89,14 @@ shown:
   Home, Desktop, Documents or Downloads, and see the chosen folder's path at the bottom.
 - **Ctrl+D** opens the **Hotlist**, your list of favorite folders. *Show > Navigation > Add this folder to the
   Hotlist...* adds the current folder.
+- *Configuration > Edit Hotlist...* opens the **hotlist window**. On the left the entries as a tree: **Add ▾** adds
+  a folder, a command, a submenu or a separator line; the arrows (Alt+↑ / Alt+↓) move an entry, ← takes it out of
+  its submenu, the bin (Del) deletes it (with Undo); drag an entry to move it, onto the middle of a submenu to put it
+  inside. The filter shows the matching entries with their submenus. On the right the chosen entry: its type, its
+  name (an `&` before a letter makes it the menu key, e.g. `&Movie`; a second entry with the same name or key is
+  marked), its folder (browse, or the current folder; environment variables such as `%USERPROFILE%` work) and
+  optionally a folder for the other panel, opened at the same time; or a command with its parameters. Below, a
+  preview of the menu the entry is in. Changes are made on a copy: **OK** saves them, **Cancel** drops them.
 - **Ctrl+Left / Ctrl+Right** opens the folder under the cursor in the left or right panel.
 - **Ctrl+U** swaps the two panels. *Commands > Target = Source* makes the other panel show the same folder.
 - **Quick search:** hold Ctrl+Alt and type the first letters of a name to jump to it. Up / Down jump to the
