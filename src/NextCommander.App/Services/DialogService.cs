@@ -213,9 +213,9 @@ public sealed class DialogService : IDialogService
         return dialog.Result;
     }
 
-    public async Task EditColumnSetsAsync(List<NextCommander.Core.Columns.ColumnSet> sets, IReadOnlyList<NextCommander.Core.Columns.ColumnField> fields)
+    public async Task EditColumnSetsAsync(List<NextCommander.Core.Columns.ColumnSet> sets, IReadOnlyList<NextCommander.Core.Columns.ColumnField> fields, Action? applied = null)
     {
-        var dialog = new ColumnSetDialog(sets, fields);
+        var dialog = new ColumnSetDialog(sets, fields, applied);
         await dialog.ShowDialog(RequireOwner());
     }
 

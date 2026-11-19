@@ -2681,9 +2681,18 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         ActivePanel.ChooseColumnSet(result.Item.Value as string);
     }
 
+    /// <summary>The column sets window; Apply and OK show the changes in the tabs at once and save them.</summary>
     private async Task EditColumnSetsAsync()
     {
-        await _dialogs.EditColumnSetsAsync(_settings.ColumnSets, ColumnValues.Columns.AllFields.ToList());
+        void Applied()
+        {
+            foreach (var tab in LeftSide.Tabs.Concat(RightSide.Tabs))
+            {
+                tab.UpdateColumnSet();
+            }
+            SaveSettings();
+        }
+        await _dialogs.EditColumnSetsAsync(_settings.ColumnSets, ColumnValues.Columns.AllFields.ToList(), Applied);
         foreach (var tab in LeftSide.Tabs.Concat(RightSide.Tabs))
         {
             tab.UpdateColumnSet();

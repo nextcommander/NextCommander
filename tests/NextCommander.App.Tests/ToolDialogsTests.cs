@@ -154,4 +154,66 @@ public sealed class ToolDialogsTests : IDisposable
         Assert.True(Find(".secret")!.IsShown);
         Assert.True(Find("beta")!.IsShown);
     }
+
+    [AvaloniaFact]
+    public async Task The_column_sets_window_edits_a_copy_until_applied()
+    {
+        var sets = new List<NextCommander.Core.Columns.ColumnSet>
+        {
+            new()
+            {
+                Name = "Fotoğraflar", Icon = "image", AutoPathMask = "*Pictures*;*DCIM*", TabColor = "#2E7D32", EnterCommand = "nc_SrcThumbs",
+                Columns = [new() { Field = "image.taken", Width = 130 }, new() { Field = "image.dimensions", Width = 110 }, new() { Field = "image.camera", Width = 150 }],
+            },
+            new() { Name = "Müzik", Icon = "audio", Columns = [new() { Field = "media.artist", Width = 160 }, new() { Field = "media.duration", Header = "Time", Width = 70 }] },
+        };
+        NextCommander.Core.Columns.ColumnField[] fields =
+        [
+            new("image.taken", "Date taken", NextCommander.Core.Columns.ColumnKind.Date), new("image.dimensions", "Dimensions (W×H)"),
+            new("image.camera", "Camera"), new("media.artist", "Artist"), new("media.duration", "Duration"), new("file.created", "Created"),
+        ];
+        var applied = 0;
+        var dialog = _fx.Track(new ColumnSetDialog(sets, fields, () => applied++));
+        dialog.Show();
+        await SettleAsync(4);
+        Assert.Equal("Fotoğraflar", dialog.Current!.Name);
+        Assert.Equal(["Name", "Size", "Date", "Date taken", "Dimensions (W×H)", "Camera"], dialog.PreviewHeaders);
+        Assert.False(dialog.IsDirty);
+        Shot(dialog, "column-sets");
+        dialog.Height = 1500; // the whole page: masks, look, commands
+        await SettleAsync(4);
+        Shot(dialog, "column-sets-full");
+        dialog.Height = 800;
+
+        // changes stay in the copy
+        dialog.AddColumn("file.created");
+        dialog.MoveColumn(3, -3);
+        Assert.Equal("file.created", dialog.Current.Columns[0].Field);
+        dialog.AddMask("*Resimler*; *Fotoğraf*");
+        Assert.Equal("*Pictures*;*DCIM*;*Resimler*;*Fotoğraf*", dialog.Current.AutoPathMask);
+        dialog.RemoveMask("*DCIM*");
+        Assert.True(dialog.IsDirty);
+        Assert.Equal(3, sets[0].Columns.Count);
+
+        // a copy has no folders (two sets would fight over them); deleting picks the next one
+        dialog.DuplicateSet();
+        Assert.Equal("Fotoğraflar (copy)", dialog.Current.Name);
+        Assert.Null(dialog.Current.AutoPathMask);
+        dialog.DeleteSet();
+        Assert.Equal(2, dialog.WorkingSets.Count);
+
+        // Apply writes copies back
+        dialog.Apply();
+        Assert.Equal(1, applied);
+        Assert.False(dialog.IsDirty);
+        Assert.Equal(4, sets[0].Columns.Count);
+        Assert.Equal("*Pictures*;*Resimler*;*Fotoğraf*", sets[0].AutoPathMask);
+        Assert.NotSame(dialog.WorkingSets[0], sets[0]);
+
+        // after that, changes without Apply are dropped on closing
+        dialog.SelectSet(1);
+        dialog.RemoveColumn(0);
+        dialog.Close();
+        Assert.Equal(2, sets[1].Columns.Count);
+    }
 }

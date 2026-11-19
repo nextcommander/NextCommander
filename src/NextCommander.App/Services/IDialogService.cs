@@ -107,7 +107,7 @@ public interface IDialogService
     Task<(string? Current, string? New)?> ShowMasterPasswordDialogAsync(bool hasMaster);
 
     /// <summary>Edits the custom column sets in place.</summary>
-    Task EditColumnSetsAsync(List<NextCommander.Core.Columns.ColumnSet> sets, IReadOnlyList<NextCommander.Core.Columns.ColumnField> fields);
+    Task EditColumnSetsAsync(List<NextCommander.Core.Columns.ColumnSet> sets, IReadOnlyList<NextCommander.Core.Columns.ColumnField> fields, Action? applied = null);
 
     /// <summary>Settings window (modal); <paramref name="changed"/> runs after each change; <paramref name="search"/> pre-fills the search.</summary>
     Task ShowSettingsAsync(AppSettings settings, Action changed, IReadOnlyList<(string Text, Func<Task> Action)> extraActions, string? search = null);
