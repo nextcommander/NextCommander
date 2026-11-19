@@ -19,6 +19,8 @@ public enum FileKind
     Pdf,
     Executable,
     Error,
+    /// <summary>The header of a group of the file list (Show > Group by).</summary>
+    GroupHeader,
 }
 
 /// <summary>Built-in vector icons by file type (used on every OS; replaced by shell icons on Windows).</summary>

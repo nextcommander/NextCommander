@@ -2962,5 +2962,22 @@
   "Settings.Link.AllowThroughTheFirewall": "Permitir en el cortafuegos",
   "Settings.Link.NothingToOpenOnThisSystem": "No hay nada que abrir en este sistema.",
   "Settings.Link.TheFirewallLetsPcLinkThrough": "El cortafuegos permite PC link (puerto {0}).",
-  "Settings.Link.NotChangedCancelled": "Sin cambios (cancelado o no permitido)."
+  "Settings.Link.NotChangedCancelled": "Sin cambios (cancelado o no permitido).",
+  "Menu.GroupBy": "Agrupar por",
+  "Menu.nc_GroupByNone": "Sin grupos",
+  "Menu.nc_GroupByName": "Primera letra del nombre",
+  "Command.nc_GroupByType": "Agrupar por tipo",
+  "Command.nc_GroupByDate": "Agrupar por fecha",
+  "Command.nc_GroupByName": "Agrupar por primera letra",
+  "PanelGroups.Videos": "Vídeos",
+  "PanelGroups.Code": "Código",
+  "PanelGroups.UnknownDate": "Fecha desconocida",
+  "PanelGroups.InTheFuture": "En el futuro",
+  "PanelGroups.Today": "Hoy",
+  "PanelGroups.Yesterday": "Ayer",
+  "PanelGroups.EarlierThisWeek": "Antes esta semana",
+  "PanelGroups.LastWeek": "La semana pasada",
+  "PanelGroups.EarlierThisMonth": "Antes este mes",
+  "PanelGroups.LastMonth": "El mes pasado",
+  "PanelGroups.EarlierThisYear": "Antes este año"
 }

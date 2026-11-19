@@ -105,6 +105,10 @@ shown:
 - **Shift+F1** chooses a custom column set, for example with photo or music details.
   Column sets can also switch automatically by folder (*Show > Display > Custom view modes*).
 - **Ctrl+F3 … Ctrl+F6** sort by name, extension, time and size. Click a column header to sort by it.
+- **Show > Group by** shows the files in groups: by **type** (documents, images, archives ...), by **date** (today,
+  yesterday, earlier this week ... older years) or by the **first letter** of the name; folders come first. A
+  group's header shows how many files it has; Enter or a double click on it folds the group away and opens it
+  again, Insert / Space on it marks all its files. Each tab keeps its own grouping; *No groups* turns it off.
 - **Ctrl+H** shows or hides hidden and system files.
 
 ![Tree panel and thumbnail view](../screenshots/tree-and-thumbnails.png)

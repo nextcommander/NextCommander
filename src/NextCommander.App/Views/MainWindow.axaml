@@ -195,6 +195,13 @@
           <Separator />
           <MenuItem Header="Reversed order" Command="{Binding RunCommandCommand}" CommandParameter="nc_SrcNegOrder" />
         </MenuItem>
+        <MenuItem Header="Group by" Tag="nc_GroupByType">
+          <MenuItem Header="No groups" Command="{Binding RunCommandCommand}" CommandParameter="nc_GroupByNone" />
+          <Separator />
+          <MenuItem Header="Type" Command="{Binding RunCommandCommand}" CommandParameter="nc_GroupByType" />
+          <MenuItem Header="Date" Command="{Binding RunCommandCommand}" CommandParameter="nc_GroupByDate" />
+          <MenuItem Header="First letter of the name" Command="{Binding RunCommandCommand}" CommandParameter="nc_GroupByName" />
+        </MenuItem>
         <MenuItem Header="What is shown" Tag="nc_SwitchHidSys">
           <MenuItem Header="Hidden and system files" InputGesture="Ctrl+H" Command="{Binding RunCommandCommand}" CommandParameter="nc_SwitchHidSys" />
           <MenuItem Header="Hidden files only" Command="{Binding RunCommandCommand}" CommandParameter="nc_SwitchHidden" />
