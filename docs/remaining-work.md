@@ -205,3 +205,52 @@ Since 7 November 2026 colors come only from theme files (default: system colors,
 - [x] Drive box without "My Documents" (a drive bar shortcut instead); Computer view ordered: drive letters, external disks, phones, the trash; the trash button of the drive bar is an option (Configuration > Layout); system icons for every drive box entry (Windows shell incl. Recycle Bin / This PC / Network / phones by their shell name, Linux icon theme, macOS Finder). Tried on Windows, Linux and macOS, with a phone too (14 November 2026).
 - [x] Trash: the original location of deleted items as a column ("Original location", `TrashColumns`): the trash gets its own view mode by itself unless a view mode of the user matches it.
 - [x] MTP: free space of the phone's storages in the footer (WPD storage capacity, `IVolumeSpaceProvider`); a phone folder shown in a panel is read again every 3 s (ids only) and the panel refreshes when files come or go (Configuration > Refresh: removable drives). To be tried with a real phone.
+
+## AI support (ideas, to be evaluated)
+
+Collected on 19 November 2026 at the user's request; nothing decided yet. The idea throughout: AI fills in the options of
+the existing tools or makes suggestions; what changes files still goes through the tools' own preview and confirmation.
+
+Suggested start (small, results visible at once, no risk; they build the groundwork for the rest: provider setting,
+key storage, sending a request, preview):
+- [ ] Multi-rename: a rule described in words ("date first, spaces to underscores, add a counter") becomes the
+  rename options (mask, search / replace, regex, counter); the user checks it in the preview.
+- [ ] Connection errors: "Explain" next to "Show the log" reads the connection log and the error's causes and says in
+  plain words what to change.
+
+Low risk, high value:
+- [ ] Find files (Alt+F7): a search described in words ("PDFs over 100 MB changed in the last 7 days") fills in the
+  search form; the program itself searches.
+- [ ] Language editor: suggest translations for missing keys (keeping `{0}` holes and menu access keys); the user
+  accepts them.
+
+Understanding content:
+- [ ] Lister / preview: summarize, translate or answer questions about a PDF, Office or text file; describe images,
+  read text in them (OCR).
+- [ ] Compare window: explain the differences of two versions in plain words.
+- [ ] Meaning-based search ("rental contracts", "2025 invoices") on top of the program's own file index (summaries or
+  a vector index of the contents).
+- [ ] File comments: suggest descript.ion comments for the selected files.
+
+Tidying up:
+- [ ] Folder sizes / duplicate files: point out what is probably build output or cache; deleting stays the user's
+  choice, to the Recycle Bin.
+- [ ] Downloads folder: a plan of folders by kind and content, carried out by the move job with a preview.
+- [ ] Synchronize directories: sum up the risks of the plan ("12 files deleted for good, 3 of them newer on the right").
+
+Commands and help:
+- [ ] Command line / internal terminal: a shell command or a chain of `nc_` commands from a description, shown before
+  it runs; explain a shell's error message.
+- [ ] Settings search in plain words ("dark theme", "deleted files not to the Recycle Bin") goes to the setting.
+- [ ] Help: answer "how do I ..." questions from the user guide (docs/guide).
+- [ ] Theme editor: a theme from a description ("navy, high-contrast dark theme"); the readability checks are there.
+
+Design rules (to keep with the project's rules):
+- Off by default; before file contents leave the computer, show what is sent; files of remote connections and chosen
+  folders can be left out.
+- Provider: the Claude API or a local model (e.g. Ollama); the API key in the password store (`SecretStore`), under
+  the master password.
+- AI never acts by itself: it fills in options or suggests; changes go through the existing previews and confirmations.
+- Every feature is an `nc_` command (menu icon, a key in every language file); settings in `AppSettings` with a
+  Configuration page; no JSON for the user.
+- The use (cost) of a request is visible; without a connection the program works as before.
