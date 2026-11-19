@@ -230,6 +230,9 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
                 await OpenInitialAsync(tab, tab.State.Path);
             }
         }
+        // the phones there at the start are not "new" at the first drive change (a tab on a phone that was unplugged
+        // would follow one of them as if it were the same phone shown another way)
+        _knownPhones = PhonesOf(LeftSide.ActiveTab.Drives);
         if (_settings.SaveFolderHistoryOnExit)
         {
             Left.RestoreHistory(_settings.LeftFolderHistory);
@@ -762,7 +765,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         }
         var mtp = _registry.Providers.OfType<NextCommander.Platform.Mtp.MtpFileSystemProvider>().FirstOrDefault();
         mtp?.CloseDisconnected();
-        var phones = LeftSide.ActiveTab.Drives.Where(d => d.Kind == DriveKind.Phone).Select(d => d.RootPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var phones = PhonesOf(LeftSide.ActiveTab.Drives);
         // a phone that appeared now: where a tab goes when its phone left the device list at the same time (a phone
         // allowed on its screen is mounted by the desktop (gvfs) and leaves libmtp's list: the same phone, in a folder)
         var newPhones = phones.Where(p => !_knownPhones.Contains(p)).ToList();
@@ -798,6 +801,9 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             }
         }
     }
+
+    private static HashSet<string> PhonesOf(IEnumerable<DriveItem> drives) =>
+        drives.Where(d => d.Kind == DriveKind.Phone).Select(d => d.RootPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>The entry points of the loaded file system plugins (e.g. "rclone remotes"), listed with the saved connections.</summary>
     public IReadOnlyList<NextCommander.Core.Plugins.IPluginEntryPoint> PluginEntryPoints =>
