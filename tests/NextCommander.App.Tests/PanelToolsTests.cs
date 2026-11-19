@@ -171,6 +171,61 @@ public sealed class PanelToolsTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task The_file_list_can_be_shown_in_groups()
+    {
+        var (w, vm) = await _fx.OpenAsync();
+        var now = DateTime.Now;
+        File.SetLastWriteTime(_fx.L("a.txt"), now);
+        File.SetLastWriteTime(_fx.L("b.log"), now.AddDays(-1).Date.AddHours(12));
+        File.SetLastWriteTime(_fx.L("file10.txt"), new DateTime(2019, 5, 1));
+        File.SetLastWriteTime(_fx.L("file2.txt"), new DateTime(2019, 6, 1));
+        File.WriteAllText(_fx.L("9lives.txt"), "9");
+        File.SetLastWriteTime(_fx.L("9lives.txt"), new DateTime(2018, 1, 1));
+        var panel = vm.Left;
+        await panel.RefreshAsync();
+        string[] Headers() => [.. panel.Items.Where(i => i.IsGroupHeader).Select(i => i.BriefName)];
+
+        // by date: folders first, newest group first, each with its count
+        await vm.ExecuteAsync("nc_GroupByDate");
+        Assert.Equal(PanelGrouping.Date, panel.Grouping);
+        Assert.Equal(["▾ Folders (1)", "▾ Today (1)", "▾ Yesterday (1)", "▾ 2019 (2)", "▾ 2018 (1)"], Headers());
+        Assert.True(panel.Items[0].IsParent); // [..] stays on top
+        var year = panel.Items.First(i => i.Name == "▾ 2019");
+        Assert.Equal("(2)", year.SizeText);
+        Assert.Equal(["file10.txt", "file2.txt"], panel.GroupItems(year).Select(i => i.FullName).Order());
+
+        // a header's mark marks its files; Enter folds them away and back
+        panel.ToggleMark(year);
+        Assert.All(panel.GroupItems(year), i => Assert.True(i.IsMarked));
+        Assert.False(ViewModels.PanelViewModel.CanMark(year));
+        panel.CursorItem = year;
+        await panel.OpenCursorAsync();
+        Assert.Contains("▸ 2019 (2)", Headers());
+        Assert.DoesNotContain(panel.Items, i => i.FullName == "file10.txt");
+        Assert.True(panel.CursorItem!.IsGroupHeader);
+        await panel.OpenCursorAsync();
+        Assert.Contains(panel.Items, i => i.FullName == "file10.txt");
+        Assert.True(panel.Items.Single(i => i.FullName == "file2.txt").IsMarked); // marks stay
+
+        // by first letter: digits before letters
+        await vm.ExecuteAsync("nc_GroupByName");
+        Assert.Equal(["▾ Folders (1)", "▾ 0–9 (1)", "▾ A (1)", "▾ B (1)", "▾ F (2)"], Headers());
+        if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
+        {
+            await vm.ExecuteAsync("nc_GroupByDate");
+            await SettleAsync(4);
+            Directory.CreateDirectory(dir);
+            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(w)!.SavePng(Path.Combine(dir, "groups.png"));
+        }
+
+        // by type, then no groups
+        await vm.ExecuteAsync("nc_GroupByType");
+        Assert.Contains(Headers(), h => h.StartsWith("▾ Other files", StringComparison.Ordinal) || h.StartsWith("▾ Documents", StringComparison.Ordinal));
+        await vm.ExecuteAsync("nc_GroupByNone");
+        Assert.Empty(Headers());
+    }
+
+    [AvaloniaFact]
     public async Task Closing_the_tree_gives_its_place_back_to_the_list()
     {
         var (w, vm) = await _fx.OpenAsync();

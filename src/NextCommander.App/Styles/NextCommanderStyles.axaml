@@ -59,6 +59,11 @@
   <Style Selector="DataGrid.files DataGridRow.alt">
     <Setter Property="Background" Value="{DynamicResource FmListBackground2Brush}" />
   </Style>
+  <!-- Show > Group by: the header of a group (its title in the name column) -->
+  <Style Selector="DataGrid.files DataGridRow.group">
+    <Setter Property="Background" Value="{DynamicResource FmPanelHeaderBrush}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
   <!-- Icons > icon size in the main menu -->
   <Style Selector="MenuItem /template/ :is(Control)#PART_IconPresenter">
     <Setter Property="Width" Value="{DynamicResource FmMenuIconSize}" />

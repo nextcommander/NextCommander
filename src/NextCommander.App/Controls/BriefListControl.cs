@@ -269,15 +269,16 @@ public sealed class BriefListControl : Control
                     }
                 }
 
-                var brush = item.IsMarked ? marked : item.IsDimmed ? hidden : item.RuleBrush ?? foreground;
+                var brush = item.IsGroupHeader ? accent : item.IsMarked ? marked : item.IsDimmed ? hidden : item.RuleBrush ?? foreground;
                 var text = new FormattedText(item.BriefName, culture, FlowDirection.LeftToRight,
-                    item.IsMarked ? new Typeface(Font.FontFamily, FontStyle.Normal, FontWeight.SemiBold) : Font, PanelFontSize, brush)
+                    item.IsMarked || item.IsGroupHeader ? new Typeface(Font.FontFamily, FontStyle.Normal, FontWeight.SemiBold) : Font, PanelFontSize, brush)
                 {
-                    MaxTextWidth = Math.Max(1, columnWidth - 34),
+                    MaxTextWidth = Math.Max(1, columnWidth - (item.IsGroupHeader ? 12 : 34)),
                     MaxLineCount = 1,
                     Trimming = TextTrimming.CharacterEllipsis,
                 };
-                context.DrawText(text, new Point(x + 10 + IconSize, y + ((rowHeight - text.Height) / 2)));
+                // a group's header (Show > Group by) starts where the icons are
+                context.DrawText(text, new Point(item.IsGroupHeader ? x + 6 : x + 10 + IconSize, y + ((rowHeight - text.Height) / 2)));
             }
         }
     }

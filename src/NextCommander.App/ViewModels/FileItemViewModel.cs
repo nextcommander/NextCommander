@@ -130,6 +130,31 @@ public sealed partial class FileItemViewModel : ObservableObject
 
     public static FileItemViewModel CreateError(string message) => new(FileKind.Error, "<Read error!>", message);
 
+    /// <summary>
+    /// The header of a group (Show > Group by): "▾ Today", folded "▸ Today", the number of its files in the size column
+    /// (the brief view: "▾ Today (12)"); <paramref name="title"/> is shown as given (the name column is not translated
+    /// by the text hook: translate it first).
+    /// </summary>
+    public static FileItemViewModel CreateGroupHeader(string key, string title, int count, bool collapsed) =>
+        new(FileKind.GroupHeader, (collapsed ? "▸ " : "▾ ") + title)
+        {
+            GroupKey = key,
+            IsCollapsed = collapsed,
+            GroupCount = count,
+        };
+
+    /// <summary>The number of files of a group (its header).</summary>
+    public int GroupCount { get; private init; }
+
+    /// <summary>A group header (Show > Group by).</summary>
+    public bool IsGroupHeader => Kind == FileKind.GroupHeader;
+
+    /// <summary>The group a header stands for (folding keeps it; null for files).</summary>
+    public string? GroupKey { get; private init; }
+
+    /// <summary>The group of the header is folded: its files are not in the list.</summary>
+    public bool IsCollapsed { get; private init; }
+
     public VfsEntry? Entry { get; }
 
     public FileKind Kind { get; }
@@ -171,7 +196,7 @@ public sealed partial class FileItemViewModel : ObservableObject
     public string ShownName => Decorate(Name);
 
     /// <summary>Brief / thumbnail text: <see cref="FullName"/> decorated like <see cref="ShownName"/>.</summary>
-    public string BriefName => Decorate(FullName);
+    public string BriefName => IsGroupHeader ? $"{Name} ({GroupCount.ToString(CultureInfo.CurrentCulture)})" : Decorate(FullName);
 
     private string Decorate(string name)
     {
@@ -201,12 +226,13 @@ public sealed partial class FileItemViewModel : ObservableObject
 
     public bool HasSystemIcon => SystemIcon is not null;
 
-    public Geometry? Icon => FileKinds.GeometryFor(Kind);
+    /// <summary>The type icon (none for a group's header).</summary>
+    public Geometry? Icon => IsGroupHeader ? null : FileKinds.GeometryFor(Kind);
 
-    public IBrush IconBrush => FileKinds.BrushFor(Kind);
+    public IBrush IconBrush => IsGroupHeader ? Brushes.Transparent : FileKinds.BrushFor(Kind);
 
     /// <summary>The outline of the type icon (outline icon packs), or null.</summary>
-    public IBrush? IconStroke => FileKinds.StrokeFor(Kind);
+    public IBrush? IconStroke => IsGroupHeader ? null : FileKinds.StrokeFor(Kind);
 
     public long SizeValue => Entry is { IsDirectory: false } e ? e.Size : DirectorySize ?? -1;
 
@@ -217,6 +243,10 @@ public sealed partial class FileItemViewModel : ObservableObject
             if (IsParent)
             {
                 return "<UP>";
+            }
+            if (IsGroupHeader)
+            {
+                return "(" + GroupCount.ToString(CultureInfo.CurrentCulture) + ")";
             }
             if (Entry is null)
             {

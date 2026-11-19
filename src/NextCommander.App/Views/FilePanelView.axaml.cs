@@ -86,7 +86,12 @@ public partial class FilePanelView : UserControl
         }
         Grid.AddHandler(PointerPressedEvent, OnGridPointerPressed, RoutingStrategies.Tunnel);
         Grid.AddHandler(PointerMovedEvent, OnGridPointerMovedForTip, RoutingStrategies.Bubble, handledEventsToo: true);
-        Grid.LoadingRow += (_, e) => e.Row.Classes.Set("alt", e.Row.Index % 2 == 1); // Color > background 2
+        Grid.LoadingRow += (_, e) =>
+        {
+            var header = e.Row.DataContext is FileItemViewModel { IsGroupHeader: true };
+            e.Row.Classes.Set("alt", e.Row.Index % 2 == 1 && !header); // Color > background 2
+            e.Row.Classes.Set("group", header); // Show > Group by: a group's header
+        };
         Grid.DoubleTapped += OnGridDoubleTapped;
         Grid.Tapped += (_, e) =>
         {

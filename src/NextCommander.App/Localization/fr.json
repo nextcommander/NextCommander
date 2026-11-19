@@ -2962,5 +2962,22 @@
   "Settings.Link.AllowThroughTheFirewall": "Autoriser dans le pare-feu",
   "Settings.Link.NothingToOpenOnThisSystem": "Rien à ouvrir sur ce système.",
   "Settings.Link.TheFirewallLetsPcLinkThrough": "Le pare-feu laisse passer PC link (port {0}).",
-  "Settings.Link.NotChangedCancelled": "Inchangé (annulé ou non autorisé)."
+  "Settings.Link.NotChangedCancelled": "Inchangé (annulé ou non autorisé).",
+  "Menu.GroupBy": "Grouper par",
+  "Menu.nc_GroupByNone": "Aucun groupe",
+  "Menu.nc_GroupByName": "Première lettre du nom",
+  "Command.nc_GroupByType": "Grouper par type",
+  "Command.nc_GroupByDate": "Grouper par date",
+  "Command.nc_GroupByName": "Grouper par première lettre",
+  "PanelGroups.Videos": "Vidéos",
+  "PanelGroups.Code": "Code",
+  "PanelGroups.UnknownDate": "Date inconnue",
+  "PanelGroups.InTheFuture": "Dans le futur",
+  "PanelGroups.Today": "Aujourd’hui",
+  "PanelGroups.Yesterday": "Hier",
+  "PanelGroups.EarlierThisWeek": "Plus tôt cette semaine",
+  "PanelGroups.LastWeek": "La semaine dernière",
+  "PanelGroups.EarlierThisMonth": "Plus tôt ce mois-ci",
+  "PanelGroups.LastMonth": "Le mois dernier",
+  "PanelGroups.EarlierThisYear": "Plus tôt cette année"
 }

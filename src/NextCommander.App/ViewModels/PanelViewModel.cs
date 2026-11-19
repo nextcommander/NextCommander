@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using NextCommander.App.Services.Icons;
 using NextCommander.Core.Config;
 using NextCommander.Core.Formatting;
+using NextCommander.Core.Localization;
 using NextCommander.Core.Matching;
 using NextCommander.Core.Vfs;
 using NextCommander.Platform;
@@ -1117,6 +1118,11 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
             await NavigateAsync(CurrentPath, recordHistory: false); // retry
             return;
         }
+        if (item.IsGroupHeader)
+        {
+            ToggleGroup(item);
+            return;
+        }
         if (item.IsParent)
         {
             await GoUpAsync();
@@ -1508,11 +1514,168 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         SortChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    // ---------------------------------------------------------------- groups (Show > Group by)
+
+    /// <summary>The groups of this tab's list.</summary>
+    public PanelGrouping Grouping => _panelSettings.Grouping;
+
+    /// <summary>Folded groups (their keys); the files of a folded group are not in the list.</summary>
+    private readonly HashSet<string> _collapsedGroups = new(StringComparer.Ordinal);
+
+    /// <summary>Show > Group by: the list in groups (or not); every group is open again.</summary>
+    public void SetGrouping(PanelGrouping grouping)
+    {
+        _panelSettings.Grouping = grouping;
+        _collapsedGroups.Clear();
+        RebuildItems(CursorItem?.FullName, MarkedNames());
+        OnPropertyChanged(nameof(Grouping));
+    }
+
+    /// <summary>Folds a group's files away, or shows them again (Enter or a double click on its header).</summary>
+    public void ToggleGroup(FileItemViewModel header)
+    {
+        if (header.GroupKey is not { } key)
+        {
+            return;
+        }
+        if (!_collapsedGroups.Remove(key))
+        {
+            _collapsedGroups.Add(key);
+        }
+        RebuildItems(null, MarkedNames(), CursorItem is null ? 0 : IndexOf(CursorItem));
+        if (Items.FirstOrDefault(i => i.GroupKey == key) is { } again)
+        {
+            CursorItem = again;
+        }
+    }
+
+    /// <summary>The files of a group: the ones after its header up to the next header.</summary>
+    public IReadOnlyList<FileItemViewModel> GroupItems(FileItemViewModel header)
+    {
+        var start = Items.ToList().IndexOf(header);
+        return start < 0 ? [] : Items.Skip(start + 1).TakeWhile(i => !i.IsGroupHeader).Where(i => i.Entry is not null).ToList();
+    }
+
+    /// <summary>The list with a header before each group; "[..]" and a read error stay on top.</summary>
+    private List<FileItemViewModel> Group(List<FileItemViewModel> items)
+    {
+        if (_panelSettings.Grouping == PanelGrouping.None)
+        {
+            _marksInFoldedGroups.Clear();
+            return items;
+        }
+        _marksInFoldedGroups.Clear();
+        var result = items.Where(i => i.Entry is null).ToList();
+        var now = DateTime.Now;
+        var groups = items.Where(i => i.Entry is not null)
+            .Select(i => (Item: i, Group: GroupOf(i.Entry!, _panelSettings.Grouping, now)))
+            .GroupBy(g => g.Group.Key, StringComparer.Ordinal)
+            .Select(g => (g.First().Group, Items: g.Select(x => x.Item).ToList()))
+            .ToList();
+        // the groups' own order (folders first); reversed with the matching sort reversed (oldest first, Z to A)
+        var reverse = _panelSettings.Grouping switch
+        {
+            PanelGrouping.Date => _panelSettings.SortColumn == SortColumn.Date && !_panelSettings.SortDescending,
+            PanelGrouping.FirstLetter => _panelSettings.SortColumn == SortColumn.Name && _panelSettings.SortDescending,
+            _ => false,
+        };
+        var folders = groups.Where(g => g.Group.Rank < 0).ToList();
+        var others = groups.Where(g => g.Group.Rank >= 0)
+            .OrderBy(g => g.Group.Rank).ThenBy(g => g.Group.Order, StringComparer.CurrentCulture).ToList();
+        if (reverse)
+        {
+            others.Reverse();
+        }
+        foreach (var (group, members) in folders.Concat(others))
+        {
+            var collapsed = _collapsedGroups.Contains(group.Key);
+            result.Add(FileItemViewModel.CreateGroupHeader(group.Key, Localizer.T(group.Title), members.Count, collapsed));
+            if (!collapsed)
+            {
+                result.AddRange(members);
+            }
+            else
+            {
+                _marksInFoldedGroups.UnionWith(members.Where(m => m.IsMarked).Select(m => m.FullName));
+            }
+        }
+        return result;
+    }
+
+    /// <summary>The group of an entry: its key, title (English: translated when shown), rank and order within the rank.</summary>
+    public static (string Key, string Title, int Rank, string Order) GroupOf(VfsEntry entry, PanelGrouping grouping, DateTime now)
+    {
+        if (entry.IsDirectory)
+        {
+            return ("folders", "Folders", -1, string.Empty);
+        }
+        switch (grouping)
+        {
+            case PanelGrouping.Type:
+                var title = FileKinds.Classify(entry) switch
+                {
+                    FileKind.Archive => "Archives",
+                    FileKind.Image => "Images",
+                    FileKind.Audio => "Audio",
+                    FileKind.Video => "Videos",
+                    FileKind.Code => "Code",
+                    FileKind.Document or FileKind.Pdf => "Documents",
+                    FileKind.Executable => "Programs",
+                    _ => "Other files",
+                };
+                return ("type:" + title, title, title == "Other files" ? 1 : 0, title);
+            case PanelGrouping.Date:
+                return DateGroup(entry.LastWriteTime, now);
+            default:
+                var name = entry.Name.TrimStart();
+                var first = name.Length == 0 ? ' ' : name[0];
+                if (char.IsLetter(first))
+                {
+                    var letter = char.ToUpper(first, System.Globalization.CultureInfo.CurrentCulture).ToString();
+                    return ("letter:" + letter, letter, 1, letter);
+                }
+                return char.IsDigit(first) ? ("letter:0-9", "0–9", 0, string.Empty) : ("letter:#", "#", 2, string.Empty);
+        }
+    }
+
+    /// <summary>"Today", "Yesterday", "Earlier this week" ... "Last month", "Earlier this year", then each older year (newest first).</summary>
+    private static (string Key, string Title, int Rank, string Order) DateGroup(DateTime time, DateTime now)
+    {
+        if (time == DateTime.MinValue || time.Year < 1980)
+        {
+            return ("date:unknown", "Unknown date", 99999, string.Empty);
+        }
+        var local = time.Kind == DateTimeKind.Utc ? time.ToLocalTime() : time;
+        var today = now.Date;
+        var firstDay = System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;
+        var weekStart = today.AddDays(-(((int)today.DayOfWeek - (int)firstDay + 7) % 7));
+        var monthStart = new DateTime(today.Year, today.Month, 1);
+        var yearStart = new DateTime(today.Year, 1, 1);
+        (string, string, int) group =
+            local >= today.AddDays(1) ? ("future", "In the future", 0)
+            : local >= today ? ("today", "Today", 1)
+            : local >= today.AddDays(-1) ? ("yesterday", "Yesterday", 2)
+            : local >= weekStart ? ("thisweek", "Earlier this week", 3)
+            : local >= weekStart.AddDays(-7) ? ("lastweek", "Last week", 4)
+            : local >= monthStart ? ("thismonth", "Earlier this month", 5)
+            : local >= monthStart.AddMonths(-1) ? ("lastmonth", "Last month", 6)
+            : local >= yearStart ? ("thisyear", "Earlier this year", 7)
+            : ("year" + local.Year.ToString(System.Globalization.CultureInfo.InvariantCulture), local.Year.ToString(System.Globalization.CultureInfo.InvariantCulture), 10000 - local.Year + 10);
+        return ("date:" + group.Item1, group.Item2, group.Item3, string.Empty);
+    }
+
     /// <summary>Re-applies visibility, colors and formatting settings.</summary>
     public void Reapply() => RebuildItems(CursorItem?.FullName, MarkedNames(), CursorItem is null ? 0 : IndexOf(CursorItem));
 
-    private HashSet<string> MarkedNames() =>
-        Items.Where(i => i.IsMarked).Select(i => i.FullName).ToHashSet(StringComparer.Ordinal);
+    private HashSet<string> MarkedNames()
+    {
+        var names = Items.Where(i => i.IsMarked).Select(i => i.FullName).ToHashSet(StringComparer.Ordinal);
+        names.UnionWith(_marksInFoldedGroups); // kept while their group is folded
+        return names;
+    }
+
+    /// <summary>Marked files of folded groups (not in the list, not worked on; marked again when their group opens).</summary>
+    private readonly HashSet<string> _marksInFoldedGroups = new(StringComparer.Ordinal);
 
     /// <summary>Configuration > Ignore list: names / masks, or full paths, that are never shown (null = nothing ignored).</summary>
     private Func<VfsEntry, bool>? IgnoreMatcher()
@@ -1603,7 +1766,7 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
             }
             items.Add(vm);
         }
-        items = KeepOrderWithAddedAtEnd(items);
+        items = Group(KeepOrderWithAddedAtEnd(items));
         Items = items;
         if (CurrentPath?.Scheme == ComputerFileSystemProvider.ComputerScheme)
         {
@@ -1803,11 +1966,22 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         CursorMoved?.Invoke(this, EventArgs.Empty);
     }
 
-    public static bool CanMark(FileItemViewModel? item) => item is { IsParent: false, IsError: false };
+    public static bool CanMark(FileItemViewModel? item) => item is { IsParent: false, IsError: false, IsGroupHeader: false };
 
     public void ToggleMark(FileItemViewModel? item)
     {
-        if (CanMark(item))
+        if (item is { IsGroupHeader: true } header)
+        {
+            // a group's header marks (or unmarks) its files
+            var members = GroupItems(header);
+            var mark = members.Any(m => !m.IsMarked);
+            foreach (var member in members)
+            {
+                member.IsMarked = mark;
+            }
+            _workedHere = true;
+        }
+        else if (CanMark(item))
         {
             item!.IsMarked = !item.IsMarked;
             _workedHere = true;

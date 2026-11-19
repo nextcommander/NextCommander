@@ -2962,5 +2962,22 @@
   "Settings.Link.AllowThroughTheFirewall": "允许通过防火墙",
   "Settings.Link.NothingToOpenOnThisSystem": "此系统上无需打开任何端口。",
   "Settings.Link.TheFirewallLetsPcLinkThrough": "防火墙已允许 PC 互联（端口 {0}）。",
-  "Settings.Link.NotChangedCancelled": "未更改（已取消或不被允许）。"
+  "Settings.Link.NotChangedCancelled": "未更改（已取消或不被允许）。",
+  "Menu.GroupBy": "分组方式",
+  "Menu.nc_GroupByNone": "不分组",
+  "Menu.nc_GroupByName": "名称首字母",
+  "Command.nc_GroupByType": "按类型分组",
+  "Command.nc_GroupByDate": "按日期分组",
+  "Command.nc_GroupByName": "按首字母分组",
+  "PanelGroups.Videos": "视频",
+  "PanelGroups.Code": "代码",
+  "PanelGroups.UnknownDate": "未知日期",
+  "PanelGroups.InTheFuture": "将来",
+  "PanelGroups.Today": "今天",
+  "PanelGroups.Yesterday": "昨天",
+  "PanelGroups.EarlierThisWeek": "本周早些时候",
+  "PanelGroups.LastWeek": "上周",
+  "PanelGroups.EarlierThisMonth": "本月早些时候",
+  "PanelGroups.LastMonth": "上个月",
+  "PanelGroups.EarlierThisYear": "今年早些时候"
 }
