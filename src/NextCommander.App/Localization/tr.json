@@ -2956,5 +2956,11 @@
   "MainWindow.TheseAreTheSettingsInUse": "Bunlar şu anda kullanılan ayarlar.",
   "MainWindow.TheSettingsOfReplaceTheCurrent": "{0} tarihli ayarlar şu ankilerin yerine geçer (şu ankiler de yedek olarak saklanır) ve NextCommander yeniden başlar.",
   "MainWindow.RestoreAndRestart": "Geri yükle ve yeniden başlat",
-  "MainWindow.TheSettingsWereRestoredStart": "Ayarlar geri yüklendi. Kullanmak için NextCommander'ı yeniden başlatın."
+  "MainWindow.TheSettingsWereRestoredStart": "Ayarlar geri yüklendi. Kullanmak için NextCommander'ı yeniden başlatın.",
+  "Settings.Link.Firewall": "Güvenlik duvarı",
+  "Settings.Link.Firewall.Description": "Diğer bilgisayar bulunamazsa (veya bağlanamazsa) bu bilgisayarın güvenlik duvarı bağlantıyı engelliyor olabilir: bu, bağlantının portunu tüm ağlar için açar (Windows Defender Güvenlik Duvarı; Linux: ufw veya firewalld). Yönetici izni ister.",
+  "Settings.Link.AllowThroughTheFirewall": "Güvenlik duvarında izin ver",
+  "Settings.Link.NothingToOpenOnThisSystem": "Bu sistemde açılacak bir şey yok.",
+  "Settings.Link.TheFirewallLetsPcLinkThrough": "Güvenlik duvarı PC link’e izin veriyor (port {0}).",
+  "Settings.Link.NotChangedCancelled": "Değiştirilmedi (iptal edildi veya izin verilmedi)."
 }

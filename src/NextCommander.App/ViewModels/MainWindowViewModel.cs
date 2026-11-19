@@ -2461,6 +2461,8 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         Views.Dialogs.SettingsView.PickProgram = _dialogs.PickOpenFileAsync;
         Views.Dialogs.SettingsView.PluginRoots = [Path.Combine(_store.Directory, "plugins"), Path.Combine(AppContext.BaseDirectory, "plugins")];
         Views.Dialogs.SettingsView.LinkStatus = () => Link?.Status() ?? string.Empty;
+        Views.Dialogs.SettingsView.AllowLinkThroughFirewall = async port =>
+            Services.LinkFirewall.Command(port) is { } command && await _platform.RunElevatedAsync(command.Program, command.Arguments);
         Views.Dialogs.SettingsView.ColumnFields = () => ColumnValues.Columns.AllFields.ToList();
         await _dialogs.ShowSettingsAsync(_settings, ApplySettings, extras, search);
         ApplySettings();
