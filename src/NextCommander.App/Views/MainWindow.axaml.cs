@@ -845,34 +845,50 @@ public partial class MainWindow : Window
             PlacementGravity = anchor is null ? PopupGravity.BottomRight : PopupGravity.BottomLeft,
         };
         HotlistMenu = flyout;
+        // submenus at any depth ("A/B/Name"), "A/" an empty submenu, "-" a separator, "&" the menu key
         var groups = new Dictionary<string, MenuItem>(StringComparer.OrdinalIgnoreCase);
         var number = 0;
+        ItemCollection Parent(IReadOnlyList<string> path)
+        {
+            var items = flyout.Items;
+            var key = string.Empty;
+            foreach (var group in path)
+            {
+                key += "/" + group;
+                if (!groups.TryGetValue(key, out var menu))
+                {
+                    menu = new MenuItem { Header = HotlistHeader(group) };
+                    groups[key] = menu;
+                    items.Add(menu);
+                }
+                items = menu.Items;
+            }
+            return items;
+        }
         foreach (var entry in _vm.Settings.Hotlist)
         {
-            var parts = entry.Name.Split('/', 2, StringSplitOptions.TrimEntries);
-            var header = parts.Length == 2 ? parts[1] : parts[0];
-            if (parts.Length == 1 && number < 9)
+            var groupPath = entry.Groups();
+            var parent = Parent(groupPath);
+            if (entry.IsMenuOnly())
+            {
+                continue;
+            }
+            if (entry.IsSeparator())
+            {
+                parent.Add(new Separator());
+                continue;
+            }
+            var leaf = entry.Leaf();
+            var header = HotlistHeader(leaf);
+            if (groupPath.Count == 0 && number < 9 && HotlistEntry.MenuKey(leaf) is null)
             {
                 header = $"_{++number} {header}";
             }
             var item = new MenuItem { Header = header };
-            ToolTip.SetTip(item, entry.Path);
+            ToolTip.SetTip(item, string.IsNullOrEmpty(entry.Target) ? entry.Path : entry.Path + "  |  " + entry.Target);
             var e = entry;
             item.Click += async (_, _) => await _vm.NavigateToHotlistEntryAsync(e);
-            if (parts.Length == 2)
-            {
-                if (!groups.TryGetValue(parts[0], out var group))
-                {
-                    group = new MenuItem { Header = parts[0] };
-                    groups[parts[0]] = group;
-                    flyout.Items.Add(group);
-                }
-                group.Items.Add(item);
-            }
-            else
-            {
-                flyout.Items.Add(item);
-            }
+            parent.Add(item);
         }
         if (flyout.Items.Count > 0)
         {
@@ -888,6 +904,32 @@ public partial class MainWindow : Window
         Command("Most frequently used...", "nc_FrequentDirectories");
         Command("Edit...", "nc_ConfigDirHotlist");
         flyout.ShowAt(anchor ?? ActiveView.ListArea);
+    }
+
+    /// <summary>A hotlist name as a menu header: its "&amp;" is the menu key ("_" in Avalonia), a "_" stays a "_".</summary>
+    public static string HotlistHeader(string name)
+    {
+        var text = new System.Text.StringBuilder();
+        for (var i = 0; i < name.Length; i++)
+        {
+            switch (name[i])
+            {
+                case '_':
+                    text.Append("__");
+                    break;
+                case '&' when i + 1 < name.Length && name[i + 1] == '&':
+                    text.Append('&');
+                    i++;
+                    break;
+                case '&':
+                    text.Append('_');
+                    break;
+                default:
+                    text.Append(name[i]);
+                    break;
+            }
+        }
+        return text.ToString();
     }
 
     private static bool IsFunctionKey(Key key) => key is >= Key.F1 and <= Key.F24;

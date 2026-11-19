@@ -385,10 +385,12 @@ public sealed class DialogService : IDialogService
         return dialog.Result;
     }
 
-    public async Task EditHotlistAsync(List<NextCommander.Core.Config.HotlistEntry> hotlist)
+    public async Task<bool> EditHotlistAsync(List<NextCommander.Core.Config.HotlistEntry> hotlist, string? activeFolder = null, string? otherFolder = null)
     {
-        var dialog = new HotlistEditorDialog(hotlist);
-        await dialog.ShowDialog(RequireOwner());
+        var owner = RequireOwner();
+        var dialog = new HotlistEditorDialog(hotlist, activeFolder, otherFolder, (owner.DataContext as ViewModels.MainWindowViewModel)?.Settings.ShowMenuIcons ?? true);
+        await dialog.ShowDialog(owner);
+        return dialog.Saved;
     }
 
     public async Task<VfsPath?> ShowTreeAsync(ViewModels.PanelViewModel panel)

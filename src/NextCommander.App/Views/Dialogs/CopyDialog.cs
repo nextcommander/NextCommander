@@ -463,11 +463,11 @@ public sealed class CopyDialog : DialogWindow
     {
         foreach (var entry in _options.Settings?.Hotlist ?? [])
         {
-            if (string.IsNullOrWhiteSpace(entry.Path) || entry.Path.TrimStart().StartsWith("nc_", StringComparison.OrdinalIgnoreCase))
+            if (!entry.IsFolder() || string.IsNullOrWhiteSpace(entry.Path))
             {
                 continue;
             }
-            var parts = entry.Name.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var parts = entry.Name.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(HotlistEntry.Plain).ToArray();
             var parent = root;
             foreach (var group in parts.SkipLast(1))
             {

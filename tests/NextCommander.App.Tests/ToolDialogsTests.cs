@@ -238,6 +238,64 @@ public sealed class ToolDialogsTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task The_hotlist_window_edits_submenus_separators_and_commands()
+    {
+        List<NextCommander.Core.Config.HotlistEntry> entries =
+        [
+            new() { Name = "&Movie", Path = "D:\\Movie" },
+            new() { Name = "&Downloads", Path = "%USERPROFILE%\\Downloads" },
+            new() { Name = "-" },
+            new() { Name = "Projects/&Website", Path = "N:\\Projects\\Website", Target = "N:\\Backup\\Website" },
+            new() { Name = "Projects/W&MS", Path = "N:\\Projects\\WMS" },
+            new() { Name = "Projects/Archive", Path = string.Empty },
+            new() { Name = "Open &terminal here", Path = "nc_ExecuteTerminal" },
+        ];
+        var dialog = _fx.Track(new HotlistEditorDialog(entries, _fx.L(), _fx.R()));
+        dialog.Show();
+        await SettleAsync(4);
+        Assert.Equal(["&Movie", "&Downloads", "-", "Projects", "  &Website", "  W&MS", "  Archive", "Open &terminal here"], dialog.Rows);
+        dialog.Select("Website");
+        await SettleAsync();
+        Shot(dialog, "hotlist");
+
+        // nothing changes before OK: the same entries come back out
+        Assert.Equal(entries.Select(e => (e.Name, e.Path, e.Target)), dialog.Entries.Select(e => (e.Name, e.Path, e.Target)));
+
+        // a second "M" menu key in the same menu is a warning
+        dialog.Select("Downloads");
+        dialog.Add("folder");
+        var box = dialog.GetLogicalDescendants().OfType<TextBox>().First(t => Avalonia.Automation.AutomationProperties.GetName(t) == "Name");
+        box.Text = "&Music";
+        await SettleAsync();
+        Assert.Contains("“M”", dialog.NameNote, StringComparison.Ordinal);
+        Assert.Equal("&Music", dialog.Entries[2].Name);
+
+        // out of the submenu, back into it by dragging, a separator, delete and Undo
+        dialog.Select("Archive");
+        dialog.MoveOut();
+        Assert.Equal("Archive", dialog.Entries.First(e => e.Leaf() == "Archive").Name);
+        dialog.DropOn("Archive", "Projects", "in");
+        Assert.Equal("Projects/Archive", dialog.Entries.First(e => e.Leaf() == "Archive").Name);
+        dialog.Add("separator");
+        Assert.Contains(dialog.Entries, e => e.Name == "Projects/-");
+        dialog.Select("Movie");
+        dialog.Delete();
+        Assert.DoesNotContain(dialog.Entries, e => e.Name == "&Movie");
+        dialog.Undo();
+        Assert.Equal("&Movie", dialog.Entries[0].Name);
+
+        // a submenu emptied stays as "Projects/"; the filter shows the matching entries with their submenu
+        dialog.FilterText = "wms";
+        await SettleAsync();
+        Assert.Equal(["Projects", "  W&MS"], dialog.Rows);
+        dialog.FilterText = string.Empty;
+        dialog.Save();
+        Assert.True(dialog.Saved);
+        Assert.Contains(entries, e => e.Name == "&Music");
+        Assert.Contains(entries, e => e.Name == "Projects/&Website" && e.Target == "N:\\Backup\\Website");
+    }
+
+    [AvaloniaFact]
     public async Task The_column_sets_window_edits_a_copy_until_applied()
     {
         var sets = new List<NextCommander.Core.Columns.ColumnSet>

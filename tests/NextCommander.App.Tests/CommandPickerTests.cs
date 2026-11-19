@@ -62,15 +62,12 @@ public sealed class CommandPickerTests : IDisposable
         columns.Show();
         Assert.Equal(2, CommandButtons(columns).Count); // entering and leaving a view mode
 
-        var hotlistEntry = _fx.Track(new HotlistEntryDialog("New entry", null));
-        hotlistEntry.Show();
-        Assert.Single(CommandButtons(hotlistEntry));
-        hotlistEntry.Finish();
-        Assert.Null(hotlistEntry.Result); // name and target needed
-        hotlistEntry.EntryName = "Projeler/WMS";
-        hotlistEntry.EntryPath = "nc_SyncDirs";
-        hotlistEntry.Finish();
-        Assert.Equal(("Projeler/WMS", "nc_SyncDirs"), (hotlistEntry.Result!.Name, hotlistEntry.Result.Path));
+        // the hotlist window: a command entry has the picker, a folder entry not
+        var hotlist = _fx.Track(new HotlistEditorDialog([new() { Name = "Eşitle", Path = "nc_SyncDirs" }, new() { Name = "Proje", Path = _fx.L() }]));
+        hotlist.Show();
+        Assert.Single(CommandButtons(hotlist));
+        hotlist.Select("Proje");
+        Assert.Empty(CommandButtons(hotlist));
     }
 
     [AvaloniaFact]
