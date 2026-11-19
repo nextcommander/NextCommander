@@ -72,6 +72,33 @@ public sealed class LinuxDisksTests
         Assert.Equal(("/dev/sdb1", "Arşiv", null, true), (disk.Device, disk.Name, disk.MountPoint, disk.Removable));
     }
 
+    [Fact]
+    public void A_disk_is_named_by_its_label_then_its_partition_name_then_its_mount_folder()
+    {
+        const string json = """
+            {"blockdevices": [
+               {"path":"/dev/sdb", "name":"sdb", "label":null, "partlabel":null, "size":2000398934016, "fstype":null, "mountpoints":[null], "type":"disk", "rm":false, "hotplug":true,
+                  "children": [
+                     {"path":"/dev/sdb1", "name":"sdb1", "label":"Yedekler", "partlabel":"Basic data partition", "size":1000000000000, "fstype":"ntfs", "mountpoints":["/mnt/disk1"], "type":"part", "rm":false, "hotplug":true},
+                     {"path":"/dev/sdb2", "name":"sdb2", "label":null, "partlabel":"Fotoğraflar", "size":900000000000, "fstype":"exfat", "mountpoints":["/mnt/disk2"], "type":"part", "rm":false, "hotplug":true},
+                     {"path":"/dev/sdb3", "name":"sdb3", "label":"", "partlabel":null, "size":50000000000, "fstype":"ext4", "mountpoints":["/mnt/disk3"], "type":"part", "rm":false, "hotplug":true}
+                  ]}
+            ]}
+            """;
+        // not the mount folder's name ("disk1") when the disk has a label
+        Assert.Equal(["Yedekler", "Fotoğraflar", "disk3"], LinuxDisks.Parse(json).Select(d => d.Name));
+    }
+
+    [Fact]
+    public void Without_lsblk_labels_come_from_the_by_label_links()
+    {
+        const string mounts = "/dev/sdb1 /media/ali/My\\040Disk ext4 rw 0 0\n/dev/sdc1 /mnt/usb vfat rw 0 0\nproc /proc proc rw 0 0\n";
+        var labels = LinuxDisks.LabelsByMount(mounts, [("My\\x20Data", "/dev/sdb1"), ("STICK", "/dev/sdc1"), ("Other", "/dev/sdd1")]);
+        Assert.Equal("My Data", labels["/media/ali/My Disk"]);
+        Assert.Equal("STICK", labels["/mnt/usb"]);
+        Assert.Equal(2, labels.Count);
+    }
+
     [Theory]
     [InlineData("/mnt/nas", "nfs4", true)]
     [InlineData("/media/user/share", "cifs", true)]

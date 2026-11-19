@@ -67,7 +67,8 @@ public static class LinuxDisks
         }
         var mount = mounts.FirstOrDefault();
         var size = Number(node, "size");
-        var label = Text(node, "label");
+        // the file system's label, else the partition's (GPT) name, as the desktop's file manager shows them
+        var label = Text(node, "label") is { } fsLabel && !string.IsNullOrWhiteSpace(fsLabel) ? fsLabel : Text(node, "partlabel");
         var name = !string.IsNullOrWhiteSpace(label) ? label!
             : mount is not null ? (Path.GetFileName(mount.TrimEnd('/')) is { Length: > 0 } last ? last : mount)
             : $"{SizeText(size)} volume";
@@ -122,6 +123,60 @@ public static class LinuxDisks
         return !inSystemFolder && s_networkFileSystems.Contains(fileSystem);
     }
 
+    /// <summary>
+    /// The labels of the mounted file systems by mount point, without lsblk: the devices of <c>/proc/self/mounts</c> and
+    /// the links of <c>/dev/disk/by-label</c> (their names with \x20 for a space).
+    /// </summary>
+    public static IReadOnlyDictionary<string, string> LabelsByMount(string mountsText, IEnumerable<(string Label, string Device)> labels)
+    {
+        var byDevice = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var (label, device) in labels)
+        {
+            byDevice[device] = Unescape(label);
+        }
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var line in mountsText.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var parts = line.Split(' ');
+            if (parts.Length >= 2 && byDevice.TryGetValue(parts[0], out var label))
+            {
+                result[Octal(parts[1])] = label; // /proc/mounts writes a space in a path as \040
+            }
+        }
+        return result;
+    }
+
+    /// <summary>The labels of the mounted file systems by mount point (empty when /dev/disk/by-label is not there).</summary>
+    public static IReadOnlyDictionary<string, string> LabelsByMount()
+    {
+        try
+        {
+            const string folder = "/dev/disk/by-label";
+            if (!Directory.Exists(folder))
+            {
+                return new Dictionary<string, string>();
+            }
+            var labels = Directory.EnumerateFileSystemEntries(folder)
+                .Select(link => (Label: Path.GetFileName(link), Target: new FileInfo(link).LinkTarget))
+                .Where(l => l.Target is not null)
+                .Select(l => (l.Label, Device: Path.GetFullPath(Path.Combine(folder, l.Target!))))
+                .ToList();
+            return LabelsByMount(File.ReadAllText("/proc/self/mounts"), labels);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return new Dictionary<string, string>();
+        }
+    }
+
+    /// <summary>"My\x20Disk" → "My Disk" (udev's escapes in the names of /dev/disk/by-label).</summary>
+    private static string Unescape(string text) =>
+        System.Text.RegularExpressions.Regex.Replace(text, @"\\x([0-9a-fA-F]{2})", m => ((char)Convert.ToInt32(m.Groups[1].Value, 16)).ToString());
+
+    /// <summary>"/media/user/My\040Disk" → "/media/user/My Disk" (the escapes of /proc/mounts).</summary>
+    private static string Octal(string text) =>
+        System.Text.RegularExpressions.Regex.Replace(text, @"\\([0-7]{3})", m => ((char)Convert.ToInt32(m.Groups[1].Value, 8)).ToString());
+
     /// <summary>"500 GB" (decimal units, as disks are sold and file managers show them).</summary>
     public static string SizeText(long bytes)
     {
@@ -139,7 +194,7 @@ public static class LinuxDisks
     /// <summary>The partitions of this machine; null when lsblk is not there or fails.</summary>
     public static IReadOnlyList<Disk>? Read()
     {
-        foreach (var columns in new[] { "PATH,NAME,LABEL,SIZE,FSTYPE,MOUNTPOINTS,TYPE,RM,HOTPLUG,PARTTYPENAME", "NAME,LABEL,SIZE,FSTYPE,MOUNTPOINT,TYPE,RM,HOTPLUG" })
+        foreach (var columns in new[] { "PATH,NAME,LABEL,PARTLABEL,SIZE,FSTYPE,MOUNTPOINTS,TYPE,RM,HOTPLUG,PARTTYPENAME", "NAME,LABEL,PARTLABEL,SIZE,FSTYPE,MOUNTPOINT,TYPE,RM,HOTPLUG" })
         {
             var (exit, output, _) = Run("lsblk", ["-J", "-b", "-o", columns], TimeSpan.FromSeconds(5));
             if (exit == 0 && output.Length > 0)

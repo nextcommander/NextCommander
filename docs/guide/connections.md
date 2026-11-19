@@ -260,6 +260,19 @@ Old transfer cables that only work with their own program (and no network adapte
 3. A computer that does not show up in the list can be typed: `link://169.254.12.34/` (its address, shown on its
    settings page) or saved in the connection manager as a **PC link** connection.
 
+**When a computer is not found.** The search is a UDP message to port 47290 of the network (the answer comes back the
+same way), the files go over TCP port 47290. A firewall on either computer can drop them:
+- **Linux:** with ufw on, allow the port on both computers that use PC link: `sudo ufw allow 47290/udp` and
+  `sudo ufw allow 47290/tcp` (the answer to a search is a new packet for the firewall, so the computer that searches
+  needs the UDP port open too). firewalld: `sudo firewall-cmd --permanent --add-port=47290/udp --add-port=47290/tcp`
+  then `sudo firewall-cmd --reload`.
+- **Windows:** the network must be "Private", or NextCommander allowed on public networks (*Windows Security >
+  Firewall > Allow an app*).
+- Each search is written to the log `logs/connections/PC link.log` in the settings folder: which addresses it went
+  out from and whether anything answered; the sharing computer writes there which searches reached it. A search that
+  reached the other computer but found nothing was dropped on its way back.
+- Typing the address skips the search (only TCP 47290 is needed then).
+
 The connection is encrypted (TLS). Each installation has its own certificate; the code is made from both
 certificates, so a third computer in between would show a different code.
 

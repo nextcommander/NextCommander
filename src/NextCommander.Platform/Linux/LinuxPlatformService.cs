@@ -119,6 +119,8 @@ internal sealed class LinuxPlatformService : PlatformServiceBase, IPlatformServi
                 }
             }
         }
+        // without lsblk the labels come from /dev/disk/by-label (the mount folder's name otherwise)
+        var labels = disks is null ? LinuxDisks.LabelsByMount() : new Dictionary<string, string>();
         foreach (var d in mounted.Values)
         {
             var path = d.RootDirectory.FullName;
@@ -126,7 +128,7 @@ internal sealed class LinuxPlatformService : PlatformServiceBase, IPlatformServi
             if (path != "/" && (LinuxDisks.IsNetworkShare(path, FormatOf(d)) || disks is null && s_mountPrefixes.Any(p => path.StartsWith(p, StringComparison.Ordinal)))
                 && !result.Any(r => r.RootPath == path))
             {
-                result.Add(ToDriveItem(d, Path.GetFileName(path)));
+                result.Add(ToDriveItem(d, labels.TryGetValue(path, out var label) ? label : Path.GetFileName(path)));
             }
         }
         foreach (var (name, folder) in GvfsDevices())

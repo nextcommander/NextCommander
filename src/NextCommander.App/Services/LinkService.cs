@@ -34,8 +34,20 @@ public sealed class LinkService : IDisposable
         _secrets = secrets;
         _dialogs = dialogs;
         _local = local;
-        Discovery = new LinkDiscovery(() => _settings.LinkPort) { OwnFingerprint = () => _identity is null ? null : LinkProtocol.Fingerprint(_identity) };
+        Discovery = new LinkDiscovery(() => _settings.LinkPort)
+        {
+            OwnFingerprint = () => _identity is null ? null : LinkProtocol.Fingerprint(_identity),
+            // each search in the program log and in the log of "PC link" (Configuration > ... the connection logs)
+            Log = message =>
+            {
+                Log.Information("{Message}", message);
+                NextCommander.Core.Net.ConnectionLog.Info(SearchLog, message);
+            },
+        };
     }
+
+    /// <summary>The searches for computers are logged under "PC link" (logs/connections/PC link.log).</summary>
+    private static readonly NextCommander.Core.Config.RemoteConnection SearchLog = new() { Name = "PC link", Protocol = NextCommander.Core.Config.RemoteProtocol.Link, Host = "search" };
 
     /// <summary>Finds the computers that share (link:///).</summary>
     public LinkDiscovery Discovery { get; }
@@ -122,7 +134,11 @@ public sealed class LinkService : IDisposable
                 Problem = null;
                 try
                 {
-                    _responder = new LinkResponder(config.Port, config.Name, server.Port, LinkProtocol.Fingerprint(identity), LoopbackOnly);
+                    _responder = new LinkResponder(config.Port, config.Name, server.Port, LinkProtocol.Fingerprint(identity), LoopbackOnly, message =>
+                    {
+                        Log.Information("{Message}", message);
+                        NextCommander.Core.Net.ConnectionLog.Info(SearchLog, message);
+                    });
                     DiscoveryProblem = null;
                 }
                 catch (IOException ex)
