@@ -203,7 +203,7 @@ public sealed class Phase6Tests : IDisposable
         Assert.Equal(["Günlüğü göster", "System application", "Lister (F3)", "Editor (F4)"], _fx.Dialogs.LastQuickList.Select(i => i.Text));
 
         await vm.ExecuteAsync("nc_Plugins");
-        Assert.Contains(_fx.Dialogs.LastQuickList, i => i.Text == "No plugins loaded");
+        Assert.Empty(_fx.Dialogs.LastPlugins!.Loaded);
     }
 
     [AvaloniaFact]

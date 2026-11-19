@@ -68,6 +68,9 @@ public partial class DirectoryTreeView : UserControl
 
     public VfsPath? SelectedPath => (Tree.SelectedItem as TreeNodeViewModel)?.Path;
 
+    /// <summary>The root node shown (null before <see cref="ShowAsync"/>).</summary>
+    public TreeNodeViewModel? RootNode => _root;
+
     /// <summary>Shows the tree of the drive/root containing <paramref name="path"/> with <paramref name="path"/> selected.</summary>
     public async Task ShowAsync(VfsPath path, Func<VfsPath, Task<IReadOnlyList<VfsEntry>>> listDirectories)
     {

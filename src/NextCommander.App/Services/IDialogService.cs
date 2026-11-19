@@ -138,6 +138,15 @@ public interface IDialogService
     /// <summary>Searchable list with optional extra action buttons.</summary>
     Task<QuickListResult?> ShowQuickListAsync(string title, IReadOnlyList<QuickListItem> items, IReadOnlyList<string>? actions = null);
 
+    /// <summary>Alt+Down: the folder history (pins, sections, drives; open here, in the other panel or a new tab).</summary>
+    Task ShowFolderHistoryAsync(Views.Dialogs.FolderHistoryRequest request);
+
+    /// <summary>Help > System information: the program, the system and the drives; "open folder" shows the settings folder.</summary>
+    Task ShowSystemInfoAsync(Views.Dialogs.SystemInfo info, Func<Task> openSettingsFolder);
+
+    /// <summary>The plugins window (nc_Plugins): the installed plugins, turning them on / off, installing one.</summary>
+    Task ShowPluginsAsync(Views.Dialogs.PluginsRequest request);
+
     /// <summary>Waits for a key combination; returns its text ("Ctrl+Shift+K") or null.</summary>
     Task<string?> CaptureHotkeyAsync(string commandName);
 

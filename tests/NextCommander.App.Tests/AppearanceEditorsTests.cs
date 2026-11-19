@@ -143,6 +143,76 @@ public sealed class AppearanceEditorsTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task The_plugins_window_lists_turns_off_and_installs_plugins()
+    {
+        // two installed plugins (one loaded, with a file system), one turned off whose folder is gone
+        var userRoot = _fx.L("plugins-user");
+        var programRoot = _fx.L("plugins-program");
+        void Plugin(string root, string folder, string name, string version)
+        {
+            Directory.CreateDirectory(Path.Combine(root, folder));
+            File.WriteAllText(Path.Combine(root, folder, "plugin.json"), $$"""{ "Name": "{{name}}", "Assembly": "{{name}}.dll", "Version": "{{version}}", "Description": "{{name}} plugin" }""");
+        }
+        Plugin(programRoot, "rclone", "rclone", "1.0");
+        Plugin(userRoot, "exif", "Image metadata", "0.9");
+        var loaded = new NextCommander.Core.Plugins.LoadedPlugin { Folder = Path.Combine(programRoot, "rclone"), Manifest = new() { Name = "rclone", Version = "1.0" } };
+        loaded.FileSystems.Add(new NextCommander.Vfs.Local.LocalFileSystemProvider());
+        var settings = new AppSettings { DisabledPlugins = ["Image metadata", "Old one"] };
+        var saved = 0;
+        string? opened = null;
+        var dialog = _fx.Track(new PluginsDialog(new PluginsRequest([loaded], [userRoot, programRoot], settings, () => saved++,
+            _ => Task.FromResult<string?>(null), (_, folder) =>
+            {
+                opened = folder;
+                return Task.CompletedTask;
+            }, () => true)));
+        dialog.Show();
+        await SettleAsync(4);
+        Assert.Equal(["Image metadata", "Old one", "rclone"], dialog.Rows.Select(r => r.Name));
+        Assert.Equal(1, dialog.Rows.Single(r => r.Name == "rclone").FileSystems);
+        Assert.False(dialog.NeedsRestart);
+        Shot(dialog, "plugins");
+
+        // the search; turning a loaded plugin off waits for a restart
+        dialog.Search("metadata");
+        await SettleAsync();
+        Assert.Equal(["Image metadata"], dialog.Shown.Select(r => r.Name));
+        dialog.Search(string.Empty);
+        dialog.SetDisabled(dialog.Rows.Single(r => r.Name == "rclone"), disabled: true);
+        Assert.Contains("rclone", settings.DisabledPlugins);
+        Assert.True(saved > 0);
+        Assert.True(dialog.NeedsRestart);
+
+        // installing from a zip file: into the settings folder's plugins, under its name
+        var source = _fx.L("new-plugin");
+        Plugin(source, "inner", "Hasher", "2.1");
+        var zip = _fx.L("hasher.zip");
+        System.IO.Compression.ZipFile.CreateFromDirectory(Path.Combine(source, "inner"), zip);
+        Assert.Equal("Hasher", PluginsDialog.InstallFrom(zip, userRoot));
+        Assert.True(File.Exists(Path.Combine(userRoot, "Hasher", "plugin.json")));
+        var empty = _fx.L("empty.zip");
+        CreateEmptyZip(empty);
+        Assert.Null(PluginsDialog.InstallFrom(empty, userRoot)); // no plugin.json in it
+        Assert.Null(opened);
+    }
+
+    private static bool CreateEmptyZip(string path)
+    {
+        using var stream = File.Create(path);
+        using var archive = new System.IO.Compression.ZipArchive(stream, System.IO.Compression.ZipArchiveMode.Create);
+        return true;
+    }
+
+    private static void Shot(Window window, string name)
+    {
+        if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
+        {
+            Directory.CreateDirectory(dir);
+            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(window)!.SavePng(Path.Combine(dir, name + ".png"));
+        }
+    }
+
+    [AvaloniaFact]
     public void The_icon_pack_editor_previews_and_saves_a_pack()
     {
         var dir = _fx.L("iconpacks");

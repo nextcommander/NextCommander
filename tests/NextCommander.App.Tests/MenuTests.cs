@@ -155,7 +155,7 @@ public sealed class MenuTests : IDisposable
         Assert.Equal("b.log", vm.Right.CursorItem!.FullName);
 
         await vm.ExecuteAsync("nc_SysInfo");
-        Assert.Contains(_fx.Dialogs.Messages, m => m.StartsWith("Operating system:", StringComparison.Ordinal));
+        Assert.StartsWith("Operating system:", _fx.Dialogs.LastSystemInfo!.Report, StringComparison.Ordinal);
 
         await vm.ExecuteAsync("nc_OpenDesktop");
         Assert.True(Directory.Exists(vm.Left.CurrentPath!.Path));

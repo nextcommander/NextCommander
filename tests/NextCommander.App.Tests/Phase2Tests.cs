@@ -162,10 +162,13 @@ public sealed class Phase2Tests : IDisposable
         Assert.DoesNotContain(P(_fx.L("sub")), left.History);
         Assert.Contains(P(_fx.L()), left.History);          // worked there
 
-        _fx.Dialogs.QuickListHandler = items => new QuickListResult(items.Single(i => i.Text == _fx.L()), -1);
         await vm.ExecuteAsync("nc_DirectoryHistory");
+        var history = _fx.Dialogs.LastFolderHistory!;
+        var entry = history.Entries.Single(e => e.Path.Path == _fx.L());
+        Assert.True(entry.Visits > 0); // visited, with its time
+        Assert.NotNull(entry.LastVisit);
+        await history.Open(entry.Path);
         Assert.Equal(_fx.L(), left.CurrentPath!.Path);
-        Assert.Contains(_fx.Dialogs.LastQuickList, i => i.Text == _fx.L());
     }
 
     [AvaloniaFact]

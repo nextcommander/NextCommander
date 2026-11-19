@@ -420,6 +420,66 @@
   </Style>
 
   <!--
+    Tool window buttons of the Windows 11 look (column sets / duplicate files templates): 32 high, corners of 5;
+    "primary" in the accent color, "ghost" without a frame until the pointer is over it, "danger" in red, "icon" square.
+  -->
+  <Style Selector="Button.tb">
+    <Setter Property="Height" Value="32" />
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="Padding" Value="14,0" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.tb.icon">
+    <Setter Property="Width" Value="32" />
+    <Setter Property="MinWidth" Value="32" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.tb.primary">
+    <Setter Property="Foreground" Value="{DynamicResource AccentButtonForeground}" />
+    <Setter Property="Background" Value="{DynamicResource AccentButtonBackground}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentButtonBorderBrush}" />
+  </Style>
+  <Style Selector="Button.tb.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentButtonBackgroundPointerOver}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentButtonBorderBrushPointerOver}" />
+    <Setter Property="Foreground" Value="{DynamicResource AccentButtonForegroundPointerOver}" />
+  </Style>
+  <Style Selector="Button.tb.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentButtonBackgroundPressed}" />
+    <Setter Property="Foreground" Value="{DynamicResource AccentButtonForegroundPressed}" />
+  </Style>
+  <Style Selector="Button.tb.primary:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentButtonBackgroundDisabled}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentButtonBorderBrushDisabled}" />
+    <Setter Property="Foreground" Value="{DynamicResource AccentButtonForegroundDisabled}" />
+  </Style>
+  <Style Selector="Button.tb.ghost">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.tb.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.tb.ghost:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.tb.danger">
+    <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+  </Style>
+  <Style Selector="Button.tb.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+  </Style>
+  <Style Selector="Button.tb:disabled">
+    <Setter Property="Opacity" Value="0.45" />
+  </Style>
+
+  <!--
     A check box drawn as a switch with "On" / "Off" before it (the configuration's rows: the row shows the setting's
     name, so the check box's own text is not drawn). It stays a CheckBox: IsChecked, keyboard (Space) and tests as before.
   -->

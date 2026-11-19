@@ -7,6 +7,9 @@ public sealed class FrequentDirectory
     public double Score { get; set; }
 
     public DateTime LastVisit { get; set; }
+
+    /// <summary>How often the folder was entered (the folder history shows it; not decayed).</summary>
+    public int Visits { get; set; }
 }
 
 /// <summary>
@@ -38,6 +41,7 @@ public sealed class FrequentDirectories
         }
         item.Score = Decayed(item, now) + 1;
         item.LastVisit = now;
+        item.Visits++;
 
         var max = Math.Max(1, MaxEntries);
         if (_items.Count > max)
@@ -49,6 +53,9 @@ public sealed class FrequentDirectories
             }
         }
     }
+
+    /// <summary>The record of a folder (its last visit and visits), null when it has none.</summary>
+    public FrequentDirectory? Find(string path) => _items.Find(i => string.Equals(i.Path, path, StringComparison.Ordinal));
 
     public void Remove(string path) => _items.RemoveAll(i => string.Equals(i.Path, path, StringComparison.Ordinal));
 
