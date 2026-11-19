@@ -76,6 +76,23 @@ public sealed class ColumnSet
     /// <summary>Command run when a panel leaves this view mode.</summary>
     public string? ExitCommand { get; set; }
 
+    /// <summary>The icon of the set in the column sets window: "image", "audio", "video", "code", "document"; empty = a file.</summary>
+    public string? Icon { get; set; }
+
+    /// <summary>A copy with its own columns.</summary>
+    public ColumnSet Clone() => new()
+    {
+        Name = Name,
+        Columns = Columns.Select(c => new ColumnSpec { Field = c.Field, Header = c.Header, Width = c.Width }).ToList(),
+        KeepStandardColumns = KeepStandardColumns,
+        AutoPathMask = AutoPathMask,
+        Background = Background,
+        TabColor = TabColor,
+        EnterCommand = EnterCommand,
+        ExitCommand = ExitCommand,
+        Icon = Icon,
+    };
+
     public bool MatchesPath(VfsPath path) =>
         !string.IsNullOrWhiteSpace(AutoPathMask)
         && AutoPathMask.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)

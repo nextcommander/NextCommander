@@ -257,7 +257,7 @@ internal sealed class FakeDialogs : IDialogService
 
     public Action<List<NextCommander.Core.Columns.ColumnSet>>? ColumnSetEditor { get; set; }
 
-    public Task EditColumnSetsAsync(List<NextCommander.Core.Columns.ColumnSet> sets, IReadOnlyList<NextCommander.Core.Columns.ColumnField> fields)
+    public Task EditColumnSetsAsync(List<NextCommander.Core.Columns.ColumnSet> sets, IReadOnlyList<NextCommander.Core.Columns.ColumnField> fields, Action? applied = null)
     {
         ColumnSetEditor?.Invoke(sets);
         return Task.CompletedTask;

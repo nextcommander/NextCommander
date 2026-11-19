@@ -112,6 +112,12 @@ shown:
 - **Ctrl+F8** shows a folder tree inside the panel.
 - **Shift+F1** chooses a custom column set, for example with photo or music details.
   Column sets can also switch automatically by folder (*Show > Display > Custom view modes*).
+- *Configuration > Edit column sets...* opens the **column sets** window: the sets on the left (New set, Duplicate,
+  Delete), the chosen set on the right with its name; its columns (header, field, width with a slider, order with
+  the arrows; add a field from the list); whether the size, date and attribute columns stay; a preview drawn to
+  scale; the folders that switch to it (path masks such as `*Pictures*`, added with Enter or `;`); the list
+  background, tab color and icon; and the commands run on entering and leaving. Changes are made on a copy:
+  **Apply** shows them in the panels, **OK** applies and closes, **Cancel** drops them.
 - **Ctrl+F3 … Ctrl+F6** sort by name, extension, time and size. Click a column header to sort by it.
 - **Show > Group by** shows the files in groups: by **type** (documents, images, archives ...), by **date** (today,
   yesterday, earlier this week ... older years) or by the **first letter** of the name; folders come first. A
