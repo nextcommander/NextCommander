@@ -225,9 +225,12 @@ public sealed class MenuTests : IDisposable
         Assert.Equal(["No groups", "Type", "Date", "First letter of the name"], Headers(w, "Group by"));
         Assert.Equal(["All files", "Programs", "*.*", "Custom...", "Only selected files"], Headers(w, "File filter"));
         Assert.Contains("New folder tab", Headers(w, "Tabs"));
-        Assert.Equal(["Options...", "Plugins...", "Button bar...", "Button bar 2 (vertical)...", "Dark <-> Normal",
-            "Save position", "Save settings", "Export settings...", "Import settings...", "Restore settings from a backup...", "Commands and shortcuts...", "Add button to button bar...", "Add user command (uc_)...", "Edit Hotlist...",
-            "Edit column sets...", "Color theme"], Headers(w, "C_onfiguration"));
+        // grouped by type: main settings, look, button bars, commands and lists, saving / moving / backups
+        Assert.Equal(["Options...", "Plugins...", "Color theme", "Dark <-> Normal", "Edit column sets...",
+            "Button bar...", "Button bar 2 (vertical)...", "Add button to button bar...",
+            "Commands and shortcuts...", "Add user command (uc_)...", "Edit Hotlist...",
+            "Save position", "Save settings", "Export settings...", "Import settings...", "Restore settings from a backup..."], Headers(w, "C_onfiguration"));
+        Assert.Equal(4, w.FindControl<Menu>("MainMenu")!.Items.OfType<MenuItem>().Single(m => (string?)m.Header == "C_onfiguration").Items.OfType<Separator>().Count());
 
         File.WriteAllText(_fx.L("run.exe"), "x");
         await vm.Left.RefreshAsync();

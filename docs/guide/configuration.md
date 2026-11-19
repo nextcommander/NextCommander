@@ -116,16 +116,18 @@ click it or press Enter. **...** next to it chooses a program instead, and in th
 
 ## Other configuration commands
 
-The Configuration menu also has:
+The Configuration menu is grouped by type:
 
-- **Plugins...:** the plugins window: the installed plugins and their state, turning them on / off, installing one
-  from a zip file.
-- **Dark <-> Normal:** switches between the system colors and the Dark theme.
-- **Save position** and **Save settings:** save the window position and all settings now.
-- **Commands and shortcuts...:** every command by menu, with search, favorites and its shortcuts; assign and remove shortcuts
-  (see [Keyboard shortcuts](keyboard-shortcuts.md#changing-shortcuts)).
-- **Add button to button bar...**, **Add user command (uc_)...**, **Edit Hotlist...**, **Edit column sets...**
-- **Color theme:** a quick theme switch.
+- **Main settings:** *Options...* and **Plugins...** (the plugins window: the installed plugins and their state,
+  turning them on / off, installing one from a zip file).
+- **Look:** **Color theme** (a quick theme switch), **Dark <-> Normal** (between the system colors and the Dark
+  theme) and **Edit column sets...**
+- **Button bars:** *Button bar...*, *Button bar 2 (vertical)...* and **Add button to button bar...**
+- **Commands and lists:** **Commands and shortcuts...** (every command by menu, with search, favorites and its
+  shortcuts; assign and remove shortcuts, see [Keyboard shortcuts](keyboard-shortcuts.md#changing-shortcuts)),
+  **Add user command (uc_)...** and **Edit Hotlist...**
+- **Saving and backups:** **Save position** and **Save settings** (save the window position and all settings now),
+  then *Export settings...*, *Import settings...* and *Restore settings from a backup...*
 
 The **Start** menu holds your own entries for programs and commands; *Start > Change start menu...* edits them.
 
