@@ -268,10 +268,22 @@ same way), the files go over TCP port 47290. A firewall on either computer can d
   then `sudo firewall-cmd --reload`.
 - **Windows:** the network must be "Private", or NextCommander allowed on public networks (*Windows Security >
   Firewall > Allow an app*).
+- **Allow through the firewall** (*Configuration > Operation > PC link*) does this for you on the computer it runs on:
+  Windows Defender Firewall gets inbound rules for the port (TCP and UDP, every network), Linux ufw or firewalld (when
+  one is on) allows the port. It asks for administrator rights; do it on both computers.
 - Each search is written to the log `logs/connections/PC link.log` in the settings folder: which addresses it went
   out from and whether anything answered; the sharing computer writes there which searches reached it. A search that
   reached the other computer but found nothing was dropped on its way back.
 - Typing the address skips the search (only TCP 47290 is needed then).
+
+**Which cables work.** PC link needs a network between the two computers; the cable must make one:
+- an Ethernet cable (directly or through a switch / router), or a USB / USB-C Ethernet adapter on each side;
+- a USB "link" / "bridge" cable (it shows up as a network adapter on both computers);
+- a USB-C cable only between two USB4 / Thunderbolt ports, where the system offers networking over it (Windows:
+  USB4 / Thunderbolt networking; Linux: the thunderbolt-net module). An ordinary USB-C port (USB 3) cannot connect
+  two computers: nothing appears on either side.
+When the cable makes a network, both computers show a new network adapter (Windows: Settings > Network & internet;
+Linux: `ip link`); without one, PC link has nothing to search on.
 
 The connection is encrypted (TLS). Each installation has its own certificate; the code is made from both
 certificates, so a third computer in between would show a different code.

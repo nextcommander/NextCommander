@@ -2956,5 +2956,11 @@
   "MainWindow.TheseAreTheSettingsInUse": "Esta es la configuración que se usa ahora.",
   "MainWindow.TheSettingsOfReplaceTheCurrent": "La configuración del {0} sustituye a la actual (que también se guarda como copia de seguridad) y NextCommander se reinicia.",
   "MainWindow.RestoreAndRestart": "Restaurar y reiniciar",
-  "MainWindow.TheSettingsWereRestoredStart": "La configuración se restauró. Vuelva a iniciar NextCommander para usarla."
+  "MainWindow.TheSettingsWereRestoredStart": "La configuración se restauró. Vuelva a iniciar NextCommander para usarla.",
+  "Settings.Link.Firewall": "Cortafuegos",
+  "Settings.Link.Firewall.Description": "Si no se encuentra el otro equipo (o no puede conectarse), el cortafuegos de este equipo puede estar bloqueando el enlace: esto abre su puerto para todas las redes (Firewall de Windows Defender; Linux: ufw o firewalld). Pide derechos de administrador.",
+  "Settings.Link.AllowThroughTheFirewall": "Permitir en el cortafuegos",
+  "Settings.Link.NothingToOpenOnThisSystem": "No hay nada que abrir en este sistema.",
+  "Settings.Link.TheFirewallLetsPcLinkThrough": "El cortafuegos permite PC link (puerto {0}).",
+  "Settings.Link.NotChangedCancelled": "Sin cambios (cancelado o no permitido)."
 }

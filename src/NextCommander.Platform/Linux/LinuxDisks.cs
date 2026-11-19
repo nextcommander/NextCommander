@@ -67,13 +67,36 @@ public static class LinuxDisks
         }
         var mount = mounts.FirstOrDefault();
         var size = Number(node, "size");
-        // the file system's label, else the partition's (GPT) name, as the desktop's file manager shows them
-        var label = Text(node, "label") is { } fsLabel && !string.IsNullOrWhiteSpace(fsLabel) ? fsLabel : Text(node, "partlabel");
+        // the file system's label, else the partition's (GPT) name unless it is a tool's default ("Basic data partition"),
+        // else the mount folder unless the desktop named it after the volume's id, else the size: as Nautilus shows them
+        var label = Text(node, "label") is { } fsLabel && !string.IsNullOrWhiteSpace(fsLabel) ? fsLabel
+            : Text(node, "partlabel") is { } partLabel && !IsDefaultPartitionName(partLabel) ? partLabel : null;
+        var folder = mount is null ? null : Path.GetFileName(mount.TrimEnd('/'));
         var name = !string.IsNullOrWhiteSpace(label) ? label!
-            : mount is not null ? (Path.GetFileName(mount.TrimEnd('/')) is { Length: > 0 } last ? last : mount)
+            : folder is { Length: > 0 } && !LooksLikeVolumeId(folder) ? folder
             : $"{SizeText(size)} volume";
         result.Add(new Disk(device, name, mount, size, removable));
     }
+
+    /// <summary>GPT partition names the partitioning tools give every partition of a kind (not a name the user chose).</summary>
+    private static readonly string[] s_defaultPartitionNames =
+    [
+        "Basic data partition", "Microsoft basic data", "Microsoft reserved partition", "EFI system partition", "EFI System",
+        "Linux filesystem", "Linux filesystem data", "Linux swap", "Linux LVM", "Linux RAID", "Linux home", "Linux root (x86-64)",
+        "Apple APFS", "Apple HFS/HFS+", "primary", "logical", "extended", "Main Data Partition", "data",
+    ];
+
+    /// <summary>Whether a GPT partition name is a tool's default for its kind.</summary>
+    public static bool IsDefaultPartitionName(string name) =>
+        string.IsNullOrWhiteSpace(name) || s_defaultPartitionNames.Any(d => string.Equals(d, name.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// A mount folder named after the volume's id (/run/media/user/ACE84A32E849FB5A, /media/user/1234-ABCD, a UUID): what
+    /// udisks does for a volume without a label; not a name to show.
+    /// </summary>
+    public static bool LooksLikeVolumeId(string folder) =>
+        System.Text.RegularExpressions.Regex.IsMatch(folder,
+            "^([0-9A-Fa-f]{16}|[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}|[0-9A-Fa-f]{8}(-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12})$");
 
     private static List<string> MountPoints(JsonElement node)
     {

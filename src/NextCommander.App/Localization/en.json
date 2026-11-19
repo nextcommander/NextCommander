@@ -2956,5 +2956,11 @@
   "MainWindow.TheseAreTheSettingsInUse": "These are the settings in use now.",
   "MainWindow.TheSettingsOfReplaceTheCurrent": "The settings of {0} replace the current ones (they are kept as a backup too) and NextCommander starts again.",
   "MainWindow.RestoreAndRestart": "Restore and restart",
-  "MainWindow.TheSettingsWereRestoredStart": "The settings were restored. Start NextCommander again to use them."
+  "MainWindow.TheSettingsWereRestoredStart": "The settings were restored. Start NextCommander again to use them.",
+  "Settings.Link.Firewall": "Firewall",
+  "Settings.Link.Firewall.Description": "When the other computer is not found (or cannot connect), the firewall of this computer may drop the link: this opens its port for every network (Windows Defender Firewall; Linux: ufw or firewalld). Asks for administrator rights.",
+  "Settings.Link.AllowThroughTheFirewall": "Allow through the firewall",
+  "Settings.Link.NothingToOpenOnThisSystem": "Nothing to open on this system.",
+  "Settings.Link.TheFirewallLetsPcLinkThrough": "The firewall lets PC link through (port {0}).",
+  "Settings.Link.NotChangedCancelled": "Not changed (cancelled or not allowed)."
 }

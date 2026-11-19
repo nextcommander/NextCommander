@@ -1030,6 +1030,38 @@ public sealed class SettingsView : UserControl
     /// <summary>PC link: what the sharing does now (set by the main window; null in tests).</summary>
     public static Func<string>? LinkStatus { get; set; }
 
+    /// <summary>PC link: opens the port in the firewall (with administrator / root rights); false when refused or not done.</summary>
+    public static Func<int, Task<bool>>? AllowLinkThroughFirewall { get; set; }
+
+    /// <summary>PC link: a button that lets the link's port through the firewall of this computer.</summary>
+    private static SettingItem LinkFirewallItem(string page, string group) =>
+        new(page, group, "Firewall",
+            "When the other computer is not found (or cannot connect), the firewall of this computer may drop the link: this opens its port for every network (Windows Defender Firewall; Linux: ufw or firewalld). Asks for administrator rights.",
+            (s, _) =>
+            {
+                var result = new TextBlock { TextWrapping = Avalonia.Media.TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0), Opacity = 0.8 };
+                var button = new Button { Content = "Allow through the firewall" };
+                button.IsEnabled = AllowLinkThroughFirewall is not null && Services.LinkFirewall.Command(s.LinkPort) is not null;
+                if (Services.LinkFirewall.Command(s.LinkPort) is null)
+                {
+                    result.Text = "Nothing to open on this system.";
+                }
+                button.Click += async (_, _) =>
+                {
+                    if (AllowLinkThroughFirewall is not { } allow)
+                    {
+                        return;
+                    }
+                    button.IsEnabled = false;
+                    var done = await allow(s.LinkPort);
+                    button.IsEnabled = true;
+                    result.Text = done ? $"The firewall lets PC link through (port {s.LinkPort})." : "Not changed (cancelled or not allowed).";
+                };
+                var row = new StackPanel { Orientation = Orientation.Horizontal };
+                row.Children.AddRange([button, result]);
+                return row;
+            }, (_, _) => { });
+
     /// <summary>PC link: a shared folder (name the other computer sees, folder, read only).</summary>
     private static ListEditorOptions<LinkShare> LinkShareOptions() => new()
     {
@@ -2252,6 +2284,7 @@ public sealed class SettingsView : UserControl
                 s => s.LinkComputerName, (s, v) => s.LinkComputerName = v?.Trim() ?? string.Empty, Environment.MachineName),
             Number(link, "This computer", "Port", "TCP port of the link and UDP port of finding computers; the same on both computers.",
                 1024, 65535, s => s.LinkPort, (s, v) => s.LinkPort = (int)v),
+            LinkFirewallItem(link, "This computer"),
             LinkPeersItem(link, "Allowed computers"),
 
             ListItem(assoc, "Internal associations", "Internal associations (Enter)",

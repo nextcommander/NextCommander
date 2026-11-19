@@ -216,6 +216,20 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
     public Services.ThumbnailService? Thumbnails { get; init; }
 
     /// <summary>Tab caption: custom title or folder name; '*' marks a locked tab.</summary>
+    /// <summary>
+    /// The name of the drive whose folder <paramref name="path"/> is (Linux / macOS: a disk mounted at
+    /// /run/media/user/ACE84A32E849FB5A shows as its label or "500 GB volume", not as the id the desktop named the folder after).
+    /// </summary>
+    private string? DriveNameAt(VfsPath path)
+    {
+        if (OperatingSystem.IsWindows() || !path.IsLocal)
+        {
+            return null;
+        }
+        var folder = path.Path.TrimEnd('/');
+        return Drives.FirstOrDefault(d => d.Kind is DriveKind.Fixed or DriveKind.Removable or DriveKind.Optical or DriveKind.Phone && d.RootPath.TrimEnd('/') == folder && folder.Length > 0)?.Name;
+    }
+
     public string Title
     {
         get
@@ -224,7 +238,7 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
             if (string.IsNullOrEmpty(name))
             {
                 var p = CurrentPath;
-                name = p is null ? "?" : p.IsRoot ? p.ToDisplayString() : p.Name;
+                name = p is null ? "?" : p.IsRoot ? p.ToDisplayString() : DriveNameAt(p) ?? p.Name;
             }
             if (_settings.TabShowDriveLetter && CurrentPath is { IsLocal: true, IsRoot: false } local && OperatingSystem.IsWindows()
                 && Path.GetPathRoot(local.ToDisplayString()) is { Length: >= 2 } root && root[1] == ':')

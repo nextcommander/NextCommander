@@ -2956,5 +2956,11 @@
   "MainWindow.TheseAreTheSettingsInUse": "这就是当前正在使用的设置。",
   "MainWindow.TheSettingsOfReplaceTheCurrent": "{0} 的设置将替换当前设置（当前设置也会作为备份保留），NextCommander 将重新启动。",
   "MainWindow.RestoreAndRestart": "恢复并重新启动",
-  "MainWindow.TheSettingsWereRestoredStart": "设置已恢复。请重新启动 NextCommander 以使用它们。"
+  "MainWindow.TheSettingsWereRestoredStart": "设置已恢复。请重新启动 NextCommander 以使用它们。",
+  "Settings.Link.Firewall": "防火墙",
+  "Settings.Link.Firewall.Description": "如果找不到另一台计算机（或无法连接），可能是本机防火墙阻止了连接：这会为所有网络打开其端口（Windows Defender 防火墙；Linux：ufw 或 firewalld）。需要管理员权限。",
+  "Settings.Link.AllowThroughTheFirewall": "允许通过防火墙",
+  "Settings.Link.NothingToOpenOnThisSystem": "此系统上无需打开任何端口。",
+  "Settings.Link.TheFirewallLetsPcLinkThrough": "防火墙已允许 PC 互联（端口 {0}）。",
+  "Settings.Link.NotChangedCancelled": "未更改（已取消或不被允许）。"
 }
