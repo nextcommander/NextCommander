@@ -317,6 +317,29 @@ public sealed class ButtonBarControl : UserControl
 
     public static int NormalizeSize(int size) => IconSizes.Contains(size) ? size : 16;
 
+    private Func<string, bool>? _available;
+
+    /// <summary>
+    /// Turns off the buttons whose command does not run now (<paramref name="available"/> false; another page than the
+    /// files is shown); null turns all of them on.
+    /// </summary>
+    public void SetAvailable(Func<string, bool>? available)
+    {
+        _available = available;
+        foreach (var button in _panel.Children.OfType<Button>())
+        {
+            ApplyAvailable(button);
+        }
+    }
+
+    private void ApplyAvailable(Button button)
+    {
+        if (button.Tag is ButtonDefinition definition)
+        {
+            button.IsEnabled = _available is null || _available(definition.Command);
+        }
+    }
+
     public void FocusFirst() => _panel.Children.OfType<Button>().FirstOrDefault()?.Focus();
 
     public void Rebuild()
@@ -343,6 +366,7 @@ public sealed class ButtonBarControl : UserControl
     private Button CreateButton(ButtonDefinition definition)
     {
         var button = new Button { Classes = { "barbutton" }, Content = CreateContent(definition), Tag = definition };
+        ApplyAvailable(button);
         if (_vertical)
         {
             button.HorizontalAlignment = HorizontalAlignment.Stretch;

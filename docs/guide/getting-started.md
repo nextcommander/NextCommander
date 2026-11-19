@@ -18,7 +18,9 @@ From top to bottom:
 - **Page tabs:** while the options or a maximized internal terminal are open next to the file panels, a tab strip
   shows the pages: the files tab (the folder of the active panel, with the icon of its place: a user folder such as
   Downloads with the system's icon, a drive, a server's product mark, an archive ...), **Options** and **Terminal**.
-  A click switches; `nc_SwitchWorkspaceTab` goes to the next page.
+  A click switches; `nc_SwitchWorkspaceTab` goes to the next page. While another page than the files is shown, the
+  menu items, buttons, drive bar, function keys, command line and shortcuts that work on the panels are turned off;
+  Configuration, Start, Help, the terminal, the connection manager, system information and Exit still work.
 - **Drive buttons:** one button per drive. At the right end there are shortcuts to your home folder,
   Documents and Downloads (Desktop can be turned on in *Configuration > Options > Layout*). When you plug in or
   remove a USB disk, a memory card or a phone, the drives update by themselves within a second or two;

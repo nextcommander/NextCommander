@@ -960,6 +960,19 @@ public partial class MainWindow : Window
             }
         }
 
+        // another page than the files: only the commands that do not work on the hidden panels
+        if (_page != WorkspacePage.Files)
+        {
+            if (_vm.Hotkeys.Find(e) is { } pageCommand && RunsOnThisPage(pageCommand)
+                && (!inTextBox || IsFunctionKey(e.Key) || pageCommand.Equals("nc_ToggleTerminal", StringComparison.OrdinalIgnoreCase)))
+            {
+                e.Handled = true;
+                _suppressTextInput = true;
+                _ = _vm.ExecuteAsync(pageCommand);
+            }
+            return;
+        }
+
         if (e.Key == Key.Tab && e.KeyModifiers == KeyModifiers.None && !inTextBox)
         {
             _vm.ActivateSide(_vm.OtherSide);
@@ -1038,7 +1051,7 @@ public partial class MainWindow : Window
     private void OnWindowTextInput(object? sender, TextInputEventArgs e)
     {
         var focusedTextBox = FocusManager?.GetFocusedElement() is TextBox;
-        if (_quickView?.IsKeyboardFocusWithin == true || FocusManager?.GetFocusedElement() is TerminalScreen)
+        if (_quickView?.IsKeyboardFocusWithin == true || FocusManager?.GetFocusedElement() is TerminalScreen || _page != WorkspacePage.Files)
         {
             return;
         }

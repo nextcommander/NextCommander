@@ -74,6 +74,58 @@ public sealed class WorkspaceTabsTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task Another_page_turns_off_what_works_on_the_panels()
+    {
+        var (w, vm) = await _fx.OpenAsync();
+        var menu = w.FindControl<Menu>("MainMenu")!;
+        MenuItem Top(string header) => menu.Items.OfType<MenuItem>().Single(m => (string?)m.Header == header);
+        static IEnumerable<MenuItem> All(MenuItem item) => item.Items.OfType<MenuItem>().SelectMany(m => All(m).Prepend(m));
+        MenuItem Item(MenuItem top, string command) => All(top).First(m => (string?)m.CommandParameter == command);
+        var functionKeys = w.FindControl<Grid>("FunctionKeys")!;
+        var commandLine = w.FindControl<Grid>("CommandLineRow")!;
+        Assert.True(Top("_Files").IsEnabled);
+        Assert.True(w.RunsOnThisPage("nc_Copy"));
+
+        var settings = NewSettings(vm);
+        var shown = w.ShowSettingsAsync(settings);
+        await SettleAsync(4);
+        Assert.Equal(WorkspacePage.Options, w.CurrentPage);
+        // panel menus off; the menus and commands that do not need the panels stay on
+        Assert.True(Top("_Files").IsEnabled); // Exit is in it
+        Assert.False(Item(Top("_Files"), "nc_PackFiles").IsEnabled);
+        Assert.True(Item(Top("_Files"), "nc_Exit").IsEnabled);
+        Assert.False(Top("_Edit").IsEnabled);
+        Assert.False(Top("_Mark").IsEnabled);
+        Assert.False(Item(Top("_Show"), "nc_SrcThumbs").IsEnabled);
+        Assert.True(Item(Top("_Show"), "nc_EditColumnSets").IsEnabled); // also in Configuration
+        Assert.True(Top("_Commands").IsEnabled);
+        Assert.False(Item(Top("_Commands"), "nc_DirTree").IsEnabled);
+        Assert.True(Item(Top("_Commands"), "nc_SysInfo").IsEnabled);
+        Assert.True(Top("C_onfiguration").IsEnabled);
+        Assert.True(Top("_Help").IsEnabled);
+        Assert.False(w.RunsOnThisPage("nc_Copy"));
+        Assert.True(w.RunsOnThisPage("nc_About"));
+        Assert.True(w.RunsOnThisPage("nc_SwitchWorkspaceTab"));
+        Assert.False(functionKeys.IsEnabled);
+        Assert.False(commandLine.IsEnabled);
+        var bar = w.FindControl<Border>("TopBarHost")!.GetVisualDescendants().OfType<Button>()
+            .Where(b => b.Tag is NextCommander.Core.Config.ButtonDefinition).ToList();
+        Assert.Contains(bar, b => !b.IsEnabled);
+
+        // back on the files: everything on again
+        Click(Tabs(w)[0]);
+        await SettleAsync();
+        Assert.True(Item(Top("_Files"), "nc_PackFiles").IsEnabled);
+        Assert.True(Top("_Edit").IsEnabled);
+        Assert.True(Item(Top("_Commands"), "nc_DirTree").IsEnabled);
+        Assert.True(functionKeys.IsEnabled);
+        Assert.True(commandLine.IsEnabled);
+        Assert.All(bar, b => Assert.True(b.IsEnabled));
+        w.Settings!.Close();
+        await shown;
+    }
+
+    [AvaloniaFact]
     public async Task Maximized_terminal_and_options_are_pages_and_the_files_tab_follows_the_active_panel()
     {
         var (w, vm) = await _fx.OpenAsync();
