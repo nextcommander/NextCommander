@@ -98,6 +98,7 @@ public static class MtpDeviceNames
 
     /// <summary>
     /// The name of a gvfs (GNOME) phone / camera folder: "mtp:host=SAMSUNG_Galaxy_S24" → "SAMSUNG Galaxy S24",
+    /// "mtp:host=SAMSUNG_SAMSUNG_Android_R5CX15QTV5J" → "SAMSUNG Android" (the maker once, without the USB serial),
     /// "gphoto2:host=%5Busb%3A001%2C007%5D" → "Camera [usb:001,007]"; null for other gvfs mounts (smb, sftp ...).
     /// </summary>
     public static string? FromGvfsFolder(string folderName)
@@ -112,9 +113,42 @@ public static class MtpDeviceNames
         {
             return folderName;
         }
-        var name = Uri.UnescapeDataString(host).Replace('_', ' ').Trim();
-        return name.StartsWith('[') ? "Camera " + name : name; // gphoto2 hosts are USB addresses
+        var name = Uri.UnescapeDataString(host);
+        if (name.StartsWith('['))
+        {
+            return "Camera " + name; // gphoto2 hosts are USB addresses
+        }
+        // gvfs writes maker_model_serial: the maker repeats in Samsung's model name, the serial is no part of a name
+        var words = name.Split(['_', ' '], StringSplitOptions.RemoveEmptyEntries).ToList();
+        if (words.Count > 1 && LooksLikeSerial(words[^1]))
+        {
+            words.RemoveAt(words.Count - 1);
+        }
+        for (var i = words.Count - 1; i > 0; i--)
+        {
+            if (string.Equals(words[i], words[i - 1], StringComparison.OrdinalIgnoreCase))
+            {
+                words.RemoveAt(i);
+            }
+        }
+        return words.Count == 0 ? name : string.Join(' ', words);
     }
+
+    /// <summary>
+    /// The name in the "standard::display-name:" line of <c>gio info</c> for a gvfs device folder (what the desktop
+    /// shows); null when missing or only the folder's own name.
+    /// </summary>
+    public static string? FromGioInfo(string output, string folderName)
+    {
+        const string key = "standard::display-name:";
+        var line = output.Split('\n').Select(l => l.Trim()).FirstOrDefault(l => l.StartsWith(key, StringComparison.Ordinal));
+        var name = line?[key.Length..].Trim();
+        return string.IsNullOrEmpty(name) || name == folderName || name.Contains("host=", StringComparison.Ordinal) ? null : Clean(name);
+    }
+
+    /// <summary>A USB serial number ("R5CX15QTV5J", "1A2B3C4D5E6F"): letters and digits, at least 8, with a digit.</summary>
+    private static bool LooksLikeSerial(string word) =>
+        word.Length >= 8 && word.All(char.IsLetterOrDigit) && word.Any(char.IsDigit);
 
     private static string Clean(string name)
     {

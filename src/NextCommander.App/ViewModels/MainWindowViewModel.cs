@@ -730,6 +730,9 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
 
     private IDisposable? _driveWatch;
 
+    /// <summary>The phones of the last drive list (to see which one came with a change).</summary>
+    private HashSet<string> _knownPhones = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Starts watching for drives plugged in or removed (USB disks, memory cards, phones as disks, network drives).</summary>
     public void StartDriveWatch() =>
         _driveWatch ??= _platform.WatchDrives(() =>
@@ -760,6 +763,12 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         var mtp = _registry.Providers.OfType<NextCommander.Platform.Mtp.MtpFileSystemProvider>().FirstOrDefault();
         mtp?.CloseDisconnected();
         var phones = LeftSide.ActiveTab.Drives.Where(d => d.Kind == DriveKind.Phone).Select(d => d.RootPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        // a phone that appeared now: where a tab goes when its phone left the device list at the same time (a phone
+        // allowed on its screen is mounted by the desktop (gvfs) and leaves libmtp's list: the same phone, in a folder)
+        var newPhones = phones.Where(p => !_knownPhones.Contains(p)).ToList();
+        _knownPhones = phones;
+        VfsPath? PhoneMovedTo() => newPhones.Count == 0 ? null
+            : newPhones[0].StartsWith('/') ? VfsPath.Local(newPhones[0]) : VfsPath.TryParse(newPhones[0], out var p) ? p : null;
         foreach (var tab in LeftSide.Tabs.Concat(RightSide.Tabs).ToList())
         {
             if (tab.CurrentPath is { IsLocal: true } path
@@ -770,7 +779,12 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             else if (tab.CurrentPath is { Scheme: NextCommander.Platform.Mtp.MtpFileSystemProvider.MtpScheme } device && device.Authority.Length > 0
                 && !phones.Contains(NextCommander.Platform.Mtp.MtpFileSystemProvider.DeviceRoot(device.Authority).ToString()))
             {
-                await tab.NavigateAsync(VfsPath.Local(_platform.HomeDirectory), recordHistory: false); // the phone was unplugged
+                // the phone was unplugged, or is shown in another way now
+                await tab.NavigateAsync(PhoneMovedTo() ?? VfsPath.Local(_platform.HomeDirectory), recordHistory: false);
+            }
+            else if (tab.CurrentPath is { Scheme: NextCommander.Platform.Mtp.MtpFileSystemProvider.MtpScheme } stillThere && stillThere.Authority.Length > 0)
+            {
+                await tab.RefreshAsync(); // its storages may have come (file transfer allowed on the phone)
             }
             else if (tab.CurrentPath is { Scheme: NextCommander.Platform.Adb.AdbFileSystemProvider.AdbScheme } phone && phone.Authority.Length > 0
                 && !phones.Contains(NextCommander.Platform.Adb.AdbFileSystemProvider.DeviceRoot(phone.Authority).ToString()))

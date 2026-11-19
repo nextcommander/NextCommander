@@ -146,6 +146,45 @@ internal sealed class LinuxPlatformService : PlatformServiceBase, IPlatformServi
         return string.IsNullOrEmpty(runtime) ? null : Path.Combine(runtime, "gvfs");
     }
 
+    /// <summary>The names gvfs shows for its device folders (asked once per folder: starting gio takes a moment).</summary>
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string?> s_gvfsNames = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// The name the desktop shows for a gvfs phone / camera folder (gio's display name, e.g. the phone's own name);
+    /// null when gio is not there or gives only the folder's name.
+    /// </summary>
+    private static string? GvfsDisplayName(string folder) => s_gvfsNames.GetOrAdd(folder, static path =>
+    {
+        if (FindOnPath("gio") is not { } gio)
+        {
+            return null;
+        }
+        try
+        {
+            var start = new System.Diagnostics.ProcessStartInfo(gio, ["info", "-a", "standard::display-name", path])
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+            };
+            using var process = System.Diagnostics.Process.Start(start);
+            if (process is null)
+            {
+                return null;
+            }
+            var output = process.StandardOutput.ReadToEndAsync();
+            if (!process.WaitForExit(3000) || !output.Wait(1000))
+            {
+                return null;
+            }
+            return Mtp.MtpDeviceNames.FromGioInfo(output.Result, Path.GetFileName(path));
+        }
+        catch (Exception ex) when (ex is IOException or System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            return null;
+        }
+    });
+
     private static IEnumerable<(string Name, string Folder)> GvfsDevices()
     {
         if (GvfsFolder() is not { } gvfs)
@@ -157,7 +196,7 @@ internal sealed class LinuxPlatformService : PlatformServiceBase, IPlatformServi
             return Directory.EnumerateDirectories(gvfs)
                 .Select(folder => (Name: Mtp.MtpDeviceNames.FromGvfsFolder(Path.GetFileName(folder)), Folder: folder))
                 .Where(d => d.Name is not null)
-                .Select(d => (d.Name!, d.Folder))
+                .Select(d => (GvfsDisplayName(d.Folder) ?? d.Name!, d.Folder))
                 .OrderBy(d => d.Item1, StringComparer.Ordinal)
                 .ToList();
         }
