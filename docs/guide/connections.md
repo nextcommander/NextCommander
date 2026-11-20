@@ -63,7 +63,7 @@ turns it off.
 The manager opens as a page of its own with a tab, like the maximized internal terminal: the **Files** tab above it
 goes back to the panels while the manager stays open; ✕, its tab's × or Esc closes it. The connections are on the
 left, in folders; the selected connection or folder is on the right. Above the list is the toolbar: **＋ New**, a new
-folder and Import (FileZilla, WinSCP). The actions of the selected connection are in the bar above it: *Test*,
+folder and Import (FileZilla, WinSCP). The actions of the selected connection are in the bar above it, all in the accent color: *Test*,
 *Duplicate*, *Delete* (for a remote desktop also *Files (SMB)*) on the left, **Save** and **Connect** on the right; for
 a folder *New connection*, *New subfolder*, *Delete* and *Connect to all*. Messages ("Saved", "Moved") show under them.
 The manager opens with its first connection selected; without connections it shows **＋ New** and **Import...**.
