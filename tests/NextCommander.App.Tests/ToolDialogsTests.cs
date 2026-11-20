@@ -296,6 +296,70 @@ public sealed class ToolDialogsTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task The_progress_window_shows_the_files_pauses_skips_and_sums_up()
+    {
+        var source = _fx.L("iso");
+        Directory.CreateDirectory(source);
+        var target = _fx.R();
+        string[] names = ["Fedora-Workstation-Live.iso", "ubuntu-26.04-desktop-amd64.iso", "debian-netinst.iso", "README.txt", "SHA256SUMS"];
+        foreach (var name in names)
+        {
+            await File.WriteAllBytesAsync(Path.Combine(source, name), new byte[name.EndsWith(".iso", StringComparison.Ordinal) ? 160 * 1024 : 2 * 1024]);
+        }
+        var local = new LocalFileSystemProvider();
+        var entries = (await local.ListAsync(VfsPath.Local(source), CancellationToken.None)).OrderBy(e => Array.IndexOf(names, e.Name)).ToList();
+        var job = new NextCommander.Core.Operations.CopyMoveJob(new ProviderRegistry([local]), entries, VfsPath.Local(target), move: false,
+            new NextCommander.Core.Operations.CopyOptions { SpeedLimit = 96 * 1024, BufferSize = 4096 });
+        var closeSetting = (bool?)null;
+        var opened = false;
+        var window = _fx.Track(new ProgressWindow(job, new ProgressOptions(false, v => closeSetting = v, () =>
+        {
+            opened = true;
+            return Task.CompletedTask;
+        })));
+        var running = Task.Run(job.RunAsync);
+        window.Show();
+        await WaitUntilAsync(() => job.Progress.Snapshot().DoneFiles >= 1 && job.Progress.Snapshot().CurrentFileDone > 0);
+        await SettleAsync(8);
+        Shot(window, "progress");
+
+        // pause: the window says so; the cancel question; the small window
+        window.Focus();
+        Press(window, Avalonia.Input.Key.Space);
+        Assert.True(job.Pause.IsPaused);
+        await SettleAsync(4);
+        Shot(window, "progress-paused");
+        Press(window, Avalonia.Input.Key.Escape);
+        Assert.True(window.IsConfirmingCancel);
+        await SettleAsync(2);
+        Shot(window, "progress-cancel");
+        Press(window, Avalonia.Input.Key.Escape);
+        Assert.False(window.IsConfirmingCancel);
+        window.SetMini(true);
+        await SettleAsync(2);
+        Shot(window, "progress-mini");
+        window.SetMini(false);
+
+        // skip the file being copied, go on, done: the summary stays ("close when done" off)
+        Press(window, Avalonia.Input.Key.Space);
+        Assert.False(job.Pause.IsPaused);
+        job.SkipCurrentFile();
+        job.SpeedLimit.BytesPerSecond = 0;
+        await running;
+        window.ShowFinished();
+        await SettleAsync(4);
+        Shot(window, "progress-done");
+        Assert.Equal(NextCommander.Core.Operations.JobState.Completed, job.State);
+        Assert.Contains(job.Progress.Items, i => i.State == NextCommander.Core.Operations.ProgressItemState.Skipped);
+        Assert.False(window.CloseWhenDone);
+        var open = window.GetLogicalDescendants().OfType<Button>().First(b => b.Content is StackPanel sp && sp.Children.OfType<TextBlock>().Any(t => t.Text == "Open destination"));
+        open.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        await SettleAsync();
+        Assert.True(opened);
+        Assert.Null(closeSetting);
+    }
+
+    [AvaloniaFact]
     public async Task The_column_sets_window_edits_a_copy_until_applied()
     {
         var sets = new List<NextCommander.Core.Columns.ColumnSet>

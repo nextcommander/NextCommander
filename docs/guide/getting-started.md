@@ -194,7 +194,13 @@ folder, or type a new name or a pattern like `*.bak` to rename while copying.
   overwriting read only / hidden / system files without asking, and copying into every folder marked in the
   target panel.
 
-Long jobs show a progress window (with pause and a speed limit). The **queue** window of F2 Queue copies one item
+Long jobs show a **progress window**: the state and the percent, where from and to; all files with how many are
+done, running, waiting, skipped and failed; the current file; the speed with its recent curve, the time left, the
+elapsed time and the files; and the list of files with their state (a failed file with its error; the list folds
+away). **Pause** / **Resume** (Space), **Skip file** (the partly copied file is deleted and the job goes on), **Stop
+after this file**, **Background** (a small window with a ring; ⤢ shows the details again) and **Cancel** (Esc; asked
+first, the partly copied file is deleted). The speed limit can be changed while it runs. With **Close when done** off
+the window stays at the end with the summary and **Open destination**. The **queue** window of F2 Queue copies one item
 after the other: it shows the file being copied with the progress of the file and of the item, the waiting items
 one a line, **+** (queue the files selected in the active panel), **-** (take the selected item out),
 **Start** / **Pause**, and a **Speed limit** in kB/s. *Commands > Background transfer manager...* lists every

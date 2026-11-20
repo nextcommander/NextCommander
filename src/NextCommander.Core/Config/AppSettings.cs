@@ -1214,6 +1214,9 @@ public sealed class AppSettings
     /// <summary>Verify copied files by default.</summary>
     public bool VerifyCopy { get; set; }
 
+    /// <summary>The progress window closes when its job is done (off: it stays with the summary).</summary>
+    public bool CloseProgressWhenDone { get; set; } = true;
+
     /// <summary>Hotkey overrides: gesture ("Ctrl+F5") → command line ("nc_Copy"). Empty value removes a default.</summary>
     public Dictionary<string, string> Hotkeys
     {
