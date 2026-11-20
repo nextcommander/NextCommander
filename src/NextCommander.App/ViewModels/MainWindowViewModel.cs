@@ -4328,7 +4328,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         if (queue)
         {
             _jobs.Enqueue(job);
-            _dialogs.ShowCopyQueue(_jobs, QueueSelectionAsync);
+            _dialogs.ShowCopyQueue(_jobs, QueueSelectionAsync, folder => VfsPath.TryParse(folder, out var path) ? ActivePanel.NavigateAsync(path!) : Task.CompletedTask);
             job.StateChanged += (_, _) =>
             {
                 if (job.State is JobState.Completed or JobState.CompletedWithErrors or JobState.Failed or JobState.Cancelled)

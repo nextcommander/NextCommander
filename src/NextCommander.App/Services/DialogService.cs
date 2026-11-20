@@ -331,14 +331,14 @@ public sealed class DialogService : IDialogService
 
     private Views.Tools.CopyQueueWindow? _copyQueue;
 
-    public void ShowCopyQueue(JobQueue jobs, Func<Task> addSelection)
+    public void ShowCopyQueue(JobQueue jobs, Func<Task> addSelection, Func<string, Task>? openFolder = null)
     {
         if (_copyQueue is { } open)
         {
             open.Activate();
             return;
         }
-        _copyQueue = new Views.Tools.CopyQueueWindow(jobs, addSelection);
+        _copyQueue = new Views.Tools.CopyQueueWindow(jobs, addSelection, openFolder);
         _copyQueue.Closed += (_, _) => _copyQueue = null;
         if (Owner is { } owner)
         {
