@@ -441,8 +441,9 @@ public sealed class AppSettings
     /// <summary>2: right button marks by default. 3: dark mode and Office schemes became the "koyu" theme file.
     /// 4: the "koyu" theme file is "dark" now. 5: the button bar got the internal terminal, the connection manager and
     /// the settings. 6: the saved connections menu next to the connection manager. 7: the connection manager's button
-    /// has the saved connections itself; the plugins' button in place of the connections menu.</summary>
-    public const int CurrentSettingsVersion = 7;
+    /// has the saved connections itself; the plugins' button in place of the connections menu. 8: icons on the folder
+    /// tabs (a plain folder's too) are on.</summary>
+    public const int CurrentSettingsVersion = 8;
 
     /// <summary>Default changes for files written by older versions.</summary>
     public void Upgrade()
@@ -458,6 +459,10 @@ public sealed class AppSettings
         if (SettingsVersion < 7)
         {
             AddPluginsMenuButton();
+        }
+        if (SettingsVersion < 8)
+        {
+            ShowTabIcons = true; // every tab shows the icon of its place (user's request, 21 November 2026)
         }
         SettingsVersion = CurrentSettingsVersion;
     }
@@ -638,8 +643,8 @@ public sealed class AppSettings
     /// <summary>Drive letter before the tab title ("C: Windows").</summary>
     public bool TabShowDriveLetter { get; set; }
 
-    /// <summary>Folder (or lock) icon on the tabs.</summary>
-    public bool ShowTabIcons { get; set; }
+    /// <summary>Folder (or lock) icon on the tabs; drives and system folders show theirs even when it is off.</summary>
+    public bool ShowTabIcons { get; set; } = true;
 
     /// <summary>Clicking a tab of the other side also activates that panel.</summary>
     public bool TabClickActivatesPanel { get; set; } = true;

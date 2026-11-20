@@ -33,6 +33,18 @@ public sealed class SettingsFolderTests : IDisposable
     }
 
     [Fact]
+    public void Settings_before_version_8_get_the_icons_on_folder_tabs()
+    {
+        var old = new AppSettings { SettingsVersion = 7, ShowTabIcons = false };
+        old.Upgrade();
+        Assert.True(old.ShowTabIcons);
+        var turnedOff = new AppSettings { SettingsVersion = 8, ShowTabIcons = false }; // the user's choice since then stays
+        turnedOff.Upgrade();
+        Assert.False(turnedOff.ShowTabIcons);
+        Assert.True(new AppSettings().ShowTabIcons);
+    }
+
+    [Fact]
     public void Older_button_bars_get_the_internal_terminal_the_connection_manager_and_the_settings()
     {
         // a bar the user changed: the new buttons join it, the user's own ones stay
