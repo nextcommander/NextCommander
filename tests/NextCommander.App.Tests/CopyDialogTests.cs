@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
 using NextCommander.App.Services;
@@ -263,32 +264,63 @@ public sealed class CopyDialogTests : IDisposable
         var registry = new ProviderRegistry([new NextCommander.Vfs.Local.LocalFileSystemProvider()]);
         await using var queue = new JobQueue();
         queue.PauseQueue();
-        var window = _fx.Track(new CopyQueueWindow(queue, () => Task.CompletedTask) { CloseWhenDone = false });
+        var opened = new List<string>();
+        var window = _fx.Track(new CopyQueueWindow(queue, () => Task.CompletedTask, folder =>
+        {
+            opened.Add(folder);
+            return Task.CompletedTask;
+        }) { CloseWhenDone = false });
         window.Show();
-        Assert.Equal("Start", window.StartText);
-        Assert.Equal("The queue is empty.", window.CurrentText);
+        window.Refresh();
+        Assert.Equal("Resume all", window.StartText);
+        Assert.Equal("Empty", window.StateText);
+        Assert.True(window.ShowsEmpty); // what adds jobs to the queue
 
         async Task<VfsEntry> E(string name) => (await registry.Resolve(VfsPath.Local(_fx.L(name))).GetEntryAsync(VfsPath.Local(_fx.L(name)), CancellationToken.None))!;
-        queue.Enqueue(new CopyMoveJob(registry, [await E("a.txt")], VfsPath.Local(_fx.R()), move: false));
-        queue.Enqueue(new CopyMoveJob(registry, [await E("b.log")], VfsPath.Local(_fx.R()), move: true));
+        var copy = new CopyMoveJob(registry, [await E("a.txt")], VfsPath.Local(_fx.R()), move: false);
+        var move = new CopyMoveJob(registry, [await E("b.log")], VfsPath.Local(_fx.R()), move: true);
+        queue.Enqueue(copy);
+        queue.Enqueue(move);
         window.Refresh();
-        Assert.Equal(["copy:" + _fx.L("a.txt"), "move:" + _fx.L("b.log")], window.Lines);
+        Assert.Equal(["Copy a.txt", "Move b.log"], window.Lines);
+        Assert.Equal("Paused", window.StateText);
+        Assert.False(window.ShowsEmpty);
+        Assert.Equal("#1 in line", window.TagOf(copy));
+        Assert.Equal("#2 in line", window.TagOf(move));
+
+        // the order: Alt+↓ on the selected waiting job
+        window.Select(copy);
+        window.Focus();
+        window.KeyPress(Avalonia.Input.Key.Down, Avalonia.Input.RawInputModifiers.Alt, Avalonia.Input.PhysicalKey.ArrowDown, null);
+        Assert.Equal([move, copy], queue.QueuedJobs);
+        window.MoveBefore(copy, move); // dropped on the first: runs first again
+        Assert.Equal([copy, move], queue.QueuedJobs);
         await SettleAsync(2);
         Shot(window, "copy-queue.png");
 
-        window.SetSpeedLimit(true, 5);
-        Assert.Equal(5 * 1024, queue.SpeedLimit);
-        window.SetSpeedLimit(false, 5);
+        // the speed limit of the queue, jobs at a time
+        window.SetSpeedLimit(5L << 20);
+        Assert.Equal(5L << 20, queue.SpeedLimit);
+        window.SetSpeedLimit(0);
         Assert.Equal(0, queue.SpeedLimit);
+        window.SetParallel(2);
+        Assert.Equal(2, queue.MaxParallel);
+        window.SetParallel(1);
 
-        window.SelectLine(1);
-        window.RemoveSelected();
+        // a waiting job taken out never runs; the other one runs, then shows as done with its folder to open
+        window.Remove(move);
         window.ToggleStart();
-        Assert.Equal("Pause", window.StartText);
+        Assert.Equal("Pause all", window.StartText);
         await WaitUntilAsync(() => queue.QueuedJobs.Count == 0);
         Assert.True(File.Exists(_fx.R("a.txt")));
         Assert.True(File.Exists(_fx.L("b.log"))); // taken out: not moved
         window.Refresh();
+        Assert.Equal(["Copy a.txt"], window.Lines);
+        Assert.StartsWith("Done", window.TagOf(copy), StringComparison.Ordinal);
+        Assert.Equal("Finished", window.StateText);
+        Shot(window, "copy-queue-finished.png");
+        window.ClearFinished();
         Assert.Empty(window.Lines);
+        Assert.True(window.ShowsEmpty);
     }
 }

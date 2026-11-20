@@ -23,6 +23,9 @@ public sealed class DeleteJob : FileJob
     /// <summary>Whether they go to the recycle bin.</summary>
     public bool UsesTrash => _trash is not null;
 
+    public override (string Source, string Target)? Route =>
+        (_sources.Count > 0 && _sources[0].Path.Parent is { } parent ? parent.ToDisplayString() : string.Empty, UsesTrash ? "Recycle Bin" : "Deleted for good");
+
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
         if (_trash is { IsAvailable: true } && _sources.All(s => s.Path.IsLocal))

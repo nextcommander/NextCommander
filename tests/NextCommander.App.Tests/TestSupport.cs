@@ -173,7 +173,7 @@ internal sealed class FakeDialogs : IDialogService
 
     public int CopyQueueShown { get; private set; }
 
-    public void ShowCopyQueue(JobQueue jobs, Func<Task> addSelection) => CopyQueueShown++;
+    public void ShowCopyQueue(JobQueue jobs, Func<Task> addSelection, Func<string, Task>? openFolder = null) => CopyQueueShown++;
 
     public Task<CopyDialogResult?> ShowCopyDialogAsync(bool move, string description, string target, bool verifyDefault, IReadOnlyList<string> suggestions,
         Views.Dialogs.CopyDialogOptions? options = null)
