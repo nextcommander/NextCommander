@@ -2155,7 +2155,7 @@ public sealed class SettingsView : UserControl
             Number(tabs, "Folder tab headers", "Title length limit (characters)", "0 = no limit.", 0, 200, s => s.TabTitleMaxLength, (s, v) => s.TabTitleMaxLength = (int)v),
             Bool(tabs, "Folder tab headers", "Show locked tabs with *", null, s => s.ShowLockedTabStar, (s, v) => s.ShowLockedTabStar = v),
             Bool(tabs, "Folder tab headers", "Show the drive letter in the tab title", "On Windows, e.g. \"C: Windows\".", s => s.TabShowDriveLetter, (s, v) => s.TabShowDriveLetter = v),
-            Bool(tabs, "Folder tab headers", "Show icons on tabs", "Folder icon; a lock on locked tabs. System folders (documents, downloads, desktop, home) always show their own icon.", s => s.ShowTabIcons, (s, v) => s.ShowTabIcons = v),
+            Bool(tabs, "Folder tab headers", "Show icons on tabs", "Folder icon; a lock on locked tabs. Drives and system folders (documents, downloads, desktop, home) always show their own icon.", s => s.ShowTabIcons, (s, v) => s.ShowTabIcons = v),
             Bool(tabs, "Behavior", "Ask before closing all tabs", null, s => s.ConfirmCloseAllTabs, (s, v) => s.ConfirmCloseAllTabs = v),
             Bool(tabs, "Behavior", "Double click closes the tab", null, s => s.DoubleClickClosesTab, (s, v) => s.DoubleClickClosesTab = v),
             Bool(tabs, "Behavior", "Ctrl+Up opens the new tab in the foreground", "When off, the new tab opens in the background.", s => s.OpenDirInNewTabForeground, (s, v) => s.OpenDirInNewTabForeground = v),

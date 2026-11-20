@@ -1683,7 +1683,7 @@
   "Settings.Tabs.OpenNewTabsNextTo.Description": "Wenn aus, werden sie am Ende hinzugefügt.",
   "Settings.Tabs.SaveTheFileTypeFilter": "Dateityp-Filter jedes Tabs speichern",
   "Settings.Tabs.ShowIconsOnTabs": "Symbole auf Tabs anzeigen",
-  "Settings.Tabs.ShowIconsOnTabs.Description": "Ordnersymbol; ein Schloss auf gesperrten Tabs. Systemordner (Dokumente, Downloads, Desktop, Benutzerordner) zeigen immer ihr eigenes Symbol.",
+  "Settings.Tabs.ShowIconsOnTabs.Description": "Ordnersymbol; ein Schloss auf gesperrten Tabs. Laufwerke und Systemordner (Dokumente, Downloads, Desktop, Benutzerordner) zeigen immer ihr eigenes Symbol.",
   "Settings.Tabs.ShowLockedTabsWith": "Gesperrte Tabs mit * anzeigen",
   "Settings.Tabs.ShowTabHeaderAlsoWhen": "Tableiste auch bei nur einem Tab anzeigen",
   "Settings.Tabs.ShowTheDriveLetterIn": "Laufwerksbuchstaben im Tabtitel anzeigen",

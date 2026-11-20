@@ -1683,7 +1683,7 @@
   "Settings.Tabs.OpenNewTabsNextTo.Description": "Si está desactivado, se agregan al final.",
   "Settings.Tabs.SaveTheFileTypeFilter": "Guardar el filtro de tipo de archivo de cada pestaña",
   "Settings.Tabs.ShowIconsOnTabs": "Mostrar iconos en las pestañas",
-  "Settings.Tabs.ShowIconsOnTabs.Description": "Icono de carpeta; un candado en las pestañas bloqueadas. Las carpetas del sistema (documentos, descargas, escritorio, carpeta personal) siempre muestran su propio icono.",
+  "Settings.Tabs.ShowIconsOnTabs.Description": "Icono de carpeta; un candado en las pestañas bloqueadas. Las unidades y las carpetas del sistema (documentos, descargas, escritorio, carpeta personal) siempre muestran su propio icono.",
   "Settings.Tabs.ShowLockedTabsWith": "Mostrar las pestañas bloqueadas con *",
   "Settings.Tabs.ShowTabHeaderAlsoWhen": "Mostrar el encabezado de pestañas aunque solo haya una pestaña",
   "Settings.Tabs.ShowTheDriveLetterIn": "Mostrar la letra de unidad en el título de la pestaña",

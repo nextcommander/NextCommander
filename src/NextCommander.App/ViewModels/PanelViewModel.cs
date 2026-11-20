@@ -60,7 +60,7 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
     private bool _suspended;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Title), nameof(KnownFolderKind), nameof(IsKnownFolder), nameof(ShowTabIcon), nameof(TabIcon), nameof(TabGlyph))]
+    [NotifyPropertyChangedFor(nameof(Title), nameof(KnownFolderKind), nameof(IsKnownFolder), nameof(IsDriveRoot), nameof(HasOwnTabIcon), nameof(ShowTabIcon), nameof(TabIcon), nameof(TabGlyph))]
     private VfsPath? _currentPath;
 
     [ObservableProperty]
@@ -113,6 +113,7 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
     public Func<NetworkTarget, Task<VfsPath?>>? ResolveNetworkTarget { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TabIcon), nameof(TabGlyph))]
     private DriveItem? _selectedDrive;
 
     [ObservableProperty]
@@ -259,21 +260,35 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Folder tabs: icon on the tab (a lock for locked tabs). A user folder of the system (home, documents, downloads,
-    /// desktop, pictures, music, videos) always shows the icon the operating system gives it, even when icons on tabs are off.
+    /// Folder tabs: icon on the tab (a lock for locked tabs), by the kind of place (user's request, 20 November 2026): the
+    /// root of a drive shows the operating system's icon of the drive (fixed, removable, network ...), a user folder of the
+    /// system (home, documents, downloads, desktop, pictures, music, videos) the icon the system gives it, both even when
+    /// icons on tabs are off; any other folder the folder icon.
     /// </summary>
-    public bool ShowTabIcon => _settings.ShowTabIcons || IsKnownFolder;
+    public bool ShowTabIcon => _settings.ShowTabIcons || HasOwnTabIcon;
 
     /// <summary>The user folder of the system shown in the panel; null for any other folder.</summary>
     public UserFolder? KnownFolderKind => CurrentPath is { IsLocal: true } path ? KnownFolders.KindOf(path.Path) : null;
 
     public bool IsKnownFolder => KnownFolderKind is not null;
 
-    /// <summary>The operating system's icon of the user folder shown in the panel; null when it has none.</summary>
-    public Avalonia.Media.Imaging.Bitmap? TabIcon => KnownFolderKind is { } kind ? SystemFolderIcons.Icon(kind) : null;
+    /// <summary>The panel shows the root of a drive of this computer (C:\, /, a mounted disk's root).</summary>
+    public bool IsDriveRoot => CurrentPath is { IsLocal: true } path && (path.IsRoot || (SelectedDrive is { IsSpecial: false } d
+        && d.RootPath.Length > 0 && string.Equals(d.RootPath.TrimEnd('\\', '/'), path.Path.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase)));
 
-    /// <summary>The built-in glyph of the user folder when the system gives no icon.</summary>
-    public Geometry? TabGlyph => KnownFolderKind is { } kind && TabIcon is null ? IconPacks.Glyph(SystemFolderIcons.GlyphKey(kind)) : null;
+    /// <summary>A drive or a user folder: the tab shows its own icon instead of the folder icon.</summary>
+    public bool HasOwnTabIcon => IsKnownFolder || IsDriveRoot;
+
+    /// <summary>The operating system's icon of the drive or user folder shown in the panel; null when it has none.</summary>
+    public Avalonia.Media.Imaging.Bitmap? TabIcon => KnownFolderKind is { } kind ? SystemFolderIcons.Icon(kind)
+        : IsDriveRoot && CurrentPath is { } root ? (SelectedDrive is { IsSpecial: false } drive && drive.RootPath.Length > 0 ? DriveIconConverter.IconFor(drive) : DriveIconConverter.IconFor(root.Path))
+        : null;
+
+    /// <summary>The built-in glyph of the drive or user folder when the system gives no icon.</summary>
+    public Geometry? TabGlyph => TabIcon is not null ? null
+        : KnownFolderKind is { } kind ? IconPacks.Glyph(SystemFolderIcons.GlyphKey(kind))
+        : IsDriveRoot ? IconPacks.Glyph("MiDrive")
+        : null;
 
     public bool IsLocked => _panelSettings.LockMode != TabLockMode.None;
 
@@ -1055,6 +1070,9 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>Re-reads the directory keeping cursor and marks. Walks up if the directory vanished.</summary>
+    /// <summary>The folder of this tab cannot be reached any more: closes the tab when it can (true: closed).</summary>
+    public Func<bool>? CloseWhenUnreachable { get; set; }
+
     public async Task RefreshAsync()
     {
         RefreshPending = false;
@@ -1100,7 +1118,13 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex) when (ex is IOException)
         {
-            // Directory deleted/unmounted: go to the nearest existing parent.
+            // Directory deleted/unmounted, server gone: the tab closes when the side has others (user's request,
+            // 20 November 2026); the last tab goes to the nearest existing parent.
+            Log.Information(ex, "{Path} cannot be reached", path);
+            if (CloseWhenUnreachable?.Invoke() == true)
+            {
+                return;
+            }
             for (var p = path.Parent; p is not null; p = p.Parent)
             {
                 if (await NavigateAsync(p, recordHistory: false))

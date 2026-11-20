@@ -859,9 +859,54 @@ public partial class MainWindow : Window
             Grid.SetRow(DiskUsageHost, vertical ? (onLeft ? 0 : 2) : 0);
         }
         Splitter.ResizeDirection = vertical ? GridResizeDirection.Rows : GridResizeDirection.Columns;
+        Splitter.ContextMenu = vertical ? null : Splitter.ContextMenu ?? SplitterMenu();
         VerticalBarHost.IsVisible = !vertical && _vm?.Settings.ShowVerticalButtonBar == true;
         UpdateVerticalBarSpace();
     }
+
+    /// <summary>
+    /// The right click menu of the splitter between the panels (user's request, 20 November 2026): the left panel's share
+    /// from 20 % to 80 % in steps of ten, the nearest one to the present width checked; side by side only (one above the
+    /// other the panels are half and half).
+    /// </summary>
+    private ContextMenu SplitterMenu()
+    {
+        var menu = new ContextMenu();
+        for (var percent = 20; percent <= 80; percent += 10)
+        {
+            menu.Items.Add(new MenuItem
+            {
+                Header = new TextBlock { Text = $"{percent} % / {100 - percent} %", Classes = { "noloc" } },
+                ToggleType = MenuItemToggleType.Radio,
+                Command = _vm?.RunCommandCommand,
+                CommandParameter = "nc_PanelsSplitPercent " + percent.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                Tag = percent,
+            });
+        }
+        void Prepare()
+        {
+            var total = LeftSideView.Bounds.Width + RightSideView.Bounds.Width;
+            var now = total > 0 ? LeftSideView.Bounds.Width * 100 / total : _vm?.LeftPanelPercent ?? 50;
+            foreach (var item in menu.Items.OfType<MenuItem>())
+            {
+                item.IsChecked = item.Tag is int p && Math.Abs(p - now) < 5;
+            }
+            if (_vm?.ShowMenuIcons == true)
+            {
+                Services.MenuIcons.Apply(menu.Items);
+            }
+            else
+            {
+                Services.MenuIcons.Clear(menu.Items);
+            }
+        }
+        menu.Opening += (_, _) => Prepare();
+        menu.Opened += (_, _) => Prepare();
+        return menu;
+    }
+
+    /// <summary>The splitter's menu of ratios (tests).</summary>
+    public ContextMenu? SplitterRatios => Splitter.ContextMenu;
 
     /// <summary>Split ratio, or only the active side when "100%" is on.</summary>
     private void UpdatePanelLayout()
