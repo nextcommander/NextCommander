@@ -2213,7 +2213,6 @@
   "ConnectionManagerWindow.AWSProfile": "Profil AWS",
   "ConnectionManagerWindow.AWSProfileSSO": "Profil AWS / SSO",
   "ConnectionManagerWindow.BucketDefault": "Par défaut du compartiment",
-  "ConnectionManagerWindow.ChooseAConnectionOnThe": "Choisissez une connexion à gauche ou créez-en une",
   "ConnectionManagerWindow.ChooseTheTypeOrPaste": "Choisissez le type ou collez une adresse",
   "ConnectionManagerWindow.ClientSecret": "Secret client",
   "ConnectionManagerWindow.Cloud": "Cloud",
@@ -2903,7 +2902,6 @@
   "ConnectionManagerView.EGProductionWebServer": "p. ex. Serveur web de production",
   "ConnectionManagerView.EnterANameFor": "Saisissez un nom pour la connexion.",
   "ConnectionManagerView.AnotherConnectionHasThis": "Une autre connexion porte ce nom ; choisissez-en un autre.",
-  "ConnectionManagerView.FirstGiveTheConnection": "Donnez d'abord un nom à la connexion : la liste l'affiche sous ce nom et son journal est tenu sous ce nom.",
   "ConnectionManagerView.Back": "‹ Retour",
   "LibMtpDevice.TheDeviceCouldNotBeMac": "L'appareil n'a pas pu être ouvert. macOS donne un téléphone ou un appareil photo au premier programme qui le prend : fermez Photos, Transfert d'images, Android File Transfer et Smart Switch (NextCommander arrête déjà le service photo ptpcamerad), débranchez l'appareil et rebranchez-le. Le téléphone doit être déverrouillé et en mode \"Transfert de fichiers\".",
   "LibMtpDevice.TheDeviceCouldNotBe": "L'appareil n'a pas pu être ouvert. Un autre programme l'utilise peut-être (le gestionnaire de fichiers du bureau monte les téléphones : démontez-le là-bas), ou l'utilisateur n'a pas le droit de l'utiliser (le paquet libmtp installe les règles pour cela). Le téléphone doit être déverrouillé et en mode \"Transfert de fichiers\".",
@@ -3247,5 +3245,10 @@
   "ProgressWindow.SkippedCount": "{0} ignorés",
   "ProgressWindow.FailedCount": "{0} en échec",
   "ProgressWindow.CopyingOneFile": "Copie de 1 fichier",
-  "ProgressWindow.MovingOneFile": "Déplacement de 1 fichier"
+  "ProgressWindow.MovingOneFile": "Déplacement de 1 fichier",
+  "ConnectionManagerView.ChooseTheTypeOfA": "Choisissez le type d’une nouvelle connexion, collez son adresse ou choisissez une connexion enregistrée à gauche.",
+  "ConnectionManagerView.Import": "Importer",
+  "ConnectionManagerView.ImportConnectionsFromFileZillaOr": "Importer des connexions de FileZilla ou WinSCP",
+  "ConnectionManagerView.NameTheConnection": "Nommez la connexion",
+  "ConnectionManagerView.TheListShowsTheConnection": "La liste affiche la connexion sous ce nom et son journal est tenu sous ce nom. Un nom est proposé ; changez-le si vous le souhaitez."
 }

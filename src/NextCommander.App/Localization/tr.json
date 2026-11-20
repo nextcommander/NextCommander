@@ -2213,7 +2213,6 @@
   "ConnectionManagerWindow.AWSProfile": "AWS profili",
   "ConnectionManagerWindow.AWSProfileSSO": "AWS profili / SSO",
   "ConnectionManagerWindow.BucketDefault": "Kovanın varsayılanı",
-  "ConnectionManagerWindow.ChooseAConnectionOnThe": "Soldan bir bağlantı seçin ya da yenisini oluşturun",
   "ConnectionManagerWindow.ChooseTheTypeOrPaste": "Türü seçin ya da bir adres yapıştırın",
   "ConnectionManagerWindow.ClientSecret": "İstemci gizli anahtarı",
   "ConnectionManagerWindow.Cloud": "Bulut",
@@ -2903,7 +2902,6 @@
   "ConnectionManagerView.EGProductionWebServer": "örn. Canlı web sunucusu",
   "ConnectionManagerView.EnterANameFor": "Bağlantı için bir ad girin.",
   "ConnectionManagerView.AnotherConnectionHasThis": "Bu ad başka bir bağlantıda kullanılıyor; başka bir ad seçin.",
-  "ConnectionManagerView.FirstGiveTheConnection": "Önce bağlantıya bir ad verin: liste onu bu adla gösterir, günlüğü de bu adla tutulur.",
   "ConnectionManagerView.Back": "‹ Geri",
   "LibMtpDevice.TheDeviceCouldNotBeMac": "Cihaz açılamadı. macOS bir telefonu ya da fotoğraf makinesini onu ilk alan programa verir: Fotoğraflar, Görüntü Yakalama, Android File Transfer ve Smart Switch'i kapatın (NextCommander kamera servisi ptpcamerad'ı kendisi durdurur), cihazı çıkarıp yeniden takın. Telefonun kilidi açık ve \"Dosya aktarımı\" modunda olmalı.",
   "LibMtpDevice.TheDeviceCouldNotBe": "Cihaz açılamadı. Başka bir program kullanıyor olabilir (masaüstünün dosya yöneticisi telefonları bağlar: oradan ayırın) ya da kullanıcının onu kullanma hakkı olmayabilir (bunun kurallarını libmtp paketi kurar). Telefonun kilidi açık ve \"Dosya aktarımı\" modunda olmalı.",
@@ -3247,5 +3245,10 @@
   "ProgressWindow.SkippedCount": "{0} atlandı",
   "ProgressWindow.FailedCount": "{0} başarısız",
   "ProgressWindow.CopyingOneFile": "1 dosya kopyalanıyor",
-  "ProgressWindow.MovingOneFile": "1 dosya taşınıyor"
+  "ProgressWindow.MovingOneFile": "1 dosya taşınıyor",
+  "ConnectionManagerView.ChooseTheTypeOfA": "Yeni bağlantının türünü seçin, adresini yapıştırın ya da soldan kayıtlı bir bağlantı seçin.",
+  "ConnectionManagerView.Import": "İçe aktar",
+  "ConnectionManagerView.ImportConnectionsFromFileZillaOr": "FileZilla ya da WinSCP'den bağlantıları içe aktar",
+  "ConnectionManagerView.NameTheConnection": "Bağlantıya ad verin",
+  "ConnectionManagerView.TheListShowsTheConnection": "Liste bağlantıyı bu adla gösterir, günlüğü de bu adla tutulur. Bir ad önerildi; isterseniz değiştirin."
 }

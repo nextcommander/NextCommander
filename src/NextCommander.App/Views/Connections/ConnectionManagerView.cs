@@ -38,9 +38,9 @@ public sealed record ConnectionManagerResult(IReadOnlyList<RemoteConnection> Con
 
 /// <summary>
 /// Ctrl+F: the connections in folders on the left (search, filters, drag and drop, F2, Del, Ctrl+D, Ctrl+Z), the
-/// selected connection or folder on the right (tabs General / Login / Advanced, test, save, connect). A new connection
-/// starts with the choice of its type (or a pasted address). Changes go to the settings as they are made; Save writes
-/// them to the disk (closing does too).
+/// selected connection or folder on the right (tabs General / Login / Advanced, test, save, connect). It opens with the
+/// types of a new connection and Import; a new connection goes type (or a pasted address) › name (suggested) ›
+/// settings. Changes go to the settings as they are made; Save writes them to the disk (closing does too).
 /// </summary>
 public sealed partial class ConnectionManagerView : UserControl
 {
@@ -154,13 +154,14 @@ public sealed partial class ConnectionManagerView : UserControl
                 return;
             }
             _opened = true;
+            // Net > New connection: its name step; otherwise the types of a new connection (the start page)
             if (request.NewProtocol is { } protocol)
             {
                 NewConnection(protocol);
             }
-            else if (Rows.FirstOrDefault(r => r.Connection is not null) is { } first)
+            else
             {
-                Select(first);
+                ShowDetail();
             }
             Avalonia.Threading.Dispatcher.UIThread.Post(() => _tree.Focus(), Avalonia.Threading.DispatcherPriority.Loaded);
         };
@@ -718,7 +719,7 @@ public sealed partial class ConnectionManagerView : UserControl
     /// <summary>Opens connections (valid ones only) and closes the window.</summary>
     public void Connect(IReadOnlyList<RemoteConnection> connections, bool right)
     {
-        var usable = connections.Where(c => !_untyped.Contains(c) && !_unnamed.Contains(c) && ConnectionChecks.Problem(c) is null).ToList();
+        var usable = connections.Where(c => !_untyped.Contains(c) && !Unnamed(c) && ConnectionChecks.Problem(c) is null).ToList();
         if (usable.Count == 0)
         {
             if (connections.Count == 1)
@@ -752,7 +753,8 @@ public sealed partial class ConnectionManagerView : UserControl
     /// <summary>Closing: new connections that were never filled in are dropped, the rest is saved.</summary>
     private void Finish()
     {
-        foreach (var c in _newOnes.Where(c => _untyped.Contains(c) || _unnamed.Contains(c) || ConnectionChecks.Problem(c) is not null).ToList())
+        // a pasted address keeps the name suggested for it; a type alone has no name yet
+        foreach (var c in _newOnes.Where(c => _untyped.Contains(c) || Unnamed(c) || ConnectionChecks.Problem(c) is not null).ToList())
         {
             _settings.Connections.Remove(c);
         }

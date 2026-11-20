@@ -62,8 +62,9 @@ turns it off.
 
 The manager opens as a page of its own with a tab, like the maximized internal terminal: the **Files** tab above it
 goes back to the panels while the manager stays open; ✕, its tab's × or Esc closes it. The connections are on the
-left, in folders; the selected connection or folder is on the right.
-New connections start from the **New connection** button below the list.
+left, in folders; the selected connection or folder is on the right. It opens with the **types of a new
+connection** on the right, a box for a pasted address and **Import** (FileZilla, WinSCP); choose a saved connection on
+the left to see it. The **New connection** button below the list starts one too.
 
 - **Folders** can be nested and have a color label (for example red for production). Drag connections and folders
   to move them. An empty folder stays until you delete it.
@@ -74,10 +75,12 @@ New connections start from the **New connection** button below the list.
   (a folder with everything in it; its saved passwords are forgotten), Ctrl+Z puts the last deleted items back,
   Ctrl+D duplicates, Ctrl+N makes a new connection, Ctrl+S saves. The right click menu has the same, plus favorites,
   copying the address and forgetting the saved password.
-- **New connection:** three steps, shown above them (1 Name › 2 Type › 3 Settings). First give it a **name** (the
-  list shows it by this name and its log is kept under it; it must not be another connection's name), then choose
-  its type from the cards (or paste an address such as `sftp://user@server:22/folder`, which fills it in; *Net > New
-  connection* of a type skips this step; **‹ Back** goes to the step before, keeping what was entered, and from the name drops the new connection). Then fill in the tabs:
+- **New connection:** three steps, shown above them (1 Type › 2 Name › 3 Settings). First choose its **type** from
+  the cards (or paste an address such as `sftp://user@server:22/folder`, which fills it in; *Net > New connection*
+  of a type skips this step), then give it a **name**: one is suggested (the type, "SFTP 2" when that is taken, or
+  user@server of a pasted address) and selected, to keep or overwrite; the list shows the connection by this name and
+  its log is kept under it, and it must not be another connection's name. **‹ Back** goes to the step before,
+  keeping what was entered; **Cancel** drops the new connection. Then fill in the tabs:
   - **General:** the server, port and start folder (for FTP also the encryption and passive mode, for S3 the region;
     a **Service** for S3 and WebDAV, see below).
   - **Login:** the method: password, key file or the **SSH agent** (SFTP / SCP); access key or **AWS profile / SSO**
