@@ -61,6 +61,7 @@ public sealed class ConnectionChecksUiTests : IDisposable
         await SettleAsync();
         var created = view.NewConnection(null);
         view.ChooseType(created, RemoteProtocol.Sftp);
+        Assert.Null(view.ApplyName(created, view.SuggestName(created)));
         await SettleAsync();
         // a new connection is not marked before it is filled in; the server is marked as required
         Assert.Empty(view.MarkedFields);
@@ -112,37 +113,35 @@ public sealed class ConnectionChecksUiTests : IDisposable
         await SettleAsync();
         bool Shown(string text) => view.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == text && t.IsEffectivelyVisible);
         TextBox NameBox() => view.GetVisualDescendants().OfType<TextBox>().First(t => t.PlaceholderText == "e.g. Production web server");
-        const string NameStep = "First give the connection a name: the list shows it by this name, and its log is kept under it.";
+        const string NameStep = "Name the connection";
         const string TypeStep = "Choose the type, or paste an address";
 
-        // name › type, and back: the name is kept to change
+        // type › name: a name is suggested; another one typed goes on to the settings
+        Assert.True(Shown(TypeStep));
+        view.ChooseType(created, RemoteProtocol.Ftp);
+        await SettleAsync();
+        Assert.True(Shown(NameStep));
+        Assert.Equal("FTP", NameBox().Text);
         NameBox().Text = "web";
         Click(ButtonOf(view, "Next ›"));
         await SettleAsync();
-        Assert.True(Shown(TypeStep));
+        Assert.Equal("web", created.Name);
+        Assert.NotNull(Tabs(view));
+
+        // back to the name (kept to change), then to the type
         Click(ButtonOf(view, "‹ Back"));
         await SettleAsync();
         Assert.True(Shown(NameStep));
         Assert.Equal("web", NameBox().Text);
-        Click(ButtonOf(view, "Next ›"));
-        await SettleAsync();
-
-        // type › settings, and back to the type, then to the name
-        view.ChooseType(created, RemoteProtocol.Ftp);
-        await SettleAsync();
-        Assert.Equal("web", created.Name);
-        Assert.NotNull(Tabs(view));
         Click(ButtonOf(view, "‹ Back"));
         await SettleAsync();
         Assert.True(Shown(TypeStep));
-        Click(ButtonOf(view, "‹ Back"));
-        await SettleAsync();
-        Assert.True(Shown(NameStep));
 
-        // back from the name: no new connection after all
-        Click(ButtonOf(view, "‹ Back"));
+        // cancel at the type: no new connection after all; the start page with the types is shown
+        Click(ButtonOf(view, "Cancel"));
         await SettleAsync();
         Assert.Empty(settings.Connections);
+        Assert.True(Shown("Choose the type of a new connection, paste its address, or pick a saved connection on the left."));
     }
 
     [AvaloniaFact]

@@ -75,6 +75,15 @@ public sealed class RemoteDialogsTests : IDisposable
     private static List<string> Names(ConnectionManagerView window) =>
         [.. window.Rows.Select(r => new string(' ', r.Depth * 2) + (r.Folder is { } f ? f[(f.LastIndexOf('/') + 1)..] + "/" : r.Connection!.Name))];
 
+    private static void Shot(Control view, string name)
+    {
+        if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
+        {
+            Directory.CreateDirectory(dir);
+            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame((Window)TopLevel.GetTopLevel(view)!)!.SavePng(Path.Combine(dir, name + ".png"));
+        }
+    }
+
     private static bool Shown(Control window, string text) =>
         window.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == text && t.IsEffectivelyVisible);
 
@@ -93,7 +102,7 @@ public sealed class RemoteDialogsTests : IDisposable
         window.Toggle("Work/Prod");
         await SettleAsync();
         Assert.Equal(["Empty/", "Partners/", "  EDI", "Work/", "  Prod/", "    assets", "    prod-web-01", "  Test/", "Drive"], Names(window));
-        Assert.Equal(2, window.GetVisualDescendants().OfType<Viewbox>().Count(v => v.Child is Canvas)); // product marks: S3 and Drive
+        Assert.Equal(2, window.GetVisualDescendants().OfType<ListBox>().First().GetVisualDescendants().OfType<Viewbox>().Count(v => v.Child is Canvas)); // product marks in the tree: S3 and Drive
 
         // a search shows the way to every match
         window.GetVisualDescendants().OfType<TextBox>().First(t => t.PlaceholderText == "Name, server, bucket ...").Text = "10.30";
@@ -125,26 +134,31 @@ public sealed class RemoteDialogsTests : IDisposable
         var settings = Sample();
         var (window, calls) = Open(settings);
         await SettleAsync();
+        // the manager opens with the types of a new connection and Import
+        Assert.True(Shown(window, "Choose the type of a new connection, paste its address, or pick a saved connection on the left."));
+        Assert.Contains(window.GetVisualDescendants().OfType<Button>(), b => b.Content is StackPanel p && p.Children.OfType<TextBlock>().Any(t => t.Text == "Import"));
+        Shot(window, "connections-start");
         var created = window.NewConnection(null);
         await SettleAsync();
-        // first its name (not empty, not another connection's), then its type
-        Assert.True(Shown(window, "First give the connection a name: the list shows it by this name, and its log is kept under it."));
+        // first its type, then its name (suggested; not empty, not another connection's)
+        Assert.True(Shown(window, "Choose the type, or paste an address"));
+        Assert.Contains(window.GetVisualDescendants().OfType<Button>(), b => b.Content is StackPanel p && p.Children.OfType<StackPanel>().Any(s => s.Children.OfType<TextBlock>().Any(t => t.Text == "Azure Files")));
+        window.ChooseType(created, RemoteProtocol.S3);
+        await SettleAsync();
+        Assert.True(Shown(window, "Name the connection"));
+        var nameBox = window.GetVisualDescendants().OfType<TextBox>().First(t => t.PlaceholderText == "e.g. Production web server");
+        Assert.Equal("Amazon S3", nameBox.Text);
+        Shot(window, "connections-name");
         Assert.Equal("Enter a name for the connection.", window.ApplyName(created, "  "));
         Assert.Equal("Another connection has this name; choose another.", window.ApplyName(created, "PROD-web-01"));
+        nameBox.Text = string.Empty;
         Click(ButtonOf(window, "Next ›"));
         await SettleAsync();
         Assert.Equal("Enter a name for the connection.", window.ProblemText);
-        window.GetVisualDescendants().OfType<TextBox>().First(t => t.PlaceholderText == "e.g. Production web server").Text = "My storage";
+        nameBox.Text = "Amazon S3";
         Click(ButtonOf(window, "Next ›"));
         await SettleAsync();
-        Assert.Equal("My storage", created.Name);
-        Assert.True(Shown(window, "Choose the type, or paste an address"));
-        created.Name = "New connection"; // as if unnamed: the type names it below
-        Assert.Contains(window.GetVisualDescendants().OfType<Button>(), b => b.Content is StackPanel p && p.Children.OfType<StackPanel>().Any(s => s.Children.OfType<TextBlock>().Any(t => t.Text == "Azure Files")));
-
-        window.ChooseType(created, RemoteProtocol.S3);
-        await SettleAsync();
-        Assert.Equal("New Amazon S3", created.Name);
+        Assert.Equal("Amazon S3", created.Name);
         Assert.True(Shown(window, "Service"));
         Assert.True(Shown(window, "Region"));
         Click(ButtonOf(window, "Connect"));
@@ -313,7 +327,8 @@ public sealed class RemoteDialogsTests : IDisposable
         var (window, _) = Open(settings, RemoteProtocol.Dropbox);
         await SettleAsync();
         Assert.Equal(RemoteProtocol.Dropbox, window.Current!.Protocol);
-        Assert.True(Shown(window, "New connection")); // the name first
+        Assert.True(Shown(window, "Name the connection")); // the type is given: its name first
+        Assert.Equal("Dropbox", window.SuggestName(window.Current));
         Assert.Null(window.ApplyName(window.Current, "My Dropbox"));
         await SettleAsync();
         window.GetVisualDescendants().OfType<TabControl>().Single().SelectedIndex = 1;
