@@ -2197,7 +2197,6 @@
   "ConnectionManagerWindow.AccessKeyId": "Id de clé d'accès",
   "ConnectionManagerWindow.AccountKeyOrSAS": "Clé de compte ou SAS",
   "ConnectionManagerWindow.AccountName": "Nom du compte",
-  "ConnectionManagerWindow.AddConnection": "＋ Connexion",
   "ConnectionManagerWindow.AddToFavorites": "Ajouter aux favoris",
   "ConnectionManagerWindow.All": "Toutes",
   "ConnectionManagerWindow.Anonymous": "Anonyme",
@@ -2292,7 +2291,6 @@
   "ConnectionManagerWindow.StartFolder": "Dossier de départ",
   "ConnectionManagerWindow.StorageAccount": "Compte de stockage",
   "ConnectionManagerWindow.Tenant": "Locataire",
-  "ConnectionManagerWindow.Test": "⟳ Tester",
   "ConnectionManagerWindow.Testing": "Test en cours ...",
   "ConnectionManagerWindow.TheAccountNeedsAData": "Le compte a besoin d'un rôle de données sur le stockage (Storage Blob Data / Storage File Data ...).",
   "ConnectionManagerWindow.TheConnectionGoesThroughThis": "La connexion passe par ce serveur SSH ; il se connecte avec le même fichier de clé, agent ou mot de passe.",
@@ -3266,7 +3264,7 @@
   "ConnectionManagerView.ChooseAConnectionOnThe": "Choisissez une connexion à gauche ou créez-en une nouvelle.",
   "ConnectionManagerView.New": "＋ Nouvelle",
   "ConnectionWizard.SearchTheTypesSftpCloud": "Rechercher les types (sftp, cloud, windows ...)",
-  "ConnectionWizard.OrPasteAnAddressSftp": "ou collez une adresse : sftp://user@server:22/folder",
+  "ConnectionWizard.OrPasteAnAddressSftp": "ou collez une adresse : sftp://user@host/dir",
   "ConnectionWizard.SearchTheTypes": "Rechercher les types",
   "ConnectionWizard.NoConnectionTypeMatches": "Aucun type de connexion ne correspond.",
   "ConnectionWizard.TimeoutsAJumpHost": "Délais, hôte de rebond, chiffrement, proxy ... (tous aussi dans l’éditeur plus tard).",
@@ -3293,5 +3291,9 @@
   "DiskUsageView.ClickATypeTo": "Cliquez sur un type pour le mettre en évidence dans la carte.",
   "DiskUsageView.ShowAll": "Tout afficher",
   "DiskUsageView.CodeAndData": "Code et données",
-  "DiskUsageView.NoExtension": "sans extension"
+  "DiskUsageView.NoExtension": "sans extension",
+  "DiskUsageView.ChooseAnotherFolderToScan": "Choisir un autre dossier à analyser",
+  "MainWindowViewModel.FolderToScan": "Dossier à analyser",
+  "MainWindow.BackIntoThePanel": "Remettre dans le panneau",
+  "MainWindow.MaximizeAPageOfIts": "Agrandir : une page à part avec un onglet"
 }

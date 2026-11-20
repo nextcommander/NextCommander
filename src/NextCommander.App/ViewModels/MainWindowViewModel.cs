@@ -1163,12 +1163,9 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         c.Register("nc_DiskUsage", "Folder sizes: tree, extensions and treemap (like WinDirStat)", _ =>
         {
             // in place of the other panel, for the folder of this one (it follows this panel's folder)
-            var start = ActivePanel.CurrentPath;
-            if (start is not null)
+            if (ActivePanel.CurrentPath is { } start)
             {
-                QuickViewSide = null;
-                DiskUsageSide = OtherSide;
-                DiskUsage = new DiskUsageRequest(Tools, start, GoToFileAsync);
+                ShowDiskUsage(start);
             }
             return Task.CompletedTask;
         });
@@ -1886,6 +1883,41 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     public event EventHandler<VfsPath>? TreeChanged;
 
     /// <summary>Context menu commands of the directory tree pane.</summary>
+    /// <summary>The fixed drives of the machine that are ready (the roots of the folder tree window).</summary>
+    public IReadOnlyList<VfsPath> FixedDriveRoots()
+    {
+        try
+        {
+            return [.. _platform.GetDrives().Where(d => d.Kind == DriveKind.Fixed && d.IsReady && d.RootPath.Length > 0).Select(d => VfsPath.Local(d.RootPath))];
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>A command of the folder tree window's right click menu: its questions over that window.</summary>
+    public async Task TreeCommandAsync(Avalonia.Controls.Window owner, string command, VfsPath path)
+    {
+        var dialogs = _dialogs as Services.DialogService;
+        var previous = dialogs?.Owner;
+        if (dialogs is not null)
+        {
+            dialogs.Owner = owner;
+        }
+        try
+        {
+            await TreeCommandAsync(command, path);
+        }
+        finally
+        {
+            if (dialogs is not null)
+            {
+                dialogs.Owner = previous;
+            }
+        }
+    }
+
     public async Task TreeCommandAsync(string command, VfsPath path)
     {
         var provider = _registry.Resolve(path);
@@ -3793,6 +3825,25 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     /// <summary>The side the folder sizes cover.</summary>
     public TabSideViewModel? DiskUsageSide { get; private set; }
 
+    /// <summary>Folder sizes of <paramref name="start"/> in place of the other panel.</summary>
+    public void ShowDiskUsage(VfsPath start)
+    {
+        QuickViewSide = null;
+        DiskUsageSide = OtherSide;
+        DiskUsage = new DiskUsageRequest(Tools, start, GoToFileAsync) { PickFolder = PickScanFolderAsync };
+    }
+
+    /// <summary>The folder tree to choose the folder the folder sizes scan (from the one scanned now).</summary>
+    private async Task<VfsPath?> PickScanFolderAsync(Avalonia.Controls.Window owner, VfsPath current)
+    {
+        var panel = ActivePanel;
+        var dialog = new Views.Dialogs.TreeDialog("Folder to scan") { Commands = TreeCommandAsync, Drives = FixedDriveRoots };
+        var shown = dialog.ShowDialog(owner);
+        await dialog.InitializeAsync(current, p => panel.ListSubdirectoriesAsync(p, max: 5000));
+        await shown;
+        return dialog.Result;
+    }
+
     /// <summary>Puts the panel back.</summary>
     public void CloseDiskUsage()
     {
@@ -4246,7 +4297,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         {
             return null;
         }
-        var dialog = new Views.Dialogs.TreeDialog("Pick the target folder");
+        var dialog = new Views.Dialogs.TreeDialog("Pick the target folder") { Commands = TreeCommandAsync, Drives = FixedDriveRoots };
         var shown = dialog.ShowDialog(owner);
         await dialog.InitializeAsync(start, p => panel.ListSubdirectoriesAsync(p, max: 5000));
         await shown;

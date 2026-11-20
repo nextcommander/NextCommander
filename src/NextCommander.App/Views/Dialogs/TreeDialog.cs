@@ -101,6 +101,7 @@ public sealed class TreeDialog : Window
         _tree.Margin = new Thickness(10, 8);
         _tree.TreeControl.FontSize = 13.5;
         _tree.TreeControl.SelectionChanged += (_, _) => ShowCrumbs();
+        _tree.CommandRequested += async (_, e) => await RunCommandAsync(e.Command, e.Path);
         _tree.DirectoryActivated += (_, e) =>
         {
             if (e.Confirm)
@@ -160,13 +161,41 @@ public sealed class TreeDialog : Window
         }
     }
 
+    /// <summary>
+    /// Runs a command of the tree's right click menu (new folder, rename, delete, open in the other panel / a new tab;
+    /// with this window as the owner of its questions); null: no right click menu.
+    /// </summary>
+    public Func<Window, string, VfsPath, Task>? Commands { get; init; }
+
+    /// <summary>The drives shown beside a local folder's own (every fixed drive); null: only the folder's root.</summary>
+    public Func<IReadOnlyList<VfsPath>>? Drives { get; init; }
+
+    /// <summary>The roots of the tree (the drives; tests).</summary>
+    public IReadOnlyList<TreeNodeViewModel> RootNodes => _tree.RootNodes;
+
+    /// <summary>The tree's right click menu (null: none; tests).</summary>
+    public ContextMenu? TreeMenu => _tree.Menu;
+
     public async Task InitializeAsync(VfsPath path, Func<VfsPath, Task<IReadOnlyList<VfsEntry>>> list)
     {
         _list = list;
+        _tree.MenuEnabled = Commands is not null;
+        _tree.LocalRoots = Drives;
         await _tree.ShowAsync(path, list);
         ApplyFilter();
         ShowCrumbs();
         _tree.TreeControl.Focus();
+    }
+
+    /// <summary>A command of the right click menu; then the folder that changed is read again.</summary>
+    public async Task RunCommandAsync(string command, VfsPath path)
+    {
+        if (Commands is not { } run)
+        {
+            return;
+        }
+        await run(this, command, path);
+        _tree.Invalidate(command == "tree_mkdir" ? path : path.Parent ?? path);
     }
 
     private async Task ShowFolderAsync(VfsPath path)
@@ -215,7 +244,7 @@ public sealed class TreeDialog : Window
     /// <summary>Hides the folders the filter does not match (a folder stays while one of its loaded folders matches) and hidden ones when off.</summary>
     private void ApplyFilter()
     {
-        if (_tree.RootNode is not { } root)
+        if (_tree.RootNodes.Count == 0)
         {
             return;
         }
@@ -233,7 +262,10 @@ public sealed class TreeDialog : Window
             node.IsShown = shown;
             return shown && (query.Length == 0 || ownMatch || anyChild);
         }
-        Apply(root, true);
+        foreach (var root in _tree.RootNodes)
+        {
+            Apply(root, true);
+        }
     }
 
     private void CollapseAll()
@@ -241,6 +273,10 @@ public sealed class TreeDialog : Window
         if (_tree.RootNode is not { } root)
         {
             return;
+        }
+        foreach (var other in _tree.RootNodes.Where(r => !ReferenceEquals(r, root)))
+        {
+            other.IsExpanded = false;
         }
         void Collapse(TreeNodeViewModel node)
         {
@@ -261,7 +297,10 @@ public sealed class TreeDialog : Window
             return;
         }
         var selected = _tree.SelectedPath ?? root.Path;
-        root.Invalidate();
+        foreach (var drive in _tree.RootNodes)
+        {
+            drive.Invalidate();
+        }
         await _tree.ShowAsync(selected, _list);
         ApplyFilter();
         _note.Text = "Tree refreshed.";

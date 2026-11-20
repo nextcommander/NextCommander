@@ -2197,7 +2197,6 @@
   "ConnectionManagerWindow.AccessKeyId": "Zugriffsschlüssel-ID",
   "ConnectionManagerWindow.AccountKeyOrSAS": "Kontoschlüssel oder SAS",
   "ConnectionManagerWindow.AccountName": "Kontoname",
-  "ConnectionManagerWindow.AddConnection": "＋ Verbindung",
   "ConnectionManagerWindow.AddToFavorites": "Zu Favoriten hinzufügen",
   "ConnectionManagerWindow.All": "Alle",
   "ConnectionManagerWindow.Anonymous": "Anonym",
@@ -2292,7 +2291,6 @@
   "ConnectionManagerWindow.StartFolder": "Startordner",
   "ConnectionManagerWindow.StorageAccount": "Speicherkonto",
   "ConnectionManagerWindow.Tenant": "Mandant",
-  "ConnectionManagerWindow.Test": "⟳ Testen",
   "ConnectionManagerWindow.Testing": "Wird getestet ...",
   "ConnectionManagerWindow.TheAccountNeedsAData": "Das Konto braucht eine Datenrolle für den Speicher (Storage Blob Data / Storage File Data ...).",
   "ConnectionManagerWindow.TheConnectionGoesThroughThis": "Die Verbindung läuft über diesen SSH-Server; er meldet sich mit derselben Schlüsseldatei, demselben Agenten oder Kennwort an.",
@@ -3266,7 +3264,7 @@
   "ConnectionManagerView.ChooseAConnectionOnThe": "Wählen Sie links eine Verbindung oder legen Sie eine neue an.",
   "ConnectionManagerView.New": "＋ Neu",
   "ConnectionWizard.SearchTheTypesSftpCloud": "Typen durchsuchen (sftp, cloud, windows ...)",
-  "ConnectionWizard.OrPasteAnAddressSftp": "oder eine Adresse einfügen: sftp://user@server:22/folder",
+  "ConnectionWizard.OrPasteAnAddressSftp": "oder eine Adresse einfügen: sftp://user@host/dir",
   "ConnectionWizard.SearchTheTypes": "Typen durchsuchen",
   "ConnectionWizard.NoConnectionTypeMatches": "Kein Verbindungstyp passt.",
   "ConnectionWizard.TimeoutsAJumpHost": "Zeitlimits, ein Jump-Host, Verschlüsselung, der Proxy ... (alle später auch im Editor).",
@@ -3293,5 +3291,9 @@
   "DiskUsageView.ClickATypeTo": "Klicken Sie auf einen Typ, um ihn in der Karte hervorzuheben.",
   "DiskUsageView.ShowAll": "Alle anzeigen",
   "DiskUsageView.CodeAndData": "Code und Daten",
-  "DiskUsageView.NoExtension": "ohne Endung"
+  "DiskUsageView.NoExtension": "ohne Endung",
+  "DiskUsageView.ChooseAnotherFolderToScan": "Einen anderen Ordner zum Einlesen wählen",
+  "MainWindowViewModel.FolderToScan": "Einzulesender Ordner",
+  "MainWindow.BackIntoThePanel": "Zurück in das Panel",
+  "MainWindow.MaximizeAPageOfIts": "Maximieren: eine eigene Seite mit Reiter"
 }

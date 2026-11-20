@@ -126,4 +126,73 @@ public sealed class DiskUsageViewTests : IDisposable
         await SettleAsync();
         Assert.Empty(w.GetVisualDescendants().OfType<DiskUsageView>());
     }
+
+    [AvaloniaFact]
+    public async Task Maximize_moves_the_view_to_a_page_and_back_and_another_folder_can_be_scanned()
+    {
+        var (w, vm) = await _fx.OpenAsync();
+        var root = _fx.Root;
+        foreach (var folder in new[] { "a", "b" })
+        {
+            Directory.CreateDirectory(Path.Combine(root, "sizes", folder));
+            File.WriteAllBytes(Path.Combine(root, "sizes", folder, "x.bin"), new byte[folder == "a" ? 3000 : 5000]);
+        }
+        w.Width = 1400;
+        w.Height = 900;
+        await vm.Left.NavigateAsync(VfsPath.Local(Path.Combine(root, "sizes")));
+        await vm.ExecuteAsync("nc_DiskUsage");
+        await SettleAsync(3);
+        var view = w.PanelDiskUsage!;
+        await WaitUntilAsync(() => view.Root is not null);
+        await view.Running!;
+        var scanned = view.Root;
+
+        // over a panel it follows the panel's folder: no Folder...
+        bool OffersFolder() => view.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>().Any(t => t.Text == "Folder..." && t.IsEffectivelyVisible);
+        Assert.False(OffersFolder());
+
+        // maximized: the same view (its scan kept) on a page of its own with a tab; the panel is back; Folder... offered
+        w.MaximizeDiskUsage();
+        await SettleAsync();
+        Assert.True(OffersFolder());
+        Assert.Same(view, w.DiskUsagePage);
+        Assert.Same(scanned, view.Root);
+        Assert.Null(w.PanelDiskUsage);
+        Assert.Null(vm.DiskUsage);
+        Assert.Equal(Views.WorkspacePage.DiskUsage, w.CurrentPage);
+        Assert.Contains(Views.WorkspacePage.DiskUsage, w.OpenPages);
+        Shot(w, "disk-usage-page.png");
+
+        // another folder is scanned there
+        await view.ScanAsync(VfsPath.Local(Path.Combine(root, "sizes", "b")));
+        Assert.Equal(Path.Combine(root, "sizes", "b"), view.Folder.Path);
+        Assert.Equal(5000, view.Root!.Size);
+
+        // back into the panel: the same view over the other panel
+        w.RestoreDiskUsage();
+        await SettleAsync();
+        Assert.Null(w.DiskUsagePage);
+        Assert.Same(view, w.PanelDiskUsage);
+        Assert.False(OffersFolder());
+        Assert.Equal(Views.WorkspacePage.Files, w.CurrentPage);
+        Assert.Equal(5000, view.Root!.Size);
+
+        // maximized again, its tab's x closes it
+        w.MaximizeDiskUsage();
+        await SettleAsync();
+        w.ClosePage(Views.WorkspacePage.DiskUsage);
+        await SettleAsync();
+        Assert.Null(w.DiskUsagePage);
+        Assert.DoesNotContain(Views.WorkspacePage.DiskUsage, w.OpenPages);
+        Assert.Empty(w.GetVisualDescendants().OfType<DiskUsageView>());
+    }
+
+    private static void Shot(Avalonia.Controls.Window w, string name)
+    {
+        if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
+        {
+            Directory.CreateDirectory(dir);
+            w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, name));
+        }
+    }
 }

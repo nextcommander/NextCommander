@@ -47,7 +47,7 @@ public sealed class ConnectionChecksUiTests : IDisposable
     }
 
     private static Button ButtonOf(Control window, string text) =>
-        window.GetVisualDescendants().OfType<Button>().First(b => Equals(b.Content, text) && b.IsEffectivelyVisible);
+        window.GetVisualDescendants().OfType<Button>().First(b => (Equals(b.Content, text) || Equals(b.Tag, text)) && b.IsEffectivelyVisible);
 
     private static void Click(Button button) => button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 

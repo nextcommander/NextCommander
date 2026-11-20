@@ -2197,7 +2197,6 @@
   "ConnectionManagerWindow.AccessKeyId": "Erişim anahtarı kimliği",
   "ConnectionManagerWindow.AccountKeyOrSAS": "Hesap anahtarı ya da SAS",
   "ConnectionManagerWindow.AccountName": "Hesap adı",
-  "ConnectionManagerWindow.AddConnection": "＋ Bağlantı",
   "ConnectionManagerWindow.AddToFavorites": "Sık kullanılanlara ekle",
   "ConnectionManagerWindow.All": "Tümü",
   "ConnectionManagerWindow.Anonymous": "Anonim",
@@ -2292,7 +2291,6 @@
   "ConnectionManagerWindow.StartFolder": "Başlangıç klasörü",
   "ConnectionManagerWindow.StorageAccount": "Depolama hesabı",
   "ConnectionManagerWindow.Tenant": "Kiracı (tenant)",
-  "ConnectionManagerWindow.Test": "⟳ Test et",
   "ConnectionManagerWindow.Testing": "Test ediliyor ...",
   "ConnectionManagerWindow.TheAccountNeedsAData": "Hesabın depolamada bir veri rolü olmalı (Storage Blob Data / Storage File Data ...).",
   "ConnectionManagerWindow.TheConnectionGoesThroughThis": "Bağlantı bu SSH sunucusu üzerinden geçer; aynı anahtar dosyası, agent ya da parolayla giriş yapar.",
@@ -3266,7 +3264,7 @@
   "ConnectionManagerView.ChooseAConnectionOnThe": "Soldan bir bağlantı seçin ya da yenisini oluşturun.",
   "ConnectionManagerView.New": "＋ Yeni",
   "ConnectionWizard.SearchTheTypesSftpCloud": "Türlerde ara (sftp, bulut, windows ...)",
-  "ConnectionWizard.OrPasteAnAddressSftp": "ya da bir adres yapıştırın: sftp://user@server:22/folder",
+  "ConnectionWizard.OrPasteAnAddressSftp": "ya da bir adres yapıştırın: sftp://user@host/dir",
   "ConnectionWizard.SearchTheTypes": "Türlerde ara",
   "ConnectionWizard.NoConnectionTypeMatches": "Eşleşen bağlantı türü yok.",
   "ConnectionWizard.TimeoutsAJumpHost": "Zaman aşımları, atlama sunucusu, şifreleme, vekil sunucu ... (hepsi daha sonra düzenleyicide de var).",
@@ -3293,5 +3291,9 @@
   "DiskUsageView.ClickATypeTo": "Haritada vurgulamak için bir türe tıklayın.",
   "DiskUsageView.ShowAll": "Tümünü göster",
   "DiskUsageView.CodeAndData": "Kod ve veri",
-  "DiskUsageView.NoExtension": "uzantısız"
+  "DiskUsageView.NoExtension": "uzantısız",
+  "DiskUsageView.ChooseAnotherFolderToScan": "Taranacak başka bir klasör seçin",
+  "MainWindowViewModel.FolderToScan": "Taranacak klasör",
+  "MainWindow.BackIntoThePanel": "Panele geri koy",
+  "MainWindow.MaximizeAPageOfIts": "Büyüt: sekmesi olan ayrı bir sayfa"
 }

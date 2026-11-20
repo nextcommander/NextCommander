@@ -57,9 +57,9 @@ public sealed partial class ConnectionManagerView : UserControl
     private readonly ListBox _tree = new() { Classes = { "noloc" } };
     private readonly ContentControl _detail = new();
     /// <summary>The footer: the note line, the buttons of the selection on the left (wrapping) and Save / Connect on the right.</summary>
-    private readonly StackPanel _detailFooter = new() { Margin = new Thickness(16, 6, 16, 4) };
-    private readonly WrapPanel _footerLeft = new() { Orientation = Orientation.Horizontal };
-    private readonly StackPanel _footerRight = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top };
+    private readonly StackPanel _detailFooter = new() { Margin = new Thickness(16, 8, 16, 2) };
+    private readonly WrapPanel _footerLeft = new() { Orientation = Orientation.Horizontal, ItemSpacing = 6, LineSpacing = 6 };
+    private readonly StackPanel _footerRight = new() { Orientation = Orientation.Horizontal, Spacing = 6, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top };
 
     private readonly Grid _footerButtons = new() { ColumnDefinitions = new ColumnDefinitions("*,Auto"), RowDefinitions = new RowDefinitions("Auto,Auto") };
 
@@ -178,7 +178,44 @@ public sealed partial class ConnectionManagerView : UserControl
     public bool IsClosed => _done.Task.IsCompleted;
 
     /// <summary>Puts the focus into the list of connections (its page is shown).</summary>
-    public void FocusTree() => _tree.Focus();
+    /// <summary>
+    /// The keyboard into the tree: its selected row (the list itself takes no focus, so the keys stayed with the main
+    /// window, whose menu opened on the arrow keys).
+    /// </summary>
+    public void FocusTree() => FocusSelectedRow();
+
+    private Border? _actionBar;
+
+    /// <summary>The bar of actions above the editor is shown while it has buttons or a message.</summary>
+    private void UpdateActionBar()
+    {
+        if (_actionBar is not null)
+        {
+            _actionBar.IsVisible = _footerLeft.Children.Count + _footerRight.Children.Count > 0 || _toast.IsVisible;
+        }
+    }
+
+    /// <summary>The keyboard focus on the selected row (the list when there is none), once its row exists.</summary>
+    private void FocusSelectedRow()
+    {
+        void Focus()
+        {
+            if (_tree.SelectedItem is null && Rows.Count > 0)
+            {
+                _tree.SelectedIndex = 0;
+            }
+            if (_tree.SelectedItem is { } item && _tree.ContainerFromItem(item) is Control row)
+            {
+                row.Focus(NavigationMethod.Directional);
+            }
+            else
+            {
+                _tree.Focus();
+            }
+        }
+        Focus(); // at once (the row exists already), and again once a new row is made
+        Avalonia.Threading.Dispatcher.UIThread.Post(Focus, Avalonia.Threading.DispatcherPriority.Loaded);
+    }
 
     /// <summary>Closes the manager: unfinished new connections are dropped, the rest saved.</summary>
     public void Close()
@@ -223,10 +260,12 @@ public sealed partial class ConnectionManagerView : UserControl
         var sideBorder = new Border { Child = side, BorderThickness = new Thickness(0, 0, 1, 0) };
         sideBorder[!Border.BorderBrushProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SystemControlForegroundBaseLowBrush");
 
+        // the actions of the selected item above it (user's request, 20 November 2026: at the bottom they were out of the way)
         var main = new DockPanel();
-        var footerBorder = new Border { Child = _detailFooter, BorderThickness = new Thickness(0, 1, 0, 0) };
+        var footerBorder = _actionBar = new Border { Child = _detailFooter, BorderThickness = new Thickness(0, 0, 0, 1) };
         footerBorder[!Border.BorderBrushProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SystemControlForegroundBaseLowBrush");
-        DockPanel.SetDock(footerBorder, Dock.Bottom);
+        footerBorder[!Border.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("FmToolBarBrush");
+        DockPanel.SetDock(footerBorder, Dock.Top);
         main.Children.Add(footerBorder);
         var scroller = new ScrollViewer { Content = _detail, Padding = new Thickness(22, 16) };
         scroller.SizeChanged += (_, e) =>
@@ -242,7 +281,7 @@ public sealed partial class ConnectionManagerView : UserControl
         main.Children.Add(scroller);
         _footerButtons.Children.AddRange([_footerLeft, _footerRight]);
         PlaceFooterButtons();
-        _detailFooter.Children.AddRange([_toast, _footerButtons]);
+        _detailFooter.Children.AddRange([_footerButtons, _toast]);
 
         // the tree and the editor side by side; the splitter between them sets the tree's width
         var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("260,Auto,*") };
@@ -346,6 +385,9 @@ public sealed partial class ConnectionManagerView : UserControl
     public void RefreshTree()
     {
         var key = Selected?.Key;
+        // the rows are made again: the focused one goes with them, so the keys would go elsewhere (the arrow keys opened
+        // a drop-down of the editor); the focus goes back to the selected row
+        var hadFocus = _tree.IsKeyboardFocusWithin;
         _refreshing = true;
         try
         {
@@ -356,6 +398,10 @@ public sealed partial class ConnectionManagerView : UserControl
         finally
         {
             _refreshing = false;
+        }
+        if (hadFocus)
+        {
+            FocusSelectedRow();
         }
         if (key is not null && Selected is null)
         {
@@ -423,16 +469,8 @@ public sealed partial class ConnectionManagerView : UserControl
         DockPanel.SetDock(icon, Dock.Left);
         DockPanel.SetDock(trailing, Dock.Right);
         panel.Children.AddRange([indent, chevron, icon, trailing, text]);
-        panel.PointerPressed += (_, e) =>
-        {
-            if (e.GetCurrentPoint(panel).Properties.IsLeftButtonPressed)
-            {
-                _dragCandidate = (row, e.GetPosition(this), e);
-            }
-        };
-        panel.PointerMoved += (_, e) => TryStartDrag(e);
         DragDrop.SetAllowDrop(panel, true);
-        panel.Tag = row;
+        panel.Tag = row; // the row under the pointer (drag and drop)
         return panel;
     }
 
@@ -883,33 +921,103 @@ public sealed partial class ConnectionManagerView : UserControl
 
     // ---------------------------------------------------------------- drag and drop
 
+    /// <summary>
+    /// Drag and drop in the tree (user's request, 20 November 2026): a connection or a folder dragged onto a folder goes into
+    /// it, onto a connection into that one's folder, onto the empty space to the top. The press and the moves are taken
+    /// from the tree itself, handled ones too: the list item takes the pointer when it is pressed, so the row under it
+    /// never sees it move. The folder it would go into is highlighted while dragging.
+    /// </summary>
     private void InitializeDragDrop()
     {
         DragDrop.SetAllowDrop(_tree, true);
+        _tree.AddHandler(PointerPressedEvent, (_, e) =>
+        {
+            _dragCandidate = e.GetCurrentPoint(_tree).Properties.IsLeftButtonPressed && RowAt(e.Source) is { } row
+                ? (row, e.GetPosition(this), e)
+                : null;
+        }, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+        _tree.AddHandler(PointerMovedEvent, (_, e) => TryStartDrag(e), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+        _tree.AddHandler(PointerReleasedEvent, (_, _) => _dragCandidate = null, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
         _tree.AddHandler(DragDrop.DragOverEvent, (_, e) =>
         {
-            e.DragEffects = _dragged is not null && DropFolder(e) is not null ? DragDropEffects.Move : DragDropEffects.None;
+            var folder = _dragged is not null ? DropFolder(e.Source) : null;
+            e.DragEffects = folder is not null ? DragDropEffects.Move : DragDropEffects.None;
+            HighlightDrop(folder);
         });
+        _tree.AddHandler(DragDrop.DragLeaveEvent, (_, _) => HighlightDrop(null));
         _tree.AddHandler(DragDrop.DropEvent, (_, e) =>
         {
-            if (_dragged is { } dragged && DropFolder(e) is { } folder)
+            HighlightDrop(null);
+            if (_dragged is { } dragged && DropFolder(e.Source) is { } folder)
             {
-                MoveTo(dragged, folder);
+                Drop(dragged, folder);
             }
             _dragged = null;
         });
     }
 
-    /// <summary>The folder a drop goes into: the folder under the pointer, a connection's folder, else the top; null where it cannot go.</summary>
-    private string? DropFolder(DragEventArgs e)
+    /// <summary>The row of the tree under a pointer event's source (null: the empty space).</summary>
+    private static Row? RowAt(object? source)
     {
-        var target = (e.Source as Control)?.FindAncestorOfType<DockPanel>(includeSelf: true);
-        while (target is not null && target.Tag is not Row)
+        for (var c = source as Visual; c is not null; c = c.GetVisualParent())
         {
-            target = target.FindAncestorOfType<DockPanel>();
+            if (c is Control { Tag: Row row })
+            {
+                return row;
+            }
+            if (c is ListBox)
+            {
+                break;
+            }
         }
-        var folder = target?.Tag is Row row ? row.Folder ?? row.Connection!.Folder.Trim('/') : string.Empty;
-        return _dragged?.Folder is { } moving && ConnectionFolders.IsInside(folder, moving) ? null : folder;
+        return null;
+    }
+
+    /// <summary>
+    /// The folder a drop goes into: the folder under the pointer, a connection's folder, else the top ("" ); null where it
+    /// cannot go (a folder into itself or one below it).
+    /// </summary>
+    public string? DropFolder(object? source) => DropFolderFor(_dragged, RowAt(source));
+
+    /// <summary>Where <paramref name="dragged"/> goes when dropped on <paramref name="target"/> (null: the empty space).</summary>
+    public static string? DropFolderFor(Row? dragged, Row? target)
+    {
+        var folder = target is null ? string.Empty : target.Folder ?? target.Connection!.Folder.Trim('/');
+        return dragged?.Folder is { } moving && ConnectionFolders.IsInside(folder, moving) ? null : folder;
+    }
+
+    /// <summary>A drop: moved, then saved.</summary>
+    public bool Drop(Row dragged, string folder)
+    {
+        if (!MoveTo(dragged, folder))
+        {
+            return false;
+        }
+        _request.Save();
+        return true;
+    }
+
+    private Control? _dropHighlight;
+
+    /// <summary>Marks the folder row a drop would go into (null: none).</summary>
+    private void HighlightDrop(string? folder)
+    {
+        var row = folder is { Length: > 0 }
+            ? _tree.GetVisualDescendants().OfType<DockPanel>().FirstOrDefault(p => p.Tag is Row { Folder: { } f } && f == folder)
+            : null;
+        if (ReferenceEquals(row, _dropHighlight))
+        {
+            return;
+        }
+        if (_dropHighlight is DockPanel old)
+        {
+            old.Background = Brushes.Transparent;
+        }
+        _dropHighlight = row;
+        if (row is not null)
+        {
+            row.Background = new SolidColorBrush(Color.FromArgb(56, 76, 141, 255));
+        }
     }
 
     private async void TryStartDrag(PointerEventArgs e)
@@ -1003,7 +1111,7 @@ public sealed partial class ConnectionManagerView : UserControl
         return menu;
     }
 
-    private readonly TextBlock _toast = new() { FontSize = 12, Opacity = 0.8, MinHeight = 16, Margin = new Thickness(0, 0, 0, 4), TextTrimming = TextTrimming.CharacterEllipsis };
+    private readonly TextBlock _toast = new() { FontSize = 12, Opacity = 0.8, Margin = new Thickness(2, 6, 0, 4), TextTrimming = TextTrimming.CharacterEllipsis, IsVisible = false };
 
     private DispatcherTimerHandle? _toastTimer;
 
@@ -1012,8 +1120,15 @@ public sealed partial class ConnectionManagerView : UserControl
     {
         LastMessage = Core.Localization.Localizer.T(text);
         _toast.Text = LastMessage;
+        _toast.IsVisible = true;
+        UpdateActionBar();
         _toastTimer?.Dispose();
-        _toastTimer = new DispatcherTimerHandle(TimeSpan.FromSeconds(4), () => _toast.Text = string.Empty);
+        _toastTimer = new DispatcherTimerHandle(TimeSpan.FromSeconds(4), () =>
+        {
+            _toast.Text = string.Empty;
+            _toast.IsVisible = false;
+            UpdateActionBar();
+        });
     }
 
     /// <summary>The last note shown (tests).</summary>

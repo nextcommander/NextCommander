@@ -20,6 +20,7 @@ public enum WorkspacePage
     Options,
     Sync,
     Duplicates,
+    DiskUsage,
     Connections,
     Terminal,
     RemoteDesktop,
@@ -64,6 +65,10 @@ public partial class MainWindow
             if (Duplicates is not null)
             {
                 pages.Add(WorkspacePage.Duplicates);
+            }
+            if (DiskUsagePage is not null)
+            {
+                pages.Add(WorkspacePage.DiskUsage);
             }
             if (ConnectionManager is not null)
             {
@@ -112,6 +117,9 @@ public partial class MainWindow
                 break;
             case WorkspacePage.Duplicates:
                 Duplicates?.Focus();
+                break;
+            case WorkspacePage.DiskUsage:
+                DiskUsagePage?.Focus();
                 break;
             case WorkspacePage.Connections:
                 ConnectionManager?.FocusTree();
@@ -209,6 +217,7 @@ public partial class MainWindow
         SettingsHost.IsVisible = _page == WorkspacePage.Options;
         SyncHost.IsVisible = _page == WorkspacePage.Sync;
         DuplicatesHost.IsVisible = _page == WorkspacePage.Duplicates;
+        DiskUsagePageHost.IsVisible = _page == WorkspacePage.DiskUsage;
         ConnectionsHost.IsVisible = _page == WorkspacePage.Connections;
         RemoteDesktopHost.IsVisible = _page == WorkspacePage.RemoteDesktop;
         foreach (var desktop in _desktops)
@@ -377,6 +386,7 @@ public partial class MainWindow
             WorkspacePage.Terminal => (MenuIcons.Create("nc_MaximizeTerminal") ?? new Panel(), "Terminal", "Internal terminal", false),
             WorkspacePage.Sync => (MenuIcons.Create("nc_SyncDirs") ?? new Panel(), "Synchronize", Tools.SyncDirsView.Title, false),
             WorkspacePage.Duplicates => (MenuIcons.Create("nc_FindDuplicates") ?? new Panel(), "Duplicates", Tools.DuplicatesView.Title, false),
+            WorkspacePage.DiskUsage => (MenuIcons.Create("nc_DiskUsage") ?? new Panel(), "Folder sizes", DiskUsagePage?.FolderText ?? string.Empty, false),
             WorkspacePage.Connections => (MenuIcons.Create("nc_RemoteConnection") ?? new Panel(), "Connections", "Connection manager", false),
             _ => (LocationIcon(panel?.CurrentPath), panel?.Title ?? "?", panel?.CurrentPath?.ToDisplayString() ?? string.Empty, true),
         };
@@ -401,7 +411,7 @@ public partial class MainWindow
             ToolTip.SetTip(close, page switch
             {
                 WorkspacePage.Options => "Close the options (Esc)",
-                WorkspacePage.Sync or WorkspacePage.Duplicates or WorkspacePage.Connections => "Close (Esc)",
+                WorkspacePage.Sync or WorkspacePage.Duplicates or WorkspacePage.DiskUsage or WorkspacePage.Connections => "Close (Esc)",
                 WorkspacePage.RemoteDesktop => "Disconnect and close",
                 _ => "Back to its place below the panels",
             });
@@ -460,6 +470,9 @@ public partial class MainWindow
                 break;
             case WorkspacePage.Duplicates:
                 Duplicates?.Close();
+                break;
+            case WorkspacePage.DiskUsage:
+                CloseDiskUsagePage();
                 break;
             case WorkspacePage.Connections:
                 ConnectionManager?.Close();
@@ -531,6 +544,63 @@ public partial class MainWindow
         };
         DuplicatesHost.Child = view;
         SelectPage(WorkspacePage.Duplicates);
+    }
+
+    /// <summary>Folder sizes maximized: a page of its own (null: not open).</summary>
+    public Tools.DiskUsageView? DiskUsagePage { get; private set; }
+
+    /// <summary>
+    /// Maximize of the folder sizes over a panel (user's request, 20 November 2026): the same view, its scan going on,
+    /// moves to a page of its own with a tab; the panel is shown again. Its tab's x, its close button and Esc close it;
+    /// Back into the panel puts it over the other panel again.
+    /// </summary>
+    public void MaximizeDiskUsage()
+    {
+        if (_vm is null || _panelDiskUsage is not { } view)
+        {
+            return;
+        }
+        _maximizingDiskUsage = view;
+        _vm.CloseDiskUsage();
+        _maximizingDiskUsage = null;
+        DiskUsagePage = view;
+        DiskUsagePageHost.Child = DiskUsageChrome(view, page: true);
+        SelectPage(WorkspacePage.DiskUsage);
+    }
+
+    /// <summary>Back into the panel: the view of the page over the other panel again, as it is.</summary>
+    public void RestoreDiskUsage()
+    {
+        if (_vm is null || DiskUsagePage is not { } view)
+        {
+            return;
+        }
+        DiskUsagePage = null;
+        DiskUsagePageHost.Child = null;
+        _page = WorkspacePage.Files;
+        ApplyPage();
+        _reuseDiskUsage = view;
+        _vm.ShowDiskUsage(view.Folder);
+        _reuseDiskUsage = null;
+        view.Focus();
+    }
+
+    /// <summary>Closes the folder sizes page (its scan stops).</summary>
+    public void CloseDiskUsagePage()
+    {
+        if (DiskUsagePage is not { } view)
+        {
+            return;
+        }
+        view.Stop();
+        DiskUsagePage = null;
+        DiskUsagePageHost.Child = null;
+        var wasShown = _page == WorkspacePage.DiskUsage;
+        ApplyPage();
+        if (wasShown)
+        {
+            ActiveView.FocusList();
+        }
     }
 
     /// <summary>The files tab follows the folder of the active panel.</summary>
