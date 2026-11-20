@@ -40,6 +40,17 @@ public abstract class FileJob
     /// <summary>"Finish current file, then stop".</summary>
     public bool StopAfterCurrentFile { get; set; }
 
+    /// <summary>The job can leave out the file it is working on and go on (<see cref="SkipCurrentFile"/>).</summary>
+    public virtual bool CanSkipFile => false;
+
+    /// <summary>Leaves out the file being worked on (its partial copy is deleted) and goes on with the next one.</summary>
+    public virtual void SkipCurrentFile()
+    {
+    }
+
+    /// <summary>Where the job reads from and writes to, for the progress window (null when it has no such places).</summary>
+    public virtual (string Source, string Target)? Route => null;
+
     public IJobInteraction Interaction { get; set; } = new AutoInteraction();
 
     public IReadOnlyList<JobError> Errors
