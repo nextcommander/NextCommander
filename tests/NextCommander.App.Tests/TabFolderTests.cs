@@ -117,6 +117,7 @@ public sealed class TabFolderTests : IDisposable
         Assert.False(plain.HasOwnTabIcon);
         Assert.Null(plain.TabIcon);
         Assert.Null(plain.TabGlyph);
+        Assert.True(plain.ShowTabIcon); // icons on tabs are on by default: the folder icon
     }
 
     [AvaloniaFact]
