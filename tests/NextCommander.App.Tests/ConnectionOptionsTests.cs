@@ -51,7 +51,7 @@ public sealed class ConnectionOptionsTests : IDisposable
 
     private static void Click(Control view, string text)
     {
-        var button = view.GetVisualDescendants().OfType<Button>().First(b => Equals(b.Content, text) && b.IsEffectivelyVisible);
+        var button = view.GetVisualDescendants().OfType<Button>().First(b => (Equals(b.Content, text) || Equals(b.Tag, text)) && b.IsEffectivelyVisible);
         button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
     }
 
