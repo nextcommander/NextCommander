@@ -48,24 +48,32 @@ The other formats are read-only.
 ## Packing (Alt+F5)
 
 *Files > Archive > Pack...* (also **Pack...** in the right-click menu, at the top of Windows Explorer's menu
-there too) packs the selected files into a new archive in the other panel. The dialog is laid out as in Total
-Commander:
+there too) packs the selected files into a new archive in the other panel. The dialog shows what is packed and its
+size at the top, then:
 
-- the archive name (**Folder...** picks another folder for it),
-- **Also pack path names**: off, every file is stored under its name only, without its folders,
-- **Recursively pack subdirectories**: off, a selected folder brings its files but not its subfolders,
-- **Move to archive**: the files are deleted after packing,
-- **Create separate archives, one per selected file/dir**, and with it **Leave out base directory when packing
-  folders** (the contents of a folder at the top of its archive),
-- **Split into volumes of** (7-ZIP): the archive is written in parts of the given size (`100M`, `650M` for a CD,
-  `4092M` for a FAT32 stick, `1.5G` ...; a plain number is megabytes): `name.7z.001`, `name.7z.002` ... 7-Zip (and
-  NextCommander, see [Split archives](#supported-formats)) opens the set from its first part,
-- **Create a self-extracting archive** (7-ZIP, when 7-Zip has its `7z.sfx` module, as on Windows): a program
-  (`name.exe`) that unpacks itself, for computers without 7-Zip; it cannot be split into volumes,
-- **Encrypt**: a password for zip (AES-256 by default; AES-128 or the older ZipCrypto, which Windows Explorer can
-  open, can be chosen on the *Packer > Zip* page) or 7z,
-- on the right, the **compression rate** (0 = store only ... 9 = smallest), the **packer** (ZIP, 7-ZIP, TAR, TGZ,
-  TBZ, TZST and packer plugins) and **Configure...**, which opens the *Packer* pages of the configuration.
+- **Archive**: its path (the folder button picks another folder); the extension follows the format.
+- **Format**: cards for ZIP, 7-Zip, TAR, TGZ, TBZ, TZST and packer plugins, each with what it is good for; under
+  them what the chosen one can do (encryption, self-extracting, volumes). *Configure packer...* opens the *Packer*
+  pages of the configuration. 7-Zip needs the 7-Zip program (see below).
+- **Compression**: the level from 0 (store) to 9 (ultra) with its name, and an **estimate** of the archive's size,
+  what is saved and how fast it packs. Pictures, media and archives keep their size in the estimate; folders are not
+  counted (their size is not known yet). TAR has no level.
+- **Options**, each a switch with its settings under it while it is on:
+  - **Include subfolders** (off: a selected folder brings its files but not its subfolders), with **Keep folder
+    paths inside the archive** (off: every file under its name only);
+  - **One archive per selected item**, with **Leave out the base folder when packing folders** (the contents of a
+    folder at the top of its archive);
+  - **Split into volumes** (7-Zip): parts of 10 MB, 25 MB (e-mail), 100 MB, 700 MB (CD), 4092 MB (FAT32) or any size
+    typed (`1.5G`; a plain number is megabytes), with how many parts it makes: `name.7z.001`, `name.7z.002` ... 7-Zip
+    (and NextCommander, see [Split archives](#supported-formats)) opens the set from its first part;
+  - **Self-extracting archive** (7-Zip, when it has its `7z.sfx` module, as on Windows): a program (`name.exe`) that
+    unpacks itself, for computers without 7-Zip; it cannot be split into volumes;
+  - **Encrypt with a password**: the password twice (the eye shows it) and its strength; for zip the method (AES-256,
+    AES-128 or the weak ZipCrypto that Windows Explorer opens), for 7z whether the file names are encrypted too (the
+    defaults come from the *Packer* pages);
+  - **Delete originals after packing**: the files are moved into the archive, only when packing succeeds.
+- The line at the bottom sums it up (name, format, level, estimated size, the options on); **Pack** (*Pack and
+  delete* when the originals go), **Add to queue** and **Cancel**.
 - If you pick an existing zip file, the files are added to it.
 - An interrupted packing job leaves no half-written archive behind.
 

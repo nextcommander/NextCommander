@@ -163,9 +163,9 @@ public sealed class DialogService : IDialogService
 
     private Views.Search.FindFilesWindow? _findFiles;
 
-    public async Task<PackDialogResult?> ShowPackDialogAsync(string description, string target, NextCommander.Vfs.Archive.PackFormat format)
+    public async Task<PackDialogResult?> ShowPackDialogAsync(string description, string target, NextCommander.Vfs.Archive.PackFormat format, PackDialogInput? input = null)
     {
-        var dialog = new PackDialog(description, target, format);
+        var dialog = new PackDialog(description, target, format, input);
         await dialog.ShowDialog(RequireOwner());
         return dialog.Result;
     }
