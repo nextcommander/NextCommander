@@ -156,6 +156,71 @@ public sealed class ToolDialogsTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task The_folder_tree_menu_has_icons_and_runs_its_commands()
+    {
+        var root = _fx.L("treemenu");
+        Directory.CreateDirectory(Path.Combine(root, "a"));
+        var provider = new LocalFileSystemProvider();
+        async Task<IReadOnlyList<VfsEntry>> List(VfsPath path) =>
+            [.. (await provider.ListAsync(path, CancellationToken.None)).Where(e => e.IsDirectory)];
+
+        // nobody to run its commands: no right click menu (none that does nothing)
+        var plain = _fx.Track(new TreeDialog());
+        plain.Show();
+        await plain.InitializeAsync(VfsPath.Local(root), List);
+        Assert.Null(plain.TreeMenu);
+
+        var calls = new List<(Window Owner, string Command, VfsPath Path)>();
+        var dialog = _fx.Track(new TreeDialog("Folder to scan")
+        {
+            Commands = (owner, command, path) =>
+            {
+                calls.Add((owner, command, path));
+                return Task.CompletedTask;
+            },
+        });
+        dialog.Show();
+        await dialog.InitializeAsync(VfsPath.Local(root), List);
+        var menu = dialog.TreeMenu!;
+        menu.Open(); // on the tree it is attached to
+        await SettleAsync();
+        Assert.Equal(5, menu.Items.Count);
+        Assert.All(menu.Items.OfType<MenuItem>(), item => Assert.NotNull(item.Icon)); // icons in the menu
+        menu.Close();
+
+        // a command runs with the folder tree window as the owner of its questions
+        await dialog.RunCommandAsync("tree_mkdir", VfsPath.Local(root));
+        var (owner, command, path) = Assert.Single(calls);
+        Assert.Same(dialog, owner);
+        Assert.Equal(("tree_mkdir", VfsPath.Local(root)), (command, path));
+    }
+
+    [AvaloniaFact]
+    public async Task The_folder_tree_shows_every_fixed_drive()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return; // drive letters
+        }
+        var root = _fx.L("drives");
+        var provider = new LocalFileSystemProvider();
+        async Task<IReadOnlyList<VfsEntry>> List(VfsPath path) =>
+            Directory.Exists(path.Path) ? [.. (await provider.ListAsync(path, CancellationToken.None)).Where(e => e.IsDirectory)] : [];
+        var own = Path.GetPathRoot(root)!;
+        var other = own.StartsWith("Z", StringComparison.OrdinalIgnoreCase) ? @"Y:\" : @"Z:\";
+        var dialog = _fx.Track(new TreeDialog { Drives = () => [VfsPath.Local(own), VfsPath.Local(other)] });
+        dialog.Show();
+        await dialog.InitializeAsync(VfsPath.Local(root), List);
+        await SettleAsync();
+
+        // the folder's own drive (opened down to it) and the other drives, each once, by name
+        Assert.Equal(new[] { own, other }.Order(StringComparer.OrdinalIgnoreCase), dialog.RootNodes.Select(r => r.Path.Path));
+        Assert.Equal(VfsPath.Local(root), dialog.Selected);
+        Assert.True(dialog.RootNodes.Single(r => r.Path.Path == own).IsExpanded);
+        Assert.False(dialog.RootNodes.Single(r => r.Path.Path == other).IsExpanded);
+    }
+
+    [AvaloniaFact]
     public async Task The_commands_window_searches_and_changes_shortcuts()
     {
         var settings = new NextCommander.Core.Config.AppSettings();

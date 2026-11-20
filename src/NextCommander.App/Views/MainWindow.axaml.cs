@@ -635,8 +635,10 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>Shows the quick view over the side chosen by the view model (or hides it).</summary>
-    /// <summary>Folder sizes over the other panel: a title with a close button above the view; gone when closed.</summary>
+    /// <summary>
+    /// Folder sizes over the other panel: a title with Maximize and Close above the view; gone when closed. A view that
+    /// comes back from its page (Back into the panel) is shown again as it is, scan and all.
+    /// </summary>
     private void UpdateDiskUsageHost()
     {
         if (_vm is null)
@@ -646,12 +648,82 @@ public partial class MainWindow : Window
         if (_vm.DiskUsage is not { } request || _vm.DiskUsageSide is not { } side)
         {
             DiskUsageHost.IsVisible = false;
-            DiskUsageHost.Child = null; // stops a scan in progress
-            ActiveView.FocusList();
+            if (_panelDiskUsage is { } old && !ReferenceEquals(old, _maximizingDiskUsage))
+            {
+                old.Stop(); // a scan in progress ends
+            }
+            _panelDiskUsage = null;
+            DiskUsageHost.Child = null;
+            if (_page == WorkspacePage.Files)
+            {
+                ActiveView.FocusList();
+            }
             return;
         }
+        _panelDiskUsage?.Stop(); // the panel next to it went to another folder: a new scan
+        if (DiskUsagePage is not null)
+        {
+            CloseDiskUsagePage(); // one folder sizes at a time
+        }
+        var view = _reuseDiskUsage is { } reuse && reuse.Folder == request.Start ? reuse : NewDiskUsageView(request);
+        _reuseDiskUsage = null;
+        _panelDiskUsage = view;
+        DiskUsageHost.Child = DiskUsageChrome(view, page: false);
+        var vertical = _vm.VerticalPanels;
+        Grid.SetColumn(DiskUsageHost, vertical ? 0 : ReferenceEquals(side, _vm.LeftSide) ? 0 : 2);
+        Grid.SetRow(DiskUsageHost, vertical ? (ReferenceEquals(side, _vm.LeftSide) ? 0 : 2) : 0);
+        DiskUsageHost.IsVisible = true;
+    }
+
+    private Tools.DiskUsageView? _panelDiskUsage;
+    private Tools.DiskUsageView? _maximizingDiskUsage;
+    private Tools.DiskUsageView? _reuseDiskUsage;
+
+    /// <summary>The folder sizes shown over a panel (null: none; a maximized one is <see cref="DiskUsagePage"/>).</summary>
+    public Tools.DiskUsageView? PanelDiskUsage => _panelDiskUsage;
+
+    private Tools.DiskUsageView NewDiskUsageView(Services.DiskUsageRequest request)
+    {
         var view = new Tools.DiskUsageView(request);
-        view.CloseRequested += (_, _) => _vm.CloseDiskUsage();
+        view.CloseRequested += (_, _) =>
+        {
+            if (ReferenceEquals(view, DiskUsagePage))
+            {
+                CloseDiskUsagePage();
+            }
+            else if (ReferenceEquals(view, _panelDiskUsage))
+            {
+                _vm?.CloseDiskUsage();
+            }
+        };
+        view.FolderChanged += (_, _) => UpdateWorkspaceTabs();
+        return view;
+    }
+
+    /// <summary>The title line above the folder sizes: Maximize (over a panel) or Back into the panel (on its page), and Close.</summary>
+    private DockPanel DiskUsageChrome(Tools.DiskUsageView view, bool page)
+    {
+        if (view.Parent is Panel parent)
+        {
+            parent.Children.Remove(view);
+        }
+        view.OffersFolderChoice = page; // over a panel it follows the panel's folder
+        Button Small(string glyph, string tip, Action click)
+        {
+            var button = new Button
+            {
+                Content = Services.Icons.IconPacks.Glyph(glyph, Services.Icons.IconPacks.Current) is { } geometry
+                    ? new Viewbox { Width = 12, Height = 12, Child = Services.Icons.IconPacks.Draw(geometry, Avalonia.Media.Brushes.Gray) }
+                    : glyph,
+                Padding = new Avalonia.Thickness(8, 3),
+                MinHeight = 0,
+                Background = Avalonia.Media.Brushes.Transparent,
+                Focusable = false,
+            };
+            ToolTip.SetTip(button, tip);
+            button.Click += (_, _) => click();
+            return button;
+        }
         var title = new TextBlock
         {
             Text = "Folder sizes", // the view shows the path with its own crumbs
@@ -660,24 +732,32 @@ public partial class MainWindow : Window
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
             TextTrimming = Avalonia.Media.TextTrimming.CharacterEllipsis,
         };
+        var size = page
+            ? Small("MiSplitView", "Back into the panel", RestoreDiskUsage)
+            : Small("MiFullView", "Maximize: a page of its own with a tab", MaximizeDiskUsage);
         var close = new Button { Content = "✕", Padding = new Avalonia.Thickness(8, 0), MinHeight = 0, Background = Avalonia.Media.Brushes.Transparent, Focusable = false };
         ToolTip.SetTip(close, "Close (Esc)");
-        close.Click += (_, _) => _vm.CloseDiskUsage();
+        close.Click += (_, _) =>
+        {
+            if (page)
+            {
+                CloseDiskUsagePage();
+            }
+            else
+            {
+                _vm?.CloseDiskUsage();
+            }
+        };
         var bar = new DockPanel();
         DockPanel.SetDock(close, Dock.Right);
-        bar.Children.Add(close);
-        bar.Children.Add(title);
+        DockPanel.SetDock(size, Dock.Right);
+        bar.Children.AddRange([close, size, title]);
         var header = new Border { Child = bar };
         header[!Border.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("FmPanelHeaderBrush");
         var dock = new DockPanel();
         DockPanel.SetDock(header, Dock.Top);
-        dock.Children.Add(header);
-        dock.Children.Add(view);
-        DiskUsageHost.Child = dock;
-        var vertical = _vm.VerticalPanels;
-        Grid.SetColumn(DiskUsageHost, vertical ? 0 : ReferenceEquals(side, _vm.LeftSide) ? 0 : 2);
-        Grid.SetRow(DiskUsageHost, vertical ? (ReferenceEquals(side, _vm.LeftSide) ? 0 : 2) : 0);
-        DiskUsageHost.IsVisible = true;
+        dock.Children.AddRange([header, view]);
+        return dock;
     }
 
     private void UpdateQuickViewHost()

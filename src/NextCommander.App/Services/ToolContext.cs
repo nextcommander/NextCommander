@@ -47,4 +47,8 @@ public sealed record DuplicatesRequest(
     Func<VfsEntry, Task> GoToFile);
 
 /// <summary>Folder sizes window: the folder to scan and how a file is shown in the panel.</summary>
-public sealed record DiskUsageRequest(ToolContext Context, VfsPath Start, Func<VfsEntry, Task> GoToFile);
+public sealed record DiskUsageRequest(ToolContext Context, VfsPath Start, Func<VfsEntry, Task> GoToFile)
+{
+    /// <summary>Chooses another folder to scan (the folder tree, servers too); null: no choice offered.</summary>
+    public Func<Avalonia.Controls.Window, VfsPath, Task<VfsPath?>>? PickFolder { get; init; }
+}

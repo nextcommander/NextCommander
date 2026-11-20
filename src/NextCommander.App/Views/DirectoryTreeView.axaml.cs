@@ -26,6 +26,7 @@ public partial class DirectoryTreeView : UserControl
     /// <summary>Only the newest reveal may select (an older one finishing late must not win).</summary>
     private int _revealGeneration;
     private TreeNodeViewModel? _root;
+    private List<TreeNodeViewModel> _roots = [];
     private Func<VfsPath, Task<IReadOnlyList<VfsEntry>>>? _listDirectories;
 
     public DirectoryTreeView()
@@ -47,7 +48,37 @@ public partial class DirectoryTreeView : UserControl
             };
             menu.Items.Add(item);
         }
+        // the icons are set when the menu opens (a menu opened in code gets no Opening)
+        menu.Opening += (_, _) => SetMenuIcons(menu);
+        menu.Opened += (_, _) => SetMenuIcons(menu);
+        _menu = menu;
         Tree.ContextMenu = menu;
+    }
+
+    private readonly ContextMenu _menu;
+
+    /// <summary>The right click menu (null when <see cref="MenuEnabled"/> is off).</summary>
+    public ContextMenu? Menu => Tree.ContextMenu;
+
+    /// <summary>Off: no right click menu (where nobody runs its commands).</summary>
+    public bool MenuEnabled
+    {
+        get => Tree.ContextMenu is not null;
+        set => Tree.ContextMenu = value ? _menu : null;
+    }
+
+    /// <summary>Configuration > Icons > icons in the menus, as the main window has it (on when there is none).</summary>
+    private static bool ShowMenuIcons =>
+        (Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.MainWindow?.DataContext
+            is not MainWindowViewModel vm || vm.ShowMenuIcons;
+
+    private static void SetMenuIcons(ContextMenu menu)
+    {
+        var show = ShowMenuIcons;
+        foreach (var item in menu.Items.OfType<MenuItem>())
+        {
+            item.Icon = show && item.Tag is string command ? Services.MenuIcons.Create(command.Replace('_', '.')) : null;
+        }
     }
 
     /// <summary>A directory was chosen. Confirm = Enter / double-click (tree window closes).</summary>
@@ -68,35 +99,66 @@ public partial class DirectoryTreeView : UserControl
 
     public VfsPath? SelectedPath => (Tree.SelectedItem as TreeNodeViewModel)?.Path;
 
-    /// <summary>The root node shown (null before <see cref="ShowAsync"/>).</summary>
+    /// <summary>The root node of the folder shown (null before <see cref="ShowAsync"/>).</summary>
     public TreeNodeViewModel? RootNode => _root;
 
-    /// <summary>Shows the tree of the drive/root containing <paramref name="path"/> with <paramref name="path"/> selected.</summary>
-    public async Task ShowAsync(VfsPath path, Func<VfsPath, Task<IReadOnlyList<VfsEntry>>> listDirectories)
+    /// <summary>Every root shown: the one of the folder and, for a local folder, the other <see cref="LocalRoots"/>.</summary>
+    public IReadOnlyList<TreeNodeViewModel> RootNodes => _roots;
+
+    /// <summary>
+    /// The roots shown beside a local folder's own (the folder tree window: every fixed drive of the machine, user's
+    /// request 20 November 2026); null: only the folder's own root.
+    /// </summary>
+    public Func<IReadOnlyList<VfsPath>>? LocalRoots { get; set; }
+
+    private static VfsPath TopOf(VfsPath path)
     {
         var root = path;
         while (root.Parent is not null)
         {
             root = root.Parent;
         }
-        if (_root is null || _root.Path != root || !ReferenceEquals(_listDirectories, listDirectories))
+        return root;
+    }
+
+    /// <summary>Shows the tree of the drive/root containing <paramref name="path"/> with <paramref name="path"/> selected.</summary>
+    public async Task ShowAsync(VfsPath path, Func<VfsPath, Task<IReadOnlyList<VfsEntry>>> listDirectories)
+    {
+        var root = TopOf(path);
+        var wanted = new List<VfsPath> { root };
+        if (path.IsLocal && LocalRoots is { } local)
         {
+            // the drives, each once (a mount below "/" is in its tree already), in the order of their names
+            wanted.AddRange(local().Select(TopOf));
+            wanted = [.. wanted.Distinct().OrderBy(p => p.ToDisplayString(), StringComparer.OrdinalIgnoreCase)];
+        }
+        if (!ReferenceEquals(_listDirectories, listDirectories) || !_roots.Select(r => r.Path).SequenceEqual(wanted))
+        {
+            var same = ReferenceEquals(_listDirectories, listDirectories);
             _listDirectories = listDirectories;
-            _root = TreeNodeViewModel.CreateRoot(root, listDirectories);
-            Tree.ItemsSource = new[] { _root };
-            _root.IsExpanded = true;
+            _roots = [.. wanted.Select(p => same && _roots.FirstOrDefault(r => r.Path == p) is { } kept ? kept : TreeNodeViewModel.CreateRoot(p, listDirectories))];
+            Tree.ItemsSource = _roots;
             _loadAllCts?.Cancel();
             if (LoadAll)
             {
                 _loadAllCts = new CancellationTokenSource();
-                _ = _root.LoadAllAsync(cancellationToken: _loadAllCts.Token);
+                foreach (var node in _roots)
+                {
+                    _ = node.LoadAllAsync(cancellationToken: _loadAllCts.Token);
+                }
             }
         }
+        _root = _roots.First(r => r.Path == root);
+        _root.IsExpanded = true;
         await RevealAsync(path);
     }
 
     public async Task RevealAsync(VfsPath path)
     {
+        if (_roots.FirstOrDefault(r => path.IsSameOrUnder(r.Path)) is { } owner)
+        {
+            _root = owner; // a folder on another drive of the tree
+        }
         if (_root is null)
         {
             return;
@@ -136,7 +198,7 @@ public partial class DirectoryTreeView : UserControl
             }
             return node.Children.Where(c => !c.IsPlaceholder && p.IsSameOrUnder(c.Path)).Select(c => Find(c, p)).FirstOrDefault(n => n is not null);
         }
-        if (_root is not null && Find(_root, directory) is { } found)
+        if (_roots.Select(r => Find(r, directory)).FirstOrDefault(n => n is not null) is { } found)
         {
             found.Invalidate();
         }

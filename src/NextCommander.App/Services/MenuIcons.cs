@@ -293,6 +293,13 @@ public static class MenuIcons
         ["nc_ImportSettings"] = new("MiFolderOpen", Yellow, "OvArrowDown", Green),
         ["nc_RestoreSettings"] = new("MiHistory", Blue, "OvArrowLeft", Green),
         ["nc_AddUserCommand"] = new("MiTerminal", Blue, "OvPlus", Green),
+
+        // the right click menu of the folder tree (panel tree, folder tree window)
+        ["tree.mkdir"] = new("FmFolderIcon", Yellow, "OvPlus", Green),
+        ["tree.rename"] = new("MiPencil", Blue),
+        ["tree.delete"] = new("MiTrash", Red),
+        ["tree.other"] = new("MiSplitView", Blue),
+        ["tree.tab"] = new("MiTabs", Yellow, "OvPlus", Green),
     };
 
     /// <summary>Commands that have an icon (tests).</summary>

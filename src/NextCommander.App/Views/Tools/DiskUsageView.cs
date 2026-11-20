@@ -115,6 +115,7 @@ public sealed class DiskUsageView : UserControl
 
     private readonly DiskUsageRequest _request;
     private readonly Button _scan = new() { Classes = { "tb" } };
+    private readonly Button _choose = new() { Classes = { "tb" } };
     private readonly ListBox _tree = new() { SelectionMode = SelectionMode.Single, Padding = new Thickness(0) };
     private readonly Grid _columns = RowGrid();
     private readonly TreemapControl _map = new() { MinHeight = 120 };
@@ -197,6 +198,12 @@ public sealed class DiskUsageView : UserControl
             }
         };
         ScanButton(scanning: false);
+        var choose = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+        choose.Children.AddRange([new Viewbox { Width = 14, Height = 14, Child = Icon("MiFolderOpen") }, new TextBlock { Text = "Folder...", VerticalAlignment = VerticalAlignment.Center }]);
+        _choose.Content = choose;
+        _choose.IsVisible = false; // on its page only (OffersFolderChoice); over a panel it follows the panel's folder
+        ToolTip.SetTip(_choose, "Choose another folder to scan");
+        _choose.Click += async (_, _) => await ChooseFolderAsync();
 
         // narrow (in place of one panel): the less needed columns go
         Styles.Add(Hide("no-files", "c-files"));
@@ -220,14 +227,48 @@ public sealed class DiskUsageView : UserControl
                 _ = StartAsync();
             }
         };
-        DetachedFromVisualTree += (_, _) => _cts?.Cancel();
+        // moving between the panel and its page detaches the view: the scan goes on (Stop ends it when it is closed)
     }
 
     /// <summary>Esc or the close button: the main window puts the panel back.</summary>
     public event EventHandler? CloseRequested;
 
-    /// <summary>The folder scanned: the one of the panel next to the view (no folder of its own to choose).</summary>
-    public VfsPath Folder { get; }
+    /// <summary>The folder scanned: the one of the panel next to the view, or one chosen with Folder...</summary>
+    public VfsPath Folder { get; private set; }
+
+    /// <summary>Folder... is shown (on the page of its own; over a panel the view follows the panel next to it).</summary>
+    public bool OffersFolderChoice
+    {
+        get => _choose.IsVisible;
+        set => _choose.IsVisible = value && _request.PickFolder is not null;
+    }
+
+    /// <summary>Another folder was chosen and is scanned (the title of the page follows).</summary>
+    public event EventHandler? FolderChanged;
+
+    /// <summary>The view is closed: a scan in progress stops.</summary>
+    public void Stop() => _cts?.Cancel();
+
+    /// <summary>Scans another folder (Folder..., tests).</summary>
+    public Task ScanAsync(VfsPath folder)
+    {
+        Folder = folder;
+        _filter.Text = string.Empty;
+        FolderChanged?.Invoke(this, EventArgs.Empty);
+        return StartAsync();
+    }
+
+    private async Task ChooseFolderAsync()
+    {
+        if (_request.PickFolder is not { } pick || TopLevel.GetTopLevel(this) is not Window owner)
+        {
+            return;
+        }
+        if (await pick(owner, ViewRoot?.Path ?? Folder) is { } folder)
+        {
+            await ScanAsync(folder);
+        }
+    }
 
     /// <summary>The folder scanned, as shown in the title.</summary>
     public string FolderText => Folder.ToDisplayString();
@@ -415,7 +456,7 @@ public sealed class DiskUsageView : UserControl
     {
         // the folder shown, its totals, the filter and the scan
         var right = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
-        right.Children.AddRange([_filter, _scan]);
+        right.Children.AddRange([_filter, _choose, _scan]);
         var left = new WrapPanel { ItemSpacing = 14, LineSpacing = 6, VerticalAlignment = VerticalAlignment.Center };
         left.Children.AddRange([_crumbs, _kpis]);
         var head = new DockPanel { Margin = new Thickness(16, 12) };
