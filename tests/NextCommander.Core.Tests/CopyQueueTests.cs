@@ -200,4 +200,62 @@ public sealed class CopyQueueTests : IDisposable
         }
         Assert.Equal([c, b, a], started);
     }
+
+    /// <summary>A job that runs until it is let go.</summary>
+    private sealed class GateJob(string title) : FileJob(title)
+    {
+        public TaskCompletionSource Gate { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        protected override async Task ExecuteAsync(CancellationToken ct) => await Gate.Task.WaitAsync(ct);
+    }
+
+    [Fact]
+    public async Task Up_to_max_parallel_jobs_run_at_once_and_finished_ones_are_kept()
+    {
+        await using var queue = new JobQueue();
+        queue.PauseQueue();
+        var jobs = new[] { new GateJob("one"), new GateJob("two"), new GateJob("three") };
+        foreach (var job in jobs)
+        {
+            queue.Enqueue(job);
+        }
+        Assert.Equal(1, queue.PlaceOf(jobs[0]));
+        Assert.Equal(3, queue.PlaceOf(jobs[2]));
+
+        // two at a time: the third waits
+        queue.MaxParallel = 2;
+        queue.SpeedLimit = 1000;
+        queue.ResumeQueue();
+        async Task Until(Func<bool> condition)
+        {
+            var until = DateTime.UtcNow.AddSeconds(10);
+            while (!condition() && DateTime.UtcNow < until)
+            {
+                await Task.Delay(20);
+            }
+            Assert.True(condition());
+        }
+        await Until(() => jobs[0].State == JobState.Running && jobs[1].State == JobState.Running);
+        Assert.Equal(JobState.Pending, jobs[2].State);
+        Assert.Equal(1, queue.PlaceOf(jobs[2]));
+        Assert.Equal(500, jobs[0].SpeedLimit.BytesPerSecond); // the running jobs share the limit
+
+        // one pauses on its own, one is cancelled: the third starts
+        queue.TogglePause(jobs[0]);
+        Assert.Equal(JobState.Paused, jobs[0].State);
+        queue.Remove(jobs[1]);
+        await Until(() => jobs[2].State == JobState.Running);
+        queue.TogglePause(jobs[0]);
+        jobs[0].Gate.SetResult();
+        jobs[2].Gate.SetResult();
+        await Until(() => queue.QueuedJobs.Count == 0);
+
+        // the finished ones, the newest first, until cleared
+        var finished = queue.FinishedJobs.Select(f => f.Job).ToList();
+        Assert.Equal(3, finished.Count);
+        Assert.Equal(JobState.Cancelled, jobs[1].State);
+        Assert.Contains(jobs[0], finished);
+        queue.ClearFinished();
+        Assert.Empty(queue.FinishedJobs);
+    }
 }

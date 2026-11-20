@@ -1,24 +1,23 @@
-using System.Threading.Channels;
-
 namespace NextCommander.Core.Operations;
 
 /// <summary>
-/// Runs file jobs either immediately (in parallel) or through a sequential background queue
-/// ("F2 = queue" / background transfer manager).
+/// Runs file jobs either immediately (in parallel) or through the background queue ("F2 = queue" / the queue window):
+/// the queue starts its jobs in their order, <see cref="MaxParallel"/> of them at a time (one by default), and keeps the
+/// finished ones (<see cref="FinishedJobs"/>) until they are cleared.
 /// </summary>
 public sealed class JobQueue : IAsyncDisposable
 {
-    private readonly Channel<FileJob> _queue = Channel.CreateUnbounded<FileJob>(new UnboundedChannelOptions { SingleReader = true });
+    /// <summary>The finished jobs kept (the oldest go first).</summary>
+    public const int MaxFinished = 100;
+
     private readonly List<FileJob> _active = [];
     private readonly List<FileJob> _queued = [];
-    private readonly Task _worker;
-    private TaskCompletionSource _resumed = NewGate(open: true);
+    private readonly HashSet<FileJob> _running = [];
+    private readonly List<Task> _tasks = [];
+    private readonly List<(FileJob Job, DateTime Finished)> _finished = [];
     private long _speedLimit;
-
-    public JobQueue()
-    {
-        _worker = Task.Run(ProcessQueueAsync);
-    }
+    private int _maxParallel = 1;
+    private bool _disposed;
 
     public event EventHandler<FileJob>? JobStarted;
 
@@ -35,7 +34,7 @@ public sealed class JobQueue : IAsyncDisposable
         }
     }
 
-    /// <summary>The jobs of the sequential queue: the running one first, then those waiting (F2 Queue).</summary>
+    /// <summary>The jobs of the queue: the running ones and those waiting, in the order they run (F2 Queue).</summary>
     public IReadOnlyList<FileJob> QueuedJobs
     {
         get
@@ -47,20 +46,79 @@ public sealed class JobQueue : IAsyncDisposable
         }
     }
 
-    /// <summary>The queue waits: the running job is paused and the next one does not start.</summary>
+    /// <summary>The jobs of the queue that ended (done, failed, cancelled), the newest first, with the time they ended.</summary>
+    public IReadOnlyList<(FileJob Job, DateTime Finished)> FinishedJobs
+    {
+        get
+        {
+            lock (_active)
+            {
+                return [.. _finished];
+            }
+        }
+    }
+
+    /// <summary>Forgets one finished job.</summary>
+    public void RemoveFinished(FileJob job)
+    {
+        lock (_active)
+        {
+            _finished.RemoveAll(f => ReferenceEquals(f.Job, job));
+        }
+        QueueChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Forgets the finished jobs (the queue window's "Clear finished").</summary>
+    public void ClearFinished()
+    {
+        lock (_active)
+        {
+            _finished.Clear();
+        }
+        QueueChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>The queue waits: the running jobs are paused and no other one starts.</summary>
     public bool IsPaused { get; private set; }
 
-    /// <summary>Bytes per second for the jobs of the queue (0: unlimited); applied to the running job at once.</summary>
+    /// <summary>How many jobs of the queue run at the same time (1 to 3; 1: one after another).</summary>
+    public int MaxParallel
+    {
+        get => _maxParallel;
+        set
+        {
+            _maxParallel = Math.Clamp(value, 1, 3);
+            ApplySpeedLimit();
+            Pump();
+            QueueChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>
+    /// Bytes per second for the whole queue (0: unlimited), shared by its running jobs; applied to them at once.
+    /// </summary>
     public long SpeedLimit
     {
         get => Interlocked.Read(ref _speedLimit);
         set
         {
             Interlocked.Exchange(ref _speedLimit, Math.Max(0, value));
-            foreach (var job in QueuedJobs)
-            {
-                job.SpeedLimit.BytesPerSecond = Math.Max(0, value);
-            }
+            ApplySpeedLimit();
+        }
+    }
+
+    /// <summary>Each job of the queue gets its share of the limit (the running ones split it).</summary>
+    private void ApplySpeedLimit()
+    {
+        var limit = SpeedLimit;
+        int running;
+        lock (_active)
+        {
+            running = Math.Max(1, _running.Count);
+        }
+        foreach (var job in QueuedJobs)
+        {
+            job.SpeedLimit.BytesPerSecond = limit <= 0 ? 0 : Math.Max(1, limit / running);
         }
     }
 
@@ -74,10 +132,6 @@ public sealed class JobQueue : IAsyncDisposable
             return;
         }
         IsPaused = true;
-        lock (_active)
-        {
-            _resumed = NewGate(open: false);
-        }
         foreach (var job in QueuedJobs.Where(j => j.State == JobState.Running))
         {
             job.TogglePause();
@@ -96,16 +150,23 @@ public sealed class JobQueue : IAsyncDisposable
         {
             job.TogglePause();
         }
-        lock (_active)
-        {
-            _resumed.TrySetResult();
-        }
+        Pump();
         QueueChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Pauses or resumes one running job of the queue (the others go on).</summary>
+    public void TogglePause(FileJob job)
+    {
+        if (job.State is JobState.Running or JobState.Paused)
+        {
+            job.TogglePause();
+            QueueChanged?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     /// <summary>
     /// Whether a waiting job of the queue can move by <paramref name="delta"/> places among the waiting ones (the running
-    /// job stays first; jobs started at once are not in the queue).
+    /// jobs stay first; jobs started at once are not in the queue).
     /// </summary>
     public bool CanMove(FileJob job, int delta)
     {
@@ -157,12 +218,19 @@ public sealed class JobQueue : IAsyncDisposable
         return index > 0 && Move(job, -index);
     }
 
+    /// <summary>The place of a waiting job among the waiting ones (1: runs next), 0 when it is not waiting.</summary>
+    public int PlaceOf(FileJob job)
+    {
+        lock (_active)
+        {
+            return WaitingLocked().IndexOf(job) + 1;
+        }
+    }
+
     /// <summary>The jobs of the queue that have not started, in the order they run.</summary>
-    private List<FileJob> WaitingLocked() => [.. _queued.Where(j => j.State == JobState.Pending && !ReferenceEquals(j, _running))];
+    private List<FileJob> WaitingLocked() => [.. _queued.Where(j => j.State == JobState.Pending && !_running.Contains(j))];
 
-    private FileJob? _running;
-
-    /// <summary>Takes a job out of the queue: a waiting one never runs, the running one is cancelled.</summary>
+    /// <summary>Takes a job out of the queue: a waiting one never runs, a running one is cancelled.</summary>
     public void Remove(FileJob job)
     {
         bool waiting;
@@ -171,7 +239,6 @@ public sealed class JobQueue : IAsyncDisposable
             waiting = WaitingLocked().Contains(job);
             if (waiting)
             {
-                // out of the list at once; its item in the channel finds no job and is skipped
                 _queued.Remove(job);
             }
         }
@@ -183,18 +250,12 @@ public sealed class JobQueue : IAsyncDisposable
         else
         {
             job.Cancel();
+            if (job.State == JobState.Paused)
+            {
+                job.TogglePause(); // a paused job sees the cancellation once it goes on
+            }
         }
         QueueChanged?.Invoke(this, EventArgs.Empty);
-    }
-
-    private static TaskCompletionSource NewGate(bool open)
-    {
-        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        if (open)
-        {
-            gate.SetResult();
-        }
-        return gate;
     }
 
     /// <summary>Starts the job right away and returns when it finishes.</summary>
@@ -214,74 +275,85 @@ public sealed class JobQueue : IAsyncDisposable
         });
     }
 
-    /// <summary>Adds the job to the sequential queue.</summary>
+    /// <summary>Adds the job to the queue; it starts when its turn comes.</summary>
     public void Enqueue(FileJob job)
     {
         Track(job);
-        if (SpeedLimit > 0)
-        {
-            job.SpeedLimit.BytesPerSecond = SpeedLimit;
-        }
         lock (_active)
         {
             _queued.Add(job);
         }
-        _queue.Writer.TryWrite(job);
+        ApplySpeedLimit();
+        Pump();
         QueueChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Starts the next waiting jobs while fewer than <see cref="MaxParallel"/> run (not while paused).</summary>
+    private void Pump()
+    {
+        var started = new List<FileJob>();
+        lock (_active)
+        {
+            while (!_disposed && !IsPaused && _running.Count < _maxParallel && WaitingLocked().FirstOrDefault() is { } next)
+            {
+                _running.Add(next);
+                started.Add(next);
+            }
+            foreach (var job in started)
+            {
+                _tasks.Add(Task.Run(() => RunQueuedAsync(job)));
+            }
+        }
+        if (started.Count > 0)
+        {
+            ApplySpeedLimit();
+        }
+    }
+
+    private async Task RunQueuedAsync(FileJob job)
+    {
+        try
+        {
+            QueueChanged?.Invoke(this, EventArgs.Empty);
+            await job.RunAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            lock (_active)
+            {
+                _queued.Remove(job);
+                _running.Remove(job);
+                _finished.Insert(0, (job, DateTime.Now));
+                if (_finished.Count > MaxFinished)
+                {
+                    _finished.RemoveAt(_finished.Count - 1);
+                }
+                _tasks.RemoveAll(t => t.IsCompleted);
+            }
+            Untrack(job);
+            ApplySpeedLimit();
+            Pump();
+            QueueChanged?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
-        _queue.Writer.TryComplete();
+        Task[] tasks;
         lock (_active)
         {
-            _resumed.TrySetResult();
+            _disposed = true;
+            tasks = [.. _tasks];
         }
         foreach (var job in ActiveJobs)
         {
             job.Cancel();
-        }
-        await _worker.ConfigureAwait(false);
-    }
-
-    private async Task ProcessQueueAsync()
-    {
-        // one item in the channel for each job added; the job that runs is the first waiting one of the queue list,
-        // so moving waiting jobs (Move, MoveToFront) changes what runs next
-        await foreach (var _ in _queue.Reader.ReadAllAsync().ConfigureAwait(false))
-        {
-            Task gate;
-            lock (_active)
+            if (job.State == JobState.Paused)
             {
-                gate = _resumed.Task;
-            }
-            await gate.ConfigureAwait(false); // the queue is paused: the next job waits
-            FileJob? job;
-            lock (_active)
-            {
-                job = WaitingLocked().FirstOrDefault();
-                _running = job;
-            }
-            if (job is null)
-            {
-                continue;
-            }
-            try
-            {
-                QueueChanged?.Invoke(this, EventArgs.Empty);
-                await job.RunAsync().ConfigureAwait(false);
-            }
-            finally
-            {
-                lock (_active)
-                {
-                    _queued.Remove(job);
-                    _running = null;
-                }
-                Untrack(job);
-                QueueChanged?.Invoke(this, EventArgs.Empty);
+                job.TogglePause();
             }
         }
+        await Task.WhenAll(tasks).ConfigureAwait(false);
     }
 
     private void Track(FileJob job)

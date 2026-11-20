@@ -69,7 +69,7 @@ public interface IDialogService
         Views.Dialogs.CopyDialogOptions? options = null);
 
     /// <summary>The queue window of F2 Queue (one; brought to the front when open). <paramref name="addSelection"/> is its + button.</summary>
-    void ShowCopyQueue(JobQueue jobs, Func<Task> addSelection);
+    void ShowCopyQueue(JobQueue jobs, Func<Task> addSelection, Func<string, Task>? openFolder = null);
 
     Task<string?> PickSaveFileAsync(string title, string suggestedName);
 

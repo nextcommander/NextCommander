@@ -85,6 +85,15 @@ public sealed class PackJob : FileJob
         _options = options;
     }
 
+    /// <summary>The archive written.</summary>
+    public VfsPath Target => _target;
+
+    /// <summary>The items packed.</summary>
+    public IReadOnlyList<VfsEntry> Sources => _sources;
+
+    public override (string Source, string Target)? Route =>
+        (_sources.Count > 0 && _sources[0].Path.Parent is { } parent ? parent.ToDisplayString() : string.Empty, _target.ToDisplayString());
+
     public static string Extension(PackFormat format) => format switch
     {
         PackFormat.Zip => ".zip",

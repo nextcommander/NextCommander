@@ -207,11 +207,24 @@ elapsed time and the files; and the list of files with their state (a failed fil
 away). **Pause** / **Resume** (Space), **Skip file** (the partly copied file is deleted and the job goes on), **Stop
 after this file**, **Background** (a small window with a ring; ⤢ shows the details again) and **Cancel** (Esc; asked
 first, the partly copied file is deleted). The speed limit can be changed while it runs. With **Close when done** off
-the window stays at the end with the summary and **Open destination**. The **queue** window of F2 Queue copies one item
-after the other: it shows the file being copied with the progress of the file and of the item, the waiting items
-one a line, **+** (queue the files selected in the active panel), **-** (take the selected item out),
-**Start** / **Pause**, and a **Speed limit** in kB/s. *Commands > Background transfer manager...* lists every
-running job.
+the window stays at the end with the summary and **Open destination**.
+
+The **queue** window (F2 Queue, *Add to queue* in the Copy and Pack dialogs) runs its jobs in the background, in
+their order:
+
+- At the top its state (running, paused, finished) with **Pause all** / **Resume all** (Space), and the progress of
+  all the jobs still to do with the speed and the time left.
+- **Run 1 / 2 / 3 at a time**: how many jobs run at the same time; **Speed limit** for the whole queue (the running
+  jobs share it); **Add the selection** queues the files selected in the active panel (copied to the other panel).
+- **Up next**: a card per job (what it does and to how much, from where to where, the number of items and the size),
+  the running ones with their progress, the current file, the speed and the time left. Drag a waiting job by its grip
+  (or Alt+↑ / ↓ on the selected one) to change the order; each card has its own buttons: pause / resume, **Run next**,
+  cancel or remove (Delete).
+- **Finished**: done, failed (with the error) or cancelled jobs with the time they ended; **Open destination** shows
+  the folder in the active panel; **Clear finished** empties the list.
+- At the bottom a count per state and **When done**: do nothing, or close the window.
+
+*Commands > Background transfer manager...* lists every running job.
 
 ### The Edit menu
 
