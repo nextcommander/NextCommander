@@ -329,7 +329,7 @@ internal sealed class FakeDialogs : IDialogService
 
     public string? LastPackTarget { get; private set; }
 
-    public Task<PackDialogResult?> ShowPackDialogAsync(string description, string target, NextCommander.Vfs.Archive.PackFormat format)
+    public Task<PackDialogResult?> ShowPackDialogAsync(string description, string target, NextCommander.Vfs.Archive.PackFormat format, PackDialogInput? input = null)
     {
         LastPackTarget = target;
         return Task.FromResult(NextPack);

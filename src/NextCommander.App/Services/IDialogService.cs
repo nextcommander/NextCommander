@@ -10,10 +10,20 @@ public sealed record PackDialogResult(string Target, NextCommander.Vfs.Archive.P
     string? Password, bool MoveFiles, bool Separate, bool Queue, NextCommander.Core.Plugins.IPackerPlugin? Plugin = null,
     bool KeepPaths = true, bool Recursive = true, bool LeaveOutBaseFolder = false, int? Rate = null, long VolumeSize = 0, bool SelfExtracting = false)
 {
+    /// <summary>The zip encryption chosen in the dialog (null: Configuration > Packer > Zip).</summary>
+    public NextCommander.Core.Config.ZipEncryptionMethod? ZipEncryption { get; init; }
+
+    /// <summary>7-Zip: the file names encrypted too (null: Configuration > Packer > 7-Zip).</summary>
+    public bool? EncryptNames { get; init; }
+
     /// <summary>Archive extension of the chosen format (".zip", or the plugin's; ".exe" for a self-extracting archive).</summary>
     public string Extension => SelfExtracting ? NextCommander.Vfs.Archive.SevenZipCli.SfxExtension
         : Plugin is { } p ? "." + p.Extension : NextCommander.Vfs.Archive.PackJob.Extension(Format);
 }
+
+/// <summary>What the pack dialog shows besides the name: the items packed (sizes for the estimate) and the encryption defaults.</summary>
+public sealed record PackDialogInput(IReadOnlyList<NextCommander.Core.Vfs.VfsEntry> Items,
+    NextCommander.Core.Config.ZipEncryptionMethod ZipEncryption = NextCommander.Core.Config.ZipEncryptionMethod.Aes256, bool EncryptNames = true);
 
 public sealed record CopyDialogResult(string Target, ConflictPolicy ConflictPolicy, bool Verify, string? Filter, bool Queue, long SpeedLimit = 0)
 {
@@ -73,7 +83,7 @@ public interface IDialogService
     Task TrackJobAsync(FileJob job, Task running);
 
     /// <summary>Alt+F5 pack dialog.</summary>
-    Task<PackDialogResult?> ShowPackDialogAsync(string description, string target, NextCommander.Vfs.Archive.PackFormat format);
+    Task<PackDialogResult?> ShowPackDialogAsync(string description, string target, NextCommander.Vfs.Archive.PackFormat format, PackDialogInput? input = null);
 
     /// <summary>Masked input; null when cancelled.</summary>
     Task<string?> PromptPasswordAsync(string title, string message);
