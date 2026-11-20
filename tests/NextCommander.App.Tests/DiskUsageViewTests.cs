@@ -44,7 +44,8 @@ public sealed class DiskUsageViewTests : IDisposable
         await SettleAsync(3);
         var window = w.GetVisualDescendants().OfType<DiskUsageView>().Single();
         window.Confirm = false;
-        Assert.Empty(window.GetVisualDescendants().OfType<Avalonia.Controls.TextBox>()); // no folder of its own to choose
+        // no folder of its own to choose: the only box is the filter
+        Assert.Equal(["Filter by name"], window.GetVisualDescendants().OfType<Avalonia.Controls.TextBox>().Select(Avalonia.Automation.AutomationProperties.GetName));
         await WaitUntilAsync(() => window.Root is not null);
         await window.Running!;
         await SettleAsync();
@@ -67,6 +68,38 @@ public sealed class DiskUsageViewTests : IDisposable
             Directory.CreateDirectory(dir);
             w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "disk-usage.png"));
         }
+
+        // a column sorts the tree, again the other way round
+        window.SortBy("Name");
+        Assert.Equal(["Documents", "Kod", "Photos", "Videolar"], window.Rows.Where(r => r.Depth == 1).Select(r => r.Node.Name));
+        window.SortBy("Size");
+        Assert.Equal(["Photos", "Videolar", "Documents", "Kod"], window.Rows.Where(r => r.Depth == 1).Select(r => r.Node.Name));
+
+        // zooming into a folder: the map, the types and the tree show it
+        var photos = tree.Children.Single(c => c.Name == "Photos");
+        window.SetView(photos);
+        Assert.Same(photos, window.Map.Root);
+        Assert.Same(photos, window.Rows[0].Node);
+        Assert.Equal([".jpg"], window.ExtensionRows.Select(e => e.Extension));
+        window.SetView(tree);
+
+        // a type highlights its files in the map
+        var video = window.Map.Rectangles.First(r => r.Node.Extension == ".mp4").Node;
+        window.Highlight(UsageTypes.CategoryOf(".mp4"), null);
+        Assert.True(window.Map.Matches!(video));
+        Assert.False(window.Map.Matches!(photo));
+        window.Highlight(null, ".jpg");
+        Assert.True(window.Map.Matches!(photo));
+        window.Highlight(null, null);
+        Assert.Null(window.Map.Matches);
+
+        // the filter keeps the matching names and the folders down to them
+        var filter = window.GetVisualDescendants().OfType<Avalonia.Controls.TextBox>().Single();
+        filter.Text = "2024";
+        await SettleAsync();
+        Assert.Equal(["disk", "Photos", "2024"], window.Rows.Select(r => r.Node.Name));
+        filter.Text = string.Empty;
+        await SettleAsync();
 
         // deleting a folder takes its size out of the tree, the statistics and the map
         var videos = window.Rows.Single(r => r.Node.Name == "Videolar");
