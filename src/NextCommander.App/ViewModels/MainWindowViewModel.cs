@@ -3527,7 +3527,8 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         var what = sources.Count == 1 ? $"\"{sources[0].Name}\"" : $"{sources.Count} items";
         Views.Dialogs.PackDialog.DefaultLevelIndex = _settings.PackLevel;
         Views.Dialogs.PackDialog.OpenConfiguration = OpenPackerConfigurationAsync;
-        var result = await _dialogs.ShowPackDialogAsync($"Pack {what}:", suggested, format);
+        var result = await _dialogs.ShowPackDialogAsync($"Pack {what}:", suggested, format,
+            new PackDialogInput(sources, _settings.ZipEncryption, _settings.SevenZipEncryptNames));
         if (result is null)
         {
             return;
@@ -3553,10 +3554,10 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             Password = result.Password,
             MoveFiles = result.MoveFiles,
             Plugin = result.Plugin,
-            ZipEncryption = _settings.ZipEncryption,
+            ZipEncryption = result.ZipEncryption ?? _settings.ZipEncryption,
             ZipUtf8Names = _settings.ZipUtf8Names,
             SevenZip = new SevenZipOptions(_settings.SevenZipLevel is >= 0 and <= 9 ? _settings.SevenZipLevel : result.Rate, _settings.SevenZipMethod,
-                _settings.SevenZipSolid, _settings.SevenZipThreads, _settings.SevenZipEncryptNames, _settings.SevenZipArguments,
+                _settings.SevenZipSolid, _settings.SevenZipThreads, result.EncryptNames ?? _settings.SevenZipEncryptNames, _settings.SevenZipArguments,
                 _settings.SevenZipDictionaryMb, _settings.SevenZipWordSize),
             SetArchiveDate = _settings.PackSetArchiveDate,
             ZipShortNames = _settings.ZipShortNames,

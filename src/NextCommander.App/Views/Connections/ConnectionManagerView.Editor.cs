@@ -236,7 +236,7 @@ public sealed partial class ConnectionManagerView
         IsVisible = folder.Length > 0,
     };
 
-    /// <summary>An action of the bar above the editor: its icon and text (Tag: the text, for tests); the accent one filled.</summary>
+    /// <summary>An action of the bar above the editor: its icon and text (Tag: the text, for tests); all in the accent color (user's request, 20 November 2026).</summary>
     private Button FooterButton(string text, Action click, bool accent = false, bool right = false, string? icon = null, bool danger = false)
     {
         _ = right;
@@ -244,15 +244,13 @@ public sealed partial class ConnectionManagerView
         if (icon is not null && IconPacks.Glyph(icon, IconPacks.Current) is { } geometry)
         {
             var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
-            var brush = accent ? Brushes.White : danger ? new SolidColorBrush(Color.Parse("#E5484D")) : (IBrush)Brushes.Gray;
+            _ = danger;
+            IBrush brush = Brushes.White;
             row.Children.AddRange([new Viewbox { Width = 14, Height = 14, Child = IconPacks.Draw(geometry, brush) }, new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center }]);
             content = row;
         }
-        var button = new Button { Content = content, Tag = text, Classes = { "tb" }, Padding = new Thickness(12, 0), Margin = new Thickness(0, 0, 0, 6) };
-        if (accent)
-        {
-            button.Classes.Add("primary");
-        }
+        _ = accent;
+        var button = new Button { Content = content, Tag = text, Classes = { "tb", "primary" }, Padding = new Thickness(12, 0), Margin = new Thickness(0, 0, 0, 6) };
         button.Click += (_, _) => click();
         return button;
     }
