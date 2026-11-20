@@ -3390,5 +3390,14 @@
   "CopyQueueWindow.DoneCount": "{0} terminées",
   "CopyQueueWindow.OneJob": "1 tâche",
   "CopyQueueWindow.Jobs": "{0} tâches",
-  "DeleteJob.DeletedForGood": "Supprimés définitivement"
+  "DeleteJob.DeletedForGood": "Supprimés définitivement",
+  "ButtonBarControl.MoreButtons": "Plus de boutons",
+  "Settings.Layout.ButtonBarStyle": "Style de la barre de boutons",
+  "Settings.Layout.ButtonBarStyle.Description": "Classique : petits boutons sur plusieurs lignes. Mica : Windows 11. Graphite : une barre basse et dense. Aurora : une barre flottante aux boutons ronds. Les nouveaux styles tiennent sur une ligne ; ce qui ne rentre pas va dans le menu ⋯.",
+  "Settings.Layout.Classic": "Classique",
+  "Settings.Layout.MicaWindows": "Mica (Windows 11)",
+  "Settings.Layout.GraphiteCompact": "Graphite (compact)",
+  "Settings.Layout.AuroraFloatingRound": "Aurora (flottante, arrondi)",
+  "Settings.Layout.NamesNextToTheIcons": "Noms à côté des icônes",
+  "Settings.Layout.NamesNextToTheIcons.Description": "Les boutons de la barre du haut affichent aussi leur nom."
 }

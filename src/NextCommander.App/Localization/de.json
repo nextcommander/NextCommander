@@ -3390,5 +3390,14 @@
   "CopyQueueWindow.DoneCount": "{0} fertig",
   "CopyQueueWindow.OneJob": "1 Auftrag",
   "CopyQueueWindow.Jobs": "{0} Aufträge",
-  "DeleteJob.DeletedForGood": "Endgültig gelöscht"
+  "DeleteJob.DeletedForGood": "Endgültig gelöscht",
+  "ButtonBarControl.MoreButtons": "Weitere Schaltflächen",
+  "Settings.Layout.ButtonBarStyle": "Stil der Schaltflächenleiste",
+  "Settings.Layout.ButtonBarStyle.Description": "Klassisch: kleine Schaltflächen in Zeilen. Mica: Windows 11. Graphite: eine niedrige, dichte Leiste. Aurora: eine schwebende Leiste mit runden Schaltflächen. Die neuen Stile bleiben einzeilig; was nicht passt, kommt ins ⋯-Menü.",
+  "Settings.Layout.Classic": "Klassisch",
+  "Settings.Layout.MicaWindows": "Mica (Windows 11)",
+  "Settings.Layout.GraphiteCompact": "Graphite (kompakt)",
+  "Settings.Layout.AuroraFloatingRound": "Aurora (schwebend, rund)",
+  "Settings.Layout.NamesNextToTheIcons": "Namen neben den Symbolen",
+  "Settings.Layout.NamesNextToTheIcons.Description": "Die Schaltflächen der oberen Leiste zeigen auch ihren Namen."
 }

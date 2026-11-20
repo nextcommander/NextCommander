@@ -73,6 +73,15 @@ right clicking a bar).
 
 You can also drop a program on the button bar to add it, or right click a button to change, delete or move it.
 
+**Button bar style** (same group) gives the bar at the top a look: *Classic* (small buttons that wrap into more rows),
+*Mica* (Windows 11: 6 px corners, a switch that is on gets a soft blue fill with a line under it), *Graphite* (a low,
+dense bar with 4 px corners and a solid fill when on) or *Aurora* (a floating, rounded bar with round buttons, violet
+when on). The new looks keep one row: when the window is too narrow, whole groups (between separators) move into the
+**⋯** menu from the right. The view buttons (brief, full, thumbnails) sit in one segment there. In every look a button
+that switches something (the view, branch view, the quick filter, hidden files, the folder tree, the terminal, Quick
+View) shows whether it is on, and its tooltip gives the name, the shortcut, on / off and the command. **Names next to
+the icons** shows the buttons' names too.
+
 You never need to know a command's name: wherever a command can be given (the button bar, user commands, the
 hotlist, the commands of view modes, internal associations and the Start menu), **Command...** opens the list of
 all commands with their icons and descriptions. Type a part of a name or description to find one, then double
