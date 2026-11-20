@@ -3390,5 +3390,14 @@
   "CopyQueueWindow.DoneCount": "{0} 个已完成",
   "CopyQueueWindow.OneJob": "1 个任务",
   "CopyQueueWindow.Jobs": "{0} 个任务",
-  "DeleteJob.DeletedForGood": "永久删除"
+  "DeleteJob.DeletedForGood": "永久删除",
+  "ButtonBarControl.MoreButtons": "更多按钮",
+  "Settings.Layout.ButtonBarStyle": "按钮栏样式",
+  "Settings.Layout.ButtonBarStyle.Description": "经典：多行小按钮。Mica：Windows 11 风格。Graphite：低矮紧凑的栏。Aurora：带圆形按钮的浮动栏。新样式只占一行；放不下的按钮进入 ⋯ 菜单。",
+  "Settings.Layout.Classic": "经典",
+  "Settings.Layout.MicaWindows": "Mica（Windows 11）",
+  "Settings.Layout.GraphiteCompact": "Graphite（紧凑）",
+  "Settings.Layout.AuroraFloatingRound": "Aurora（浮动、圆形）",
+  "Settings.Layout.NamesNextToTheIcons": "图标旁显示名称",
+  "Settings.Layout.NamesNextToTheIcons.Description": "顶部栏的按钮同时显示名称。"
 }

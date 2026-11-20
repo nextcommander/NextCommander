@@ -3390,5 +3390,14 @@
   "CopyQueueWindow.DoneCount": "{0} done",
   "CopyQueueWindow.OneJob": "1 job",
   "CopyQueueWindow.Jobs": "{0} jobs",
-  "DeleteJob.DeletedForGood": "Deleted for good"
+  "DeleteJob.DeletedForGood": "Deleted for good",
+  "ButtonBarControl.MoreButtons": "More buttons",
+  "Settings.Layout.ButtonBarStyle": "Button bar style",
+  "Settings.Layout.ButtonBarStyle.Description": "Classic: small buttons in rows. Mica: Windows 11. Graphite: a low, dense bar. Aurora: a floating bar with round buttons. The new styles keep one row; what does not fit goes into the ⋯ menu.",
+  "Settings.Layout.Classic": "Classic",
+  "Settings.Layout.MicaWindows": "Mica (Windows 11)",
+  "Settings.Layout.GraphiteCompact": "Graphite (compact)",
+  "Settings.Layout.AuroraFloatingRound": "Aurora (floating, round)",
+  "Settings.Layout.NamesNextToTheIcons": "Names next to the icons",
+  "Settings.Layout.NamesNextToTheIcons.Description": "The buttons of the bar at the top show their name too."
 }
