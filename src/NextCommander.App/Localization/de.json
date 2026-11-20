@@ -3293,5 +3293,9 @@
   "DiskUsageView.ClickATypeTo": "Klicken Sie auf einen Typ, um ihn in der Karte hervorzuheben.",
   "DiskUsageView.ShowAll": "Alle anzeigen",
   "DiskUsageView.CodeAndData": "Code und Daten",
-  "DiskUsageView.NoExtension": "ohne Endung"
+  "DiskUsageView.NoExtension": "ohne Endung",
+  "DiskUsageView.ChooseAnotherFolderToScan": "Einen anderen Ordner zum Einlesen wählen",
+  "MainWindowViewModel.FolderToScan": "Einzulesender Ordner",
+  "MainWindow.BackIntoThePanel": "Zurück in das Panel",
+  "MainWindow.MaximizeAPageOfIts": "Maximieren: eine eigene Seite mit Reiter"
 }

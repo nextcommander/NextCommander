@@ -3293,5 +3293,9 @@
   "DiskUsageView.ClickATypeTo": "Cliquez sur un type pour le mettre en évidence dans la carte.",
   "DiskUsageView.ShowAll": "Tout afficher",
   "DiskUsageView.CodeAndData": "Code et données",
-  "DiskUsageView.NoExtension": "sans extension"
+  "DiskUsageView.NoExtension": "sans extension",
+  "DiskUsageView.ChooseAnotherFolderToScan": "Choisir un autre dossier à analyser",
+  "MainWindowViewModel.FolderToScan": "Dossier à analyser",
+  "MainWindow.BackIntoThePanel": "Remettre dans le panneau",
+  "MainWindow.MaximizeAPageOfIts": "Agrandir : une page à part avec un onglet"
 }

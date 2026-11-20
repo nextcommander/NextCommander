@@ -3293,5 +3293,9 @@
   "DiskUsageView.ClickATypeTo": "Haritada vurgulamak için bir türe tıklayın.",
   "DiskUsageView.ShowAll": "Tümünü göster",
   "DiskUsageView.CodeAndData": "Kod ve veri",
-  "DiskUsageView.NoExtension": "uzantısız"
+  "DiskUsageView.NoExtension": "uzantısız",
+  "DiskUsageView.ChooseAnotherFolderToScan": "Taranacak başka bir klasör seçin",
+  "MainWindowViewModel.FolderToScan": "Taranacak klasör",
+  "MainWindow.BackIntoThePanel": "Panele geri koy",
+  "MainWindow.MaximizeAPageOfIts": "Büyüt: sekmesi olan ayrı bir sayfa"
 }

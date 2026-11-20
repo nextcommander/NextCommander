@@ -3293,5 +3293,9 @@
   "DiskUsageView.ClickATypeTo": "单击某个类型可在图中突出显示。",
   "DiskUsageView.ShowAll": "全部显示",
   "DiskUsageView.CodeAndData": "代码和数据",
-  "DiskUsageView.NoExtension": "无扩展名"
+  "DiskUsageView.NoExtension": "无扩展名",
+  "DiskUsageView.ChooseAnotherFolderToScan": "选择要扫描的其他文件夹",
+  "MainWindowViewModel.FolderToScan": "要扫描的文件夹",
+  "MainWindow.BackIntoThePanel": "放回面板",
+  "MainWindow.MaximizeAPageOfIts": "最大化：带标签页的独立页面"
 }

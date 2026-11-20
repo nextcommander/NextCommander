@@ -443,7 +443,8 @@ public sealed class DialogService : IDialogService
         {
             return null;
         }
-        var dialog = new TreeDialog();
+        var vm = RequireOwner().DataContext as ViewModels.MainWindowViewModel;
+        var dialog = new TreeDialog { Commands = vm is null ? null : vm.TreeCommandAsync, Drives = vm is null ? null : vm.FixedDriveRoots };
         var shown = dialog.ShowDialog(RequireOwner());
         await dialog.InitializeAsync(path, p => panel.ListSubdirectoriesAsync(p, max: 5000));
         await shown;

@@ -426,6 +426,9 @@
       <!-- Duplicate files as a page of its own (MainWindow.Workspace.cs) -->
       <Border x:Name="DuplicatesHost" Grid.Column="0" Grid.ColumnSpan="3" Grid.RowSpan="3" ZIndex="25" IsVisible="False"
               Background="{DynamicResource SystemControlBackgroundAltHighBrush}" />
+      <!-- Folder sizes maximized: a page of its own (MainWindow.Workspace.cs) -->
+      <Border x:Name="DiskUsagePageHost" Grid.Column="0" Grid.ColumnSpan="3" Grid.RowSpan="3" ZIndex="25" IsVisible="False"
+              Background="{DynamicResource SystemControlBackgroundAltHighBrush}" />
       <!-- The connection manager as a page of its own (MainWindow.Workspace.cs) -->
       <Border x:Name="ConnectionsHost" Grid.Column="0" Grid.ColumnSpan="3" Grid.RowSpan="3" ZIndex="25" IsVisible="False"
               Background="{DynamicResource SystemControlBackgroundAltHighBrush}" />

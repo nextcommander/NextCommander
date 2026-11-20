@@ -3293,5 +3293,9 @@
   "DiskUsageView.ClickATypeTo": "Click a type to highlight it in the map.",
   "DiskUsageView.ShowAll": "Show all",
   "DiskUsageView.CodeAndData": "Code and data",
-  "DiskUsageView.NoExtension": "no extension"
+  "DiskUsageView.NoExtension": "no extension",
+  "DiskUsageView.ChooseAnotherFolderToScan": "Choose another folder to scan",
+  "MainWindowViewModel.FolderToScan": "Folder to scan",
+  "MainWindow.BackIntoThePanel": "Back into the panel",
+  "MainWindow.MaximizeAPageOfIts": "Maximize: a page of its own with a tab"
 }

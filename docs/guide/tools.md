@@ -210,12 +210,16 @@ panels while it stays open; its ✕, its tab's × or Esc closes it. **Go to file
 
 *Commands > Folder sizes...* shows what takes up the space in a folder, also on servers and cloud drives. It opens in
 place of the other panel and shows the folder of the panel next to it: go to another folder there and it is scanned
-anew. *Rescan* (F5) reads it again, the ✕ button or Esc puts the panel back.
+anew. *Rescan* (F5) reads it again; the ✕ button or Esc puts the panel back. The **Maximize** button of its title line moves it, scan and all, to a page of
+its own with a tab (like duplicate files): both panels are back under the files tab, and *Back into the panel* (the
+button in the same place) puts it over the other panel again; its tab's ×, ✕ or Esc close it. On its page, where no
+panel is next to it, *Folder...* scans another folder (chosen in the folder tree, on servers too).
 
 ![Folder sizes](../screenshots/disk-usage.png)
 
 - **At the top:** the path of the folder shown (click a part to go back up to it), its size, files and folders, a
-  **filter** by name (Ctrl+F; it keeps the matching names and the folders down to them) and *Rescan* / *Stop*.
+  **filter** by name (Ctrl+F; it keeps the matching names and the folders down to them), *Folder...* (on its page)
+  and *Rescan* / *Stop*.
 - **Below it:** the selected file or folder with its size and share, and what can be done with it: **Open in map**
   (zoom into a folder), **Go to largest** (the largest file in it), **Show in panel**, **Open**, **Move to trash**.
   Deleting asks right there (*Keep* / *Move to trash*); Shift+Delete deletes permanently.

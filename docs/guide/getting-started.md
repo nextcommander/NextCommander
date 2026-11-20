@@ -86,7 +86,9 @@ shown:
   in the other panel (Shift+Enter) or a new tab (Ctrl+Enter), or remove it (Del). 1–9 open the first nine folders at
   once. Removing a folder or clearing the history can be undone; pinned folders stay.
 - **Alt+F10** opens the **folder tree** window: filter the folders read so far, show or hide hidden folders, jump to
-  Home, Desktop, Documents or Downloads, and see the chosen folder's path at the bottom.
+  Home, Desktop, Documents or Downloads, and see the chosen folder's path at the bottom. For a folder of this computer
+  it shows every fixed drive (the folder's own one opened down to it); the right click menu makes, renames and deletes
+  folders or opens one in the other panel or a new tab.
 - **Ctrl+D** opens the **Hotlist**, your list of favorite folders. *Show > Navigation > Add this folder to the
   Hotlist...* adds the current folder.
 - *Configuration > Edit Hotlist...* opens the **hotlist window**. On the left the entries as a tree: **Add ▾** adds
