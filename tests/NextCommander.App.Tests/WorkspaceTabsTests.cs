@@ -74,6 +74,45 @@ public sealed class WorkspaceTabsTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task Duplicate_files_open_as_a_tab()
+    {
+        var (w, vm) = await _fx.OpenAsync();
+        var shownFile = 0;
+        var request = new Services.DuplicatesRequest(vm.Tools, [_fx.L()], (_, _) => Task.CompletedTask, _ =>
+        {
+            shownFile++;
+            return Task.CompletedTask;
+        });
+        var view = new Views.Tools.DuplicatesView(request);
+        w.ShowDuplicates(view);
+        await SettleAsync(4);
+        Assert.Equal([WorkspacePage.Files, WorkspacePage.Duplicates], w.OpenPages);
+        Assert.Equal(WorkspacePage.Duplicates, w.CurrentPage);
+        Assert.Same(view, w.Duplicates);
+        Assert.True(view.IsEffectivelyVisible);
+        Assert.Equal(2, Tabs(w).Count);
+        if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
+        {
+            Directory.CreateDirectory(dir);
+            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(w)!.SavePng(Path.Combine(dir, "duplicates-tab.png"));
+        }
+
+        // the files tab and back; Esc closes the page
+        Click(Tabs(w)[0]);
+        await SettleAsync();
+        Assert.False(view.IsEffectivelyVisible);
+        Click(Tabs(w)[1]);
+        await SettleAsync();
+        view.Focus();
+        Press(w, Avalonia.Input.Key.Escape);
+        await SettleAsync();
+        Assert.True(view.IsClosed);
+        Assert.Null(w.Duplicates);
+        Assert.Equal(WorkspacePage.Files, w.CurrentPage);
+        Assert.Equal(0, shownFile);
+    }
+
+    [AvaloniaFact]
     public async Task Another_page_turns_off_what_works_on_the_panels()
     {
         var (w, vm) = await _fx.OpenAsync();

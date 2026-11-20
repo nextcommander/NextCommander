@@ -31,31 +31,32 @@ public sealed class DuplicatesLayoutTests : IDisposable
         try
         {
             var a = (await vm.Left.GetEntryAsync(VfsPath.Local(_fx.L("a.txt"))))!;
-            var window = _fx.Track(new DuplicatesWindow(new DuplicatesRequest(vm.Tools, [_fx.L()], (_, _) => Task.CompletedTask, _ => Task.CompletedTask)));
+            var view = new DuplicatesView(new DuplicatesRequest(vm.Tools, [_fx.L()], (_, _) => Task.CompletedTask, _ => Task.CompletedTask));
+            var host = _fx.Track(new Window { Content = view, Width = 1060, Height = 820 });
             for (var g = 0; g < 150; g++)
             {
-                window.Rows.Add(new DuplicateRow("Group " + g, g));
-                window.Rows.Add(new DuplicateRow(a, g));
-                window.Rows.Add(new DuplicateRow(a, g));
+                view.Rows.Add(new DuplicateRow("Group " + g, g));
+                view.Rows.Add(new DuplicateRow(a, g));
+                view.Rows.Add(new DuplicateRow(a, g));
             }
-            window.Show();
+            host.Show();
             await SettleAsync(4);
-            var list = window.GetVisualDescendants().OfType<ListBox>().Single(l => ReferenceEquals(l.ItemsSource, window.Rows));
+            var list = view.GetVisualDescendants().OfType<ListBox>().Single(l => ReferenceEquals(l.ItemsSource, view.Rows));
             var scroll = list.GetVisualDescendants().OfType<ScrollViewer>().First();
             Assert.True(scroll.Extent.Height > scroll.Viewport.Height + 100, $"extent {scroll.Extent.Height}, viewport {scroll.Viewport.Height}");
             Assert.Equal(Avalonia.Controls.Primitives.ScrollBarVisibility.Visible, ScrollViewer.GetVerticalScrollBarVisibility(list));
             Assert.False(ScrollViewer.GetAllowAutoHide(list)); // the bar stays, like the panels'
             // the list ends inside the window: its bottom is reachable
-            var bottom = list.TranslatePoint(new Avalonia.Point(0, list.Bounds.Height), window)!.Value.Y;
-            Assert.True(bottom <= window.ClientSize.Height + 1, $"list bottom {bottom}, window {window.ClientSize.Height}");
+            var bottom = list.TranslatePoint(new Avalonia.Point(0, list.Bounds.Height), host)!.Value.Y;
+            Assert.True(bottom <= host.ClientSize.Height + 1, $"list bottom {bottom}, window {host.ClientSize.Height}");
             // the Mark menu has icons
-            window.SetMenuIcons();
-            Assert.All(window.MarkMenu!.Items.OfType<MenuItem>(), i => Assert.True(i.Icon is Control, $"no icon: {i.Header}"));
+            view.SetMenuIcons();
+            Assert.All(view.MarkMenu!.Items.OfType<MenuItem>(), i => Assert.True(i.Icon is Control, $"no icon: {i.Header}"));
             // file rows have the icon of their kind
             Assert.NotEmpty(list.GetVisualDescendants().OfType<ListBoxItem>().Skip(1).First().GetVisualDescendants().OfType<Viewbox>());
             if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
             {
-                Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(window)!.SavePng(Path.Combine(dir, $"duplicates-scroll-{scale}.png"));
+                Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(host)!.SavePng(Path.Combine(dir, $"duplicates-scroll-{scale}.png"));
             }
         }
         finally

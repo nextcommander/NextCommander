@@ -188,7 +188,9 @@ two panels.
 
 ## Duplicate files
 
-*Commands > Duplicate files...* finds files that exist more than once.
+*Commands > Duplicate files...* finds files that exist more than once. It opens as a page of its own with a
+**Duplicates** tab next to the files tab (like *Synchronize directories*): the files tab takes you back to the
+panels while it stays open; its ✕, its tab's × or Esc closes it. **Go to file** and **Feed to panel** show the files.
 
 ![Duplicate files](../screenshots/duplicates.png)
 
