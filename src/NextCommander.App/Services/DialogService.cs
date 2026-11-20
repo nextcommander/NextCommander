@@ -126,15 +126,38 @@ public sealed class DialogService : IDialogService
                 return;
             }
         }
-        var window = new ProgressWindow(job);
-        window.Show(RequireOwner());
+        var owner = RequireOwner();
+        var vm = owner.DataContext as ViewModels.MainWindowViewModel;
+        var options = new ProgressOptions(
+            vm?.Settings.CloseProgressWhenDone ?? true,
+            close =>
+            {
+                if (vm is not null)
+                {
+                    vm.Settings.CloseProgressWhenDone = close;
+                    vm.SaveSettings();
+                }
+            },
+            job is CopyMoveJob copy && vm is not null ? () => vm.ActivePanel.NavigateAsync(copy.TargetDirectory) : null);
+        var window = new ProgressWindow(job, options);
+        window.Show(owner);
+        var closed = false;
+        window.Closed += (_, _) => closed = true; // closed while running: the job goes on in the background
         try
         {
             await running;
         }
         finally
         {
-            window.Close();
+            // "Close when done" off: the window stays with the summary (Open destination, the failed files)
+            if (!closed && (window.CloseWhenDone || window.IsMini))
+            {
+                window.Close();
+            }
+            else if (!closed)
+            {
+                window.ShowFinished();
+            }
         }
     }
 

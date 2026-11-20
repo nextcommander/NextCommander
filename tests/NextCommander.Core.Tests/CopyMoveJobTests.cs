@@ -55,6 +55,53 @@ public sealed class CopyMoveJobTests : IDisposable
     }
 
     [Fact]
+    public async Task The_file_list_keeps_each_file_s_state()
+    {
+        _tmp.Write("src/a.txt", "A");
+        _tmp.Write("src/b.txt", "BB");
+        Directory.CreateDirectory(Path.Combine(_tmp.Root, "dst"));
+        // b.txt is held open without sharing: it cannot be read and is skipped with its error
+        using var locked = new FileStream(Path.Combine(_tmp.Root, "src", "b.txt"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+        var job = await Run([await Entry("src", "a.txt"), await Entry("src", "b.txt")], _tmp.VPath("dst"), move: false,
+            interaction: new AutoInteraction(errorAction: ErrorAction.Skip));
+
+        var items = job.Progress.Items;
+        Assert.Equal(["a.txt", "b.txt"], items.Select(i => i.Name));
+        Assert.Equal(ProgressItemState.Done, items[0].State);
+        Assert.Equal(ProgressItemState.Failed, items[1].State);
+        Assert.False(string.IsNullOrEmpty(items[1].Message));
+        Assert.Equal((1, 0, 1), job.Progress.ItemCounts);
+    }
+
+    [Fact]
+    public async Task Skip_file_leaves_out_the_current_file_and_goes_on()
+    {
+        _tmp.Write("src/big.bin", new string('x', 256 * 1024));
+        _tmp.Write("src/small.txt", "S");
+        Directory.CreateDirectory(Path.Combine(_tmp.Root, "dst"));
+        var job = new CopyMoveJob(_registry, [await Entry("src", "big.bin"), await Entry("src", "small.txt")], _tmp.VPath("dst"), move: false,
+            new CopyOptions { SpeedLimit = 32 * 1024, BufferSize = 4096 });
+        Assert.True(job.CanSkipFile);
+        var running = job.RunAsync();
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        while (job.Progress.Snapshot() is { CurrentItem: not "big.bin" } or { CurrentFileDone: 0 } && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(20);
+        }
+        job.SkipCurrentFile();
+        await running;
+
+        Assert.Equal(JobState.Completed, job.State);
+        Assert.False(_tmp.Exists("dst/big.bin")); // the partial copy is deleted
+        Assert.Equal("S", _tmp.Read("dst/small.txt"));
+        Assert.Equal([ProgressItemState.Skipped, ProgressItemState.Done], job.Progress.Items.Select(i => i.State));
+        Assert.Contains(job.Skipped, s => s.EndsWith("big.bin", StringComparison.Ordinal));
+        Assert.Equal(job.Progress.Snapshot().TotalBytes, job.Progress.Snapshot().DoneBytes); // the bar still reaches 100%
+        Assert.Equal((Path.Combine(_tmp.Root, "src"), Path.Combine(_tmp.Root, "dst")), job.Route);
+    }
+
+    [Fact]
     public async Task Move_SameVolume_RemovesSource()
     {
         _tmp.Write("src/a.txt", "A");

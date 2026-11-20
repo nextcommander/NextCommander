@@ -89,6 +89,25 @@ public sealed class CopyMoveJob : FileJob
 
     public bool IsMove => _move;
 
+    private CancellationTokenSource? _fileCts;
+
+    public override bool CanSkipFile => true;
+
+    public override void SkipCurrentFile()
+    {
+        try
+        {
+            _fileCts?.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // the file just ended
+        }
+    }
+
+    public override (string Source, string Target)? Route =>
+        (_sources.Count > 0 && _sources[0].Path.Parent is { } parent ? parent.ToDisplayString() : string.Empty, _targetDirectory.ToDisplayString());
+
     public VfsPath TargetDirectory => _targetDirectory;
 
     /// <summary>The entries copied / moved.</summary>
@@ -511,7 +530,31 @@ public sealed class CopyMoveJob : FileJob
         long attemptBytes = 0;
         byte[]? sourceDigest = null;
         string? unreadable = null;
-        var copied = await WithErrorHandlingAsync(source.Path.ToDisplayString(), async () =>
+        // "Skip file" cancels this token only: the partial copy is deleted and the job goes on with the next file
+        using var fileCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        _fileCts = fileCts;
+        var outerCt = ct;
+        ct = fileCts.Token;
+        var errorsBefore = Errors.Count;
+        bool copied;
+        try
+        {
+            copied = await CopyContentAsync().ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!outerCt.IsCancellationRequested && fileCts.IsCancellationRequested)
+        {
+            Progress.AddBytes(-attemptBytes);
+            Progress.SkipFile(source.Size);
+            AddSkipped(source.Path.ToDisplayString());
+            return;
+        }
+        finally
+        {
+            _fileCts = null;
+        }
+        ct = outerCt;
+
+        Task<bool> CopyContentAsync() => WithErrorHandlingAsync(source.Path.ToDisplayString(), async () =>
         {
             Progress.AddBytes(-attemptBytes);
             attemptBytes = 0;
@@ -564,7 +607,7 @@ public sealed class CopyMoveJob : FileJob
                 }
                 throw;
             }
-        }, ct).ConfigureAwait(false);
+        }, ct);
 
         if (!copied || unreadable is not null)
         {
@@ -573,6 +616,11 @@ public sealed class CopyMoveJob : FileJob
                 AddError(source.Path.ToDisplayString(), unreadable);
             }
             Progress.AddBytes(-attemptBytes);
+            var errors = Errors;
+            if (errors.Count > errorsBefore)
+            {
+                Progress.FailItem(errors[^1].Message);
+            }
             Progress.SkipFile(source.Size);
             return;
         }
