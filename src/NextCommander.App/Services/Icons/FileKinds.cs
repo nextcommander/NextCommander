@@ -82,6 +82,10 @@ public static class FileKinds
         return FileKind.File;
     }
 
+    /// <summary>The kind of a file by its extension alone ("jpg" or ".jpg"); <see cref="FileKind.File"/> when unknown.</summary>
+    public static FileKind OfExtension(string extension) =>
+        s_byExtension.TryGetValue(extension.TrimStart('.'), out var kind) ? kind : FileKind.File;
+
     private static readonly Dictionary<FileKind, IBrush> s_packBrushes = [];
 
     /// <summary>

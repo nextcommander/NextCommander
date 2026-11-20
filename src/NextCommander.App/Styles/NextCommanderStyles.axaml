@@ -475,6 +475,21 @@
   <Style Selector="Button.tb.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
   </Style>
+  <!-- the confirming button of a destructive action (folder sizes: "Move to trash"): filled red -->
+  <Style Selector="Button.tb.dangerfill">
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="Background" Value="#C42B1C" />
+    <Setter Property="BorderBrush" Value="#C42B1C" />
+  </Style>
+  <Style Selector="Button.tb.dangerfill:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="Background" Value="#B02718" />
+    <Setter Property="BorderBrush" Value="#B02718" />
+  </Style>
+  <Style Selector="Button.tb.dangerfill:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="Background" Value="#9A2215" />
+  </Style>
   <Style Selector="Button.tb:disabled">
     <Setter Property="Opacity" Value="0.45" />
   </Style>

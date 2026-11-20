@@ -654,7 +654,7 @@ public partial class MainWindow : Window
         view.CloseRequested += (_, _) => _vm.CloseDiskUsage();
         var title = new TextBlock
         {
-            Text = "Folder sizes — " + request.Start.ToDisplayString(),
+            Text = "Folder sizes", // the view shows the path with its own crumbs
             Margin = new Avalonia.Thickness(6, 3),
             FontSize = 12,
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
