@@ -180,7 +180,7 @@ Since 7 November 2026 colors come only from theme files (default: system colors,
 
 ## Other
 - [x] New application icon (dark package) verified on Windows (exe, window, taskbar; the old icon came from Windows' icon cache).
-- [ ] Master password lock with Windows Hello / Touch ID (needs a separate Windows-specific build target of the application).
+- [-] Master password lock with Windows Hello / Touch ID — not planned (user's decision, 20 November 2026; it would need a separate Windows-specific build target of the application).
 - [x] plocate tried in a real environment (WSL Ubuntu 24.04, plocate 1.1.19): indexed search results match a folder scan. With several masks (`*.bin *.txt`) nothing was returned because plocate combines patterns with AND; each pattern is now a separate query.
 - [x] The application's own file index (Settings > Operation > File index): fast search, duplicate files and folder size without Everything / plocate / Spotlight; search in ~1 million files takes 20–80 ms.
 - [-] MSIX package: dropped on 15 November 2026 (user's request); the Inno Setup program covers Windows.
