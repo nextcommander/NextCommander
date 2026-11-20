@@ -12,16 +12,17 @@
     <Product>NextCommander</Product>
     <Copyright>© 2026 NextCommander</Copyright>
     <!--
-      Version: YY.MM.NNNN (e.g. 26.11.0071; user's request, 15 November 2026). Year and month are those of the commit
-      being built, so the same commit always gets the same version; NNNN is the number of that commit within its month,
-      four digits, starting at 0000 with the first commit of every new month (the commits of the history whose
-      commit date is in the same month, minus one). Without git (a source copy): the build date's month and 0000.
-      Version / InformationalVersion keep the leading zeros (26.01.0005); the numeric versions (assembly, file,
+      Version: YY.MM.NNN (e.g. 26.11.071; user's requests, 15 November 2026, three digits since 20 November 2026;
+      before: four). Year and month are those of the commit being built, so the same commit always gets the same
+      version; NNN is the number of that commit within its month, three digits (more after the 999th commit of a
+      month), starting at 000 with the first commit of every new month (the commits of the history whose commit date
+      is in the same month, minus one). Without git (a source copy): the build date's month and 000.
+      Version / InformationalVersion keep the leading zeros (26.01.005); the numeric versions (assembly, file,
       deb / rpm, macOS bundle) cannot have them: NcNumericVersion is 26.1.5.
       The NcVersion target sets them before the assembly attributes are written; build/publish.ps1 reads them with
       "dotnet msbuild -t:NcVersion -getProperty:Version -getProperty:NcNumericVersion".
     -->
-    <Version>$([System.DateTime]::Now.ToString('yy.MM')).0000</Version>
+    <Version>$([System.DateTime]::Now.ToString('yy.MM')).000</Version>
     <!-- no "+commit" suffix in the informational version: the app shows it as it is -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
@@ -47,10 +48,10 @@
       <_NcYearMonth>$([System.DateTime]::Now.ToString('yy.MM'))</_NcYearMonth>
       <_NcYearMonth Condition="$(_NcGit)">$(_NcCommitMonth)</_NcYearMonth>
       <_NcBuildNumber>0</_NcBuildNumber>
-      <!-- occurrences of "yy.mm" in the list (each is five characters), minus one: the first commit of a month is 0000 -->
+      <!-- occurrences of "yy.mm" in the list (each is five characters), minus one: the first commit of a month is 000 -->
       <_NcBuildNumber Condition="$(_NcGit)">$([MSBuild]::Subtract($([MSBuild]::Divide($([MSBuild]::Subtract($(_NcMonths.Length), $(_NcMonths.Replace($(_NcYearMonth), '').Length))), 5)), 1))</_NcBuildNumber>
       <_NcBuildNumber>$([System.Int32]::Parse($(_NcBuildNumber)))</_NcBuildNumber>
-      <Version>$(_NcYearMonth).$(_NcBuildNumber.PadLeft(4, '0'))</Version>
+      <Version>$(_NcYearMonth).$(_NcBuildNumber.PadLeft(3, '0'))</Version>
       <NcNumericVersion>$([System.Int32]::Parse($(_NcYearMonth.Substring(0, 2)))).$([System.Int32]::Parse($(_NcYearMonth.Substring(3, 2)))).$(_NcBuildNumber)</NcNumericVersion>
       <AssemblyVersion>$(NcNumericVersion).0</AssemblyVersion>
       <FileVersion>$(NcNumericVersion).0</FileVersion>
