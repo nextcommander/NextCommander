@@ -38,9 +38,10 @@ public sealed record ConnectionManagerResult(IReadOnlyList<RemoteConnection> Con
 
 /// <summary>
 /// Ctrl+F: the connections in folders on the left (search, filters, drag and drop, F2, Del, Ctrl+D, Ctrl+Z), the
-/// selected connection or folder on the right (tabs General / Login / Advanced, test, save, connect). It opens with the
-/// types of a new connection and Import; a new connection goes type (or a pasted address) › name (suggested) ›
-/// settings. Changes go to the settings as they are made; Save writes them to the disk (closing does too).
+/// selected connection or folder on the right (tabs General / Login / Advanced, test, save, connect). New (the toolbar,
+/// Ctrl+N) or Net > New connection open the new connection wizard (<see cref="ConnectionWizard"/>), whose connection
+/// goes into the group of its type. Changes go to
+/// the settings as they are made; Save writes them to the disk (closing does too).
 /// </summary>
 public sealed partial class ConnectionManagerView : UserControl
 {
@@ -76,11 +77,7 @@ public sealed partial class ConnectionManagerView : UserControl
         Grid.SetColumnSpan(_footerLeft, _narrow ? 2 : 1);
     }
     private readonly HashSet<string> _expanded = new(StringComparer.Ordinal);
-    private readonly HashSet<RemoteConnection> _newOnes = [];
-    private readonly HashSet<RemoteConnection> _untyped = [];
 
-    /// <summary>New connections whose name has not been given yet (the first step of a new connection).</summary>
-    private readonly HashSet<RemoteConnection> _unnamed = [];
     private readonly Dictionary<RemoteConnection, (bool Ok, string Text)> _tests = [];
     private readonly Stack<(List<RemoteConnection> Connections, List<ConnectionFolder> Folders)> _undo = new();
     private int _chip;
@@ -128,7 +125,7 @@ public sealed partial class ConnectionManagerView : UserControl
         };
         _tree.DoubleTapped += (_, e) =>
         {
-            if (Selected is { Connection: { } c } && !_untyped.Contains(c))
+            if (Selected is { Connection: { } c })
             {
                 Connect([c], right: false);
             }
@@ -154,14 +151,18 @@ public sealed partial class ConnectionManagerView : UserControl
                 return;
             }
             _opened = true;
-            // Net > New connection: its name step; otherwise the types of a new connection (the start page)
-            if (request.NewProtocol is { } protocol)
+            // the first connection (nothing selected: how to start); Net > New connection: the wizard with the type
+            if (Rows.FirstOrDefault(r => r.Connection is not null) is { } first)
             {
-                NewConnection(protocol);
+                Select(first);
             }
             else
             {
                 ShowDetail();
+            }
+            if (request.NewProtocol is { } protocol)
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => _ = NewConnectionAsync(protocol), Avalonia.Threading.DispatcherPriority.Loaded);
             }
             Avalonia.Threading.Dispatcher.UIThread.Post(() => _tree.Focus(), Avalonia.Threading.DispatcherPriority.Loaded);
         };
@@ -205,19 +206,20 @@ public sealed partial class ConnectionManagerView : UserControl
 
     private Control BuildLayout()
     {
-        var newButton = new Button { Content = "＋ New connection", Classes = { "accent" } };
-        newButton.Click += (_, _) => NewConnection(null);
+        var newButton = new Button { Content = "＋ New", Classes = { "accent" } };
+        ToolTip.SetTip(newButton, "New connection (Ctrl+N): the wizard");
+        newButton.Click += (_, _) => _ = NewConnectionAsync();
         var folderButton = IconButton("MiFolderOpen", "New folder", () => NewFolder(TargetFolder()));
         var importButton = IconButton("MiArrowDown", "Import (FileZilla, WinSCP)", ShowImportMenu);
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Margin = new Thickness(10) };
+        // the toolbar: New (the wizard), a folder, Import
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
         actions.Children.AddRange([newButton, folderButton, importButton]);
 
         var top = new StackPanel { Spacing = 8, Margin = new Thickness(10) };
-        top.Children.AddRange([_search, _chips]);
+        top.Children.AddRange([actions, _search, _chips]);
         var side = new DockPanel();
         DockPanel.SetDock(top, Dock.Top);
-        DockPanel.SetDock(actions, Dock.Bottom);
-        side.Children.AddRange([top, actions, _tree]);
+        side.Children.AddRange([top, _tree]);
         var sideBorder = new Border { Child = side, BorderThickness = new Thickness(0, 0, 1, 0) };
         sideBorder[!Border.BorderBrushProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SystemControlForegroundBaseLowBrush");
 
@@ -331,7 +333,7 @@ public sealed partial class ConnectionManagerView : UserControl
                     Walk(sub, depth + 1);
                 }
             }
-            foreach (var connection in connections.Where(c => !filtering || Passes(c) || _untyped.Contains(c)))
+            foreach (var connection in connections.Where(c => !filtering || Passes(c)))
             {
                 rows.Add(new Row(null, connection, depth));
             }
@@ -395,19 +397,18 @@ public sealed partial class ConnectionManagerView : UserControl
         else
         {
             var c = row.Connection!;
-            icon = _untyped.Contains(c) ? new TextBlock { Text = "?", Width = 18, TextAlignment = TextAlignment.Center } : BrandIcons.Create(c.Protocol, 18);
+            icon = BrandIcons.Create(c.Protocol, 18);
             text.Children.Add(new TextBlock { Text = c.Name, TextTrimming = TextTrimming.CharacterEllipsis });
             text.Children.Add(new TextBlock
             {
-                Text = _unnamed.Contains(c) ? Core.Localization.Localizer.T("no name given yet")
-                    : _untyped.Contains(c) ? Core.Localization.Localizer.T("no type chosen") : ConnectionChecks.Address(c),
+                Text = ConnectionChecks.Address(c),
                 FontSize = 11, Opacity = 0.6, TextTrimming = TextTrimming.CharacterEllipsis,
             });
             if (c.Favorite)
             {
                 trailing.Children.Add(new TextBlock { Text = "★", Foreground = new SolidColorBrush(Color.Parse("#F0B232")) });
             }
-            if (!_untyped.Contains(c) && !_unnamed.Contains(c) && ConnectionChecks.Problem(c) is { } problem)
+            if (ConnectionChecks.Problem(c) is { } problem)
             {
                 // something that must be filled in is missing (or wrong): it cannot connect yet
                 var mark = new TextBlock { Text = "!", FontWeight = FontWeight.Bold, Foreground = new SolidColorBrush(Color.Parse("#ED4245")), Classes = { "noloc" } };
@@ -438,7 +439,7 @@ public sealed partial class ConnectionManagerView : UserControl
     /// <summary>Green: connected now; red: the last test failed; gray: not connected.</summary>
     private Control StatusDot(RemoteConnection c)
     {
-        var connected = !_untyped.Contains(c) && _request.IsConnected(c);
+        var connected = _request.IsConnected(c);
         var failed = _tests.TryGetValue(c, out var test) && !test.Ok;
         var dot = new Avalonia.Controls.Shapes.Ellipse
         {
@@ -524,7 +525,7 @@ public sealed partial class ConnectionManagerView : UserControl
                 Toggle(toggled);
                 e.Handled = true;
                 break;
-            case Key.Enter when row?.Connection is { } c && !_untyped.Contains(c):
+            case Key.Enter when row?.Connection is { } c:
                 Connect([c], right: e.KeyModifiers.HasFlag(KeyModifiers.Shift));
                 e.Handled = true;
                 break;
@@ -554,7 +555,7 @@ public sealed partial class ConnectionManagerView : UserControl
                 e.Handled = true;
                 break;
             case Key.N when ctrl:
-                NewConnection(null);
+                _ = NewConnectionAsync();
                 e.Handled = true;
                 break;
             case Key.D when ctrl && Current is { } c:
@@ -574,26 +575,55 @@ public sealed partial class ConnectionManagerView : UserControl
 
     // ---------------------------------------------------------------- actions
 
-    /// <summary>A new connection in the target folder: of the type given, or with the choice of its type first.</summary>
-    public RemoteConnection NewConnection(RemoteProtocol? protocol)
+    /// <summary>The new connection wizard open now (tests).</summary>
+    public ConnectionWizard? Wizard { get; private set; }
+
+    /// <summary>
+    /// A new connection (user's request, 20 November 2026): the wizard over the manager, with the type, an address or a
+    /// folder given or not. OK adds the connection to its folder (by default the group of its type), shows it and saves.
+    /// </summary>
+    public async Task<RemoteConnection?> NewConnectionAsync(RemoteProtocol? protocol = null, string? folder = null, string? address = null)
     {
-        var connection = new RemoteConnection
+        if (Wizard is not null || HostWindow is not { } owner)
         {
-            Name = protocol is { } p ? $"New {TypeName(p)}" : "New connection",
-            Protocol = protocol ?? RemoteProtocol.Sftp,
-            Folder = TargetFolder(),
-            Passive = ConnectionDefaults.Passive,
-            SavePassword = true,
-        };
-        _settings.Connections.Add(connection);
-        _newOnes.Add(connection);
-        _unnamed.Add(connection); // its name is asked first (user's request, 18 November 2026)
-        if (protocol is null)
-        {
-            _untyped.Add(connection);
+            return null;
         }
+        var wizard = new ConnectionWizard(new ConnectionWizardRequest(_settings, _request.Test, _request.PickFile)
+        {
+            Protocol = protocol,
+            Folder = folder,
+            Address = address,
+            Advanced = AdvancedEditor,
+        });
+        Wizard = wizard;
+        try
+        {
+            await wizard.ShowDialog(owner);
+        }
+        finally
+        {
+            Wizard = null;
+        }
+        return wizard.Result is { } created ? Add(created) : null;
+    }
+
+    /// <summary>A connection made by the wizard: into its folder (made when new), shown in the tree and saved.</summary>
+    public RemoteConnection Add(RemoteConnection connection)
+    {
+        if (connection.Folder.Length > 0)
+        {
+            ConnectionFolders.Ensure(_settings, connection.Folder);
+            // its folder and the folders above it open
+            for (var path = connection.Folder; path.Length > 0; path = ConnectionFolders.ParentOf(path))
+            {
+                _expanded.Add(path);
+            }
+        }
+        _settings.Connections.Add(connection);
         _search.Text = string.Empty;
         Reveal(connection);
+        _request.Save();
+        Toast($"“{connection.Name}” created");
         return connection;
     }
 
@@ -650,7 +680,7 @@ public sealed partial class ConnectionManagerView : UserControl
             connections = [row.Connection!];
             _settings.Connections.Remove(row.Connection!);
         }
-        foreach (var c in connections.Where(c => !_untyped.Contains(c)))
+        foreach (var c in connections)
         {
             await _request.ForgetPassword(c);
         }
@@ -719,7 +749,7 @@ public sealed partial class ConnectionManagerView : UserControl
     /// <summary>Opens connections (valid ones only) and closes the window.</summary>
     public void Connect(IReadOnlyList<RemoteConnection> connections, bool right)
     {
-        var usable = connections.Where(c => !_untyped.Contains(c) && !Unnamed(c) && ConnectionChecks.Problem(c) is null).ToList();
+        var usable = connections.Where(c => ConnectionChecks.Problem(c) is null).ToList();
         if (usable.Count == 0)
         {
             if (connections.Count == 1)
@@ -744,20 +774,14 @@ public sealed partial class ConnectionManagerView : UserControl
         {
             FinishName(named);
         }
-        _newOnes.Remove(Current!);
         StoreProxyPasswords();
         _request.Save();
         Toast("Saved");
     }
 
-    /// <summary>Closing: new connections that were never filled in are dropped, the rest is saved.</summary>
+    /// <summary>Closing: everything is saved.</summary>
     private void Finish()
     {
-        // a pasted address keeps the name suggested for it; a type alone has no name yet
-        foreach (var c in _newOnes.Where(c => _untyped.Contains(c) || Unnamed(c) || ConnectionChecks.Problem(c) is not null).ToList())
-        {
-            _settings.Connections.Remove(c);
-        }
         foreach (var c in _settings.Connections)
         {
             FinishName(c);
@@ -941,13 +965,13 @@ public sealed partial class ConnectionManagerView : UserControl
         var row = Selected;
         if (row is null)
         {
-            menu.Items.Add(MenuItem("New connection", "connections.new", () => NewConnection(null), "Ctrl+N"));
+            menu.Items.Add(MenuItem("New connection", "connections.new", () => _ = NewConnectionAsync(), "Ctrl+N"));
             menu.Items.Add(MenuItem("New folder", "connections.folder", () => NewFolder(string.Empty)));
         }
         else if (row.Folder is { } folder)
         {
             var inside = ConnectionFolders.ConnectionsIn(_settings, folder).Where(c => ConnectionChecks.Problem(c) is null).ToList();
-            menu.Items.Add(MenuItem("New connection in this folder", "connections.new", () => NewConnection(null)));
+            menu.Items.Add(MenuItem("New connection in this folder", "connections.new", () => _ = NewConnectionAsync(folder: folder)));
             menu.Items.Add(MenuItem("New subfolder", "connections.folder", () => NewFolder(folder)));
             menu.Items.Add(new Separator());
             menu.Items.Add(MenuItem($"Connect to all ({inside.Count})", "connections.connect", () => Connect(inside, right: false)));
@@ -957,7 +981,6 @@ public sealed partial class ConnectionManagerView : UserControl
         }
         else if (row.Connection is { } c)
         {
-            var typed = !_untyped.Contains(c);
             menu.Items.Add(MenuItem("Connect in the left panel", "connections.connect", () => Connect([c], right: false), "Enter"));
             menu.Items.Add(MenuItem("Connect in the right panel", "connections.connect", () => Connect([c], right: true), "Shift+Enter"));
             menu.Items.Add(new Separator());
@@ -976,10 +999,6 @@ public sealed partial class ConnectionManagerView : UserControl
             menu.Items.Add(MenuItem("Rename", "connections.rename", FocusName, "F2"));
             menu.Items.Add(new Separator());
             menu.Items.Add(MenuItem("Delete", "connections.delete", () => _ = DeleteAsync(row), "Delete"));
-            foreach (var item in menu.Items.OfType<MenuItem>().Take(2))
-            {
-                item.IsEnabled = typed;
-            }
         }
         return menu;
     }

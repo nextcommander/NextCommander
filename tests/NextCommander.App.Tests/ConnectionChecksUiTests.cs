@@ -56,15 +56,16 @@ public sealed class ConnectionChecksUiTests : IDisposable
     [AvaloniaFact]
     public async Task What_must_be_filled_in_is_marked_at_its_field_and_its_tab_is_shown()
     {
+        // a saved connection without its server and user (e.g. imported)
         var settings = new AppSettings();
+        var created = new RemoteConnection { Name = "web", Protocol = RemoteProtocol.Sftp };
+        settings.Connections.Add(created);
         var view = Open(settings);
         await SettleAsync();
-        var created = view.NewConnection(null);
-        view.ChooseType(created, RemoteProtocol.Sftp);
-        Assert.Null(view.ApplyName(created, view.SuggestName(created)));
+        view.Reveal(created);
         await SettleAsync();
-        // a new connection is not marked before it is filled in; the server is marked as required
-        Assert.Empty(view.MarkedFields);
+        // its problems are marked at once; the server is marked as required
+        Assert.Equal([ConnectionField.Host, ConnectionField.User], view.MarkedFields);
         Assert.Contains(view.GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "*" && t.IsEffectivelyVisible);
 
         // Connect: nothing opens; the server and the user are marked, the General tab shows the server's problem
@@ -104,44 +105,57 @@ public sealed class ConnectionChecksUiTests : IDisposable
     }
 
     [AvaloniaFact]
-    public async Task The_steps_of_a_new_connection_go_back_with_back()
+    public async Task The_wizard_chooses_a_type_then_asks_for_what_it_needs()
     {
         var settings = new AppSettings();
-        var view = Open(settings);
+        settings.Connections.Add(new RemoteConnection { Name = "FTP", Protocol = RemoteProtocol.Ftp, Host = "old" });
+        var tested = 0;
+        var wizard = new ConnectionWizard(new ConnectionWizardRequest(settings, (_, _) =>
+        {
+            tested++;
+            return Task.FromResult("3 entries in /");
+        }, _ => Task.FromResult<string?>(null)));
+        _fx.Track(wizard).Show();
         await SettleAsync();
-        var created = view.NewConnection(null);
-        await SettleAsync();
-        bool Shown(string text) => view.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == text && t.IsEffectivelyVisible);
-        TextBox NameBox() => view.GetVisualDescendants().OfType<TextBox>().First(t => t.PlaceholderText == "e.g. Production web server");
-        const string NameStep = "Name the connection";
-        const string TypeStep = "Choose the type, or paste an address";
+        bool Shown(string text) => wizard.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == text && t.IsEffectivelyVisible);
+        TextBox Box(string name) => wizard.GetVisualDescendants().OfType<TextBox>().First(t => Avalonia.Automation.AutomationProperties.GetName(t) == name);
 
-        // type › name: a name is suggested; another one typed goes on to the settings
-        Assert.True(Shown(TypeStep));
-        view.ChooseType(created, RemoteProtocol.Ftp);
-        await SettleAsync();
-        Assert.True(Shown(NameStep));
-        Assert.Equal("FTP", NameBox().Text);
-        NameBox().Text = "web";
-        Click(ButtonOf(view, "Next ›"));
-        await SettleAsync();
-        Assert.Equal("web", created.Name);
-        Assert.NotNull(Tabs(view));
+        // the type first: OK waits for it
+        Assert.True(Shown("Choose the type of the connection"));
+        Assert.False(wizard.Finish());
 
-        // back to the name (kept to change), then to the type
-        Click(ButtonOf(view, "‹ Back"));
+        // FTP: the name suggested ("FTP" is taken), the folder of its group; OK marks the server
+        wizard.ChooseType(RemoteProtocol.Ftp);
         await SettleAsync();
-        Assert.True(Shown(NameStep));
-        Assert.Equal("web", NameBox().Text);
-        Click(ButtonOf(view, "‹ Back"));
+        Assert.Equal(("FTP 2", "Servers"), (wizard.Connection!.Name, wizard.Connection.Folder));
+        Assert.False(wizard.Finish());
+        Assert.Equal(["Host"], wizard.MarkedFields);
+        Box("Server").Text = "files.example.com";
         await SettleAsync();
-        Assert.True(Shown(TypeStep));
+        Assert.Empty(wizard.MarkedFields); // the mark goes as it is typed
 
-        // cancel at the type: no new connection after all; the start page with the types is shown
-        Click(ButtonOf(view, "Cancel"));
+        // test, back to the types and an SSH server: the user is required too
+        await wizard.TestAsync();
+        Assert.Equal(1, tested);
+        Assert.Equal("✓ 3 entries in /", wizard.TestText);
+        Click(ButtonOf(wizard, "‹ Back"));
         await SettleAsync();
-        Assert.Empty(settings.Connections);
-        Assert.True(Shown("Choose the type of a new connection, paste its address, or pick a saved connection on the left."));
+        Assert.True(Shown("Choose the type of the connection"));
+        wizard.ChooseType(RemoteProtocol.Sftp);
+        await SettleAsync();
+        Box("Server").Text = "h";
+        await SettleAsync(); // TextChanged comes after the text is set
+        Assert.False(wizard.Finish());
+        Assert.Equal(["User"], wizard.MarkedFields);
+        Box("Connection name").Text = "FTP";
+        await SettleAsync();
+        Assert.False(wizard.Finish());
+        Assert.Contains("Name", wizard.MarkedFields); // another connection's name
+        Box("Connection name").Text = "web";
+        await SettleAsync();
+        wizard.Connection!.User = "deploy";
+        Assert.True(wizard.Finish());
+        Assert.Equal(("web", "h", "deploy", "Servers"), (wizard.Result!.Name, wizard.Result.Host, wizard.Result.User, wizard.Result.Folder));
     }
 
     [AvaloniaFact]

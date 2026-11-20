@@ -134,36 +134,77 @@ public sealed class RemoteDialogsTests : IDisposable
         var settings = Sample();
         var (window, calls) = Open(settings);
         await SettleAsync();
-        // the manager opens with the types of a new connection and Import
-        Assert.True(Shown(window, "Choose the type of a new connection, paste its address, or pick a saved connection on the left."));
-        Assert.Contains(window.GetVisualDescendants().OfType<Button>(), b => b.Content is StackPanel p && p.Children.OfType<TextBlock>().Any(t => t.Text == "Import"));
-        Shot(window, "connections-start");
-        var created = window.NewConnection(null);
+        // the manager opens with its first connection (no page of types any more)
+        Assert.NotNull(window.Current);
+        Assert.False(Shown(window, "Choose the type of the connection"));
+
+        // New: the wizard over the manager; its type, then what the type needs
+        var adding = window.NewConnectionAsync();
         await SettleAsync();
-        // first its type, then its name (suggested; not empty, not another connection's)
-        Assert.True(Shown(window, "Choose the type, or paste an address"));
-        Assert.Contains(window.GetVisualDescendants().OfType<Button>(), b => b.Content is StackPanel p && p.Children.OfType<StackPanel>().Any(s => s.Children.OfType<TextBlock>().Any(t => t.Text == "Azure Files")));
-        window.ChooseType(created, RemoteProtocol.S3);
+        var wizard = window.Wizard!;
+        Assert.Contains(wizard.GetVisualDescendants().OfType<Button>(), b => b.Content is StackPanel p && p.Children.OfType<StackPanel>().Any(s => s.Children.OfType<TextBlock>().Any(t => t.Text == "Azure Files")));
+        // the search over the types: name, description, group
+        wizard.SearchTypes("azure");
+        Assert.Equal([RemoteProtocol.AzureBlob, RemoteProtocol.AzureFiles], wizard.Shown());
+        wizard.SearchTypes("cloud storage s3");
+        Assert.Equal([RemoteProtocol.S3], wizard.Shown());
+        if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } typesDir)
+        {
+            await SettleAsync();
+            Directory.CreateDirectory(typesDir);
+            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(wizard)!.SavePng(Path.Combine(typesDir, "connection-wizard-types.png"));
+        }
+        wizard.ChooseType(RemoteProtocol.S3);
         await SettleAsync();
-        Assert.True(Shown(window, "Name the connection"));
-        var nameBox = window.GetVisualDescendants().OfType<TextBox>().First(t => t.PlaceholderText == "e.g. Production web server");
-        Assert.Equal("Amazon S3", nameBox.Text);
-        Shot(window, "connections-name");
-        Assert.Equal("Enter a name for the connection.", window.ApplyName(created, "  "));
-        Assert.Equal("Another connection has this name; choose another.", window.ApplyName(created, "PROD-web-01"));
-        nameBox.Text = string.Empty;
-        Click(ButtonOf(window, "Next ›"));
+        Assert.Equal(("Amazon S3", "Cloud storage", "s3.amazonaws.com"), (wizard.Connection!.Name, wizard.Connection.Folder, wizard.Connection.Host));
+        if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } wizardDir)
+        {
+            Directory.CreateDirectory(wizardDir);
+            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(wizard)!.SavePng(Path.Combine(wizardDir, "connection-wizard.png"));
+        }
+        // the title stays above the scrolled fields
+        Assert.DoesNotContain(wizard.GetVisualDescendants().OfType<ScrollViewer>().SelectMany(v => v.GetVisualDescendants()).OfType<TextBlock>(), t => t.Text == "Amazon S3");
+        wizard.Next(); // the user is missing: the details stay
+        Assert.Equal(WizardStep.Details, wizard.Step);
+        Assert.Equal(["User"], wizard.MarkedFields);
+        wizard.GetVisualDescendants().OfType<TextBox>().First(t => t.PlaceholderText == "AKIA...").Text = "key";
         await SettleAsync();
-        Assert.Equal("Enter a name for the connection.", window.ProblemText);
-        nameBox.Text = "Amazon S3";
-        Click(ButtonOf(window, "Next ›"));
+
+        // the advanced options of the editor: the next step
+        wizard.Next();
         await SettleAsync();
-        Assert.Equal("Amazon S3", created.Name);
+        Assert.Equal(WizardStep.Advanced, wizard.Step);
+        Assert.Contains(wizard.GetVisualDescendants().OfType<TabItem>(), t => Equals(t.Header, "Proxy"));
+        Shot(wizard, "connection-wizard-advanced");
+        wizard.Connection!.TimeoutSeconds = 77;
+
+        // the summary: folder › name, the server, the login, the changed options
+        wizard.Next();
+        await SettleAsync();
+        Assert.Equal(WizardStep.Summary, wizard.Step);
+        bool InSummary(string text) => wizard.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == text && t.IsEffectivelyVisible);
+        Assert.True(InSummary("Cloud storage") && InSummary("Amazon S3") && InSummary("key") && InSummary("s3.amazonaws.com") && InSummary("77"));
+        Shot(wizard, "connection-wizard-summary");
+        wizard.Back();
+        Assert.Equal(WizardStep.Advanced, wizard.Step);
+        wizard.Back();
+        await SettleAsync();
+        Assert.Equal(WizardStep.Details, wizard.Step);
+        Assert.Equal("key", wizard.Connection.User); // kept
+        wizard.Next();
+        wizard.Next();
+        wizard.Next(); // OK
+        var created = (await adding)!;
+        await SettleAsync();
+
+        // OK: in the folder of its group, shown in the tree and saved
+        Assert.Contains(created, settings.Connections);
+        Assert.Same(created, window.Current);
+        Assert.Equal("Cloud storage", created.Folder);
+        Assert.Contains("Cloud storage/", Names(window));
+        Assert.Equal(1, calls.Saves);
         Assert.True(Shown(window, "Service"));
         Assert.True(Shown(window, "Region"));
-        Click(ButtonOf(window, "Connect"));
-        Assert.Null(window.Result);
-        Assert.Equal("Enter a valid server name (e.g. server.example.com).", window.ProblemText);
 
         // the service fills the server; the part in capitals must be replaced
         var service = window.GetVisualDescendants().OfType<ComboBox>().First(c => c.ItemsSource is IEnumerable<string> items && items.Contains("Cloudflare R2"));
@@ -172,32 +213,71 @@ public sealed class RemoteDialogsTests : IDisposable
         Assert.Equal(("ACCOUNT_ID.r2.cloudflarestorage.com", "auto", "Cloudflare R2"), (created.Host, created.Region, created.Name));
         Assert.Equal("Replace the part in capitals of the server name (as the note says).", ConnectionChecks.Problem(created));
         window.GetVisualDescendants().OfType<TextBox>().First(t => t.Text == "ACCOUNT_ID.r2.cloudflarestorage.com").Text = "0123abcd.r2.cloudflarestorage.com";
-        created.User = "key";
         await SettleAsync(); // TextChanged comes after the text is set
         Click(ButtonOf(window, "Connect"));
         Assert.Equal([created], window.Result!.Connections);
         Assert.False(window.Result.RightPanel);
         Assert.Contains(created, settings.Connections);
-        Assert.Equal(1, calls.Saves); // closing saves
+        Assert.Equal(2, calls.Saves); // OK of the wizard, then closing
     }
 
     [AvaloniaFact]
-    public async Task An_address_fills_a_new_connection_and_closing_drops_unfinished_ones()
+    public async Task An_address_fills_the_wizard_and_a_cancelled_one_adds_nothing()
     {
         var settings = Sample();
         var (window, _) = Open(settings);
         await SettleAsync();
-        var pasted = window.NewConnection(null);
-        Assert.True(window.ApplyAddress(pasted, "sftp://deploy@10.0.0.5:2222/var/www"));
+        var count = settings.Connections.Count;
+
+        // an address pasted on the start page opens the wizard with it
+        var adding = window.NewConnectionAsync(address: "sftp://deploy@10.0.0.5:2222/var/www");
+        await SettleAsync();
+        var wizard = window.Wizard!;
+        var pasted = wizard.Connection!;
         Assert.Equal((RemoteProtocol.Sftp, "10.0.0.5", 2222, "deploy", "/var/www", "deploy@10.0.0.5"),
             (pasted.Protocol, pasted.Host, pasted.Port, pasted.User, pasted.InitialPath, pasted.Name));
-        Assert.False(window.ApplyAddress(pasted, "not an address"));
-        var untouched = window.NewConnection(null);
-        var empty = window.NewConnection(RemoteProtocol.Ftp);
-        window.Close();
-        Assert.Contains(pasted, settings.Connections);
-        Assert.DoesNotContain(untouched, settings.Connections);
-        Assert.DoesNotContain(empty, settings.Connections); // no server: dropped
+        Assert.False(wizard.ApplyAddress("not an address"));
+        wizard.Close(); // cancelled: nothing is added
+        Assert.Null(await adding);
+        Assert.Null(window.Wizard);
+        Assert.Equal(count, settings.Connections.Count);
+
+        // a folder's "+ Connection" puts the new one into that folder
+        adding = window.NewConnectionAsync(RemoteProtocol.Ftp, folder: "Partners");
+        await SettleAsync();
+        window.Wizard!.Connection!.Host = "ftp.partner.com";
+        Assert.True(window.Wizard.Finish());
+        Assert.Equal("Partners", (await adding)!.Folder);
+    }
+
+    [AvaloniaFact]
+    public async Task The_wizard_adds_after_a_type_and_back_with_a_connection_selected()
+    {
+        var settings = Sample();
+        var (window, _) = Open(settings);
+        await SettleAsync();
+        var count = settings.Connections.Count;
+        Assert.NotNull(window.Current); // a saved connection is selected
+
+        for (var round = 0; round < 2; round++)
+        {
+            var adding = window.NewConnectionAsync();
+            await SettleAsync();
+            var wizard = window.Wizard!;
+            wizard.ChooseType(RemoteProtocol.Sftp);
+            await SettleAsync();
+            wizard.ShowTypes(); // ‹ Back
+            await SettleAsync();
+            wizard.ChooseType(RemoteProtocol.Ftp);
+            await SettleAsync();
+            wizard.GetVisualDescendants().OfType<TextBox>().First(t => Avalonia.Automation.AutomationProperties.GetName(t) == "Server").Text = $"ftp{round}.example.com";
+            await SettleAsync();
+            Assert.True(wizard.Finish(), string.Join(", ", wizard.Problems().Select(p => p.Key + ": " + p.Text)));
+            Assert.NotNull(await adding);
+            await SettleAsync();
+            Assert.Equal(count + round + 1, settings.Connections.Count);
+            Assert.Null(window.Wizard);
+        }
     }
 
     [AvaloniaFact]
@@ -263,8 +343,9 @@ public sealed class RemoteDialogsTests : IDisposable
         Assert.Equal("me@bastion:2200", web.JumpHost);
 
         // Azure: key or Entra ID
-        var azure = window.NewConnection(RemoteProtocol.AzureBlob);
-        Assert.Null(window.ApplyName(azure, "blobs")); // the type is known: its settings come after the name
+        var azure = new RemoteConnection { Name = "blobs", Protocol = RemoteProtocol.AzureBlob, Host = "acct.blob.core.windows.net", User = "acct" };
+        settings.Connections.Add(azure);
+        window.Reveal(azure);
         await SettleAsync();
         window.GetVisualDescendants().OfType<TabControl>().Single().SelectedIndex = 1;
         await SettleAsync();
@@ -326,15 +407,14 @@ public sealed class RemoteDialogsTests : IDisposable
         var settings = Sample();
         var (window, _) = Open(settings, RemoteProtocol.Dropbox);
         await SettleAsync();
-        Assert.Equal(RemoteProtocol.Dropbox, window.Current!.Protocol);
-        Assert.True(Shown(window, "Name the connection")); // the type is given: its name first
-        Assert.Equal("Dropbox", window.SuggestName(window.Current));
-        Assert.Null(window.ApplyName(window.Current, "My Dropbox"));
+        // the wizard opens with the type: its details, the application id required
+        var wizard = window.Wizard!;
+        Assert.Equal(("Dropbox", "Cloud drives"), (wizard.Connection!.Name, wizard.Connection.Folder));
+        Assert.False(wizard.Finish());
+        Assert.Equal(["ClientId"], wizard.MarkedFields);
+        wizard.Close();
         await SettleAsync();
-        window.GetVisualDescendants().OfType<TabControl>().Single().SelectedIndex = 1;
-        await SettleAsync();
-        Assert.True(Shown(window, "Application id"));
-        window.Close();
-        Assert.DoesNotContain(settings.Connections, c => c.Protocol == RemoteProtocol.Dropbox); // no application id: dropped
+        Assert.Null(window.Wizard);
+        Assert.DoesNotContain(settings.Connections, c => c.Protocol == RemoteProtocol.Dropbox); // cancelled: nothing added
     }
 }
