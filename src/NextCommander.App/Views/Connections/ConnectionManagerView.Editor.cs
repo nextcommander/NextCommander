@@ -49,6 +49,12 @@ public sealed partial class ConnectionManagerView
 
     public static string TypeName(RemoteProtocol protocol) => s_types.First(t => t.Protocol == protocol).Name;
 
+    /// <summary>The connection types (the wizard's cards): protocol, name, a line about it, its group.</summary>
+    internal static IReadOnlyList<(RemoteProtocol Protocol, string Name, string Description, string Group)> Types => s_types;
+
+    /// <summary>How to set up a connection of its type (translated; empty: nothing to say).</summary>
+    internal static string NoteOf(RemoteConnection c) => Note(c) is { Length: > 0 } note ? Core.Localization.Localizer.T(note) : string.Empty;
+
     /// <summary>The place of a type in the type list (the order of the groups in the connections menu).</summary>
     public static int TypeOrder(RemoteProtocol protocol) => Array.FindIndex(s_types, t => t.Protocol == protocol);
 
@@ -85,9 +91,6 @@ public sealed partial class ConnectionManagerView
     /// <summary>The fields of the shown connection that are checked: the field, its input and the line for its problem.</summary>
     private readonly List<(ConnectionField Field, Control Input, TextBlock Message)> _marks = [];
 
-    /// <summary>New connections whose problems are shown at their fields (after the first change, Save, Connect or Test).</summary>
-    private readonly HashSet<RemoteConnection> _checking = [];
-
     /// <summary>The fields with a problem of the shown connection (tests).</summary>
     public IReadOnlyList<ConnectionField> MarkedFields => [.. _marks.Where(m => m.Message.IsVisible).Select(m => m.Field)];
 
@@ -116,10 +119,10 @@ public sealed partial class ConnectionManagerView
         return panel;
     }
 
-    /// <summary>Shows the problems of the connection at its fields (a new one only once it is being filled in).</summary>
+    /// <summary>Shows the problems of the connection at its fields.</summary>
     private void MarkFields(RemoteConnection c)
     {
-        var problems = !_newOnes.Contains(c) || _checking.Contains(c) ? ConnectionChecks.Problems(c) : [];
+        var problems = ConnectionChecks.Problems(c);
         foreach (var (field, input, message) in _marks)
         {
             var problem = problems.FirstOrDefault(p => p.Field == field);
@@ -151,7 +154,6 @@ public sealed partial class ConnectionManagerView
         {
             return;
         }
-        _checking.Add(c);
         if (ReferenceEquals(Current, c))
         {
             var tab = TabOf(first.Field);
@@ -192,12 +194,6 @@ public sealed partial class ConnectionManagerView
             case { Folder: { } folder }:
                 _detail.Content = FolderDetail(folder);
                 break;
-            case { Connection: { } c } when _untyped.Contains(c):
-                _detail.Content = TypeChoice(c);
-                break;
-            case { Connection: { } c } when _unnamed.Contains(c):
-                _detail.Content = NameStep(c);
-                break;
             case { Connection: { } c }:
                 _detail.Content = ConnectionDetail(c);
                 MarkFields(c);
@@ -205,80 +201,15 @@ public sealed partial class ConnectionManagerView
         }
     }
 
-    /// <summary>
-    /// What the manager opens with (user's request, 20 November 2026): the types of a new connection, a box for a
-    /// pasted address and Import; a saved connection is chosen on the left.
-    /// </summary>
+    /// <summary>Nothing selected (no connections yet): how to start, New and Import.</summary>
     private Control Empty()
     {
-        var panel = new StackPanel();
-        panel.Children.Add(TypeTitle("Choose the type of a new connection, paste its address, or pick a saved connection on the left."));
-        panel.Children.Add(AddressBox(text =>
-        {
-            var c = NewConnection(null);
-            if (ApplyAddress(c, text))
-            {
-                return true;
-            }
-            CancelNew(c);
-            return false;
-        }));
-        panel.Children.Add(TypeCards(protocol => NewConnection(protocol)));
-        return panel;
-    }
-
-    /// <summary>"New connection", a line under it and Import at the right (the start page and the type step).</summary>
-    private Control TypeTitle(string text)
-    {
-        var import = new Button { Content = WithGlyph("MiArrowDown", "Import"), VerticalAlignment = VerticalAlignment.Top };
-        ToolTip.SetTip(import, "Import connections from FileZilla or WinSCP");
-        import.Click += (_, _) => ShowImportMenu();
-        var titles = new StackPanel();
-        titles.Children.AddRange([
-            new TextBlock { Text = "New connection", FontSize = 20, FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 0, 0, 6) },
-            new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, Opacity = 0.75, Margin = new Thickness(0, 0, 0, 14) },
-        ]);
-        var head = new DockPanel();
-        DockPanel.SetDock(import, Dock.Right);
-        head.Children.AddRange([import, titles]);
-        return head;
-    }
-
-    private static StackPanel WithGlyph(string glyph, string text)
-    {
-        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
-        row.Children.AddRange([GlyphIcon(glyph, 14), new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center }]);
-        return row;
-    }
-
-    /// <summary>The box for an address ("sftp://user@server/folder"): Enter makes a connection of it.</summary>
-    private static TextBox AddressBox(Func<string?, bool> apply)
-    {
-        var url = new TextBox { PlaceholderText = "sftp://user@server:22/folder · s3://key@endpoint/bucket · ftp://..." };
-        url.KeyDown += (_, e) =>
-        {
-            if (e.Key == Key.Enter && apply(url.Text))
-            {
-                e.Handled = true;
-            }
-        };
-        return url;
-    }
-
-    /// <summary>The types in their groups, as cards.</summary>
-    private static StackPanel TypeCards(Action<RemoteProtocol> choose)
-    {
-        var panel = new StackPanel();
-        foreach (var group in s_types.GroupBy(t => t.Group))
-        {
-            panel.Children.Add(new TextBlock { Text = group.Key.ToUpper(CultureInfo.CurrentCulture), FontSize = 11, Opacity = 0.6, Margin = new Thickness(0, 18, 0, 10) });
-            var cards = new WrapPanel();
-            foreach (var type in group)
-            {
-                cards.Children.Add(Card(BrandIcons.Create(type.Protocol, 18), type.Name, Core.Localization.Localizer.T(type.Description), () => choose(type.Protocol)));
-            }
-            panel.Children.Add(cards);
-        }
+        var panel = new StackPanel { Spacing = 12, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 120, 0, 0) };
+        panel.Children.Add(new TextBlock { Text = "Choose a connection on the left, or make a new one.", Opacity = 0.7, HorizontalAlignment = HorizontalAlignment.Center });
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Center };
+        buttons.Children.Add(FooterButton("＋ New", () => _ = NewConnectionAsync(), accent: true));
+        buttons.Children.Add(FooterButton("Import...", ShowImportMenu));
+        panel.Children.Add(buttons);
         return panel;
     }
 
@@ -383,7 +314,7 @@ public sealed partial class ConnectionManagerView
             cards.Children.Add(Card(BrandIcons.Create(c.Protocol, 18), c.Name, ConnectionChecks.Address(c), () => Reveal(c)));
         }
         panel.Children.Add(cards.Children.Count > 0 ? cards : new TextBlock { Text = "Empty folder: drag connections here.", Opacity = 0.6 });
-        AddFooter(FooterButton("＋ Connection", () => NewConnection(null)), right: false);
+        AddFooter(FooterButton("＋ Connection", () => _ = NewConnectionAsync(folder: folder)), right: false);
         AddFooter(FooterButton("New subfolder", () => NewFolder(folder)), right: false);
         AddFooter(FooterButton("Delete", () => _ = DeleteAsync(Selected!)), right: false);
         var usable = connections.Where(c => ConnectionChecks.Problem(c) is null).ToList();
@@ -408,266 +339,6 @@ public sealed partial class ConnectionManagerView
         return card;
     }
 
-    // ---------------------------------------------------------------- name (the first step of a new connection)
-
-    /// <summary>"1 Name › 2 Type › 3 Settings" above the steps of a new connection, the current one stressed.</summary>
-    private static Control Steps(int current, bool withType)
-    {
-        var steps = withType ? new[] { "Type", "Name", "Settings" } : ["Name", "Settings"];
-        var line = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 0, 0, 14) };
-        for (var i = 0; i < steps.Length; i++)
-        {
-            if (i > 0)
-            {
-                line.Children.Add(new TextBlock { Text = "›", Opacity = 0.5, Classes = { "noloc" }, VerticalAlignment = VerticalAlignment.Center });
-            }
-            var number = new Border
-            {
-                Width = 20, Height = 20, CornerRadius = new CornerRadius(10),
-                Background = i == current ? new SolidColorBrush(Color.Parse("#4C8DFF")) : new SolidColorBrush(Color.FromArgb(48, 128, 128, 128)),
-                Child = new TextBlock
-                {
-                    Text = (i + 1).ToString(CultureInfo.InvariantCulture), FontSize = 11, Classes = { "noloc" },
-                    HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
-                },
-            };
-            if (i == current && number.Child is TextBlock digit)
-            {
-                digit.Foreground = Brushes.White; // the others keep the text color (a null brush would hide them)
-            }
-            line.Children.Add(number);
-            line.Children.Add(new TextBlock
-            {
-                Text = steps[i], VerticalAlignment = VerticalAlignment.Center,
-                FontWeight = i == current ? FontWeight.SemiBold : FontWeight.Normal, Opacity = i == current ? 1 : 0.6,
-            });
-        }
-        return line;
-    }
-
-    /// <summary>
-    /// The second step of a new connection (user's request, 20 November 2026; before: the first): its name, which it is
-    /// found by in the list and its log is named after. A name is suggested from the type (and the server of a pasted
-    /// address); then come its settings.
-    /// </summary>
-    private Control NameStep(RemoteConnection c)
-    {
-        var panel = new StackPanel { MaxWidth = 560, HorizontalAlignment = HorizontalAlignment.Left };
-        panel.Children.Add(Crumb(c.Folder.Trim('/')));
-        panel.Children.Add(Steps(1, withType: true));
-        var type = s_types.First(t => t.Protocol == c.Protocol);
-        var icon = new Viewbox { Width = 40, Height = 40, Child = BrandIcons.Create(c.Protocol, 40), Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
-        var titles = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        titles.Children.AddRange([
-            new TextBlock { Text = "Name the connection", FontSize = 20, FontWeight = FontWeight.SemiBold },
-            new TextBlock { Text = type.Name + " · " + Core.Localization.Localizer.T(type.Description), Opacity = 0.65, Classes = { "noloc" }, TextTrimming = TextTrimming.CharacterEllipsis },
-        ]);
-        var head = new DockPanel { Margin = new Thickness(0, 0, 0, 10) };
-        DockPanel.SetDock(icon, Dock.Left);
-        head.Children.AddRange([icon, titles]);
-        panel.Children.Add(head);
-        panel.Children.Add(new TextBlock
-        {
-            Text = "The list shows the connection by this name, and its log is kept under it. A name is suggested; change it if you like.",
-            TextWrapping = TextWrapping.Wrap, Opacity = 0.75, Margin = new Thickness(0, 0, 0, 16),
-        });
-        // a name is suggested; back from its settings, the name given is there to change
-        var name = new TextBox { Text = HasPlaceholderName(c) ? SuggestName(c) : c.Name, PlaceholderText = Core.Localization.Localizer.T("e.g. Production web server"), FontSize = 15, Classes = { "noloc" } };
-        name.AttachedToVisualTree += (_, _) => name.SelectAll();
-        _nameBox = name;
-        void Next()
-        {
-            if (ApplyName(c, name.Text) is { } problem)
-            {
-                ShowProblem(problem);
-                name.Focus();
-            }
-        }
-        name.KeyDown += (_, e) =>
-        {
-            if (e.Key == Key.Enter)
-            {
-                e.Handled = true;
-                Next();
-            }
-        };
-        name.TextChanged += (_, _) => _problem.IsVisible = false;
-        panel.Children.Add(Checked("Connection name", name, ConnectionField.Other));
-        panel.Children.Add(_problem);
-        // Cancel at the left; ‹ Back and Next › at the right, as in a wizard (Back on the first step: no new connection after all)
-        AddFooter(FooterButton("Cancel", () => CancelNew(c)), right: false);
-        AddFooter(FooterButton("Next ›", Next, accent: true, right: true), right: true);
-        AddFooter(FooterButton("‹ Back", () => GoBack(c), right: true), right: true);
-        Avalonia.Threading.Dispatcher.UIThread.Post(() => name.Focus(), Avalonia.Threading.DispatcherPriority.Loaded);
-        return panel;
-    }
-
-    /// <summary>New connections whose type was chosen in the type step (‹ Back from their settings goes there).</summary>
-    private readonly HashSet<RemoteConnection> _choseType = [];
-
-    /// <summary>
-    /// ‹ Back in the steps of a new connection: from its settings to its name (kept, to change), from its name to its type
-    /// (when the type was chosen in the type step), from its type (or the name of a type given from the start): no new
-    /// connection after all.
-    /// </summary>
-    public void GoBack(RemoteConnection c)
-    {
-        if (_untyped.Contains(c) || (_unnamed.Contains(c) && !_choseType.Contains(c)))
-        {
-            CancelNew(c);
-            return;
-        }
-        if (_unnamed.Contains(c))
-        {
-            _choseType.Remove(c);
-            _untyped.Add(c);
-        }
-        else
-        {
-            _unnamed.Add(c);
-        }
-        _problem.IsVisible = false;
-        RefreshTree();
-        ShowDetail();
-    }
-
-    /// <summary>
-    /// The name suggested for a new connection: from a pasted address (user@server, the account of a cloud drive), or
-    /// the type's name; numbered when another connection has it ("SFTP 2").
-    /// </summary>
-    public string SuggestName(RemoteConnection c)
-    {
-        var type = TypeName(c.Protocol);
-        var name = c.Host.Length > 0 && !c.IsCloudDrive ? ConnectionChecks.DefaultName(c, type)
-            : c.IsCloudDrive && c.User.Length > 0 ? ConnectionChecks.DefaultName(c, type) : type;
-        bool Taken(string n) => _settings.Connections.Any(o => !ReferenceEquals(o, c) && string.Equals(o.Name.Trim(), n, StringComparison.OrdinalIgnoreCase));
-        if (!Taken(name))
-        {
-            return name;
-        }
-        for (var i = 2; ; i++)
-        {
-            var numbered = $"{name} {i}";
-            if (!Taken(numbered))
-            {
-                return numbered;
-            }
-        }
-    }
-
-    /// <summary>
-    /// The name of a new connection is given: it must not be empty nor the name of another connection; then comes its
-    /// type (or its settings when the type is known). Returns the problem, or null.
-    /// </summary>
-    public string? ApplyName(RemoteConnection c, string? text)
-    {
-        var name = text?.Trim() ?? string.Empty;
-        if (name.Length == 0)
-        {
-            return "Enter a name for the connection.";
-        }
-        if (_settings.Connections.Any(o => !ReferenceEquals(o, c) && string.Equals(o.Name.Trim(), name, StringComparison.OrdinalIgnoreCase)))
-        {
-            return "Another connection has this name; choose another.";
-        }
-        c.Name = name;
-        _unnamed.Remove(c);
-        _tab = 0;
-        RefreshTree();
-        ShowDetail();
-        return null;
-    }
-
-    /// <summary>A new connection not wanted after all: removed.</summary>
-    private void CancelNew(RemoteConnection c)
-    {
-        _settings.Connections.Remove(c);
-        _untyped.Remove(c);
-        _unnamed.Remove(c);
-        _choseType.Remove(c);
-        _newOnes.Remove(c);
-        RefreshTree();
-        ShowDetail();
-    }
-
-    /// <summary>The name a new connection has until one is given ("New connection", "New SFTP").</summary>
-    /// <summary>A new connection still without a name of its own (its name step not done, nothing suggested kept).</summary>
-    private bool Unnamed(RemoteConnection c) => _unnamed.Contains(c) && HasPlaceholderName(c);
-
-    private static bool HasPlaceholderName(RemoteConnection c) =>
-        c.Name == "New connection" || s_types.Any(t => c.Name == $"New {t.Name}");
-
-    // ---------------------------------------------------------------- type choice
-
-    private Control TypeChoice(RemoteConnection c)
-    {
-        var panel = new StackPanel();
-        panel.Children.Add(Crumb(c.Folder.Trim('/')));
-        if (_newOnes.Contains(c))
-        {
-            panel.Children.Add(Steps(0, withType: true));
-        }
-        panel.Children.Add(TypeTitle("Choose the type, or paste an address"));
-        var url = AddressBox(text => ApplyAddress(c, text));
-        url.LostFocus += (_, _) => ApplyAddress(c, url.Text);
-        panel.Children.Add(url);
-        panel.Children.Add(TypeCards(protocol => ChooseType(c, protocol)));
-        AddFooter(FooterButton("Cancel", () => CancelNew(c)), right: false);
-        return panel;
-    }
-
-    /// <summary>The type of a new connection is chosen: its editor opens on the General tab.</summary>
-    public void ChooseType(RemoteConnection c, RemoteProtocol protocol)
-    {
-        c.Protocol = protocol;
-        if (HasPlaceholderName(c))
-        {
-            c.Name = $"New {TypeName(protocol)}"; // the name step suggests one
-        }
-        if (_newOnes.Contains(c))
-        {
-            _choseType.Add(c);
-        }
-        if (protocol == RemoteProtocol.Serial)
-        {
-            c.TelnetEnter = TelnetEnter.Cr; // a device console wants a carriage return
-            c.Host = Services.Terminal.SerialTerminal.PortNames() is [var first, ..] ? first : string.Empty;
-        }
-        _untyped.Remove(c);
-        _tab = 0;
-        RefreshTree();
-        ShowDetail();
-    }
-
-    /// <summary>A pasted address ("sftp://user@host:port/path") fills a new connection.</summary>
-    public bool ApplyAddress(RemoteConnection c, string? text)
-    {
-        if (string.IsNullOrWhiteSpace(text) || !VfsPath.TryParse(text.Trim(), out var path) || path!.IsLocal
-            || RemoteProtocols.FromScheme(path.Scheme) is not { } type)
-        {
-            return false;
-        }
-        var parsed = RemoteConnection.FromAuthority(path.Scheme, path.Authority);
-        c.Protocol = type.Protocol;
-        c.Host = type.IsCloudDrive ? RemoteConnection.CloudHost(type.Protocol) : parsed.Host;
-        c.Port = parsed.Port;
-        c.User = parsed.User;
-        c.InitialPath = path.Path.Length > 0 ? path.Path : "/";
-        if (HasPlaceholderName(c))
-        {
-            c.Name = SuggestName(c); // the name step shows it to keep or change
-        }
-        _untyped.Remove(c);
-        if (_newOnes.Contains(c))
-        {
-            _choseType.Add(c);
-        }
-        _tab = 0;
-        RefreshTree();
-        ShowDetail();
-        return true;
-    }
-
     private void Rename(RemoteConnection c, string name)
     {
         c.Name = name;
@@ -680,10 +351,6 @@ public sealed partial class ConnectionManagerView
     {
         var panel = new StackPanel();
         panel.Children.Add(Crumb(c.Folder.Trim('/')));
-        if (_newOnes.Contains(c))
-        {
-            panel.Children.Add(Steps(2, withType: true)); // a new connection: its settings are the last step
-        }
         var type = s_types.First(t => t.Protocol == c.Protocol);
         panel.Children.Add(Header(new Viewbox { Width = 40, Height = 40, Child = BrandIcons.Create(c.Protocol, 40) }, c.Name,
             Core.Localization.Localizer.T(type.Description) + " · " + ConnectionChecks.Address(c), name => Rename(c, name)));
@@ -730,10 +397,6 @@ public sealed partial class ConnectionManagerView
         }
         AddFooter(FooterButton("Connect", () => Connect([c], right: false), accent: true, right: true), right: true);
         AddFooter(FooterButton("Save", Save, right: true), right: true);
-        if (_newOnes.Contains(c))
-        {
-            AddFooter(FooterButton("‹ Back", () => GoBack(c), right: true), right: true); // a new connection: back to its type or its name
-        }
         return panel;
     }
 
@@ -750,12 +413,11 @@ public sealed partial class ConnectionManagerView
     {
         _problem.Text = string.Empty;
         _tests.Remove(c);
-        _checking.Add(c);
         if (ReferenceEquals(Current, c))
         {
             MarkFields(c);
         }
-        if (_address is not null)
+        if (_address is not null && ReferenceEquals(Current, c))
         {
             _address.Text = Core.Localization.Localizer.T(s_types.First(t => t.Protocol == c.Protocol).Description) + " · " + ConnectionChecks.Address(c);
         }
@@ -1623,8 +1285,38 @@ public sealed partial class ConnectionManagerView
     /// The Proxy tab: the program's proxy setting, none, or the connection's own proxy (kind, server, port, user,
     /// password, key file for an SSH proxy). The password goes to the password store when the connection is saved.
     /// </summary>
-    private Control ProxyTab(RemoteConnection c)
+    /// <summary>
+    /// The advanced options of a connection that is not in the list yet (the advanced step of the wizard): the
+    /// Advanced tab, a remote desktop's pages and the Proxy tab of the editor; <paramref name="rebuild"/> draws them
+    /// again when a choice changes what they show. Their problems are the wizard's to show.
+    /// </summary>
+    internal Control AdvancedEditor(RemoteConnection c, Action rebuild)
     {
+        var marks = _marks.Count;
+        var tabs = new TabControl();
+        TabItem Tab(string header, Control content) => new() { Header = header, Content = content, FontSize = 13, MinHeight = 30, Padding = new Thickness(10, 3) };
+        tabs.Items.Add(Tab("Advanced", Advanced(c)));
+        if (c.Protocol == RemoteProtocol.Rdp)
+        {
+            tabs.Items.Add(Tab("Display", Fields([.. RdpDisplay(c)])));
+            tabs.Items.Add(Tab("Local resources", Fields([.. RdpResources(c)])));
+            tabs.Items.Add(Tab("Experience", Fields([.. RdpExperience(c)])));
+        }
+        if (HasProxy(c.Protocol))
+        {
+            tabs.Items.Add(Tab("Proxy", ProxyTab(c, rebuild)));
+        }
+        _marks.RemoveRange(marks, _marks.Count - marks); // not the marks of the connection shown in the manager
+        return tabs;
+    }
+
+    private Control ProxyTab(RemoteConnection c, Action? rebuild = null)
+    {
+        rebuild ??= () =>
+        {
+            _tab = 3;
+            ShowDetail();
+        };
         var panel = new StackPanel();
         var segment = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 4) };
         foreach (var (name, use) in new[] { ("The program's setting", Core.Net.ConnectionProxy.Default), ("No proxy", Core.Net.ConnectionProxy.None), ("Its own proxy", Core.Net.ConnectionProxy.Custom) })
@@ -1634,8 +1326,7 @@ public sealed partial class ConnectionManagerView
             {
                 c.Proxy = use;
                 Changed(c);
-                _tab = 3;
-                ShowDetail();
+                rebuild();
             };
             segment.Children.Add(button);
         }
@@ -1662,8 +1353,7 @@ public sealed partial class ConnectionManagerView
             }
             c.ProxyKind = kinds[i].Kind;
             Changed(c);
-            _tab = 3;
-            ShowDetail(); // the port's placeholder and the key file follow the kind
+            rebuild(); // the port's placeholder and the key file follow the kind
         })));
         fields.Add(null);
         fields.Add(Checked("Server", Text(c.ProxyHost, v =>
