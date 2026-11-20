@@ -79,10 +79,11 @@ public sealed class ConnectionWizard : Window
     {
         _request = request;
         Title = "New connection";
-        Width = 860;
-        Height = 660;
-        MinWidth = 640;
-        MinHeight = 480;
+        // in proportion to its fields (user's request, 20 November 2026): a column of about 640, the cards three in a row
+        Width = 720;
+        Height = 640;
+        MinWidth = 560;
+        MinHeight = 460;
         ShowInTaskbar = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         _testBox.Child = _testResult;
@@ -215,7 +216,7 @@ public sealed class ConnectionWizard : Window
                 e.Handled = true;
             }
         };
-        var address = new TextBox { PlaceholderText = "or paste an address: sftp://user@server:22/folder", MinHeight = 34, VerticalContentAlignment = VerticalAlignment.Center };
+        var address = new TextBox { PlaceholderText = "or paste an address: sftp://user@host/dir", MinHeight = 34, VerticalContentAlignment = VerticalAlignment.Center };
         Avalonia.Automation.AutomationProperties.SetName(address, "Address");
         var addressProblem = new TextBlock { Foreground = s_problem, FontSize = 11, IsVisible = false, Margin = new Thickness(0, 4, 0, 0) };
         address.KeyDown += (_, e) =>
@@ -296,7 +297,7 @@ public sealed class ConnectionWizard : Window
         top.Children.AddRange([BrandIcons.Create(protocol, 18), new TextBlock { Text = name, FontWeight = FontWeight.SemiBold, Classes = { "noloc" }, TextTrimming = TextTrimming.CharacterEllipsis }]);
         var content = new StackPanel { Spacing = 4 };
         content.Children.AddRange([top, new TextBlock { Text = Core.Localization.Localizer.T(description), FontSize = 11, Opacity = 0.65, TextTrimming = TextTrimming.CharacterEllipsis, Classes = { "noloc" } }]);
-        var card = new Button { Content = content, Width = 250, Margin = new Thickness(0, 0, 10, 10), Padding = new Thickness(12), HorizontalContentAlignment = HorizontalAlignment.Left };
+        var card = new Button { Content = content, Width = 200, Margin = new Thickness(0, 0, 10, 10), Padding = new Thickness(12), HorizontalContentAlignment = HorizontalAlignment.Left };
         ToolTip.SetTip(card, Core.Localization.Localizer.T(description));
         card.Click += (_, _) => ChooseType(protocol);
         return card;
@@ -456,13 +457,13 @@ public sealed class ConnectionWizard : Window
             new TextBlock { Text = type.Name, FontSize = 20, FontWeight = FontWeight.SemiBold, Classes = { "noloc" } },
             new TextBlock { Text = Core.Localization.Localizer.T(type.Description), Opacity = 0.65, TextWrapping = TextWrapping.Wrap, Classes = { "noloc" } },
         ]);
-        var head = new DockPanel { Margin = new Thickness(0, 0, 0, 10), MaxWidth = 720, HorizontalAlignment = HorizontalAlignment.Left };
+        var head = new DockPanel { Margin = new Thickness(0, 0, 0, 10), MaxWidth = 640, HorizontalAlignment = HorizontalAlignment.Stretch };
         DockPanel.SetDock(icon, Dock.Left);
         head.Children.AddRange([icon, titles]);
         _header.Content = head;
     }
 
-    private static StackPanel Page() => new() { MaxWidth = 720, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 6, 0, 0) };
+    private static StackPanel Page() => new() { MaxWidth = 640, HorizontalAlignment = HorizontalAlignment.Stretch, Margin = new Thickness(0, 6, 0, 0) };
 
     /// <summary>The line of the last test under a page (one box, moved from the page before).</summary>
     private StackPanel WithTestBox(StackPanel panel)
@@ -605,10 +606,10 @@ public sealed class ConnectionWizard : Window
         var stack = new StackPanel { Margin = new Thickness(16, 10, 16, 6) };
         foreach (var (caption, value) in rows)
         {
-            var row = new Grid { ColumnDefinitions = new ColumnDefinitions("180,*"), Margin = new Thickness(0, 0, 0, 6) };
+            var row = new Grid { ColumnDefinitions = new ColumnDefinitions("160,*"), Margin = new Thickness(0, 0, 0, 6) };
             var text = new TextBlock { Text = string.IsNullOrWhiteSpace(value) ? "—" : value, TextWrapping = TextWrapping.Wrap, Classes = { "noloc" } };
             Grid.SetColumn(text, 1);
-            row.Children.AddRange([new TextBlock { Text = caption, Opacity = 0.7, TextWrapping = TextWrapping.Wrap, MaxWidth = 170, HorizontalAlignment = HorizontalAlignment.Left }, text]);
+            row.Children.AddRange([new TextBlock { Text = caption, Opacity = 0.7, TextWrapping = TextWrapping.Wrap, MaxWidth = 150, HorizontalAlignment = HorizontalAlignment.Left }, text]);
             stack.Children.Add(row);
         }
         return Card(stack);
@@ -883,7 +884,7 @@ public sealed class ConnectionWizard : Window
     private Grid Field(string caption, Control input, ConnectionField? field, string key, bool required, string? note = null, Control? marked = null)
     {
         var head = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 7, 0, 0) };
-        head.Children.Add(new TextBlock { Text = caption, FontSize = 13, TextWrapping = TextWrapping.Wrap, MaxWidth = 170 });
+        head.Children.Add(new TextBlock { Text = caption, FontSize = 13, TextWrapping = TextWrapping.Wrap, MaxWidth = 150 });
         if (required)
         {
             var star = new TextBlock { Text = "*", FontSize = 13, FontWeight = FontWeight.Bold, Foreground = s_problem, Classes = { "noloc" } };
@@ -897,7 +898,7 @@ public sealed class ConnectionWizard : Window
         {
             right.Children.Add(new TextBlock { Text = note, FontSize = 11, Opacity = 0.6, TextWrapping = TextWrapping.Wrap });
         }
-        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("180,*"), Margin = new Thickness(0, 0, 0, 10) };
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("160,*"), Margin = new Thickness(0, 0, 0, 10) };
         Grid.SetColumn(right, 1);
         row.Children.AddRange([head, right]);
         _marks.Add((field, key, marked ?? input, message)); // the box framed in red (not the port beside the server)

@@ -199,6 +199,7 @@ public sealed partial class ConnectionManagerView
                 MarkFields(c);
                 break;
         }
+        UpdateActionBar();
     }
 
     /// <summary>Nothing selected (no connections yet): how to start, New and Import.</summary>
@@ -235,17 +236,22 @@ public sealed partial class ConnectionManagerView
         IsVisible = folder.Length > 0,
     };
 
-    private Button FooterButton(string text, Action click, bool accent = false, bool right = false)
+    /// <summary>An action of the bar above the editor: its icon and text (Tag: the text, for tests); the accent one filled.</summary>
+    private Button FooterButton(string text, Action click, bool accent = false, bool right = false, string? icon = null, bool danger = false)
     {
-        // the footer buttons are one width (a longer text such as "Connect to all (12)" grows)
-        var button = new Button
+        _ = right;
+        object content = text;
+        if (icon is not null && IconPacks.Glyph(icon, IconPacks.Current) is { } geometry)
         {
-            Content = text, MinWidth = FooterButtonWidth, HorizontalContentAlignment = HorizontalAlignment.Center,
-            Margin = new Thickness(right ? 8 : 0, 0, right ? 0 : 8, 6),
-        };
+            var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+            var brush = accent ? Brushes.White : danger ? new SolidColorBrush(Color.Parse("#E5484D")) : (IBrush)Brushes.Gray;
+            row.Children.AddRange([new Viewbox { Width = 14, Height = 14, Child = IconPacks.Draw(geometry, brush) }, new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center }]);
+            content = row;
+        }
+        var button = new Button { Content = content, Tag = text, Classes = { "tb" }, Padding = new Thickness(12, 0), Margin = new Thickness(0, 0, 0, 6) };
         if (accent)
         {
-            button.Classes.Add("accent");
+            button.Classes.Add("primary");
         }
         button.Click += (_, _) => click();
         return button;
@@ -314,11 +320,11 @@ public sealed partial class ConnectionManagerView
             cards.Children.Add(Card(BrandIcons.Create(c.Protocol, 18), c.Name, ConnectionChecks.Address(c), () => Reveal(c)));
         }
         panel.Children.Add(cards.Children.Count > 0 ? cards : new TextBlock { Text = "Empty folder: drag connections here.", Opacity = 0.6 });
-        AddFooter(FooterButton("＋ Connection", () => _ = NewConnectionAsync(folder: folder)), right: false);
-        AddFooter(FooterButton("New subfolder", () => NewFolder(folder)), right: false);
-        AddFooter(FooterButton("Delete", () => _ = DeleteAsync(Selected!)), right: false);
+        AddFooter(FooterButton("New connection", () => _ = NewConnectionAsync(folder: folder), icon: "MiPlus"), right: false);
+        AddFooter(FooterButton("New subfolder", () => NewFolder(folder), icon: "MiFolderOpen"), right: false);
+        AddFooter(FooterButton("Delete", () => _ = DeleteAsync(Selected!), icon: "MiTrash", danger: true), right: false);
         var usable = connections.Where(c => ConnectionChecks.Problem(c) is null).ToList();
-        var all = FooterButton($"Connect to all ({usable.Count})", () => Connect(usable, right: false), accent: true, right: true);
+        var all = FooterButton($"Connect to all ({usable.Count})", () => Connect(usable, right: false), accent: true, right: true, icon: "MiPlug");
         all.IsEnabled = usable.Count > 0;
         AddFooter(all, right: true);
         return panel;
@@ -388,15 +394,15 @@ public sealed partial class ConnectionManagerView
         {
             panel.Children.Add(TestResult(test.Ok, test.Text));
         }
-        AddFooter(FooterButton("⟳ Test", () => _ = TestAsync(c)), right: false);
-        AddFooter(FooterButton("Duplicate", () => Duplicate(c)), right: false);
-        AddFooter(FooterButton("Delete", () => _ = DeleteAsync(Selected!)), right: false);
+        AddFooter(FooterButton("Test", () => _ = TestAsync(c), icon: "MiRefresh"), right: false);
+        AddFooter(FooterButton("Duplicate", () => Duplicate(c), icon: "MiCopy"), right: false);
         if (c.Protocol == RemoteProtocol.Rdp)
         {
-            AddFooter(FooterButton("Files (SMB)", () => Connect([SmbOf(c)], right: false)), right: false);
+            AddFooter(FooterButton("Files (SMB)", () => Connect([SmbOf(c)], right: false), icon: "MiFolderOpen"), right: false);
         }
-        AddFooter(FooterButton("Connect", () => Connect([c], right: false), accent: true, right: true), right: true);
-        AddFooter(FooterButton("Save", Save, right: true), right: true);
+        AddFooter(FooterButton("Delete", () => _ = DeleteAsync(Selected!), icon: "MiTrash", danger: true), right: false);
+        AddFooter(FooterButton("Connect", () => Connect([c], right: false), accent: true, right: true, icon: "MiPlug"), right: true);
+        AddFooter(FooterButton("Save", Save, right: true, icon: "MiSave"), right: true);
         return panel;
     }
 

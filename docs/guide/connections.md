@@ -63,11 +63,15 @@ turns it off.
 The manager opens as a page of its own with a tab, like the maximized internal terminal: the **Files** tab above it
 goes back to the panels while the manager stays open; ✕, its tab's × or Esc closes it. The connections are on the
 left, in folders; the selected connection or folder is on the right. Above the list is the toolbar: **＋ New**, a new
-folder and Import (FileZilla, WinSCP). The manager opens with its first connection selected; without connections it
-shows **＋ New** and **Import...**.
+folder and Import (FileZilla, WinSCP). The actions of the selected connection are in the bar above it: *Test*,
+*Duplicate*, *Delete* (for a remote desktop also *Files (SMB)*) on the left, **Save** and **Connect** on the right; for
+a folder *New connection*, *New subfolder*, *Delete* and *Connect to all*. Messages ("Saved", "Moved") show under them.
+The manager opens with its first connection selected; without connections it shows **＋ New** and **Import...**.
 
 - **Folders** can be nested and have a color label (for example red for production). Drag connections and folders
-  to move them. An empty folder stays until you delete it.
+  to move them: onto a folder (it is highlighted) puts it inside, onto a connection into that one's folder, onto the
+  empty space below the tree to the top; a folder cannot go into itself. The move is saved at once. An empty folder
+  stays until you delete it.
 - **Search** (Ctrl+F in the window) looks in names, servers, users and folders; the chips above the tree show only
   favorites, SSH or FTP connections, cloud storage, or the connections that are open now. The dot after a connection
   is green while it is connected, red when its last test failed.
@@ -84,7 +88,7 @@ shows **＋ New** and **Import...**.
   - **Details:** a **name** is suggested and selected (the type, "SFTP 2" when that is taken, or user@server of an
     address; the list shows the connection by it, its log is kept under it, and it must not be another connection's
     name); the **folder** is the group of the type (*Servers*, *Local network*, *Cloud storage*, *Cloud drives*,
-    *Remote sessions*; another folder can be typed, made when new; a folder's *＋ Connection* puts it there). Then
+    *Remote sessions*; another folder can be typed, made when new; a folder's *New connection* puts it there). Then
     only what the type needs: the server and port, the user (required for SSH, the access key id of S3, the storage
     account of Azure), an optional key file (SFTP / SCP / SSH), the application id of a cloud drive (and Box's
     client secret), the serial port, an optional start folder. Required fields have a red *; Next and Test mark what

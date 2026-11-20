@@ -1,4 +1,6 @@
 using Avalonia.Controls;
+using Avalonia.Headless;
+using Avalonia.Input;
 using Avalonia.Headless.XUnit;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
@@ -88,7 +90,7 @@ public sealed class RemoteDialogsTests : IDisposable
         window.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == text && t.IsEffectivelyVisible);
 
     private static Button ButtonOf(Control window, string text) =>
-        window.GetVisualDescendants().OfType<Button>().First(b => Equals(b.Content, text) && b.IsEffectivelyVisible);
+        window.GetVisualDescendants().OfType<Button>().First(b => (Equals(b.Content, text) || Equals(b.Tag, text)) && b.IsEffectivelyVisible);
 
     private static void Click(Button button) => button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
@@ -278,6 +280,53 @@ public sealed class RemoteDialogsTests : IDisposable
             Assert.Equal(count + round + 1, settings.Connections.Count);
             Assert.Null(window.Wizard);
         }
+    }
+
+    [AvaloniaFact]
+    public async Task Arrow_keys_move_the_selection_in_the_tree()
+    {
+        var settings = Sample();
+        var (window, _) = Open(settings);
+        await SettleAsync();
+        var host = (Window)TopLevel.GetTopLevel(window)!;
+        host.Activate();
+        window.FocusTree();
+        await SettleAsync();
+        var first = window.Selected;
+        var before = host.FocusManager?.GetFocusedElement();
+        Assert.True(before is ListBoxItem or ListBox, "focus before: " + before?.GetType().Name);
+        host.KeyPress(Key.Down, RawInputModifiers.None, PhysicalKey.ArrowDown, null);
+        await SettleAsync();
+        var focused = host.FocusManager?.GetFocusedElement();
+        Assert.True(focused is ListBoxItem or ListBox, "focus: " + focused?.GetType().Name + " selected " + window.Selected?.Key + " was " + first?.Key);
+        Assert.NotSame(first, window.Selected);
+        host.KeyPress(Key.Down, RawInputModifiers.None, PhysicalKey.ArrowDown, null);
+        await SettleAsync();
+        focused = host.FocusManager?.GetFocusedElement();
+        Assert.True(focused is ListBoxItem or ListBox, "focus after 2: " + focused?.GetType().Name);
+    }
+
+    [AvaloniaFact]
+    public async Task Dragging_onto_a_row_moves_into_its_folder_and_saves()
+    {
+        var settings = Sample();
+        var (window, calls) = Open(settings);
+        await SettleAsync();
+        var edi = settings.Connections.First(c => c.Name == "EDI");
+        var ediRow = window.Rows.First(r => r.Connection == edi);
+        var work = window.Rows.First(r => r.Folder == "Work");
+
+        // where a drop goes: a folder, a connection's folder, the empty space (the top); never a folder into itself
+        Assert.Equal("Work", ConnectionManagerView.DropFolderFor(ediRow, work));
+        Assert.Equal(string.Empty, ConnectionManagerView.DropFolderFor(ediRow, null));
+        Assert.Null(ConnectionManagerView.DropFolderFor(work, work));
+
+        // dropped: moved and saved
+        var saves = calls.Saves;
+        Assert.True(window.Drop(ediRow, "Work"));
+        Assert.Equal("Work", edi.Folder);
+        Assert.Equal(saves + 1, calls.Saves);
+        Assert.False(window.Drop(window.Rows.First(r => r.Connection == edi), "Work")); // already there
     }
 
     [AvaloniaFact]
