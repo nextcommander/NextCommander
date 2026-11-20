@@ -103,6 +103,16 @@ public sealed partial class TabSideViewModel : ObservableObject, IDisposable
     {
         var panel = _createPanel(state);
         panel.LockedNavigation = (path, focus) => OpenTabAsync(path, focus, activate: true, afterIndex: Tabs.IndexOf(panel));
+        panel.CloseWhenUnreachable = () =>
+        {
+            if (Tabs.Count <= 1 || !Tabs.Contains(panel))
+            {
+                return false; // the last tab stays (it goes to an existing parent)
+            }
+            Serilog.Log.Information("Tab of {Path} closed: it cannot be reached", panel.CurrentPath);
+            CloseTab(panel);
+            return true;
+        };
         TabCreated?.Invoke(this, panel);
         return panel;
     }

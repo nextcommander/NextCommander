@@ -51,11 +51,14 @@ From top to bottom:
   somewhere (F6), put them back where they were (*Restore from the trash* in the right-click menu), delete them for
   good (F8) or empty the trash (the right-click menu, or the trash button's). On macOS items cannot be put back (Finder keeps their places to
   itself), and reading the Trash needs Full Disk Access.
-- **Folder tabs:** each panel can have several tabs. The `+` button opens a new one.
+- **Folder tabs:** each panel can have several tabs. The `+` button opens a new one. A tab at the root of a drive
+  shows the system's icon of the drive (fixed, removable, network ...), a system folder (Documents, Downloads,
+  Desktop ...) its own icon, any other folder the folder icon (*Configuration > Folder tabs > Show icons on tabs*).
 - **Path line:** the current folder. Click a part of the path to go there, click the small arrow between
   parts to pick a subfolder, or click the empty area (or press Alt+D) to type a path.
 - **The two panels:** the file lists. The active panel has a highlighted path line; Tab switches between the
-  panels. Folders are shown as `[name]`, and `[..]` goes up one level.
+  panels. Folders are shown as `[name]`, and `[..]` goes up one level. Drag the splitter between them to size them;
+  its right click menu sets the left panel's share from 20 % to 80 % in steps of ten (side by side).
 - **Status line:** under each panel, the size and count of the selected and all files.
 - **Command line:** type a command and press Enter. It runs in the active panel's folder.
 - **Function key bar:** F3 View, F4 Edit, F5 Copy, F6 Move, F7 New folder, F8 Delete, Alt+F4 Exit.
@@ -112,6 +115,8 @@ shown:
 - **Ctrl+Tab / Ctrl+Shift+Tab** switch tabs; **Ctrl+1 … Ctrl+9** jump to a tab.
 - **Ctrl+Up** opens the folder under the cursor in a new tab.
 - Drag a tab to move it. A middle click closes it.
+- A tab whose folder cannot be reached any more (deleted, a drive removed, a server gone) closes when it is shown
+  again; the last tab of a panel goes to the nearest folder that is still there.
 - *Show > Tabs* has more: lock a tab (folder changes then open in a new tab), rename it, close duplicate tabs,
   and save or load a set of tabs.
 

@@ -1683,7 +1683,7 @@
   "Settings.Tabs.OpenNewTabsNextTo.Description": "When off, they are added at the end.",
   "Settings.Tabs.SaveTheFileTypeFilter": "Save the file type filter of each tab",
   "Settings.Tabs.ShowIconsOnTabs": "Show icons on tabs",
-  "Settings.Tabs.ShowIconsOnTabs.Description": "Folder icon; a lock on locked tabs. System folders (documents, downloads, desktop, home) always show their own icon.",
+  "Settings.Tabs.ShowIconsOnTabs.Description": "Folder icon; a lock on locked tabs. Drives and system folders (documents, downloads, desktop, home) always show their own icon.",
   "Settings.Tabs.ShowLockedTabsWith": "Show locked tabs with *",
   "Settings.Tabs.ShowTabHeaderAlsoWhen": "Show tab header also when there is only one tab",
   "Settings.Tabs.ShowTheDriveLetterIn": "Show the drive letter in the tab title",
