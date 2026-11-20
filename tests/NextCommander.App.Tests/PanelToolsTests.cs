@@ -55,11 +55,14 @@ public sealed class PanelToolsTests : IDisposable
         w.SelectPage(Views.WorkspacePage.Connections);
         await SettleAsync();
 
-        // keys typed in the manager stay there (Ctrl+N: a new connection, not a window command)
+        // keys typed in the manager stay there (Ctrl+N: the new connection wizard, not a window command)
         view.Focus();
         Press(w, Key.N, RawInputModifiers.Control);
         await SettleAsync();
-        Assert.Single(settings.Connections);
+        Assert.NotNull(view.Wizard);
+        view.Wizard!.Close();
+        await SettleAsync();
+        Assert.Empty(settings.Connections);
 
         // Esc closes it: the page and its tab go, the files are back
         Press(w, Key.Escape);

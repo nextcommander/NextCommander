@@ -62,9 +62,9 @@ turns it off.
 
 The manager opens as a page of its own with a tab, like the maximized internal terminal: the **Files** tab above it
 goes back to the panels while the manager stays open; ✕, its tab's × or Esc closes it. The connections are on the
-left, in folders; the selected connection or folder is on the right. It opens with the **types of a new
-connection** on the right, a box for a pasted address and **Import** (FileZilla, WinSCP); choose a saved connection on
-the left to see it. The **New connection** button below the list starts one too.
+left, in folders; the selected connection or folder is on the right. Above the list is the toolbar: **＋ New**, a new
+folder and Import (FileZilla, WinSCP). The manager opens with its first connection selected; without connections it
+shows **＋ New** and **Import...**.
 
 - **Folders** can be nested and have a color label (for example red for production). Drag connections and folders
   to move them. An empty folder stays until you delete it.
@@ -73,14 +73,33 @@ the left to see it. The **New connection** button below the list starts one too.
   is green while it is connected, red when its last test failed.
 - **Keys:** arrows move and open folders, Enter connects (Shift+Enter: in the right panel), F2 renames, Delete deletes
   (a folder with everything in it; its saved passwords are forgotten), Ctrl+Z puts the last deleted items back,
-  Ctrl+D duplicates, Ctrl+N makes a new connection, Ctrl+S saves. The right click menu has the same, plus favorites,
+  Ctrl+D duplicates, Ctrl+N opens the new connection wizard, Ctrl+S saves. The right click menu has the same, plus favorites,
   copying the address and forgetting the saved password.
-- **New connection:** three steps, shown above them (1 Type › 2 Name › 3 Settings). First choose its **type** from
-  the cards (or paste an address such as `sftp://user@server:22/folder`, which fills it in; *Net > New connection*
-  of a type skips this step), then give it a **name**: one is suggested (the type, "SFTP 2" when that is taken, or
-  user@server of a pasted address) and selected, to keep or overwrite; the list shows the connection by this name and
-  its log is kept under it, and it must not be another connection's name. **‹ Back** goes to the step before,
-  keeping what was entered; **Cancel** drops the new connection. Then fill in the tabs:
+- **New connection:** **＋ New** (Ctrl+N, the right click menu, *Net > New connection*) opens the **new connection wizard**, a window over the manager in steps (1 Type › 2 Details › 3 Advanced › 4 Summary). The step's title (and on
+  the first step the search) stays at the top; only the fields under it scroll.
+  - **Type:** the cards in their groups. The **search box** above them keeps the types whose name, description or
+    group has all the words typed (`cloud`, `azure`, `windows` ...; Enter chooses the only one left). Next to it an
+    address such as `sftp://user@server:22/folder` can be pasted and Enter pressed (it fills in the type, server,
+    port, user and start folder). *Net > New connection* of a type starts at the details.
+  - **Details:** a **name** is suggested and selected (the type, "SFTP 2" when that is taken, or user@server of an
+    address; the list shows the connection by it, its log is kept under it, and it must not be another connection's
+    name); the **folder** is the group of the type (*Servers*, *Local network*, *Cloud storage*, *Cloud drives*,
+    *Remote sessions*; another folder can be typed, made when new; a folder's *＋ Connection* puts it there). Then
+    only what the type needs: the server and port, the user (required for SSH, the access key id of S3, the storage
+    account of Azure), an optional key file (SFTP / SCP / SSH), the application id of a cloud drive (and Box's
+    client secret), the serial port, an optional start folder. Required fields have a red *; Next and Test mark what
+    is missing. The fields are in cards (Connection, Server or Device, Login) with their captions on the left. The
+    password is asked when connecting, as for every connection.
+  - **Advanced:** the editor's own Advanced tab, a remote desktop's Display / Local resources / Experience tabs and
+    the Proxy tab for this connection: timeouts, a jump host, encryption, the proxy ... (all of them can be changed
+    later in the editor too).
+  - **Summary:** everything entered, as the list will hold it: the folders down to the connection and its address,
+    then the server (or device), the login and the advanced options that differ from the type's defaults.
+  - **Next ›** goes on (the details are checked first); **‹ Back** goes one step back (from the details to the
+    types); **Test** connects with these details from any step after the type; **OK** on the summary adds the
+    connection to its folder, shows it in the tree and saves; **Cancel** (Esc) adds nothing.
+
+  Everything else is in the editor on the right, in its tabs:
   - **General:** the server, port and start folder (for FTP also the encryption and passive mode, for S3 the region;
     a **Service** for S3 and WebDAV, see below).
   - **Login:** the method: password, key file or the **SSH agent** (SFTP / SCP); access key or **AWS profile / SSO**
