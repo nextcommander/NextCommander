@@ -2,6 +2,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
+using Avalonia.LogicalTree;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using NextCommander.App.Services.Icons;
@@ -11,10 +13,6 @@ using NextCommander.Core.Vfs;
 
 namespace NextCommander.App.Controls;
 
-/// <summary>
-/// Button bar (horizontal, wrapping into several rows) or vertical bar between the panels.
-/// Buttons run internal commands or programs; right-click edits; dropping a file adds a program button.
-/// </summary>
 /// <summary>The menu a button of the button bar opens below it (<see cref="ButtonBarControl.DropDownOf"/>).</summary>
 public enum DropDown
 {
@@ -27,6 +25,13 @@ public enum DropDown
     Plugins,
 }
 
+/// <summary>
+/// Button bar (horizontal, wrapping into several rows) or vertical bar between the panels.
+/// Buttons run internal commands or programs; right-click edits; dropping a file adds a program button.
+/// The bar at the top has a look (<see cref="ToolbarStyle"/>: the user's template, 21 November 2026): the new looks keep
+/// one row (what does not fit goes into the ⋯ menu, a group at a time), put the view buttons into one segment and show
+/// the state of the buttons that switch something (hidden files, the view, branch view, the tree, the terminal ...).
+/// </summary>
 public sealed class ButtonBarControl : UserControl
 {
     private static readonly Dictionary<string, string> s_builtInIcons = new(StringComparer.OrdinalIgnoreCase)
@@ -47,8 +52,12 @@ public sealed class ButtonBarControl : UserControl
         ["file"] = "FmFileIcon",
     };
 
-    private readonly Panel _panel;
+    private Panel _panel;
     private readonly bool _vertical;
+    private readonly Button _more = new() { Classes = { "barbutton", "barmore" }, Content = new TextBlock { Text = "⋯", FontSize = 16, FontWeight = FontWeight.Bold, Classes = { "noloc" } } };
+    private ToolbarStyle _style = ToolbarStyle.Classic;
+    private bool _labels;
+    private string _layoutKey = string.Empty;
     private MainWindowViewModel? _vm;
     private List<ButtonDefinition> _buttons = [];
 
@@ -62,6 +71,15 @@ public sealed class ButtonBarControl : UserControl
         Content = vertical
             ? new ScrollViewer { Content = _panel, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Hidden, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled }
             : _panel;
+        ToolTip.SetTip(_more, "More buttons");
+        _more.Click += (_, _) => ShowOverflow();
+        SizeChanged += (_, e) =>
+        {
+            if (_style != ToolbarStyle.Classic && Math.Abs(e.NewSize.Width - e.PreviousSize.Width) > 0.5)
+            {
+                Fit();
+            }
+        };
         DragDrop.SetAllowDrop(this, true);
         AddHandler(DragDrop.DragOverEvent, (_, e) =>
         {
@@ -119,6 +137,15 @@ public sealed class ButtonBarControl : UserControl
     /// <summary>Icon size of the buttons (16, 20, 24, 32, 48).</summary>
     public int IconSize { get; private set; } = 16;
 
+    /// <summary>The look of the bar (the bar at the top; the vertical one stays classic).</summary>
+    public ToolbarStyle Style => _style;
+
+    /// <summary>The buttons of the bar (also those in the view segment), in their order.</summary>
+    public IEnumerable<Button> Buttons => _panel.GetLogicalDescendants().OfType<Button>().Where(b => b.Tag is ButtonDefinition);
+
+    /// <summary>The buttons moved into the ⋯ menu for lack of room (tests).</summary>
+    public IReadOnlyList<ButtonDefinition> Overflow => [.. Buttons.Where(b => !b.IsVisible && b.Classes.Contains("overflow")).Select(b => (ButtonDefinition)b.Tag!)];
+
     public void Bind(MainWindowViewModel vm, List<ButtonDefinition> buttons, int iconSize = 16)
     {
         if (!ReferenceEquals(_vm, vm))
@@ -132,8 +159,47 @@ public sealed class ButtonBarControl : UserControl
         _vm = vm;
         _buttons = buttons;
         IconSize = NormalizeSize(iconSize);
+        _style = _vertical ? ToolbarStyle.Classic : vm.Settings.ToolbarStyle;
+        _labels = !_vertical && vm.Settings.ToolbarLabels;
+        ApplyStyle();
         Rebuild();
         WatchActivePanel();
+    }
+
+    /// <summary>The bar's frame for its look: one row (with ⋯) for the new looks, rows for the classic one; Aurora floats.</summary>
+    private void ApplyStyle()
+    {
+        if (_vertical)
+        {
+            return;
+        }
+        foreach (var name in new[] { "tb-classic", "tb-mica", "tb-graphite", "tb-aurora" })
+        {
+            Classes.Remove(name);
+        }
+        Classes.Add("tb-" + _style.ToString().ToLowerInvariant());
+        var key = _style == ToolbarStyle.Classic ? "rows" : "row";
+        if (key == _layoutKey)
+        {
+            return;
+        }
+        _layoutKey = key;
+        if (_more.Parent is Panel old)
+        {
+            old.Children.Remove(_more);
+        }
+        if (_style == ToolbarStyle.Classic)
+        {
+            _panel = new WrapPanel { Orientation = Orientation.Horizontal };
+            Content = _panel;
+            return;
+        }
+        _panel = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+        var row = new DockPanel { LastChildFill = true };
+        DockPanel.SetDock(_more, Dock.Right);
+        _more.IsVisible = false;
+        row.Children.AddRange([_more, _panel]);
+        Content = row;
     }
 
     // ---------------------------------------------------------------- Back / Forward buttons
@@ -164,7 +230,7 @@ public sealed class ButtonBarControl : UserControl
 
     /// <summary>The visible button of this bar with that menu (null: none).</summary>
     public Button? DropDownButton(DropDown kind) =>
-        _panel.Children.OfType<Button>().FirstOrDefault(b => b.IsVisible && b.Tag is ButtonDefinition d && DropDownOf(d) == kind);
+        Buttons.FirstOrDefault(b => b.IsVisible && b.Tag is ButtonDefinition d && DropDownOf(d) == kind);
 
     /// <summary>Whether the button opens its menu now: the connection manager only with saved connections.</summary>
     private bool OpensMenu(DropDown kind) => kind switch
@@ -177,7 +243,7 @@ public sealed class ButtonBarControl : UserControl
     /// <summary>The plugins button only while plugins are loaded and the setting shows it; the ▾ of the connection manager.</summary>
     private void UpdateDropDowns()
     {
-        foreach (var button in _panel.Children.OfType<Button>())
+        foreach (var button in Buttons)
         {
             if (button.Tag is ButtonDefinition definition && DropDownOf(definition) is var kind and not DropDown.None)
             {
@@ -201,6 +267,7 @@ public sealed class ButtonBarControl : UserControl
         {
             UpdateDirectionalIcons();
         }
+        UpdateStates();
     }
 
     /// <summary>
@@ -222,7 +289,7 @@ public sealed class ButtonBarControl : UserControl
     /// <summary>The buttons with a direction get their icon again (another panel became active, or the layout changed).</summary>
     private void UpdateDirectionalIcons()
     {
-        foreach (var button in _panel.Children.OfType<Button>())
+        foreach (var button in Buttons)
         {
             if (button.Tag is ButtonDefinition definition && string.Equals(definition.Command.TrimStart('*'), "nc_RenMov", StringComparison.OrdinalIgnoreCase))
             {
@@ -256,12 +323,84 @@ public sealed class ButtonBarControl : UserControl
         {
             UpdateBackForward();
         }
+        if (e.PropertyName is nameof(PanelViewModel.ViewMode) or nameof(PanelViewModel.Filter) or nameof(PanelViewModel.VirtualTitle) or nameof(PanelViewModel.Items))
+        {
+            UpdateStates();
+        }
+    }
+
+    /// <summary>
+    /// Whether a button's command is on now (null: it switches nothing): the view of the active panel, branch view, the
+    /// quick filter, hidden files, the folder tree, the terminal, Quick View, the panels' arrangement.
+    /// </summary>
+    public bool? IsOn(ButtonDefinition definition)
+    {
+        if (_vm is not { } vm || !string.IsNullOrWhiteSpace(definition.Parameters))
+        {
+            return null;
+        }
+        var panel = vm.ActivePanel;
+        return definition.Command.TrimStart('*').ToLowerInvariant() switch
+        {
+            "nc_srcshort" => panel.ViewMode == PanelViewMode.Brief,
+            "nc_srclong" => panel.ViewMode == PanelViewMode.Full,
+            "nc_srcthumbs" => panel.ViewMode == PanelViewMode.Thumbnails,
+            "nc_dirbranch" => panel.IsVirtual,
+            "nc_showquickfilter" => !string.IsNullOrEmpty(panel.Filter),
+            "nc_switchhidsys" => vm.Settings.ShowHidden && vm.Settings.ShowSystem,
+            "nc_switchhiddenfiles" => vm.Settings.ShowHidden,
+            "nc_showtreepane" => vm.ShowTreePane,
+            "nc_toggleterminal" => vm.IsTerminalOpen,
+            "nc_quickview" => vm.IsQuickViewActive,
+            "nc_verticalpanels" => vm.VerticalPanels,
+            _ => null,
+        };
+    }
+
+    /// <summary>The buttons that switch something show whether it is on (class "on"; the tooltip says it too).</summary>
+    private void UpdateStates()
+    {
+        foreach (var button in Buttons)
+        {
+            if (button.Tag is ButtonDefinition definition && IsOn(definition) is { } on)
+            {
+                button.Classes.Set("on", on);
+                ToolTip.SetTip(button, Tip(definition));
+            }
+        }
+    }
+
+    /// <summary>The tooltip: the name, the shortcut, on / off for a switch, the command.</summary>
+    private Control Tip(ButtonDefinition definition)
+    {
+        var name = definition.Tooltip ?? definition.Label ?? ShortName(definition.Command);
+        var gesture = _vm?.Hotkeys.GestureFor(definition.Command.TrimStart('*'));
+        var head = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        var title = new TextBlock { Text = name, FontWeight = FontWeight.SemiBold };
+        head.Children.Add(title);
+        if (IsOn(definition) is { } on)
+        {
+            head.Children.Add(new TextBlock { Text = on ? "On" : "Off", Opacity = 0.7 });
+        }
+        if (gesture is { Length: > 0 } && !name.Contains(gesture, StringComparison.OrdinalIgnoreCase))
+        {
+            var key = new Border { BorderThickness = new Thickness(1, 1, 1, 2), CornerRadius = new CornerRadius(4), Padding = new Thickness(5, 0), Child = new TextBlock { Text = gesture, FontSize = 11, Classes = { "noloc" } } };
+            key[!Border.BorderBrushProperty] = new DynamicResourceExtension("SystemControlForegroundBaseLowBrush");
+            head.Children.Add(key);
+        }
+        var tip = new StackPanel { Spacing = 2 };
+        tip.Children.Add(head);
+        if (!definition.Command.Contains(Path.DirectorySeparatorChar) && definition.Command.StartsWith("nc_", StringComparison.OrdinalIgnoreCase) || definition.Command.StartsWith("uc_", StringComparison.OrdinalIgnoreCase))
+        {
+            tip.Children.Add(new TextBlock { Text = definition.Command, FontSize = 11, Opacity = 0.6, FontFamily = new FontFamily("Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, monospace"), Classes = { "noloc" } });
+        }
+        return tip;
     }
 
     /// <summary>A Back / Forward button with nowhere to go is dimmed (not disabled: its right click menu stays).</summary>
     private void UpdateBackForward()
     {
-        foreach (var button in _panel.Children.OfType<Button>())
+        foreach (var button in Buttons)
         {
             if (button.Tag is ButtonDefinition definition && (IsBack(definition) || IsForward(definition)))
             {
@@ -326,7 +465,7 @@ public sealed class ButtonBarControl : UserControl
     public void SetAvailable(Func<string, bool>? available)
     {
         _available = available;
-        foreach (var button in _panel.Children.OfType<Button>())
+        foreach (var button in Buttons)
         {
             ApplyAvailable(button);
         }
@@ -340,15 +479,20 @@ public sealed class ButtonBarControl : UserControl
         }
     }
 
-    public void FocusFirst() => _panel.Children.OfType<Button>().FirstOrDefault()?.Focus();
+    public void FocusFirst() => Buttons.FirstOrDefault(b => b.IsVisible)?.Focus();
+
+    private static bool IsViewCommand(ButtonDefinition definition) =>
+        string.IsNullOrWhiteSpace(definition.Parameters) && definition.Command.TrimStart('*').ToLowerInvariant() is "nc_srcshort" or "nc_srclong" or "nc_srcthumbs";
 
     public void Rebuild()
     {
         _panel.Children.Clear();
+        StackPanel? segment = null;
         foreach (var definition in _buttons)
         {
             if (definition.IsSeparator)
             {
+                segment = null;
                 _panel.Children.Add(new Border
                 {
                     Classes = { "barseparator" },
@@ -358,9 +502,140 @@ public sealed class ButtonBarControl : UserControl
                 });
                 continue;
             }
-            _panel.Children.Add(CreateButton(definition));
+            var button = CreateButton(definition);
+            if (_style != ToolbarStyle.Classic && IsViewCommand(definition))
+            {
+                // the view buttons next to each other: one segment, the active one raised
+                if (segment is null)
+                {
+                    segment = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 1 };
+                    _panel.Children.Add(new Border { Classes = { "barsegment" }, Child = segment, VerticalAlignment = VerticalAlignment.Center });
+                }
+                segment.Children.Add(button);
+                continue;
+            }
+            segment = null;
+            _panel.Children.Add(button);
         }
         UpdateBackForward();
+        UpdateStates();
+        if (_style != ToolbarStyle.Classic)
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(Fit, Avalonia.Threading.DispatcherPriority.Loaded);
+        }
+    }
+
+    /// <summary>
+    /// One row: the groups (between separators) that do not fit go into the ⋯ menu, from the right. Called when the bar
+    /// is built and when its width changes.
+    /// </summary>
+    public void Fit()
+    {
+        if (_style == ToolbarStyle.Classic || _vertical)
+        {
+            return;
+        }
+        // every group visible, measured
+        var groups = new List<List<Control>>();
+        var current = new List<Control>();
+        foreach (var child in _panel.Children)
+        {
+            if (child is Border { Classes: var c } && c.Contains("barseparator"))
+            {
+                groups.Add(current);
+                current = [child];
+                continue;
+            }
+            current.Add(child);
+        }
+        groups.Add(current);
+        foreach (var child in _panel.Children)
+        {
+            child.IsVisible = true;
+            child.Classes.Remove("overflow");
+        }
+        foreach (var button in Buttons)
+        {
+            button.Classes.Remove("overflow");
+        }
+        UpdateDropDowns(); // the plugins button stays hidden without plugins
+        _panel.Measure(Size.Infinity);
+        _more.Measure(Size.Infinity);
+        var available = Bounds.Width - Padding.Left - Padding.Right - 4;
+        if (available <= 0)
+        {
+            _more.IsVisible = false;
+            return;
+        }
+        double Width(List<Control> group) => group.Where(c => c.IsVisible).Sum(c => c.DesiredSize.Width);
+        var total = groups.Sum(Width);
+        var hidden = 0;
+        while (total > available && hidden < groups.Count - 1)
+        {
+            if (hidden == 0)
+            {
+                available -= _more.DesiredSize.Width;
+            }
+            var group = groups[groups.Count - 1 - hidden];
+            total -= Width(group);
+            foreach (var control in group)
+            {
+                control.IsVisible = false;
+                control.Classes.Add("overflow");
+                foreach (var button in control is Button own ? [own] : control.GetLogicalDescendants().OfType<Button>())
+                {
+                    button.Classes.Add("overflow");
+                }
+            }
+            hidden++;
+        }
+        _more.IsVisible = hidden > 0;
+    }
+
+    /// <summary>The ⋯ menu: the buttons that did not fit, a group after another, switches with their check.</summary>
+    private void ShowOverflow()
+    {
+        var flyout = new MenuFlyout();
+        var first = true;
+        foreach (var child in _panel.Children.Where(c => c.Classes.Contains("overflow")))
+        {
+            if (child is Border { Classes: var c } && c.Contains("barseparator"))
+            {
+                if (!first)
+                {
+                    flyout.Items.Add(new Separator());
+                }
+                continue;
+            }
+            foreach (var button in child is Button own ? [own] : child.GetLogicalDescendants().OfType<Button>())
+            {
+                if (button.Tag is not ButtonDefinition definition)
+                {
+                    continue;
+                }
+                first = false;
+                var item = new MenuItem
+                {
+                    Header = definition.Tooltip ?? definition.Label ?? ShortName(definition.Command),
+                    Icon = _vm?.Settings.ShowMenuIcons != false ? CreateIcon(definition, 16, _vm) : null,
+                    InputGesture = _vm?.Hotkeys.GestureFor(definition.Command.TrimStart('*')) is { Length: > 0 } g && KeyGesture.Parse(g) is var parsed ? parsed : null,
+                };
+                if (IsOn(definition) is { } on)
+                {
+                    item.ToggleType = MenuItemToggleType.CheckBox;
+                    item.IsChecked = on;
+                }
+                item.Click += async (_, _) =>
+                {
+                    if (_vm is not null)
+                    {
+                        await _vm.ExecuteButtonAsync(definition);
+                    }
+                };
+                flyout.Items.Add(item);
+            }
+        }
+        flyout.ShowAt(_more);
     }
 
     private Button CreateButton(ButtonDefinition definition)
@@ -372,7 +647,7 @@ public sealed class ButtonBarControl : UserControl
             button.HorizontalAlignment = HorizontalAlignment.Stretch;
             button.HorizontalContentAlignment = HorizontalAlignment.Center;
         }
-        ToolTip.SetTip(button, definition.Tooltip ?? definition.Label ?? definition.Command);
+        ToolTip.SetTip(button, Tip(definition));
         // Icon-only buttons need a name for screen readers.
         Avalonia.Automation.AutomationProperties.SetName(button, definition.Tooltip ?? definition.Label ?? definition.Command);
         if (definition.IsMenu)
@@ -491,7 +766,7 @@ public sealed class ButtonBarControl : UserControl
         {
             stack.Children.Add(icon);
         }
-        var text = definition.Label ?? (icon is null ? ShortName(definition.Command) : null);
+        var text = definition.Label ?? (icon is null || _labels ? LabelOf(definition) : null);
         if (!string.IsNullOrEmpty(text))
         {
             stack.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center });
@@ -503,6 +778,20 @@ public sealed class ButtonBarControl : UserControl
             stack.Children.Add(new TextBlock { Text = "▾", FontSize = 10, VerticalAlignment = VerticalAlignment.Center, Opacity = 0.7, Classes = { "noloc" } });
         }
         return stack;
+    }
+
+    /// <summary>The name shown next to the icon ("Names next to the icons"): the tooltip without its shortcut.</summary>
+    private static string LabelOf(ButtonDefinition definition)
+    {
+        var text = definition.Tooltip ?? ShortName(definition.Command);
+        foreach (var stop in new[] { " (", ";" })
+        {
+            if (text.IndexOf(stop, StringComparison.Ordinal) is > 0 and var at)
+            {
+                text = text[..at];
+            }
+        }
+        return text.Trim();
     }
 
     /// <summary>The icon of a button at a size (also the preview of the button bar editor); null for a text-only button.</summary>
@@ -603,7 +892,7 @@ public sealed class ButtonBarControl : UserControl
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
-        var buttons = _panel.Children.OfType<Button>().ToList();
+        var buttons = Buttons.Where(b => b.IsVisible).ToList();
         var index = buttons.FindIndex(b => b.IsFocused);
         if (index < 0)
         {

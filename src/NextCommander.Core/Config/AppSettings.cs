@@ -103,6 +103,25 @@ public enum LogRotation
     BySize,
 }
 
+/// <summary>
+/// The look of the button bar at the top (Configuration > Layout > Button bars; the user's template of three proposals,
+/// 21 November 2026).
+/// </summary>
+public enum ToolbarStyle
+{
+    /// <summary>Flat small buttons wrapping into more rows, as before.</summary>
+    Classic,
+
+    /// <summary>Windows 11: 6 px corners, the active state soft blue with a line under it.</summary>
+    Mica,
+
+    /// <summary>Dense: a low bar, 4 px corners, the active state a solid fill.</summary>
+    Graphite,
+
+    /// <summary>A floating, rounded bar with round buttons; the active state filled violet.</summary>
+    Aurora,
+}
+
 /// <summary>How a password protects a zip (Configuration > Packer > Zip).</summary>
 public enum ZipEncryptionMethod
 {
@@ -1043,6 +1062,12 @@ public sealed class AppSettings
 
     /// <summary>Icon size of the button bar (16, 20, 24, 32, 48).</summary>
     public int ButtonBarIconSize { get; set; } = 16;
+
+    /// <summary>The look of the button bar at the top.</summary>
+    public ToolbarStyle ToolbarStyle { get; set; } = ToolbarStyle.Classic;
+
+    /// <summary>The buttons of the bar at the top show their name next to the icon.</summary>
+    public bool ToolbarLabels { get; set; }
 
     /// <summary>Icon size of the vertical button bar.</summary>
     public int VerticalButtonBarIconSize { get; set; } = 16;

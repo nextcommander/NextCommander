@@ -3390,5 +3390,14 @@
   "CopyQueueWindow.DoneCount": "{0} bitti",
   "CopyQueueWindow.OneJob": "1 iş",
   "CopyQueueWindow.Jobs": "{0} iş",
-  "DeleteJob.DeletedForGood": "Kalıcı olarak silinir"
+  "DeleteJob.DeletedForGood": "Kalıcı olarak silinir",
+  "ButtonBarControl.MoreButtons": "Diğer düğmeler",
+  "Settings.Layout.ButtonBarStyle": "Düğme çubuğu stili",
+  "Settings.Layout.ButtonBarStyle.Description": "Klasik: satırlar halinde küçük düğmeler. Mica: Windows 11. Graphite: alçak, sık bir çubuk. Aurora: yuvarlak düğmeli, yüzen bir çubuk. Yeni stiller tek satırda kalır; sığmayanlar ⋯ menüsüne geçer.",
+  "Settings.Layout.Classic": "Klasik",
+  "Settings.Layout.MicaWindows": "Mica (Windows 11)",
+  "Settings.Layout.GraphiteCompact": "Graphite (sıkışık)",
+  "Settings.Layout.AuroraFloatingRound": "Aurora (yüzen, yuvarlak)",
+  "Settings.Layout.NamesNextToTheIcons": "Simgelerin yanında adlar",
+  "Settings.Layout.NamesNextToTheIcons.Description": "Üstteki çubuğun düğmeleri adlarını da gösterir."
 }

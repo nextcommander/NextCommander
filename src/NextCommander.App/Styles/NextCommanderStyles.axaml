@@ -369,6 +369,94 @@
     <Setter Property="Margin" Value="4,4" />
     <Setter Property="Background" Value="{DynamicResource FmHiddenBrush}" />
   </Style>
+  <!-- a switch that is on (all looks): a soft fill -->
+  <Style Selector="Button.barbutton.on">
+    <Setter Property="Background" Value="#264C8DFF" />
+  </Style>
+
+  <!--
+    The looks of the button bar at the top (Configuration > Layout > Button bars > Button bar style; the user's template
+    of three proposals, 21 November 2026). Mica: Windows 11, 6 px corners, the active state soft blue with a line.
+    Graphite: a low bar, 4 px corners, the active state a solid fill. Aurora: a floating rounded bar, round buttons, the
+    active state filled violet. The view buttons sit in one segment (Border.barsegment).
+  -->
+  <Style Selector=":is(UserControl).tb-mica Button.barbutton, :is(UserControl).tb-graphite Button.barbutton, :is(UserControl).tb-aurora Button.barbutton">
+    <Setter Property="Margin" Value="1,0" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector=":is(UserControl).tb-mica">
+    <Setter Property="Padding" Value="4,3" />
+  </Style>
+  <Style Selector=":is(UserControl).tb-mica Button.barbutton">
+    <Setter Property="Padding" Value="8,7" />
+    <Setter Property="MinWidth" Value="34" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="BorderThickness" Value="0,0,0,2" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector=":is(UserControl).tb-mica Button.barbutton.on">
+    <Setter Property="Background" Value="#1F4C8DFF" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+  </Style>
+  <Style Selector=":is(UserControl).tb-graphite">
+    <Setter Property="Padding" Value="3,1" />
+  </Style>
+  <Style Selector=":is(UserControl).tb-graphite Button.barbutton">
+    <Setter Property="Padding" Value="6,4" />
+    <Setter Property="MinWidth" Value="28" />
+    <Setter Property="CornerRadius" Value="4" />
+  </Style>
+  <Style Selector=":is(UserControl).tb-graphite Button.barbutton.on">
+    <Setter Property="Background" Value="#594C8DFF" />
+  </Style>
+  <Style Selector=":is(UserControl).tb-graphite Border.barseparator">
+    <Setter Property="Margin" Value="5,0" />
+  </Style>
+  <Style Selector=":is(UserControl).tb-aurora">
+    <Setter Property="Margin" Value="6,5" />
+    <Setter Property="Padding" Value="6,4" />
+    <Setter Property="CornerRadius" Value="18" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltHighBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+  </Style>
+  <Style Selector=":is(UserControl).tb-aurora Button.barbutton">
+    <Setter Property="Padding" Value="10,9" />
+    <Setter Property="MinWidth" Value="38" />
+    <Setter Property="CornerRadius" Value="19" />
+    <Setter Property="Margin" Value="2,0" />
+  </Style>
+  <Style Selector=":is(UserControl).tb-aurora Button.barbutton.on">
+    <Setter Property="Background" Value="#596D4AFF" />
+  </Style>
+  <Style Selector=":is(UserControl).tb-aurora Border.barseparator">
+    <Setter Property="Margin" Value="4,6" />
+  </Style>
+  <Style Selector="Border.barsegment">
+    <Setter Property="Padding" Value="2" />
+    <Setter Property="Margin" Value="1,0" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Background" Value="#14808080" />
+  </Style>
+  <Style Selector=":is(UserControl).tb-graphite Border.barsegment">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector=":is(UserControl).tb-aurora Border.barsegment">
+    <Setter Property="Padding" Value="3" />
+    <Setter Property="CornerRadius" Value="22" />
+  </Style>
+  <Style Selector="Border.barsegment Button.barbutton">
+    <Setter Property="Margin" Value="0" />
+  </Style>
+  <Style Selector=":is(UserControl).tb-mica Border.barsegment Button.barbutton.on, :is(UserControl).tb-aurora Border.barsegment Button.barbutton.on">
+    <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltHighBrush}" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector=":is(UserControl).tb-aurora Border.barsegment Button.barbutton.on">
+    <Setter Property="Background" Value="#806D4AFF" />
+  </Style>
 
   <!-- Function key bar: on the window's color, only a thin line between the keys (theme key FunctionKeys.Border) -->
   <Style Selector="Button.fkey">
