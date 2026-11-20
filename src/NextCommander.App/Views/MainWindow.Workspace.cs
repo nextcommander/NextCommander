@@ -19,6 +19,7 @@ public enum WorkspacePage
     Files,
     Options,
     Sync,
+    Duplicates,
     Connections,
     Terminal,
     RemoteDesktop,
@@ -59,6 +60,10 @@ public partial class MainWindow
             if (Sync is not null)
             {
                 pages.Add(WorkspacePage.Sync);
+            }
+            if (Duplicates is not null)
+            {
+                pages.Add(WorkspacePage.Duplicates);
             }
             if (ConnectionManager is not null)
             {
@@ -104,6 +109,9 @@ public partial class MainWindow
                 break;
             case WorkspacePage.Sync:
                 Sync?.Focus();
+                break;
+            case WorkspacePage.Duplicates:
+                Duplicates?.Focus();
                 break;
             case WorkspacePage.Connections:
                 ConnectionManager?.FocusTree();
@@ -200,6 +208,7 @@ public partial class MainWindow
         PanelsGrid.IsVisible = !terminalPage;
         SettingsHost.IsVisible = _page == WorkspacePage.Options;
         SyncHost.IsVisible = _page == WorkspacePage.Sync;
+        DuplicatesHost.IsVisible = _page == WorkspacePage.Duplicates;
         ConnectionsHost.IsVisible = _page == WorkspacePage.Connections;
         RemoteDesktopHost.IsVisible = _page == WorkspacePage.RemoteDesktop;
         foreach (var desktop in _desktops)
@@ -367,6 +376,7 @@ public partial class MainWindow
             WorkspacePage.Options => (MenuIcons.Create("nc_Config") ?? new Panel(), "Options", "Options", false),
             WorkspacePage.Terminal => (MenuIcons.Create("nc_MaximizeTerminal") ?? new Panel(), "Terminal", "Internal terminal", false),
             WorkspacePage.Sync => (MenuIcons.Create("nc_SyncDirs") ?? new Panel(), "Synchronize", Tools.SyncDirsView.Title, false),
+            WorkspacePage.Duplicates => (MenuIcons.Create("nc_FindDuplicates") ?? new Panel(), "Duplicates", Tools.DuplicatesView.Title, false),
             WorkspacePage.Connections => (MenuIcons.Create("nc_RemoteConnection") ?? new Panel(), "Connections", "Connection manager", false),
             _ => (LocationIcon(panel?.CurrentPath), panel?.Title ?? "?", panel?.CurrentPath?.ToDisplayString() ?? string.Empty, true),
         };
@@ -391,7 +401,7 @@ public partial class MainWindow
             ToolTip.SetTip(close, page switch
             {
                 WorkspacePage.Options => "Close the options (Esc)",
-                WorkspacePage.Sync or WorkspacePage.Connections => "Close (Esc)",
+                WorkspacePage.Sync or WorkspacePage.Duplicates or WorkspacePage.Connections => "Close (Esc)",
                 WorkspacePage.RemoteDesktop => "Disconnect and close",
                 _ => "Back to its place below the panels",
             });
@@ -448,6 +458,9 @@ public partial class MainWindow
             case WorkspacePage.Sync:
                 Sync?.Close();
                 break;
+            case WorkspacePage.Duplicates:
+                Duplicates?.Close();
+                break;
             case WorkspacePage.Connections:
                 ConnectionManager?.Close();
                 break;
@@ -490,6 +503,34 @@ public partial class MainWindow
         };
         SyncHost.Child = view;
         SelectPage(WorkspacePage.Sync);
+    }
+
+    /// <summary>Duplicate files shown as a page (null: not open).</summary>
+    public Tools.DuplicatesView? Duplicates => DuplicatesHost.Child as Tools.DuplicatesView;
+
+    /// <summary>
+    /// Duplicate files in place of the panels, as a page of its own with a tab (user's request, 20 November 2026); one
+    /// already open is closed first. Its ✕, its tab's × and Esc close it.
+    /// </summary>
+    public void ShowDuplicates(Tools.DuplicatesView view)
+    {
+        Duplicates?.Close();
+        view.Closed += (_, _) =>
+        {
+            if (!ReferenceEquals(DuplicatesHost.Child, view))
+            {
+                return;
+            }
+            DuplicatesHost.Child = null;
+            var wasShown = _page == WorkspacePage.Duplicates;
+            ApplyPage();
+            if (wasShown)
+            {
+                ActiveView.FocusList();
+            }
+        };
+        DuplicatesHost.Child = view;
+        SelectPage(WorkspacePage.Duplicates);
     }
 
     /// <summary>The files tab follows the folder of the active panel.</summary>

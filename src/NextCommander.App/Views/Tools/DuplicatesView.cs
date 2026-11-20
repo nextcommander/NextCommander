@@ -118,9 +118,10 @@ public sealed class DuplicateRow : INotifyPropertyChanged
 /// Duplicate files: the chosen folders (chips) are searched with their subfolders; files with the same content (or name
 /// and size, or name) are listed in groups with the space they take twice. Files are marked by hand or by a rule that
 /// always keeps one copy of each group (Smart mark), and the marked ones are moved to the trash, deleted, or moved to a
-/// folder.
+/// folder. A page (tab) of the main window (user's request, 20 November 2026; before: a window of its own): its ✕, its
+/// tab's × and Esc close it.
 /// </summary>
-public sealed class DuplicatesWindow : Window
+public sealed class DuplicatesView : UserControl
 {
     private static readonly (string Text, string Hint, string Glyph)[] s_modes =
     [
@@ -155,14 +156,10 @@ public sealed class DuplicatesWindow : Window
     private int _scanned;
     private CancellationTokenSource? _cts;
 
-    public DuplicatesWindow(DuplicatesRequest request)
+    public DuplicatesView(DuplicatesRequest request)
     {
         _request = request;
-        Title = "Duplicate files";
-        Width = 1060;
-        Height = 820;
-        MinWidth = 720;
-        WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        Focusable = true;
 
         foreach (var folder in request.Folders.Where(f => !string.IsNullOrWhiteSpace(f)).Distinct(StringComparer.OrdinalIgnoreCase))
         {
@@ -195,8 +192,6 @@ public sealed class DuplicatesWindow : Window
         RenderFolders();
         RenderModes();
         UpdateMarked();
-        Closed += (_, _) => Stop();
-        Opened += (_, _) => FitToScreen();
     }
 
     /// <summary>The Smart mark menu (tests).</summary>
@@ -241,20 +236,29 @@ public sealed class DuplicatesWindow : Window
 
     // ---------------------------------------------------------------- layout
 
-    /// <summary>A window taller than the screen (scaled dialogs, small screens) is made to fit: the end of the list and the buttons stay reachable.</summary>
-    private void FitToScreen()
+    /// <summary>The name of its tab in the main window.</summary>
+    public static string Title => "Duplicate files";
+
+    /// <summary>Closed (its ✕, its tab's ×, Esc): the main window removes its page.</summary>
+    public event EventHandler? Closed;
+
+    /// <summary>Whether <see cref="Close"/> was called.</summary>
+    public bool IsClosed { get; private set; }
+
+    /// <summary>Stops a running search and closes the page.</summary>
+    public void Close()
     {
-        if (Screens.ScreenFromWindow(this) is not { } screen)
+        if (IsClosed)
         {
             return;
         }
-        var height = screen.WorkingArea.Height / screen.Scaling;
-        if (Height > height - 16)
-        {
-            Height = height - 16;
-            Position = new PixelPoint(Position.X, screen.WorkingArea.Y);
-        }
+        IsClosed = true;
+        Stop();
+        Closed?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>The main window: the owner of its questions and of the Lister.</summary>
+    private Window Owner => (Window)TopLevel.GetTopLevel(this)!;
 
     /// <summary>A button's content: the glyph and the text (in the button's text color; red for "danger", the accent button's for "onAccent").</summary>
     private static StackPanel WithGlyph(string glyph, string text, bool danger = false, bool onAccent = false)
@@ -501,8 +505,14 @@ public sealed class DuplicatesWindow : Window
         badge.Children.AddRange([tint, DialogLook.Glyph("MiCopy", 19, accent: true)]);
         var titles = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
         titles.Children.AddRange([new TextBlock { Text = "Duplicate files", FontSize = 15, FontWeight = FontWeight.SemiBold }, _status]);
-        var titleRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(20, 14) };
-        titleRow.Children.AddRange([badge, titles]);
+        var close = new Button { Content = "✕", Padding = new Thickness(8, 2), Background = Brushes.Transparent, Focusable = false, VerticalAlignment = VerticalAlignment.Center, Classes = { "noloc", "pageclose" } };
+        ToolTip.SetTip(close, "Close (Esc)");
+        Avalonia.Automation.AutomationProperties.SetName(close, "Close");
+        close.Click += (_, _) => Close();
+        var titleRow = new DockPanel { Margin = new Thickness(20, 14, 12, 14) };
+        DockPanel.SetDock(close, Dock.Right);
+        DockPanel.SetDock(badge, Dock.Left);
+        titleRow.Children.AddRange([close, badge, titles]);
         var head = Bordered(titleRow, new Thickness(0, 0, 0, 1));
 
         var top = new StackPanel();
@@ -599,7 +609,7 @@ public sealed class DuplicatesWindow : Window
 
     private async Task AddFoldersAsync()
     {
-        var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Folder to search", AllowMultiple = true });
+        var folders = await Owner.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Folder to search", AllowMultiple = true });
         foreach (var path in folders.Select(f => f.TryGetLocalPath()).OfType<string>())
         {
             if (!Folders.Contains(path, StringComparer.OrdinalIgnoreCase))
@@ -885,7 +895,7 @@ public sealed class DuplicatesWindow : Window
             return true;
         }
         var dialog = new ChoiceDialog<bool>(title, message, [(okText, true), ("Cancel", false)], cancelValue: false, width: 520);
-        await dialog.ShowDialog(this);
+        await dialog.ShowDialog(Owner);
         return dialog.Result;
     }
 
@@ -926,7 +936,7 @@ public sealed class DuplicatesWindow : Window
         }
         if (target is null)
         {
-            var picked = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Folder to move the marked files to" });
+            var picked = await Owner.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Folder to move the marked files to" });
             target = picked.Select(f => f.TryGetLocalPath()).OfType<string>().FirstOrDefault();
             if (target is null)
             {
@@ -1012,7 +1022,7 @@ public sealed class DuplicatesWindow : Window
             return;
         }
         var files = Rows.Where(r => r.IsFile).Select(r => r.Entry!).ToList();
-        new ListerWindow(new ListerRequest(files, Math.Max(0, files.IndexOf(entry)), _request.Context)).Show(this);
+        new ListerWindow(new ListerRequest(files, Math.Max(0, files.IndexOf(entry)), _request.Context)).Show(Owner);
     }
 
     public async Task GoToSelectedAsync()

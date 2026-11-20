@@ -572,8 +572,8 @@ public sealed class DocScreenshots
         await vm.Left.NavigateAsync(VfsPath.Local(D("Photos")));
         await vm.Right.NavigateAsync(VfsPath.Local(D("Backup", "Photos")));
         await vm.ExecuteAsync("nc_FindDuplicates");
-        var duplicates = new DuplicatesWindow(_dialogs.LastDuplicates!) { Confirm = false };
-        await Shot(duplicates, "duplicates.png", 1200, 760, async () =>
+        var duplicates = new DuplicatesView(_dialogs.LastDuplicates!) { Confirm = false };
+        await Shot(new Window { Content = duplicates }, "duplicates.png", 1200, 760, async () =>
         {
             await duplicates.StartAsync();
             duplicates.MarkAllBut(DuplicateKeep.FirstFolder);

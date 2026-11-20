@@ -189,7 +189,28 @@ public sealed class DialogService : IDialogService
         }
     }
 
-    public void ShowDuplicates(DuplicatesRequest request) => ShowTool(new Views.Tools.DuplicatesWindow(request));
+    /// <summary>Duplicate files as a page (tab) of the main window; "Go to file" and "Feed to panel" show the files page.</summary>
+    public void ShowDuplicates(DuplicatesRequest request)
+    {
+        if (RequireOwner() is not Views.MainWindow main)
+        {
+            return;
+        }
+        var shown = request with
+        {
+            GoToFile = async entry =>
+            {
+                main.SelectPage(Views.WorkspacePage.Files);
+                await request.GoToFile(entry);
+            },
+            FeedToPanel = async (title, entries) =>
+            {
+                main.SelectPage(Views.WorkspacePage.Files);
+                await request.FeedToPanel(title, entries);
+            },
+        };
+        main.ShowDuplicates(new Views.Tools.DuplicatesView(shown));
+    }
 
 
     public void ShowCompare(VfsEntry left, VfsEntry right, ToolContext context) => ShowTool(new Views.Tools.CompareWindow(left, right, context));
