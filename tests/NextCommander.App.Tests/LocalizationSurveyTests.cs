@@ -59,7 +59,7 @@ public sealed class LocalizationSurveyTests
                 new TransferManagerWindow(new Core.Operations.JobQueue()),
                 new FindFilesWindow(new FindFilesRequest(vm.Tools, fx.L(), null, false, (_, _) => Task.CompletedTask, _ => Task.CompletedTask)),
                 new Window { Content = new SyncDirsView(VfsPath.Local(fx.L()), VfsPath.Local(fx.R()), vm.Tools) },
-                new DuplicatesWindow(new DuplicatesRequest(vm.Tools, [fx.L()], (_, _) => Task.CompletedTask, _ => Task.CompletedTask)),
+                new Window { Content = new DuplicatesView(new DuplicatesRequest(vm.Tools, [fx.L()], (_, _) => Task.CompletedTask, _ => Task.CompletedTask)) },
                 new Window { Content = new DiskUsageView(new DiskUsageRequest(vm.Tools, VfsPath.Local(fx.L()), _ => Task.CompletedTask)) },
                 new MultiRenameWindow([(await vm.Left.GetEntryAsync(VfsPath.Local(fx.L("a.txt"))))!], vm.Tools, () => Task.CompletedTask),
             ];

@@ -8,7 +8,7 @@ using static NextCommander.App.Tests.UiFixture;
 namespace NextCommander.App.Tests;
 
 /// <summary>Commands > Duplicate files: folders chosen, groups listed, marked copies deleted / moved, one always kept.</summary>
-public sealed class DuplicatesWindowTests : IDisposable
+public sealed class DuplicatesViewTests : IDisposable
 {
     private readonly UiFixture _fx = new();
 
@@ -35,50 +35,51 @@ public sealed class DuplicatesWindowTests : IDisposable
         Assert.NotNull(request);
         Assert.Equal([_fx.L(), _fx.R()], request.Folders);
 
-        var window = _fx.Track(new DuplicatesWindow(request) { Confirm = false });
-        window.Show();
-        await window.StartAsync();
-        Assert.Equal(2, window.Groups.Count);
-        Assert.Equal(3, window.Groups[0].Count); // the largest waste first
-        Assert.Equal(["note.txt", "note.txt"], window.Groups[1].Select(e => e.Name));
-        Assert.Contains("2 groups, 5 files", window.StatusText, StringComparison.Ordinal);
-        Assert.Equal(7, window.Rows.Count); // two headers
+        var view = new DuplicatesView(request) { Confirm = false };
+        var host = _fx.Track(new Avalonia.Controls.Window { Content = view, Width = 1060, Height = 820 });
+        host.Show();
+        await view.StartAsync();
+        Assert.Equal(2, view.Groups.Count);
+        Assert.Equal(3, view.Groups[0].Count); // the largest waste first
+        Assert.Equal(["note.txt", "note.txt"], view.Groups[1].Select(e => e.Name));
+        Assert.Contains("2 groups, 5 files", view.StatusText, StringComparison.Ordinal);
+        Assert.Equal(7, view.Rows.Count); // two headers
 
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
         {
-            window.MarkAllBut(DuplicateKeep.Oldest);
+            view.MarkAllBut(DuplicateKeep.Oldest);
             await SettleAsync();
             Directory.CreateDirectory(dir);
-            window.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "duplicates.png"));
+            host.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "duplicates.png"));
         }
 
         // keep the oldest photo, keep the copy of the note in the first folder (left)
-        window.MarkAllBut(DuplicateKeep.FirstFolder);
-        Assert.Equal(3, window.Marked.Count);
-        Assert.DoesNotContain(window.Marked, e => e.Path.Path == _fx.L("photo.jpg") || e.Path.Path == _fx.L("note.txt"));
-        await window.DeleteMarkedAsync(useTrash: false);
+        view.MarkAllBut(DuplicateKeep.FirstFolder);
+        Assert.Equal(3, view.Marked.Count);
+        Assert.DoesNotContain(view.Marked, e => e.Path.Path == _fx.L("photo.jpg") || e.Path.Path == _fx.L("note.txt"));
+        await view.DeleteMarkedAsync(useTrash: false);
         Assert.True(File.Exists(_fx.L("photo.jpg")));
         Assert.True(File.Exists(_fx.L("note.txt")));
         Assert.False(File.Exists(_fx.R("backup", "photo.jpg")));
         Assert.False(File.Exists(_fx.R("photo copy.jpg")));
         Assert.False(File.Exists(_fx.R("note.txt")));
         Assert.True(File.Exists(_fx.R("different.jpg")));
-        Assert.Empty(window.Groups); // groups with a single file left are gone
-        Assert.Contains("3 files deleted", window.StatusText, StringComparison.Ordinal);
+        Assert.Empty(view.Groups); // groups with a single file left are gone
+        Assert.Contains("3 files deleted", view.StatusText, StringComparison.Ordinal);
 
         // moving: same names are numbered in the target
         File.WriteAllText(_fx.R("a.bin"), "payload");
         Directory.CreateDirectory(_fx.R("x"));
         File.WriteAllText(_fx.R("x", "a.bin"), "payload");
         File.WriteAllText(_fx.L("a.bin"), "payload");
-        await window.StartAsync();
-        var group = Assert.Single(window.Groups);
-        window.SetMarks(group.Where(e => !e.Path.Path.StartsWith(_fx.L(), StringComparison.OrdinalIgnoreCase)));
+        await view.StartAsync();
+        var group = Assert.Single(view.Groups);
+        view.SetMarks(group.Where(e => !e.Path.Path.StartsWith(_fx.L(), StringComparison.OrdinalIgnoreCase)));
         var target = Path.Combine(_fx.Root, "moved");
         Directory.CreateDirectory(target);
-        await window.MoveMarkedAsync(target);
+        await view.MoveMarkedAsync(target);
         Assert.Equal(2, Directory.GetFiles(target).Length);
         Assert.True(File.Exists(_fx.L("a.bin")));
-        Assert.Empty(window.Groups);
+        Assert.Empty(view.Groups);
     }
 }
