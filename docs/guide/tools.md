@@ -210,16 +210,24 @@ panels while it stays open; its ✕, its tab's × or Esc closes it. **Go to file
 
 *Commands > Folder sizes...* shows what takes up the space in a folder, also on servers and cloud drives. It opens in
 place of the other panel and shows the folder of the panel next to it: go to another folder there and it is scanned
-anew. *Rescan* reads it again, the ✕ button or Esc puts the panel back.
+anew. *Rescan* (F5) reads it again, the ✕ button or Esc puts the panel back.
 
 ![Folder sizes](../screenshots/disk-usage.png)
 
-- At the top, a tree of folders and files from largest to smallest, with a bar, the size, the share in percent,
-  the file count and the newest date.
-- On the right, the file types with their total size.
-- At the bottom, a map where every file is a rectangle in the color of its type, sized by how big it is. Click
-  a rectangle to find the file in the tree; double click shows it in the panel.
-- **Show in panel**, **Open**, **Move to trash** (Shift+Delete deletes permanently), **Go down to the largest**.
+- **At the top:** the path of the folder shown (click a part to go back up to it), its size, files and folders, a
+  **filter** by name (Ctrl+F; it keeps the matching names and the folders down to them) and *Rescan* / *Stop*.
+- **Below it:** the selected file or folder with its size and share, and what can be done with it: **Open in map**
+  (zoom into a folder), **Go to largest** (the largest file in it), **Show in panel**, **Open**, **Move to trash**.
+  Deleting asks right there (*Keep* / *Move to trash*); Shift+Delete deletes permanently.
+- **The tree:** folders and files from largest to smallest. A click on a column header sorts by name, size, file
+  count or date, again the other way round. A folder's bar shows the types in it in their colors. ▸ / → open a
+  folder, ← closes it; a double click or Enter zooms into a folder (a file: shows it in the panel), Backspace goes up.
+- **File types** (right): the categories (video, audio, programs, archives, images, documents, code and data, other)
+  with their size and share; ▸ shows their extensions. A click on a category or an extension highlights its files in
+  the map, *Show all* ends it.
+- **The map** (bottom): every file is a rectangle in the color of its type, sized by how big it is; folders large
+  enough have a strip with their name and size. Click a rectangle to find it in the tree; a double click zooms into
+  its folder, *Up to ...* goes back. The tooltip and the footer show the item under the pointer.
 
 ## Checksums
 
