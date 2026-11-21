@@ -282,6 +282,9 @@ open a terminal at the bottom of the window. Press it again to hide it; the shel
   clears the screen, **Stop** restarts the shell.
 - **Tabs:** `+` opens another terminal, `▾` lists the installed shells (on Windows cmd, Windows PowerShell,
   PowerShell 7, Git Bash and WSL; elsewhere your shells). `exit` or the tab's `×` closes it.
+- Words such as *error*, *failed*, *warning*, *done* are colored in the output (red, amber, green) where the program
+  writes them without a color of its own. *Configuration > Misc. > Internal terminal* turns it off and edits the words
+  and colors (whole words, case ignored; the first entry that matches wins).
 - **Snippets ▾** lists your saved commands: a click types one into the active tab (with Enter, or left on the line
   to finish when *Press Enter after it* is off; with MultiExec into every checked tab). *Edit saved commands...*
   opens the list on the *Misc.* page of the Configuration window (name in the menu, command, Enter).

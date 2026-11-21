@@ -3550,5 +3550,13 @@
   "NetworkToolsWindow.Stopped": "Stopped.",
   "NetworkToolsWindow.WakeUp": "Wake up",
   "NetworkToolsWindow.TimeoutMs": "Timeout (ms)",
-  "NetworkToolsWindow.WakeOnLan": "Wake-on-LAN"
+  "NetworkToolsWindow.WakeOnLan": "Wake-on-LAN",
+  "Settings.Misc.HighlightWords": "Highlight words in the output",
+  "Settings.Misc.HighlightWords.Description": "Words such as error, warning or done are colored in text the program writes without a color of its own (the real terminal only).",
+  "Settings.Misc.HighlightedWords": "Highlighted words",
+  "Settings.Misc.HighlightedWords.Description": "Each entry: words separated by commas (whole words, case ignored) and their color; the first entry that matches wins.",
+  "SettingsWindow.AddWords": "Add words",
+  "SettingsWindow.NoWords": "No words",
+  "SettingsWindow.NotAColorHex": "Not a color: \"{0}\" (#RRGGBB)",
+  "SettingsWindow.Words": "Words"
 }

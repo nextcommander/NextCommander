@@ -166,6 +166,13 @@ public sealed class EmulatedTerminal : TerminalTab
         }
     }
 
+    /// <summary>The words colored in the output of every tab (Configuration > Misc. > Internal terminal; empty: none).</summary>
+    public static IReadOnlyList<(System.Text.RegularExpressions.Regex Pattern, Color Color)> Highlights
+    {
+        get => TerminalScreen.Highlights;
+        set => TerminalScreen.Highlights = value;
+    }
+
     public override (int Current, int Count) Find(string text, bool matchCase, int direction) => _screen.Find(text, matchCase, direction);
 
     public override void ClearFind() => _screen.ClearFind();
@@ -212,6 +219,44 @@ internal sealed class TerminalScreen : Control
     private bool _suppressText;
     /// <summary>The connection's colors (null: the theme's background and a text color that suits it).</summary>
     public (Color Background, Color Foreground)? Scheme { get; set; }
+
+    /// <summary>The words colored in the output (Configuration > Misc. > Internal terminal; empty: none).</summary>
+    public static IReadOnlyList<(System.Text.RegularExpressions.Regex Pattern, Color Color)> Highlights { get; set; } = [];
+
+    /// <summary>The highlight color of each column of a line (null: none), for text without a color of its own.</summary>
+    internal static Color?[]? HighlightsOf(IReadOnlyList<VtCell> line)
+    {
+        var rules = Highlights;
+        if (rules.Count == 0 || line.Count == 0)
+        {
+            return null;
+        }
+        var (text, columns) = Searchable(line);
+        if (text.Trim().Length == 0)
+        {
+            return null;
+        }
+        Color?[]? colors = null;
+        foreach (var (pattern, color) in rules)
+        {
+            try
+            {
+                foreach (System.Text.RegularExpressions.Match match in pattern.Matches(text))
+                {
+                    colors ??= new Color?[line.Count];
+                    for (var i = match.Index; i < match.Index + match.Length; i++)
+                    {
+                        colors[columns[i]] ??= color; // the first rule wins
+                    }
+                }
+            }
+            catch (System.Text.RegularExpressions.RegexMatchTimeoutException)
+            {
+                // a pathological line: not colored
+            }
+        }
+        return colors;
+    }
 
     private readonly List<(int Line, int Column, int Width)> _matches = [];
     private int _currentMatch = -1;
@@ -497,11 +542,13 @@ internal sealed class TerminalScreen : Control
             var line = LineAt(index);
             var y = Padding / 2 + row * _cellHeight;
             var x = 0;
+            var highlights = HighlightsOf(line);
             while (x < line.Count)
             {
                 // a run of cells with the same style (wide and non-ASCII characters are drawn one by one)
                 var style = line[x].Style;
                 var start = x;
+                var highlight = highlights?[x];
                 var text = new StringBuilder();
                 var single = line[x].CodePoint > 0x7E;
                 do
@@ -515,12 +562,12 @@ internal sealed class TerminalScreen : Control
                     });
                     x++;
                 }
-                while (!single && x < line.Count && line[x].Style == style && line[x].CodePoint is >= 0 and <= 0x7E);
+                while (!single && x < line.Count && line[x].Style == style && line[x].CodePoint is >= 0 and <= 0x7E && highlights?[x] == highlight);
                 if (single && x < line.Count && line[x].CodePoint == -1)
                 {
                     x++; // the right half of a wide character
                 }
-                var fg = ColorOf(style.Foreground) ?? foreground;
+                var fg = ColorOf(style.Foreground) ?? (style.Background < 0 ? highlight : null) ?? foreground; // only text the program left uncolored
                 var bg = ColorOf(style.Background);
                 if (style.Foreground is >= 0 and < 8 && style.Flags.HasFlag(VtFlags.Bold))
                 {

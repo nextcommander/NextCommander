@@ -299,6 +299,14 @@ public partial class MainWindow : Window
         _vm.NextPageRequested += (_, _) => SelectNextPage();
         _vm.HotlistMenuRequested += (_, _) => ShowHotlistMenu();
         _vm.ButtonBarsChanged += (_, _) => UpdateButtonBars();
+        // the settings were applied: an open terminal takes its font, logging and highlighted words at once
+        _vm.ButtonBarsChanged += (_, _) =>
+        {
+            if (_terminal is not null)
+            {
+                ApplyTerminalSettings();
+            }
+        };
         _vm.TreeChanged += (_, path) =>
         {
             LeftPanel.InvalidateTree(path);
@@ -1411,6 +1419,11 @@ public partial class MainWindow : Window
         _terminal!.Shell = _vm!.Settings.InternalTerminalShell;
         _terminal.Emulation = _vm.Settings.TerminalEmulation;
         _terminal.LogAll = _vm.Settings.TerminalLogAll;
+        EmulatedTerminal.Highlights = _vm.Settings.TerminalHighlight
+            ? [.. _vm.Settings.TerminalHighlightRules.Select(r => (Pattern: r.Pattern(), Ok: Avalonia.Media.Color.TryParse(r.Color, out var color), Color: color))
+                .Where(r => r.Pattern is not null && r.Ok).Select(r => (r.Pattern!, r.Color))]
+            : [];
+        _terminal.InvalidateTerminals();
         _terminal.LogFolder = _vm.Settings.TerminalLogFolder;
         _terminal.SetFont(_vm.Settings.TerminalFont, _vm.Settings.TerminalFontSize);
     }
