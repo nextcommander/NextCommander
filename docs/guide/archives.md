@@ -34,7 +34,8 @@ image with long (Joliet) names and their dates, ready to burn or mount. There is
 be at most 4 GB (larger ones are left out with an error). The volume label comes from the file name (`Backup
 2026-11.iso` → `BACKUP_2026_11`).
 
-**Mounting:** *Files > Archive > Mount disc image* mounts the `.iso` under the cursor through the system, read-only,
+**Mounting:** *Files > Archive > Mount disc image* (or the right click menu of an `.iso`: at the top of Explorer's menu on
+Windows, in the program's own menu with Shift+right click and on Linux / macOS) mounts the `.iso` under the cursor through the system, read-only,
 and opens its drive in the panel; on a mounted image it goes to its drive. *Unmount disc image* takes it away. A
 mounted image is an ordinary drive: every program can open its files and an installer on it runs. Windows mounts with
 Mount-DiskImage (no administrator rights needed), Linux with udisks (a loop device under /media or /run/media),
