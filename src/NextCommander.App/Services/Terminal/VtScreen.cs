@@ -578,7 +578,19 @@ public sealed class VtScreen
             Title = text[(semicolon + 1)..];
             TitleChanged?.Invoke();
         }
+        // OSC 7 file://host/path: the shell's folder (shells and prompts that report it)
+        if (semicolon > 0 && text[..semicolon] == "7" && Uri.TryCreate(text[(semicolon + 1)..], UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeFile)
+        {
+            WorkingDirectory = Uri.UnescapeDataString(uri.AbsolutePath);
+            WorkingDirectoryChanged?.Invoke();
+        }
     }
+
+    /// <summary>The folder the shell reported last (OSC 7), null when it reports none.</summary>
+    public string? WorkingDirectory { get; private set; }
+
+    /// <summary>The shell reported another folder.</summary>
+    public event Action? WorkingDirectoryChanged;
 
     private void Csi(char c)
     {

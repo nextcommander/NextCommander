@@ -398,6 +398,11 @@ public sealed partial class ConnectionManagerView
         {
             AddFooter(FooterButton("Files (SMB)", () => Connect([SmbOf(c)], right: false), icon: "MiFolderOpen"), right: false);
         }
+        if (c.Protocol == RemoteProtocol.Ssh)
+        {
+            // the files of an SSH session's computer (MobaXterm's SFTP browser): a saved SFTP connection, else the same login over SFTP
+            AddFooter(FooterButton("Files (SFTP)", () => Connect([c.FilesOverSsh(_settings.Connections)], right: false), icon: "MiFolderOpen"), right: false);
+        }
         AddFooter(FooterButton("Delete", () => _ = DeleteAsync(Selected!), icon: "MiTrash", danger: true), right: false);
         AddFooter(FooterButton("Connect", () => Connect([c], right: false), accent: true, right: true, icon: "MiPlug"), right: true);
         AddFooter(FooterButton("Save", Save, right: true, icon: "MiSave"), right: true);

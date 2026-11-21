@@ -2956,6 +2956,10 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         var panels = 0;
         foreach (var connection in result.Connections)
         {
+            if (!_settings.Connections.Contains(connection))
+            {
+                Remote?.Remember(connection); // made for the moment (an SSH session's files, a desktop's share): its login settings stay
+            }
             if (connection.IsSession)
             {
                 await OpenSessionAsync(connection); // RDP, Telnet: not in a panel
@@ -2968,6 +2972,24 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             {
                 await side.OpenTabAsync(PathOf(connection)); // several connections: one tab each
             }
+        }
+    }
+
+    /// <summary>
+    /// "Files (SFTP)" of an SSH session in the terminal: its computer's files in a new tab of the active panel, in the
+    /// shell's folder when it reported one (else the root); the login of the session (key, agent, jump host, proxy and
+    /// its saved password) is used.
+    /// </summary>
+    public async Task OpenSshFilesAsync(RemoteConnection ssh, string? folder)
+    {
+        var files = ssh.FilesOverSsh(_settings.Connections, folder);
+        if (!_settings.Connections.Any(c => c.SecretId == files.SecretId))
+        {
+            Remote?.Remember(files, ssh.SecretId);
+        }
+        if (PathOf(files) is { } path)
+        {
+            await ActiveSide.OpenTabAsync(path);
         }
     }
 
