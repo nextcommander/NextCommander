@@ -57,33 +57,19 @@ public sealed partial class ConnectionManagerView : UserControl
     private readonly AppSettings _settings;
     private readonly TextBox _search = new() { PlaceholderText = "Name, server, bucket ..." };
     private readonly WrapPanel _chips = new() { Orientation = Orientation.Horizontal };
-    private readonly ListBox _tree = new() { Classes = { "noloc" } };
+    private readonly ListBox _tree = new() { Classes = { "noloc", "conntree" } };
     private readonly ContentControl _detail = new();
-    /// <summary>The footer: the note line, the buttons of the selection on the left (wrapping) and Save / Connect on the right.</summary>
-    private readonly StackPanel _detailFooter = new() { Margin = new Thickness(16, 8, 16, 2) };
+    /// <summary>The actions of the page shown (a folder's): secondary ones, then the main one.</summary>
     private readonly WrapPanel _footerLeft = new() { Orientation = Orientation.Horizontal, ItemSpacing = 6, LineSpacing = 6 };
     private readonly StackPanel _footerRight = new() { Orientation = Orientation.Horizontal, Spacing = 6, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top };
-
-    private readonly Grid _footerButtons = new() { ColumnDefinitions = new ColumnDefinitions("*,Auto"), RowDefinitions = new RowDefinitions("Auto,Auto") };
 
     /// <summary>The editor is narrow (a panel of a small window): its fields in one column.</summary>
     private bool _narrow;
 
-    /// <summary>Wide: the selection's buttons left, Save / Connect right on one line; narrow: Save / Connect on a line of their own first.</summary>
-    private void PlaceFooterButtons()
-    {
-        Grid.SetRow(_footerRight, 0);
-        Grid.SetColumn(_footerRight, _narrow ? 0 : 1);
-        Grid.SetColumnSpan(_footerRight, _narrow ? 2 : 1);
-        Grid.SetRow(_footerLeft, _narrow ? 1 : 0);
-        Grid.SetColumn(_footerLeft, 0);
-        Grid.SetColumnSpan(_footerLeft, _narrow ? 2 : 1);
-    }
     private readonly HashSet<string> _expanded = new(StringComparer.Ordinal);
 
     private readonly Dictionary<RemoteConnection, (bool Ok, string Text)> _tests = [];
     private readonly Stack<(List<RemoteConnection> Connections, List<ConnectionFolder> Folders)> _undo = new();
-    private int _chip;
     private bool _refreshing;
     private Row? _dragged;
     private (Row Row, Point Origin, PointerPressedEventArgs Press)? _dragCandidate;
@@ -94,21 +80,32 @@ public sealed partial class ConnectionManagerView : UserControl
         public string Key => Folder is not null ? "f:" + Folder : "c:" + System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(Connection!);
     }
 
-    private static readonly (string Text, Func<RemoteConnection, bool>? Filter)[] s_chips =
+    /// <summary>The filter chips (the template's): all, favorites, connected, the four categories; empty ones are hidden.</summary>
+    private static readonly (string Text, string Key)[] s_chips =
     [
-        ("All", null),
-        ("★ Favorites", c => c.Favorite),
-        ("SSH", c => c.Protocol is RemoteProtocol.Sftp or RemoteProtocol.Scp),
-        ("FTP", c => c.Protocol is RemoteProtocol.Ftp or RemoteProtocol.FtpsExplicit or RemoteProtocol.FtpsImplicit),
-        ("Cloud", c => c.IsCloudDrive || c.IsObjectStorage),
-        ("● Connected", null), // filled with the request's check
+        ("All", "all"),
+        ("★ Favorites", "fav"),
+        ("● Connected", "on"),
+        ("Servers", nameof(ConnectionCategory.Servers)),
+        ("Network", nameof(ConnectionCategory.LocalNetwork)),
+        ("Cloud", nameof(ConnectionCategory.CloudStorage)),
+        ("Remote", nameof(ConnectionCategory.RemoteSessions)),
     ];
+
+    private bool PassesChip(RemoteConnection c, string key) => key switch
+    {
+        "all" => true,
+        "fav" => c.Favorite,
+        "on" => _request.IsConnected(c),
+        _ => ConnectionLook.CategoryOf(c.Protocol).ToString() == key,
+    };
 
     public ConnectionManagerView(ConnectionManagerRequest request)
     {
         _request = request;
         _settings = request.Settings;
         Focusable = true;
+        ConnectionLook.Apply(this);
         foreach (var folder in ConnectionFolders.All(_settings))
         {
             ConnectionFolders.Ensure(_settings, folder); // a folder stays when its last connection moves out
@@ -145,6 +142,16 @@ public sealed partial class ConnectionManagerView : UserControl
         };
         InitializeDragDrop();
         _search.TextChanged += (_, _) => RefreshTree();
+        _search.KeyDown += (_, e) =>
+        {
+            // Down from the search: into the list
+            if (e.Key == Key.Down && Rows.Count > 0)
+            {
+                Select(Rows.FirstOrDefault(r => r.Connection is not null) ?? Rows[0]);
+                FocusSelectedRow();
+                e.Handled = true;
+            }
+        };
         RenderChips();
         RefreshTree();
         AttachedToVisualTree += (_, _) =>
@@ -154,20 +161,13 @@ public sealed partial class ConnectionManagerView : UserControl
                 return;
             }
             _opened = true;
-            // the first connection (nothing selected: how to start); Net > New connection: the wizard with the type
-            if (Rows.FirstOrDefault(r => r.Connection is not null) is { } first)
-            {
-                Select(first);
-            }
-            else
-            {
-                ShowDetail();
-            }
+            // Home (recently used, quick connect; the first start: how to begin); Net > New connection: its type's details
+            ShowDetail();
             if (request.NewProtocol is { } protocol)
             {
                 Avalonia.Threading.Dispatcher.UIThread.Post(() => _ = NewConnectionAsync(protocol), Avalonia.Threading.DispatcherPriority.Loaded);
             }
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => _tree.Focus(), Avalonia.Threading.DispatcherPriority.Loaded);
+            Avalonia.Threading.Dispatcher.UIThread.Post(FocusSelectedRow, Avalonia.Threading.DispatcherPriority.Loaded);
         };
         AddHandler(KeyDownEvent, OnWindowKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
     }
@@ -187,25 +187,22 @@ public sealed partial class ConnectionManagerView : UserControl
     /// </summary>
     public void FocusTree() => FocusSelectedRow();
 
-    private Border? _actionBar;
-
-    /// <summary>The bar of actions above the editor is shown while it has buttons or a message.</summary>
-    private void UpdateActionBar()
-    {
-        if (_actionBar is not null)
-        {
-            _actionBar.IsVisible = _footerLeft.Children.Count + _footerRight.Children.Count > 0 || _toast.IsVisible;
-        }
-    }
+    /// <summary>The bar of notes under the page is shown while it has one.</summary>
+    private void UpdateActionBar() => _toastBar.IsVisible = _toast.IsVisible;
 
     /// <summary>The keyboard focus on the selected row (the list when there is none), once its row exists.</summary>
     private void FocusSelectedRow()
     {
         void Focus()
         {
-            if (_tree.SelectedItem is null && Rows.Count > 0)
+            if (_wizard is not null)
             {
-                _tree.SelectedIndex = 0;
+                return; // the new connection page has its own focus
+            }
+            if (_tree.SelectedItem is null)
+            {
+                _search.Focus(); // home: the search (the arrow keys would go to the main window's menu otherwise)
+                return;
             }
             if (_tree.SelectedItem is { } item && _tree.ContainerFromItem(item) is Control row)
             {
@@ -246,50 +243,70 @@ public sealed partial class ConnectionManagerView : UserControl
 
     private Control BuildLayout()
     {
-        var newButton = new Button { Content = "＋ New", Classes = { "accent" } };
-        ToolTip.SetTip(newButton, "New connection (Ctrl+N): the wizard");
+        // the side: New connection and More (new folder, import, export), the search, the chips, Home, the list, the count
+        var newButton = new Button { Content = "＋ New connection", Tag = "New connection", Classes = { "accent" }, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Center, MinHeight = 32 };
+        ToolTip.SetTip(newButton, "New connection (Ctrl+N)");
         newButton.Click += (_, _) => _ = NewConnectionAsync();
-        var folderButton = IconButton("MiFolderOpen", "New folder", () => NewFolder(TargetFolder()));
-        var importButton = IconButton("MiArrowDown", "Import and export (FileZilla, WinSCP, PuTTY, MobaXterm, a connections file)", ShowImportMenu);
-        // the toolbar: New (the wizard), a folder, Import
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
-        actions.Children.AddRange([newButton, folderButton, importButton]);
-
-        var top = new StackPanel { Spacing = 8, Margin = new Thickness(10) };
+        var more = ConnectionLook.IconButton("⋯", "New folder, import, export", 32, 16);
+        more.Classes.Remove("ghost");
+        more.Click += (_, _) => ShowMoreMenu(more);
+        var actions = new Grid { ColumnDefinitions = new ColumnDefinitions("*,6,Auto") };
+        Grid.SetColumn(more, 2);
+        actions.Children.AddRange([newButton, more]);
+        _search.InnerLeftContent = new TextBlock { Text = "⌕", FontSize = 14, Opacity = 0.55, Margin = new Thickness(10, 0, 2, 0), VerticalAlignment = VerticalAlignment.Center, Classes = { "noloc" } };
+        _search.MinHeight = 32;
+        var top = new StackPanel { Spacing = 10, Margin = new Thickness(12, 14, 12, 6) };
         top.Children.AddRange([actions, _search, _chips]);
+        _home.PointerPressed += (_, _) => GoHome();
+        var footer = new Border { Child = _count, Padding = new Thickness(12, 8), BorderThickness = new Thickness(0, 1, 0, 0) };
+        footer[!Border.BorderBrushProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("ConnStroke");
+        ConnectionLook.Muted(_count, 3);
         var side = new DockPanel();
         DockPanel.SetDock(top, Dock.Top);
-        side.Children.AddRange([top, _tree]);
+        DockPanel.SetDock(_home, Dock.Top);
+        DockPanel.SetDock(footer, Dock.Bottom);
+        _tree.Margin = new Thickness(6, 0, 6, 6);
+        _tree.Background = Brushes.Transparent;
+        side.Children.AddRange([top, _home, footer, _tree]);
         var sideBorder = new Border { Child = side, BorderThickness = new Thickness(0, 0, 1, 0) };
-        sideBorder[!Border.BorderBrushProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SystemControlForegroundBaseLowBrush");
+        sideBorder[!Border.BorderBrushProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("ConnStroke");
+        sideBorder[!Border.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("ConnSide");
 
-        // the actions of the selected item above it (user's request, 20 November 2026: at the bottom they were out of the way)
-        var main = new DockPanel();
-        var footerBorder = _actionBar = new Border { Child = _detailFooter, BorderThickness = new Thickness(0, 0, 0, 1) };
-        footerBorder[!Border.BorderBrushProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("SystemControlForegroundBaseLowBrush");
-        footerBorder[!Border.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("FmToolBarBrush");
-        DockPanel.SetDock(footerBorder, Dock.Top);
-        main.Children.Add(footerBorder);
-        var scroller = new ScrollViewer { Content = _detail, Padding = new Thickness(22, 16) };
+        // the main side: the location bar (back, forward, where), the page, the bar of unsaved changes and the notes
+        var nav = new DockPanel { Margin = new Thickness(16, 0), Height = 46 };
+        _backButton.Click += (_, _) => GoBack();
+        _forwardButton.Click += (_, _) => GoForward();
+        var arrows = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
+        arrows.Children.AddRange([_backButton, _forwardButton]);
+        var hint = ConnectionLook.Muted(new TextBlock { Text = "Alt+← to go back", FontSize = 11.5, VerticalAlignment = VerticalAlignment.Center }, 3);
+        DockPanel.SetDock(arrows, Dock.Left);
+        DockPanel.SetDock(hint, Dock.Right);
+        nav.Children.AddRange([arrows, hint, _crumbs]);
+        var navBar = new Border { Child = nav, BorderThickness = new Thickness(0, 0, 0, 1) };
+        navBar[!Border.BorderBrushProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("ConnStroke");
+        var scroller = new ScrollViewer { Content = _detail, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
         scroller.SizeChanged += (_, e) =>
         {
             var narrow = e.NewSize.Width < 600;
             if (narrow != _narrow)
             {
                 _narrow = narrow;
-                PlaceFooterButtons();
                 ShowDetail(); // the fields in one or two columns
             }
         };
-        main.Children.Add(scroller);
-        _footerButtons.Children.AddRange([_footerLeft, _footerRight]);
-        PlaceFooterButtons();
-        _detailFooter.Children.AddRange([_footerButtons, _toast]);
+        _pages.Children.AddRange([scroller, _wizardHost]);
+        _wizardHost.IsVisible = false;
+        var main = new DockPanel();
+        DockPanel.SetDock(navBar, Dock.Top);
+        DockPanel.SetDock(_bottom, Dock.Bottom);
+        DockPanel.SetDock(_toastBar, Dock.Bottom);
+        _toastBar.Child = _toast;
+        main.Children.AddRange([navBar, _bottom, _toastBar, _pages]);
 
-        // the tree and the editor side by side; the splitter between them sets the tree's width
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("260,Auto,*") };
-        grid.ColumnDefinitions[0].MinWidth = 180;
-        grid.ColumnDefinitions[2].MinWidth = 260;
+        // the list and the page side by side; the splitter between them sets the list's width
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("300,Auto,*") };
+        grid.ColumnDefinitions[0].MinWidth = 200;
+        grid.ColumnDefinitions[2].MinWidth = 300;
         var splitter = new GridSplitter { Width = 4, ResizeDirection = GridResizeDirection.Columns, Background = Brushes.Transparent };
         Grid.SetColumn(splitter, 1);
         Grid.SetColumn(main, 2);
@@ -302,7 +319,53 @@ public sealed partial class ConnectionManagerView : UserControl
         root.Children.AddRange([titleBorder, grid]);
         var background = new Border { Child = root };
         background[!Border.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("FmListBackgroundBrush");
+        PointerReleased += (_, e) =>
+        {
+            // the mouse's back and forward buttons
+            if (e.InitialPressMouseButton == MouseButton.XButton1)
+            {
+                GoBack();
+            }
+            else if (e.InitialPressMouseButton == MouseButton.XButton2)
+            {
+                GoForward();
+            }
+        };
         return background;
+    }
+
+    private readonly Button _backButton = ConnectionLook.IconButton("←", "Back (Alt+Left)");
+    private readonly Button _forwardButton = ConnectionLook.IconButton("→", "Forward (Alt+Right)");
+    private readonly StackPanel _crumbs = new() { Orientation = Orientation.Horizontal, Spacing = 2, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 8, 0) };
+    private readonly Panel _pages = new();
+    private readonly ContentControl _wizardHost = new();
+    private readonly ContentControl _bottom = new();
+    private readonly Border _toastBar = new() { Padding = new Thickness(32, 0, 32, 6) };
+    private readonly TextBlock _count = new() { FontSize = 12, Classes = { "noloc" } };
+    /// <summary>The page of the manager without a selection: recently used connections, connect to an address.</summary>
+    internal const string OverviewTitle = "Overview";
+
+    private readonly Border _home = new() { Margin = new Thickness(6, 0, 6, 2), Padding = new Thickness(8, 7), CornerRadius = new CornerRadius(6), Background = Brushes.Transparent, Cursor = new Cursor(StandardCursorType.Hand) };
+
+    /// <summary>The More menu of the side: a new folder, import from another program, export.</summary>
+    private void ShowMoreMenu(Control anchor)
+    {
+        var menu = new ContextMenu();
+        menu.Items.Add(MenuItem("New folder", "connections.folder", () => NewFolder(TargetFolder())));
+        menu.Items.Add(new Separator());
+        var import = new MenuItem { Header = "Import from another program", Icon = MenuIcons.Create("connections.import") };
+        foreach (var item in ImportItems())
+        {
+            import.Items.Add(item);
+        }
+        menu.Items.Add(import);
+        if (_request.PickSaveFile is not null)
+        {
+            var folder = Selected?.Folder;
+            menu.Items.Add(MenuItem(folder is { Length: > 0 } ? "Export this folder to a file..." : "Export all connections to a file...", "connections.export",
+                () => _ = ExportAsync(folder ?? string.Empty)));
+        }
+        menu.Open(anchor);
     }
 
     private static Button IconButton(string glyph, string tip, Action click)
@@ -318,16 +381,27 @@ public sealed partial class ConnectionManagerView : UserControl
             ? new Viewbox { Width = size, Height = size, Child = IconPacks.Draw(geometry, brush ?? Brushes.Gray) }
             : new TextBlock { Text = "•" };
 
+    private string _chipKey = "all";
+
     private void RenderChips()
     {
         _chips.Children.Clear();
-        for (var i = 0; i < s_chips.Length; i++)
+        foreach (var (text, key) in s_chips)
         {
-            var index = i;
-            var chip = new ToggleButton { Content = s_chips[i].Text, IsChecked = i == _chip, Padding = new Thickness(9, 2), Margin = new Thickness(0, 0, 4, 4), FontSize = 11 };
+            var count = _settings.Connections.Count(c => PassesChip(c, key));
+            if (key != "all" && count == 0 && key != _chipKey)
+            {
+                continue;
+            }
+            var label = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 5 };
+            label.Children.AddRange([
+                new TextBlock { Text = Core.Localization.Localizer.T(text), FontSize = 12.5, VerticalAlignment = VerticalAlignment.Center },
+                new TextBlock { Text = count.ToString(System.Globalization.CultureInfo.CurrentCulture), FontSize = 11, Opacity = 0.7, VerticalAlignment = VerticalAlignment.Center, Classes = { "noloc" } },
+            ]);
+            var chip = new ToggleButton { Content = label, Tag = text, IsChecked = key == _chipKey, Margin = new Thickness(0, 0, 5, 5), Classes = { "connchip" } };
             chip.Click += (_, _) =>
             {
-                _chip = index;
+                _chipKey = key;
                 RenderChips();
                 RefreshTree();
             };
@@ -340,8 +414,7 @@ public sealed partial class ConnectionManagerView : UserControl
     /// <summary>Whether a connection passes the search text and the chosen filter.</summary>
     private bool Passes(RemoteConnection c)
     {
-        var filter = _chip == s_chips.Length - 1 ? _request.IsConnected : s_chips[_chip].Filter;
-        if (filter is not null && !filter(c))
+        if (!PassesChip(c, _chipKey))
         {
             return false;
         }
@@ -350,7 +423,7 @@ public sealed partial class ConnectionManagerView : UserControl
             .Any(t => t.Contains(q, StringComparison.CurrentCultureIgnoreCase));
     }
 
-    private bool Filtering => _chip != 0 || !string.IsNullOrWhiteSpace(_search.Text);
+    private bool Filtering => _chipKey != "all" || !string.IsNullOrWhiteSpace(_search.Text);
 
     /// <summary>The rows: folders first (expanded ones with their content), then connections; a search shows the way to every match.</summary>
     private List<Row> BuildRows()
@@ -364,7 +437,7 @@ public sealed partial class ConnectionManagerView : UserControl
             foreach (var sub in folders)
             {
                 // a folder shows when something in it passes, or (searching) its own name matches
-                var named = search.Length > 0 && _chip == 0 && ConnectionFolders.NameOf(sub).Contains(search, StringComparison.CurrentCultureIgnoreCase);
+                var named = search.Length > 0 && _chipKey == "all" && ConnectionFolders.NameOf(sub).Contains(search, StringComparison.CurrentCultureIgnoreCase);
                 if (filtering && !named && !ConnectionFolders.ConnectionsIn(_settings, sub).Any(Passes))
                 {
                     continue;
@@ -410,19 +483,21 @@ public sealed partial class ConnectionManagerView : UserControl
         {
             ShowDetail(); // the selected item was filtered out or removed
         }
+        RenderChips();
+        UpdateSideExtras();
     }
 
     private Control RowView(Row? row)
     {
-        var panel = new DockPanel { Height = 30, Background = Brushes.Transparent };
+        var panel = new DockPanel { MinHeight = 34, Background = Brushes.Transparent };
         if (row is null)
         {
             return panel;
         }
         var indent = new Border { Width = row.Depth * IndentWidth };
-        var chevron = new TextBlock { Width = 16, FontSize = 13, Opacity = 0.7, VerticalAlignment = VerticalAlignment.Center, TextAlignment = TextAlignment.Center };
+        var chevron = new TextBlock { Width = 16, FontSize = 12, Opacity = 0.6, VerticalAlignment = VerticalAlignment.Center, TextAlignment = TextAlignment.Center };
         Control icon;
-        var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 0) };
+        var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
         var trailing = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
         if (row.Folder is { } folder)
         {
@@ -434,37 +509,42 @@ public sealed partial class ConnectionManagerView : UserControl
                 e.Handled = true;
             };
             var color = ConnectionFolders.ColorOf(_settings, folder);
-            icon = GlyphIcon("MiFolderOpen", 16, color.Length > 0 ? new SolidColorBrush(Color.Parse(color)) : new SolidColorBrush(Color.Parse("#E0A526")));
-            text.Children.Add(new TextBlock { Text = ConnectionFolders.NameOf(folder), FontWeight = FontWeight.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis });
-            trailing.Children.Add(new Border
+            icon = GlyphIcon("MiFolderOpen", 15, color.Length > 0 ? new SolidColorBrush(Color.Parse(color)) : new SolidColorBrush(Color.Parse("#E0A526")));
+            text.Margin = new Thickness(6, 0, 0, 0);
+            text.Children.Add(ConnectionLook.Muted(new TextBlock { Text = ConnectionFolders.NameOf(folder), FontSize = 12.5, FontWeight = FontWeight.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis }));
+            trailing.Children.Add(ConnectionLook.Muted(new TextBlock
             {
-                Child = new TextBlock { Text = ConnectionFolders.ConnectionsIn(_settings, folder).Count.ToString(System.Globalization.CultureInfo.CurrentCulture), FontSize = 11 },
-                Padding = new Thickness(6, 0), CornerRadius = new CornerRadius(8), Opacity = 0.7,
-                Background = new SolidColorBrush(Color.FromArgb(40, 128, 128, 128)),
-            });
+                Text = ConnectionFolders.ConnectionsIn(_settings, folder).Count.ToString(System.Globalization.CultureInfo.CurrentCulture), FontSize = 11.5, Classes = { "noloc" },
+            }, 3));
         }
         else
         {
             var c = row.Connection!;
-            icon = BrandIcons.Create(c.Protocol, 18);
-            text.Children.Add(new TextBlock { Text = c.Name, TextTrimming = TextTrimming.CharacterEllipsis });
-            text.Children.Add(new TextBlock
+            chevron.Width = 4;
+            icon = ConnectionLook.Tile(c.Protocol, 32, _request.IsConnected(c));
+            text.Children.Add(new TextBlock { Text = c.Name, FontSize = 13.5, TextTrimming = TextTrimming.CharacterEllipsis });
+            text.Children.Add(ConnectionLook.Muted(new TextBlock
             {
-                Text = ConnectionChecks.Address(c),
-                FontSize = 11, Opacity = 0.6, TextTrimming = TextTrimming.CharacterEllipsis,
-            });
-            if (c.Favorite)
-            {
-                trailing.Children.Add(new TextBlock { Text = "★", Foreground = new SolidColorBrush(Color.Parse("#F0B232")) });
-            }
+                Text = ConnectionChecks.Address(c), FontFamily = ConnectionLook.Mono,
+                FontSize = 11.5, TextTrimming = TextTrimming.CharacterEllipsis,
+            }, 3));
             if (ConnectionChecks.Problem(c) is { } problem)
             {
                 // something that must be filled in is missing (or wrong): it cannot connect yet
-                var mark = new TextBlock { Text = "!", FontWeight = FontWeight.Bold, Foreground = new SolidColorBrush(Color.Parse("#ED4245")), Classes = { "noloc" } };
+                var mark = new TextBlock { Text = "!", FontWeight = FontWeight.Bold, Foreground = ConnectionLook.Problem, Classes = { "noloc" } };
                 ToolTip.SetTip(mark, Core.Localization.Localizer.T(problem));
                 trailing.Children.Add(mark);
             }
-            trailing.Children.Add(StatusDot(c));
+            if (_tests.TryGetValue(c, out var test) && !test.Ok)
+            {
+                var failed = new Avalonia.Controls.Shapes.Ellipse { Width = 7, Height = 7, Fill = ConnectionLook.Problem };
+                ToolTip.SetTip(failed, "The last test failed");
+                trailing.Children.Add(failed);
+            }
+            if (c.Favorite)
+            {
+                trailing.Children.Add(new TextBlock { Text = "★", Foreground = ConnectionLook.Star, Classes = { "noloc" } });
+            }
         }
         icon.VerticalAlignment = VerticalAlignment.Center;
         DockPanel.SetDock(indent, Dock.Left);
@@ -477,18 +557,40 @@ public sealed partial class ConnectionManagerView : UserControl
         return panel;
     }
 
-    /// <summary>Green: connected now; red: the last test failed; gray: not connected.</summary>
-    private Control StatusDot(RemoteConnection c)
+    /// <summary>The Home line above the list and the count under it follow the list.</summary>
+    private void UpdateSideExtras()
     {
-        var connected = _request.IsConnected(c);
-        var failed = _tests.TryGetValue(c, out var test) && !test.Ok;
-        var dot = new Avalonia.Controls.Shapes.Ellipse
+        var hasAny = _settings.Connections.Count > 0;
+        _home.IsVisible = hasAny && string.IsNullOrWhiteSpace(_search.Text);
+        _home.Child ??= HomeLine();
+        if (Selected is null && _wizard is null)
         {
-            Width = 8, Height = 8,
-            Fill = new SolidColorBrush(Color.Parse(connected ? "#3BA55D" : failed ? "#ED4245" : "#77797F")),
-        };
-        ToolTip.SetTip(dot, connected ? "Connected" : failed ? "The last test failed" : "Not connected");
-        return dot;
+            _home[!Border.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("ConnSelected");
+        }
+        else
+        {
+            _home.Background = Brushes.Transparent;
+        }
+        var connected = _settings.Connections.Count(_request.IsConnected);
+        _count.Text = hasAny
+            ? Core.Localization.Localizer.T("{0} saved").Replace("{0}", _settings.Connections.Count.ToString(System.Globalization.CultureInfo.CurrentCulture), StringComparison.Ordinal)
+              + (connected > 0 ? " · ● " + Core.Localization.Localizer.T("{0} connected").Replace("{0}", connected.ToString(System.Globalization.CultureInfo.CurrentCulture), StringComparison.Ordinal) : string.Empty)
+            : string.Empty;
+    }
+
+    private static Control HomeLine()
+    {
+        var tile = new Border { Width = 32, Height = 32, CornerRadius = new CornerRadius(8), Child = GlyphIcon("MiHome", 16) };
+        tile[!Border.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("ConnAccentSoft");
+        var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
+        text.Children.AddRange([
+            new TextBlock { Text = OverviewTitle, FontSize = 13.5 },
+            ConnectionLook.Muted(new TextBlock { Text = "Recently used and connect to an address", FontSize = 11.5 }, 3),
+        ]);
+        var row = new DockPanel();
+        DockPanel.SetDock(tile, Dock.Left);
+        row.Children.AddRange([tile, text]);
+        return row;
     }
 
     public void Toggle(string folder)
@@ -581,11 +683,50 @@ public sealed partial class ConnectionManagerView : UserControl
         }
     }
 
+    /// <summary>
+    /// Alt+Left / Alt+Right / Alt+Home: back, forward, the overview (also sent by the main window while the focus is
+    /// outside the manager). True when the key was one of them.
+    /// </summary>
+    public bool Navigate(KeyEventArgs e)
+    {
+        if (e.KeyModifiers != KeyModifiers.Alt)
+        {
+            return false;
+        }
+        switch (e.Key)
+        {
+            case Key.Left:
+                GoBack();
+                return true;
+            case Key.Right:
+                GoForward();
+                return true;
+            case Key.Home:
+                GoHome();
+                return true;
+            default:
+                return false;
+        }
+    }
+
     private void OnWindowKeyDown(object? sender, KeyEventArgs e)
     {
         var ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
+        if (Navigate(e))
+        {
+            e.Handled = true;
+            return;
+        }
         switch (e.Key)
         {
+            case Key.Escape when _wizard is not null:
+                _wizard.Close();
+                e.Handled = true;
+                break;
+            case Key.Escape when _renaming is not null:
+                StopRename(commit: false);
+                e.Handled = true;
+                break;
             case Key.Escape:
                 Close();
                 e.Handled = true;
@@ -616,16 +757,19 @@ public sealed partial class ConnectionManagerView : UserControl
 
     // ---------------------------------------------------------------- actions
 
-    /// <summary>The new connection wizard open now (tests).</summary>
-    public ConnectionWizard? Wizard { get; private set; }
+    private ConnectionWizard? _wizard;
+
+    /// <summary>The new connection pages shown now (tests).</summary>
+    public ConnectionWizard? Wizard => _wizard;
 
     /// <summary>
-    /// A new connection (user's request, 20 November 2026): the wizard over the manager, with the type, an address or a
-    /// folder given or not. OK adds the connection to its folder (by default the group of its type), shows it and saves.
+    /// A new connection (the user's template, 21 November 2026): the type and details pages in the right side, with the
+    /// type, an address or a folder given or not. Save adds the connection to its folder (by default the group of its
+    /// type), shows it and saves; Save and connect also opens it.
     /// </summary>
     public async Task<RemoteConnection?> NewConnectionAsync(RemoteProtocol? protocol = null, string? folder = null, string? address = null)
     {
-        if (Wizard is not null || HostWindow is not { } owner)
+        if (_wizard is not null)
         {
             return null;
         }
@@ -636,16 +780,39 @@ public sealed partial class ConnectionManagerView : UserControl
             Address = address,
             Advanced = AdvancedEditor,
         });
-        Wizard = wizard;
+        var done = new TaskCompletionSource();
+        wizard.Done += (_, _) => done.TrySetResult();
+        wizard.TitleChanged += (_, _) => UpdateNav();
+        Remember();
+        _wizard = wizard;
+        _wizardHost.Content = wizard;
+        _wizardHost.IsVisible = true;
+        _pages.Children[0].IsVisible = false;
+        _bottom.Content = null;
+        UpdateNav();
+        UpdateSideExtras();
         try
         {
-            await wizard.ShowDialog(owner);
+            await done.Task;
         }
         finally
         {
-            Wizard = null;
+            _wizard = null;
+            _wizardHost.Content = null;
+            _wizardHost.IsVisible = false;
+            _pages.Children[0].IsVisible = true;
         }
-        return wizard.Result is { } created ? Add(created) : null;
+        if (wizard.Result is not { } created)
+        {
+            ShowDetail();
+            return null;
+        }
+        Add(created);
+        if (wizard.ConnectAfterSave)
+        {
+            Connect([created], right: false);
+        }
+        return created;
     }
 
     /// <summary>A connection made by the wizard: into its folder (made when new), shown in the tree and saved.</summary>
@@ -799,6 +966,10 @@ public sealed partial class ConnectionManagerView : UserControl
             }
             return;
         }
+        foreach (var c in usable)
+        {
+            c.LastUsed = DateTime.Now; // the home page's recently used
+        }
         Result = new ConnectionManagerResult(usable, right);
         Close();
     }
@@ -817,6 +988,12 @@ public sealed partial class ConnectionManagerView : UserControl
         }
         StoreProxyPasswords();
         _request.Save();
+        if (Current is { } saved)
+        {
+            _snapshotOf = saved;
+            _snapshot = Snapshot(saved); // the bar of unsaved changes goes
+            UpdateDirty(saved);
+        }
         Toast("Saved");
     }
 
@@ -856,14 +1033,32 @@ public sealed partial class ConnectionManagerView : UserControl
 
     // ---------------------------------------------------------------- import
 
+    /// <summary>The programs whose connections can be imported (the More menu, the first start page).</summary>
+    private IEnumerable<(string Name, Func<Task> Import)> Importers()
+    {
+        yield return ("FileZilla", ImportFileZillaAsync);
+        yield return ("WinSCP", ImportWinScpAsync);
+        yield return ("PuTTY", ImportPuttyAsync);
+        yield return ("MobaXterm", ImportMobaXtermAsync);
+        yield return ("Connections file", ImportFileAsync);
+    }
+
+    private List<MenuItem> ImportItems() =>
+    [
+        MenuItem("FileZilla (sitemanager.xml)...", "connections.import", () => _ = ImportFileZillaAsync()),
+        MenuItem("WinSCP (WinSCP.ini or registry)...", "connections.import", () => _ = ImportWinScpAsync()),
+        MenuItem("PuTTY sessions...", "connections.import", () => _ = ImportPuttyAsync()),
+        MenuItem("MobaXterm sessions (.mxtsessions, MobaXterm.ini)...", "connections.import", () => _ = ImportMobaXtermAsync()),
+        MenuItem("Connections file of NextCommander...", "connections.import", () => _ = ImportFileAsync()),
+    ];
+
     private void ShowImportMenu()
     {
         var menu = new ContextMenu();
-        menu.Items.Add(MenuItem("FileZilla (sitemanager.xml)...", "connections.import", () => _ = ImportFileZillaAsync()));
-        menu.Items.Add(MenuItem("WinSCP (WinSCP.ini or registry)...", "connections.import", () => _ = ImportWinScpAsync()));
-        menu.Items.Add(MenuItem("PuTTY sessions...", "connections.import", () => _ = ImportPuttyAsync()));
-        menu.Items.Add(MenuItem("MobaXterm sessions (.mxtsessions, MobaXterm.ini)...", "connections.import", () => _ = ImportMobaXtermAsync()));
-        menu.Items.Add(MenuItem("Connections file of NextCommander...", "connections.import", () => _ = ImportFileAsync()));
+        foreach (var item in ImportItems())
+        {
+            menu.Items.Add(item);
+        }
         if (_request.PickSaveFile is not null)
         {
             menu.Items.Add(new Separator());
@@ -1203,7 +1398,7 @@ public sealed partial class ConnectionManagerView : UserControl
         return menu;
     }
 
-    private readonly TextBlock _toast = new() { FontSize = 12, Opacity = 0.8, Margin = new Thickness(2, 6, 0, 4), TextTrimming = TextTrimming.CharacterEllipsis, IsVisible = false };
+    private readonly TextBlock _toast = new() { FontSize = 12.5, Opacity = 0.85, Margin = new Thickness(0, 6, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis, IsVisible = false };
 
     private DispatcherTimerHandle? _toastTimer;
 

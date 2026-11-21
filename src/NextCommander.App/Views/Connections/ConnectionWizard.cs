@@ -11,7 +11,7 @@ using NextCommander.Core.Vfs;
 
 namespace NextCommander.App.Views.Connections;
 
-/// <summary>What the new connection wizard starts with.</summary>
+/// <summary>What the new connection pages start with.</summary>
 /// <param name="Settings">The settings (the names and folders already there).</param>
 /// <param name="Test">Connects and lists the start folder (the result text, or an exception).</param>
 /// <param name="PickFile">Chooses a file (the private key).</param>
@@ -20,7 +20,7 @@ public sealed record ConnectionWizardRequest(
     Func<RemoteConnection, CancellationToken, Task<string>> Test,
     Func<string, Task<string?>> PickFile)
 {
-    /// <summary>The type chosen already (Net > New connection, a card of the manager's start page): the wizard starts at the details.</summary>
+    /// <summary>The type chosen already (Net > New connection, a card of the home page): the pages start at the details.</summary>
     public RemoteProtocol? Protocol { get; init; }
 
     /// <summary>A pasted address ("sftp://user@server/folder"): its type and server are filled in.</summary>
@@ -33,70 +33,63 @@ public sealed record ConnectionWizardRequest(
     public Func<RemoteConnection, Action, Control>? Advanced { get; init; }
 }
 
-/// <summary>The steps of the new connection wizard.</summary>
+/// <summary>The steps of a new connection.</summary>
 public enum WizardStep
 {
     Type,
     Details,
-    Advanced,
-    Summary,
 }
 
 /// <summary>
-/// The new connection wizard (user's request, 20 November 2026): a modal window over the connection manager, in steps.
-/// 1 the type (searched, or a pasted address); 2 the details in cards (the connection's name and folder, the server,
-/// the login): a suggested name, the folder (the group of the type) and only what the type needs (server, port, user,
-/// key file, application id ...), marked when missing; 3 the editor's Advanced, Proxy (and remote desktop) options;
-/// 4 a summary of everything entered, in the order of the list (folder › connection, server, login, changed options).
-/// The step's title stays at the top, only its fields scroll. Test connects from any step after the type; OK on the
-/// summary gives the connection (<see cref="Result"/>); the manager adds it.
+/// A new connection, in the right side of the connection manager (the user's template, 21 November 2026): 1 the type
+/// (searched, or a pasted address that fills in the details); 2 the details: the name (suggested from the details and
+/// kept up to date until the user types one), the folder, the server and the login in cards (only what the type needs,
+/// marked when missing), the editor's advanced options folded under "More settings". The bar at the bottom: Test with
+/// its result, Cancel, Save, Save and connect. The manager adds the connection (<see cref="Result"/>) when it is done.
 /// </summary>
-public sealed class ConnectionWizard : Window
+public sealed class ConnectionWizard : UserControl
 {
-    private static readonly IBrush s_problem = new SolidColorBrush(Color.Parse("#ED4245"));
-    private static readonly IBrush s_ok = new SolidColorBrush(Color.Parse("#3BA55D"));
 
     private readonly ConnectionWizardRequest _request;
     private readonly ContentControl _page = new();
-    private readonly StackPanel _steps = new() { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(24, 16, 24, 0) };
-    private readonly Button _back = new() { Content = "‹ Back", Classes = { "tb" }, MinWidth = 88 };
-    private readonly Button _test = new() { Content = "Test", Classes = { "tb" }, MinWidth = 88 };
-    private readonly Button _ok = new() { Content = "Next ›", Classes = { "tb", "primary" }, MinWidth = 96, IsDefault = true };
-    private readonly ContentControl _header = new() { Margin = new Thickness(24, 14, 24, 0) };
+    private readonly ContentControl _bar = new();
+    private readonly Button _test = new() { Content = "Test connection", Classes = { "tb" } };
+    private readonly Button _save = new() { Content = "Save", Classes = { "tb" }, MinWidth = 80 };
+    private readonly Button _ok = new() { Content = "Save and connect", Classes = { "tb", "primary" }, IsDefault = true };
     private readonly List<(ConnectionField? Field, string Key, Control Input, TextBlock Message)> _marks = [];
-    private readonly TextBlock _testResult = new() { TextWrapping = TextWrapping.Wrap, FontFamily = new FontFamily("Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, monospace"), FontSize = 12, Classes = { "noloc" } };
-    private readonly Border _testBox = new() { IsVisible = false, Padding = new Thickness(10, 8), Margin = new Thickness(0, 14, 0, 0), CornerRadius = new CornerRadius(6), BorderThickness = new Thickness(1) };
+    private readonly TextBlock _testResult = new() { TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center, FontSize = 12.5, MaxWidth = 340, Margin = new Thickness(10, 0, 0, 0), Classes = { "noloc" } };
     private RemoteConnection? _connection;
     private TextBox? _name;
+    private TextBlock? _nameNote;
+    private Border? _suggested;
+    private bool _nameAuto = true;
+    private bool _settingName;
     private AutoCompleteBox? _folder;
+    private Expander? _more;
     private CancellationTokenSource? _testCts;
     private bool _checking;
     private WizardStep _step;
     private TextBox? _search;
     private StackPanel? _cards;
+    private string? _from;
 
     public ConnectionWizard(ConnectionWizardRequest request)
     {
         _request = request;
-        Title = "New connection";
-        // in proportion to its fields (user's request, 20 November 2026): a column of about 640, the cards three in a row
-        Width = 720;
-        Height = 640;
-        MinWidth = 560;
-        MinHeight = 460;
-        ShowInTaskbar = false;
-        WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        _testBox.Child = _testResult;
-        _back.Click += (_, _) => Back();
+        ConnectionLook.Apply(this);
         _test.Click += async (_, _) => await TestAsync();
-        _ok.Click += (_, _) => Next();
-        var cancel = new Button { Content = "Cancel", Classes = { "tb" }, MinWidth = 88, IsCancel = true };
-        cancel.Click += (_, _) => Close();
-        Content = BuildLayout(cancel);
-        Closed += (_, _) => _testCts?.Cancel();
+        _save.Click += (_, _) => Finish(connect: false);
+        _ok.Click += (_, _) => Finish(connect: true);
+        var scroll = new ScrollViewer { Content = _page, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled };
+        var root = new DockPanel();
+        DockPanel.SetDock(_bar, Dock.Bottom);
+        root.Children.AddRange([_bar, scroll]);
+        Content = root;
+        DetachedFromVisualTree += (_, _) => _testCts?.Cancel();
 
         if (request.Address is { } address && Parse(address) is { } parsed)
         {
+            _from = address.Trim();
             ShowDetails(parsed);
         }
         else if (request.Protocol is { } protocol)
@@ -109,11 +102,17 @@ public sealed class ConnectionWizard : Window
         }
     }
 
+    /// <summary>The pages are done: saved (<see cref="Result"/>) or cancelled (null).</summary>
+    public event EventHandler? Done;
+
     /// <summary>The step shown.</summary>
     public WizardStep Step => _step;
 
     /// <summary>The connection made (null: cancelled).</summary>
     public RemoteConnection? Result { get; private set; }
+
+    /// <summary>"Save and connect" was chosen: the manager connects after adding it.</summary>
+    public bool ConnectAfterSave { get; private set; }
 
     /// <summary>The connection being filled in (null: the type is not chosen yet).</summary>
     public RemoteConnection? Connection => _connection;
@@ -122,70 +121,22 @@ public sealed class ConnectionWizard : Window
     public IReadOnlyList<string> MarkedFields => [.. _marks.Where(m => m.Message.IsVisible).Select(m => m.Key)];
 
     /// <summary>The text of the last test (tests).</summary>
-    public string? TestText => _testBox.IsVisible ? _testResult.Text : null;
+    public string? TestText => string.IsNullOrEmpty(_testResult.Text) ? null : _testResult.Text;
 
-    // ---------------------------------------------------------------- layout
+    /// <summary>The title of the page for the manager's location bar ("New connection", the name being made).</summary>
+    public string Title => _connection is { } c && c.Name.Trim().Length > 0 ? c.Name.Trim() : Core.Localization.Localizer.T("New connection");
 
-    private Control BuildLayout(Button cancel)
+    /// <summary>The title changed (the name is typed).</summary>
+    public event EventHandler? TitleChanged;
+
+    /// <summary>Cancel: nothing is added.</summary>
+    public void Close()
     {
-        var right = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        right.Children.AddRange([_back, _test, _ok]);
-        var foot = new DockPanel { Margin = new Thickness(24, 12) };
-        DockPanel.SetDock(right, Dock.Right);
-        foot.Children.AddRange([right, cancel]);
-        var footBorder = new Border { Child = foot, BorderThickness = new Thickness(0, 1, 0, 0) };
-        footBorder[!Border.BackgroundProperty] = new DynamicResourceExtension("FmToolBarBrush");
-        footBorder[!Border.BorderBrushProperty] = new DynamicResourceExtension("SystemControlForegroundBaseLowBrush");
-        // the step's title (and the type search) stay; only the page under them scrolls
-        var scroll = new ScrollViewer { Content = _page, Padding = new Thickness(24, 4, 24, 20), HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled };
-        var root = new DockPanel();
-        DockPanel.SetDock(_steps, Dock.Top);
-        DockPanel.SetDock(_header, Dock.Top);
-        DockPanel.SetDock(footBorder, Dock.Bottom);
-        root.Children.AddRange([_steps, _header, footBorder, scroll]);
-        return root;
+        _testCts?.Cancel();
+        Done?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>"1 Type › 2 Details › 3 Advanced › 4 Summary", the current one stressed.</summary>
-    private void ShowSteps(WizardStep step)
-    {
-        _step = step;
-        _steps.Children.Clear();
-        WizardStep[] all = HasAdvanced ? [WizardStep.Type, WizardStep.Details, WizardStep.Advanced, WizardStep.Summary] : [WizardStep.Type, WizardStep.Details, WizardStep.Summary];
-        var current = Array.IndexOf(all, step);
-        string[] steps = [.. all.Select(s => s switch
-        {
-            WizardStep.Type => "Type",
-            WizardStep.Details => "Details",
-            WizardStep.Advanced => "Advanced",
-            _ => "Summary",
-        })];
-        for (var i = 0; i < steps.Length; i++)
-        {
-            if (i > 0)
-            {
-                _steps.Children.Add(new TextBlock { Text = "›", Opacity = 0.5, VerticalAlignment = VerticalAlignment.Center, Classes = { "noloc" } });
-            }
-            var digit = new TextBlock { Text = (i + 1).ToString(CultureInfo.InvariantCulture), FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Classes = { "noloc" } };
-            var number = new Border { Width = 20, Height = 20, CornerRadius = new CornerRadius(10), Child = digit };
-            if (i == current)
-            {
-                number.Background = new SolidColorBrush(Color.Parse("#4C8DFF"));
-                digit.Foreground = Brushes.White;
-            }
-            else
-            {
-                number.Background = new SolidColorBrush(Color.FromArgb(48, 128, 128, 128));
-            }
-            _steps.Children.AddRange([number, new TextBlock
-            {
-                Text = steps[i],
-                VerticalAlignment = VerticalAlignment.Center,
-                FontWeight = i == current ? FontWeight.SemiBold : FontWeight.Normal,
-                Opacity = i == current ? 1 : 0.6,
-            }]);
-        }
-    }
+    private static StackPanel Page() => new() { MaxWidth = 900, HorizontalAlignment = HorizontalAlignment.Stretch, Margin = new Thickness(32, 22, 32, 28) };
 
     // ---------------------------------------------------------------- the type
 
@@ -195,15 +146,14 @@ public sealed class ConnectionWizard : Window
         _testCts?.Cancel();
         _connection = null;
         _marks.Clear();
-        ShowSteps(WizardStep.Type);
-        _back.IsVisible = _test.IsVisible = false;
-        _ok.Content = "Next ›";
-        _ok.IsEnabled = false;
-        var panel = new StackPanel { Margin = new Thickness(0, 0, 0, 6) };
-        panel.Children.Add(new TextBlock { Text = "Choose the type of the connection", FontSize = 20, FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 0, 0, 12) });
+        _step = WizardStep.Type;
+        var panel = Page();
+        panel.Children.Add(ConnectionLook.Steps(0, null));
+        panel.Children.Add(new TextBlock { Text = "New connection", FontSize = 24, FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 0, 0, 4) });
+        panel.Children.Add(ConnectionLook.Muted(new TextBlock { Text = "Pick what you are connecting to. Have an address? Paste it and the details are filled in for you.", FontSize = 13.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 18) }));
 
         // the search (name, description, group) and the address, side by side
-        _search = new TextBox { PlaceholderText = "Search the types (sftp, cloud, windows ...)", MinHeight = 34, VerticalContentAlignment = VerticalAlignment.Center };
+        _search = new TextBox { PlaceholderText = "Search types: sftp, cloud, windows ...", MinHeight = 40, VerticalContentAlignment = VerticalAlignment.Center };
         _search.InnerLeftContent = new TextBlock { Text = "⌕", FontSize = 15, Opacity = 0.6, Margin = new Thickness(10, 0, 2, 0), VerticalAlignment = VerticalAlignment.Center, Classes = { "noloc" } };
         Avalonia.Automation.AutomationProperties.SetName(_search, "Search the types");
         _search.TextChanged += (_, _) => FillCards();
@@ -216,33 +166,79 @@ public sealed class ConnectionWizard : Window
                 e.Handled = true;
             }
         };
-        var address = new TextBox { PlaceholderText = "or paste an address: sftp://user@host/dir", MinHeight = 34, VerticalContentAlignment = VerticalAlignment.Center };
-        Avalonia.Automation.AutomationProperties.SetName(address, "Address");
-        var addressProblem = new TextBlock { Foreground = s_problem, FontSize = 11, IsVisible = false, Margin = new Thickness(0, 4, 0, 0) };
-        address.KeyDown += (_, e) =>
-        {
-            if (e.Key != Key.Enter)
-            {
-                return;
-            }
-            e.Handled = true;
-            if (!ApplyAddress(address.Text))
-            {
-                addressProblem.Text = Core.Localization.Localizer.T("Not an address of a connection type.");
-                addressProblem.IsVisible = true;
-            }
-        };
-        var boxes = new Grid { ColumnDefinitions = new ColumnDefinitions("*,12,*") };
-        var addressColumn = new StackPanel();
-        addressColumn.Children.AddRange([address, addressProblem]);
-        Grid.SetColumn(addressColumn, 2);
-        boxes.Children.AddRange([_search, addressColumn]);
-        panel.Children.Add(boxes);
-        _header.Content = panel;
+        var detect = new TextBlock { FontSize = 12.5, Margin = new Thickness(0, 6, 0, 0), TextWrapping = TextWrapping.Wrap, MinHeight = 18 };
+        var address = AddressBox(detect, ApplyAddress);
+        var boxes = new Grid { ColumnDefinitions = new ColumnDefinitions("*,10,*") };
+        Grid.SetColumn(address, 2);
+        boxes.Children.AddRange([_search, address]);
+        panel.Children.AddRange([boxes, detect]);
         _cards = new StackPanel();
         FillCards();
-        _page.Content = _cards;
+        panel.Children.Add(_cards);
+        _page.Content = panel;
+
+        var cancel = new Button { Content = "Cancel", Classes = { "tb" }, MinWidth = 80 };
+        cancel.Click += (_, _) => Close();
+        var hint = ConnectionLook.Muted(new TextBlock { Text = "Click a type to continue", FontSize = 12.5, VerticalAlignment = VerticalAlignment.Center }, 3);
+        _bar.Content = ConnectionLook.BottomBar(cancel, hint);
+        TitleChanged?.Invoke(this, EventArgs.Empty);
         Avalonia.Threading.Dispatcher.UIThread.Post(() => _search?.Focus(), Avalonia.Threading.DispatcherPriority.Loaded);
+    }
+
+    /// <summary>
+    /// A box to paste an address into: what it is shows under it as it is typed ("SFTP connection to host — press Enter"),
+    /// Enter goes on with it.
+    /// </summary>
+    internal static TextBox AddressBox(TextBlock detect, Func<string?, bool> apply, RemoteConnection? sample = null)
+    {
+        _ = sample;
+        var address = new TextBox { PlaceholderText = Core.Localization.Localizer.T("Paste an address: sftp://user@host/dir, smb://nas/share, https://..."), MinHeight = 40, VerticalContentAlignment = VerticalAlignment.Center, Classes = { "noloc" } };
+        address.InnerLeftContent = new TextBlock { Text = "🔗", FontSize = 12, Opacity = 0.6, Margin = new Thickness(10, 0, 2, 0), VerticalAlignment = VerticalAlignment.Center, Classes = { "noloc" } };
+        Avalonia.Automation.AutomationProperties.SetName(address, "Address");
+        address.TextChanged += (_, _) =>
+        {
+            var text = address.Text?.Trim() ?? string.Empty;
+            if (text.Length == 0)
+            {
+                detect.Text = string.Empty;
+                return;
+            }
+            if (Describe(text) is { } what)
+            {
+                ConnectionLook.Tint(detect, "ok");
+                detect.Text = "✓ " + Core.Localization.Localizer.T("{0} connection to {1} — press Enter to continue")
+                    .Replace("{0}", what.Type, StringComparison.Ordinal).Replace("{1}", what.Host, StringComparison.Ordinal);
+            }
+            else
+            {
+                ConnectionLook.Tint(detect, "problem");
+                detect.Text = Core.Localization.Localizer.T("Not an address. Try sftp://user@host/dir, smb://server/share or https://...");
+            }
+        };
+        address.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                if (!apply(address.Text))
+                {
+                    ConnectionLook.Tint(detect, "problem");
+                    detect.Text = Core.Localization.Localizer.T("Not an address of a connection type.");
+                }
+            }
+        };
+        return address;
+    }
+
+    /// <summary>The type and server of an address ("SFTP", "web.example.com"); null when it is no connection's address.</summary>
+    internal static (string Type, string Host)? Describe(string text)
+    {
+        if (!VfsPath.TryParse(text.Trim(), out var path) || path!.IsLocal || RemoteProtocols.FromScheme(path.Scheme) is not { } type)
+        {
+            return null;
+        }
+        var parsed = RemoteConnection.FromAuthority(path.Scheme, path.Authority);
+        return (ConnectionManagerView.TypeName(type.Protocol), parsed.Host.Length > 0 ? parsed.Host : path.Authority);
     }
 
     /// <summary>Searches the types (tests).</summary>
@@ -275,36 +271,51 @@ public sealed class ConnectionWizard : Window
         }
         _cards.Children.Clear();
         var shown = Shown();
-        foreach (var group in ConnectionManagerView.Types.Where(t => shown.Contains(t.Protocol)).GroupBy(t => t.Group))
+        foreach (var group in ConnectionManagerView.Types.Where(t => shown.Contains(t.Protocol)).GroupBy(t => ConnectionLook.CategoryOf(t.Protocol)))
         {
-            _cards.Children.Add(new TextBlock { Text = Core.Localization.Localizer.T(group.Key).ToUpper(CultureInfo.CurrentCulture), FontSize = 11, Opacity = 0.6, Margin = new Thickness(0, 18, 0, 10), Classes = { "noloc" } });
-            var cards = new WrapPanel();
+            _cards.Children.Add(ConnectionLook.GroupTitle(Core.Localization.Localizer.T(ConnectionLook.NameOf(group.Key))));
+            var cards = new CardGrid { MinColumnWidth = 220 };
             foreach (var type in group)
             {
-                cards.Children.Add(TypeCard(type.Protocol, type.Name, type.Description));
+                cards.Children.Add(TypeCard(type.Protocol, type.Name, type.Description, ChooseType));
             }
             _cards.Children.Add(cards);
         }
         if (shown.Count == 0)
         {
-            _cards.Children.Add(new TextBlock { Text = "No connection type matches.", Opacity = 0.7, Margin = new Thickness(0, 24, 0, 0) });
+            _cards.Children.Add(ConnectionLook.Muted(new TextBlock { Text = "No connection type matches.", Margin = new Thickness(0, 24, 0, 0) }));
         }
     }
 
-    private Button TypeCard(RemoteProtocol protocol, string name, string description)
+    /// <summary>A type's card: its tile, name ("Common" for the usual ones) and a line about it.</summary>
+    internal static Button TypeCard(RemoteProtocol protocol, string name, string description, Action<RemoteProtocol> choose, bool showCommon = true)
     {
-        var top = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        top.Children.AddRange([BrandIcons.Create(protocol, 18), new TextBlock { Text = name, FontWeight = FontWeight.SemiBold, Classes = { "noloc" }, TextTrimming = TextTrimming.CharacterEllipsis }]);
-        var content = new StackPanel { Spacing = 4 };
-        content.Children.AddRange([top, new TextBlock { Text = Core.Localization.Localizer.T(description), FontSize = 11, Opacity = 0.65, TextTrimming = TextTrimming.CharacterEllipsis, Classes = { "noloc" } }]);
-        var card = new Button { Content = content, Width = 200, Margin = new Thickness(0, 0, 10, 10), Padding = new Thickness(12), HorizontalContentAlignment = HorizontalAlignment.Left };
+        var title = new StackPanel { Orientation = Orientation.Horizontal };
+        title.Children.Add(new TextBlock { Text = name, FontWeight = FontWeight.SemiBold, FontSize = 13.5, Classes = { "noloc" } });
+        if (showCommon && ConnectionLook.IsCommon(protocol))
+        {
+            title.Children.Add(ConnectionLook.Badge("Common"));
+        }
+        var text = new StackPanel { Spacing = 2 };
+        text.Children.AddRange([title, ConnectionLook.Muted(new TextBlock { Text = Core.Localization.Localizer.T(description), FontSize = 12, TextWrapping = TextWrapping.Wrap, Classes = { "noloc" } })]);
+        var tile = ConnectionLook.Tile(protocol);
+        tile.Margin = new Thickness(0, 0, 12, 0);
+        tile.VerticalAlignment = VerticalAlignment.Top;
+        var row = new DockPanel();
+        DockPanel.SetDock(tile, Dock.Left);
+        row.Children.AddRange([tile, text]);
+        var card = new Button { Content = row, Padding = new Thickness(12), Classes = { "conncard" } };
         ToolTip.SetTip(card, Core.Localization.Localizer.T(description));
-        card.Click += (_, _) => ChooseType(protocol);
+        card.Click += (_, _) => choose(protocol);
         return card;
     }
 
     /// <summary>A type is chosen: the details of a new connection of it.</summary>
-    public void ChooseType(RemoteProtocol protocol) => ShowDetails(NewOf(protocol));
+    public void ChooseType(RemoteProtocol protocol)
+    {
+        _from = null;
+        ShowDetails(NewOf(protocol));
+    }
 
     /// <summary>A pasted address: its type and server; false when it is no connection's address.</summary>
     public bool ApplyAddress(string? text)
@@ -313,6 +324,7 @@ public sealed class ConnectionWizard : Window
         {
             return false;
         }
+        _from = text!.Trim();
         ShowDetails(connection);
         return true;
     }
@@ -393,13 +405,67 @@ public sealed class ConnectionWizard : Window
         _connection = c;
         _marks.Clear();
         _checking = false;
-        _testBox.IsVisible = false;
-        StepOf(WizardStep.Details, c);
+        _nameAuto = true;
+        _testResult.Text = string.Empty;
+        _step = WizardStep.Details;
+        var type = ConnectionManagerView.Types.First(t => t.Protocol == c.Protocol);
         var panel = Page();
+        panel.Children.Add(ConnectionLook.Steps(1, ShowTypes));
 
-        // the connection: its name (suggested) and folder (the group of the type)
-        _name = Text(c.Name, v => c.Name = v, "e.g. Production web server");
+        // the header: the type's tile, "New SFTP connection", Change type
+        var tile = ConnectionLook.Tile(c.Protocol, 48);
+        tile.Margin = new Thickness(0, 0, 14, 0);
+        var change = new Button { Content = "Change type", Classes = { "tb", "ghost" }, Padding = new Thickness(6, 0), Height = 26, MinHeight = 26, Margin = new Thickness(-6, 2, 0, 0), FontSize = 12.5, HorizontalAlignment = HorizontalAlignment.Left };
+        change[!ForegroundProperty] = new DynamicResourceExtension("ConnAccent");
+        change.Click += (_, _) => ShowTypes();
+        var titles = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        titles.Children.AddRange([
+            new TextBlock { Text = Core.Localization.Localizer.T("New {0} connection").Replace("{0}", type.Name, StringComparison.Ordinal), FontSize = 22, FontWeight = FontWeight.SemiBold, Classes = { "noloc" } },
+            change,
+        ]);
+        var head = new DockPanel { Margin = new Thickness(0, 0, 0, 16) };
+        DockPanel.SetDock(tile, Dock.Left);
+        head.Children.AddRange([tile, titles]);
+        panel.Children.Add(head);
+        if (_from is { } from)
+        {
+            panel.Children.Add(ConnectionLook.Banner(Core.Localization.Localizer.T("Filled in from {0}. Check the details and add the password.").Replace("{0}", from, StringComparison.Ordinal), "ok"));
+        }
+        if (ConnectionLook.IsUnencrypted(c.Protocol))
+        {
+            panel.Children.Add(ConnectionLook.Banner(Core.Localization.Localizer.T("This type is not encrypted: the password travels as readable text. Use an encrypted type if the server offers one."), "problem"));
+        }
+        if (ConnectionManagerView.NoteOf(c) is { Length: > 0 } note)
+        {
+            panel.Children.Add(ConnectionLook.Banner(note));
+        }
+
+        // the name (suggested and kept up to date until the user types one) and the folder
+        _name = new TextBox { Text = c.Name, FontSize = 16, FontWeight = FontWeight.SemiBold, MinHeight = 40, VerticalContentAlignment = VerticalAlignment.Center, Classes = { "noloc" } };
         Avalonia.Automation.AutomationProperties.SetName(_name, "Connection name");
+        _name.TextChanged += (_, _) =>
+        {
+            if (_settingName)
+            {
+                return;
+            }
+            c.Name = _name.Text ?? string.Empty;
+            if ((_name.Text ?? string.Empty) != SuggestName(c))
+            {
+                _nameAuto = false;
+            }
+            UpdateNameNote();
+            Recheck();
+            TitleChanged?.Invoke(this, EventArgs.Empty);
+        };
+        _nameNote = ConnectionLook.Muted(new TextBlock { FontSize = 11.5, TextWrapping = TextWrapping.Wrap }, 3);
+        _suggested = ConnectionLook.Badge("Suggested");
+        var nameCaption = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(1, 0, 0, 1) };
+        nameCaption.Children.AddRange([ConnectionLook.Muted(new TextBlock { Text = "Connection name", FontSize = 12.5, VerticalAlignment = VerticalAlignment.Center }), _suggested]);
+        var nameMessage = ConnectionLook.Red(new TextBlock { FontSize = 11.5, TextWrapping = TextWrapping.Wrap, IsVisible = false });
+        _marks.Add((null, "Name", _name, nameMessage));
+        var nameColumn = new StackPanel { Spacing = 4 };
+        nameColumn.Children.AddRange([nameCaption, _name, nameMessage, _nameNote]);
         _folder = new AutoCompleteBox
         {
             ItemsSource = ConnectionFolders.All(_request.Settings).ToList(),
@@ -407,35 +473,61 @@ public sealed class ConnectionWizard : Window
             FilterMode = AutoCompleteFilterMode.StartsWith,
             MinimumPrefixLength = 0,
             Classes = { "noloc" },
+            MinHeight = 40,
         };
         Avalonia.Automation.AutomationProperties.SetName(_folder, "Folder");
         _folder.TextChanged += (_, _) => c.Folder = (_folder.Text ?? string.Empty).Trim().Trim('/');
-        panel.Children.Add(Section("Connection",
-            Field("Connection name", _name, null, "Name", required: true),
-            Field("Folder", _folder, null, "Folder", required: false, note: "The list shows the connection in this folder; a new one is made. Subfolders with /.")));
+        ToolTip.SetTip(_folder, "The list shows the connection in this folder; a new one is made. Subfolders with /.");
+        var folderColumn = new StackPanel { Spacing = 4 };
+        folderColumn.Children.AddRange([ConnectionLook.Muted(new TextBlock { Text = "Folder", FontSize = 12.5, Margin = new Thickness(1, 1, 0, 1) }), _folder]);
+        var nameRow = new Grid { ColumnDefinitions = new ColumnDefinitions("2*,14,*") };
+        Grid.SetColumn(folderColumn, 2);
+        nameRow.Children.AddRange([nameColumn, folderColumn]);
+        var nameCard = ConnectionLook.Card(nameRow);
+        nameCard[!Border.BorderBrushProperty] = new DynamicResourceExtension("ConnAccentLine");
+        nameCard[!Border.BackgroundProperty] = new DynamicResourceExtension("ConnAccentCard");
+        panel.Children.Add(nameCard);
+        UpdateNameNote();
 
         // where it goes and how it logs in: only what the type needs
         var (server, login) = FieldsOf(c);
         if (server.Count > 0)
         {
-            panel.Children.Add(Section(c.Protocol == RemoteProtocol.Serial ? "Device" : "Server", [.. server]));
+            panel.Children.Add(ConnectionLook.Section(Core.Localization.Localizer.T(c.Protocol == RemoteProtocol.Serial ? "Device" : "Connection"), Rows(server)));
         }
         if (Password(c) is { } password)
         {
-            login.Add(new TextBlock { Text = password, FontSize = 12, Opacity = 0.7, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 4) });
+            login.Add(ConnectionLook.Muted(new TextBlock { Text = password, FontSize = 12, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 2) }, 3));
         }
         if (login.Count > 0)
         {
-            panel.Children.Add(Section("Login", [.. login]));
-        }
-        if (ConnectionManagerView.NoteOf(c) is { Length: > 0 } note)
-        {
-            var noteBox = new Border { Child = new TextBlock { Text = note, TextWrapping = TextWrapping.Wrap, FontSize = 12, Opacity = 0.85 }, Padding = new Thickness(12, 10), CornerRadius = new CornerRadius(6), Margin = new Thickness(0, 0, 0, 14) };
-            noteBox[!Border.BackgroundProperty] = new DynamicResourceExtension("SystemControlBackgroundListLowBrush");
-            panel.Children.Add(noteBox);
+            panel.Children.Add(ConnectionLook.Section(Core.Localization.Localizer.T("Login"), Rows(login)));
         }
 
-        _page.Content = WithTestBox(panel);
+        // the editor's advanced options, folded
+        if (_request.Advanced is { } build)
+        {
+            var heading = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+            heading.Children.AddRange([
+                new TextBlock { Text = "More settings", FontWeight = FontWeight.SemiBold, FontSize = 13, VerticalAlignment = VerticalAlignment.Center },
+                ConnectionLook.Muted(new TextBlock { Text = "Timeouts, a jump host, encryption, the proxy ... (optional)", FontSize = 12, VerticalAlignment = VerticalAlignment.Center }, 3),
+            ]);
+            var holder = new ContentControl();
+            void Build() => holder.Content = build(c, Build);
+            Build();
+            _more = new Expander { Header = heading, Content = holder, Margin = new Thickness(0, 0, 0, 14), Classes = { "connmore" } };
+            panel.Children.Add(_more);
+        }
+        _page.Content = panel;
+
+        var cancel = new Button { Content = "Cancel", Classes = { "tb" }, MinWidth = 80 };
+        cancel.Click += (_, _) => Close();
+        var left = new StackPanel { Orientation = Orientation.Horizontal };
+        left.Children.AddRange([ConnectionLook.Detached(_test), ConnectionLook.Detached(_testResult)]);
+        var right = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        right.Children.AddRange([cancel, ConnectionLook.Detached(_save), ConnectionLook.Detached(_ok)]);
+        _bar.Content = ConnectionLook.BottomBar(left, right);
+        TitleChanged?.Invoke(this, EventArgs.Empty);
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             _name.Focus();
@@ -443,312 +535,59 @@ public sealed class ConnectionWizard : Window
         }, Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
-    /// <summary>The steps after the type: the step, its header (icon, type, description) and the buttons.</summary>
-    private void StepOf(WizardStep step, RemoteConnection c)
+    /// <summary>The fields of a card one under the other.</summary>
+    private static StackPanel Rows(IEnumerable<Control> rows)
     {
-        ShowSteps(step);
-        _back.IsVisible = _test.IsVisible = true;
-        _ok.IsEnabled = true;
-        _ok.Content = step == WizardStep.Summary ? "OK" : "Next ›";
-        var type = ConnectionManagerView.Types.First(t => t.Protocol == c.Protocol);
-        var icon = new Viewbox { Width = 40, Height = 40, Child = BrandIcons.Create(c.Protocol, 40), Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
-        var titles = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        titles.Children.AddRange([
-            new TextBlock { Text = type.Name, FontSize = 20, FontWeight = FontWeight.SemiBold, Classes = { "noloc" } },
-            new TextBlock { Text = Core.Localization.Localizer.T(type.Description), Opacity = 0.65, TextWrapping = TextWrapping.Wrap, Classes = { "noloc" } },
-        ]);
-        var head = new DockPanel { Margin = new Thickness(0, 0, 0, 10), MaxWidth = 640, HorizontalAlignment = HorizontalAlignment.Stretch };
-        DockPanel.SetDock(icon, Dock.Left);
-        head.Children.AddRange([icon, titles]);
-        _header.Content = head;
+        var stack = new StackPanel();
+        stack.Children.AddRange(rows);
+        return stack;
     }
 
-    private static StackPanel Page() => new() { MaxWidth = 640, HorizontalAlignment = HorizontalAlignment.Stretch, Margin = new Thickness(0, 6, 0, 0) };
-
-    /// <summary>The line of the last test under a page (one box, moved from the page before).</summary>
-    private StackPanel WithTestBox(StackPanel panel)
+    /// <summary>The line under the name: suggested and kept up to date, or the user's own (back to the suggestion).</summary>
+    private void UpdateNameNote()
     {
-        if (_testBox.Parent is Panel old)
+        if (_connection is not { } c || _nameNote is null || _suggested is null)
         {
-            old.Children.Remove(_testBox);
+            return;
         }
-        panel.Children.Add(_testBox);
-        return panel;
+        _suggested.IsVisible = _nameAuto;
+        _nameNote.Text = Core.Localization.Localizer.T(_nameAuto
+            ? "A name from the details below, kept up to date. Just type to choose your own."
+            : c.Name.Trim().Length == 0 ? "Empty: it will be saved under the suggested name." : "Your own name.");
     }
 
-    private bool HasAdvanced => _request.Advanced is not null;
-
-    /// <summary>Next ›: the details (checked) › the advanced options › the summary; OK on the summary finishes.</summary>
-    public void Next()
+    /// <summary>A detail changed: a suggested name follows it.</summary>
+    private void FollowName()
     {
-        switch (_step)
+        if (!_nameAuto || _connection is not { } c || _name is null)
         {
-            case WizardStep.Details when Check():
-                if (HasAdvanced)
-                {
-                    ShowAdvanced();
-                }
-                else
-                {
-                    ShowSummary();
-                }
-                break;
-            case WizardStep.Advanced when Check():
-                ShowSummary();
-                break;
-            case WizardStep.Summary:
-                Finish();
-                break;
+            return;
         }
+        var suggestion = SuggestName(c);
+        if (suggestion == c.Name)
+        {
+            return;
+        }
+        c.Name = suggestion;
+        _settingName = true;
+        try
+        {
+            _name.Text = suggestion;
+        }
+        finally
+        {
+            _settingName = false;
+        }
+        TitleChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>‹ Back: one step back; from the details to the types (a new type starts again).</summary>
+    /// <summary>Back: from the details to the types (a new type starts again).</summary>
     public void Back()
     {
-        if (_connection is not { } c)
+        if (_step == WizardStep.Details)
         {
-            return;
+            ShowTypes();
         }
-        switch (_step)
-        {
-            case WizardStep.Details:
-                ShowTypes();
-                break;
-            case WizardStep.Advanced:
-                ShowDetails(c);
-                break;
-            case WizardStep.Summary when HasAdvanced:
-                ShowAdvanced();
-                break;
-            case WizardStep.Summary:
-                ShowDetails(c);
-                break;
-        }
-    }
-
-    /// <summary>The third step: the editor's Advanced, Proxy (and remote desktop) tabs of this connection.</summary>
-    private void ShowAdvanced()
-    {
-        if (_connection is not { } c || _request.Advanced is not { } build)
-        {
-            return;
-        }
-        StepOf(WizardStep.Advanced, c);
-        var panel = Page();
-        panel.Children.Add(new TextBlock { Text = "Timeouts, a jump host, encryption, the proxy ... (all of them are in the editor later too).", FontSize = 12, Opacity = 0.7, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(2, 0, 0, 10) });
-        panel.Children.Add(Card(new Border { Child = build(c, ShowAdvanced), Padding = new Thickness(16, 8, 2, 8) }));
-        _page.Content = WithTestBox(panel);
-    }
-
-    /// <summary>The last step: what was entered, as the list will hold it (folder › name, server, login, the changed options).</summary>
-    private void ShowSummary()
-    {
-        if (_connection is not { } c)
-        {
-            return;
-        }
-        StepOf(WizardStep.Summary, c);
-        var panel = Page();
-        panel.Children.Add(new TextBlock { Text = "Check the details; OK adds the connection.", FontSize = 12, Opacity = 0.7, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(2, 0, 0, 10) });
-
-        // where it goes: the folders of the list down to the connection
-        var place = new StackPanel { Margin = new Thickness(16, 12) };
-        var parts = c.Folder.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        for (var i = 0; i <= parts.Length; i++)
-        {
-            var last = i == parts.Length;
-            var line = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(i * 20, 0, 0, 4) };
-            if (i > 0)
-            {
-                line.Children.Add(new TextBlock { Text = "└", Opacity = 0.4, Classes = { "noloc" } });
-            }
-            line.Children.Add(last
-                ? new Viewbox { Width = 16, Height = 16, Child = BrandIcons.Create(c.Protocol, 16) }
-                : new TextBlock { Text = "📁", FontSize = 13, Classes = { "noloc" } });
-            line.Children.Add(new TextBlock { Text = last ? c.Name : parts[i], FontWeight = last ? FontWeight.SemiBold : FontWeight.Normal, Classes = { "noloc" } });
-            place.Children.Add(line);
-        }
-        place.Children.Add(new TextBlock { Text = ConnectionChecks.Address(c), FontFamily = _testResult.FontFamily, FontSize = 12, Opacity = 0.7, Margin = new Thickness(0, 6, 0, 0), TextWrapping = TextWrapping.Wrap, Classes = { "noloc" } });
-        panel.Children.Add(Titled("Connection", Card(place)));
-
-        var (server, login) = SummaryOf(c);
-        if (server.Count > 0)
-        {
-            panel.Children.Add(Titled(c.Protocol == RemoteProtocol.Serial ? "Device" : "Server", Rows(server)));
-        }
-        if (Password(c) is { } password)
-        {
-            login.Add(("Password", password));
-        }
-        if (login.Count > 0)
-        {
-            panel.Children.Add(Titled("Login", Rows(login)));
-        }
-        if (HasAdvanced)
-        {
-            var changed = ChangedOptions(c);
-            panel.Children.Add(Titled("Advanced", changed.Count > 0 ? Rows(changed)
-                : Card(new TextBlock { Text = "The defaults of the type.", Opacity = 0.7, Margin = new Thickness(16, 12) })));
-        }
-        _page.Content = WithTestBox(panel);
-    }
-
-    private static StackPanel Titled(string title, Control card)
-    {
-        var section = new StackPanel();
-        section.Children.AddRange([new TextBlock { Text = title, FontSize = 13, FontWeight = FontWeight.SemiBold, Opacity = 0.8, Margin = new Thickness(2, 0, 0, 6) }, card]);
-        return section;
-    }
-
-    /// <summary>Caption and value rows in a card (an empty value: a dash).</summary>
-    private static Border Rows(IEnumerable<(string Caption, string? Value)> rows)
-    {
-        var stack = new StackPanel { Margin = new Thickness(16, 10, 16, 6) };
-        foreach (var (caption, value) in rows)
-        {
-            var row = new Grid { ColumnDefinitions = new ColumnDefinitions("160,*"), Margin = new Thickness(0, 0, 0, 6) };
-            var text = new TextBlock { Text = string.IsNullOrWhiteSpace(value) ? "—" : value, TextWrapping = TextWrapping.Wrap, Classes = { "noloc" } };
-            Grid.SetColumn(text, 1);
-            row.Children.AddRange([new TextBlock { Text = caption, Opacity = 0.7, TextWrapping = TextWrapping.Wrap, MaxWidth = 150, HorizontalAlignment = HorizontalAlignment.Left }, text]);
-            stack.Children.Add(row);
-        }
-        return Card(stack);
-    }
-
-    /// <summary>The server and login values of the summary: the fields of the details step, as entered.</summary>
-    private (List<(string, string?)> Server, List<(string, string?)> Login) SummaryOf(RemoteConnection c)
-    {
-        var server = new List<(string, string?)>();
-        var login = new List<(string, string?)>();
-        if (c.IsCloudDrive)
-        {
-            login.Add(("Application (client) id", c.ClientId));
-            if (c.Protocol == RemoteProtocol.Box)
-            {
-                login.Add(("Client secret", string.IsNullOrEmpty(c.ClientSecret) ? null : "••••••••"));
-            }
-            return (server, login);
-        }
-        if (c.Protocol == RemoteProtocol.Serial)
-        {
-            server.Add(("Serial port", c.Host));
-            return (server, login);
-        }
-        server.Add((c.Protocol == RemoteProtocol.S3 ? "Endpoint" : "Server", c.Host));
-        if (c.Protocol is RemoteProtocol.AzureBlob or RemoteProtocol.AzureFiles)
-        {
-            login.Add(("Storage account", c.User));
-        }
-        else
-        {
-            server.Add(("Port", c.Port > 0 ? c.Port.ToString(CultureInfo.InvariantCulture)
-                : Core.Localization.Localizer.T("default") + " " + RemoteConnection.DefaultPort(c.Protocol)));
-            if (c.Protocol == RemoteProtocol.S3)
-            {
-                server.Add(("Region", c.Region));
-                login.Add(("Access key id", c.User));
-            }
-            else if (SharedCredential.Of(c, _request.Settings) is { } shared)
-            {
-                login.Add(("Login", shared.Name));
-                login.Add(("User", c.User));
-            }
-            else if (c.Protocol != RemoteProtocol.Link)
-            {
-                login.Add(("User", c.User));
-            }
-        }
-        if (IsSsh(c.Protocol) && SharedCredential.Of(c, _request.Settings) is null)
-        {
-            login.Add(("Private key (optional)", c.KeyFile));
-        }
-        if (HasStartFolder(c))
-        {
-            server.Add((c.Protocol == RemoteProtocol.S3 ? "Bucket or start folder (optional)" : "Start folder (optional)", c.InitialPath));
-        }
-        return (server, login);
-    }
-
-    /// <summary>The options of the advanced step that differ from a new connection of the type.</summary>
-    private List<(string, string?)> ChangedOptions(RemoteConnection c)
-    {
-        var fresh = NewOf(c.Protocol);
-        string[] shown = [nameof(RemoteConnection.Name), nameof(RemoteConnection.Folder), nameof(RemoteConnection.Host), nameof(RemoteConnection.Port),
-            nameof(RemoteConnection.User), nameof(RemoteConnection.KeyFile), nameof(RemoteConnection.InitialPath), nameof(RemoteConnection.Region),
-            nameof(RemoteConnection.ClientId), nameof(RemoteConnection.ClientSecret), nameof(RemoteConnection.Protocol), nameof(RemoteConnection.CredentialId),
-            nameof(RemoteConnection.SavePassword), nameof(RemoteConnection.UseSshAgent)];
-        var changed = new List<(string, string?)>();
-        var others = 0;
-        foreach (var property in typeof(RemoteConnection).GetProperties())
-        {
-            if (!property.CanWrite || !property.CanRead || property.GetIndexParameters().Length > 0 || shown.Contains(property.Name))
-            {
-                continue;
-            }
-            var now = property.GetValue(c);
-            if (Equals(now, property.GetValue(fresh)))
-            {
-                continue;
-            }
-            if (OptionCaption(property.Name) is { } caption)
-            {
-                changed.Add((caption, now switch
-                {
-                    bool b => Core.Localization.Localizer.T(b ? "On" : "Off"),
-                    _ when property.Name == nameof(RemoteConnection.Proxy) => $"{c.Proxy} · {c.ProxyKind} {c.ProxyHost}{(c.ProxyPort > 0 ? ":" + c.ProxyPort.ToString(CultureInfo.InvariantCulture) : string.Empty)}",
-                    _ => Convert.ToString(now, CultureInfo.InvariantCulture),
-                }));
-            }
-            else if (property.Name is not (nameof(RemoteConnection.ProxyKind) or nameof(RemoteConnection.ProxyHost) or nameof(RemoteConnection.ProxyPort)))
-            {
-                others++;
-            }
-        }
-        if (others > 0)
-        {
-            changed.Add(("Other options", Core.Localization.Localizer.T("{0} changed").Replace("{0}", others.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal)));
-        }
-        return changed;
-    }
-
-    /// <summary>The caption of an advanced option in the summary (null: counted with the others).</summary>
-    private static string? OptionCaption(string property) => property switch
-    {
-        nameof(RemoteConnection.TimeoutSeconds) => "Timeout (seconds)",
-        nameof(RemoteConnection.MaxConnections) => "Simultaneous connections",
-        nameof(RemoteConnection.JumpHost) => "Jump host",
-        nameof(RemoteConnection.KeepAliveSeconds) => "Keep-alive (seconds)",
-        nameof(RemoteConnection.PinnedFingerprint) => "Pinned host key",
-        nameof(RemoteConnection.FtpEncoding) => "File name encoding",
-        nameof(RemoteConnection.TlsVersion) => "TLS version",
-        nameof(RemoteConnection.Passive) => "Passive mode",
-        nameof(RemoteConnection.S3Encryption) => "Server-side encryption",
-        nameof(RemoteConnection.S3StorageClass) => "Storage class",
-        nameof(RemoteConnection.TerminalType) => "Terminal type",
-        nameof(RemoteConnection.TerminalEncoding) => "Character set",
-        nameof(RemoteConnection.RemoteCommand) => "Command when it opens",
-        nameof(RemoteConnection.BaudRate) => "Speed",
-        nameof(RemoteConnection.RdpGateway) => "Remote Desktop Gateway",
-        nameof(RemoteConnection.Proxy) => "Proxy",
-        _ => null,
-    };
-
-    private static Border Card(Control content)
-    {
-        var card = new Border { Child = content, CornerRadius = new CornerRadius(8), BorderThickness = new Thickness(1), Margin = new Thickness(0, 0, 0, 14) };
-        card[!Border.BackgroundProperty] = new DynamicResourceExtension("SystemControlBackgroundAltHighBrush");
-        card[!Border.BorderBrushProperty] = new DynamicResourceExtension("SystemControlForegroundBaseLowBrush");
-        return card;
-    }
-
-    /// <summary>A titled card of rows.</summary>
-    private static StackPanel Section(string title, params Control[] rows)
-    {
-        var stack = new StackPanel { Margin = new Thickness(16, 12, 16, 2) };
-        stack.Children.AddRange(rows);
-        var section = new StackPanel();
-        section.Children.AddRange([new TextBlock { Text = title, FontSize = 13, FontWeight = FontWeight.SemiBold, Opacity = 0.8, Margin = new Thickness(2, 0, 0, 6) }, Card(stack)]);
-        return section;
     }
 
     /// <summary>How the password is given for the type (it is asked when connecting, not stored here), or null.</summary>
@@ -825,15 +664,15 @@ public sealed class ConnectionWizard : Window
             var port = Text(c.Port > 0 ? c.Port.ToString(CultureInfo.InvariantCulture) : null, v =>
             {
                 c.Port = int.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n : 0;
-            }, Core.Localization.Localizer.T("default") + " " + RemoteConnection.DefaultPort(c.Protocol));
-            port.Width = 110;
+            }, "default");
+            port.PlaceholderText = "default " + RemoteConnection.DefaultPort(c.Protocol).ToString(CultureInfo.InvariantCulture); // the hook translates it ("default {0}")
             Avalonia.Automation.AutomationProperties.SetName(port, "Port");
-            var portLabel = new TextBlock { Text = "Port", FontSize = 12, Opacity = 0.7, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 8, 0) };
-            var row = new DockPanel();
-            DockPanel.SetDock(port, Dock.Right);
-            DockPanel.SetDock(portLabel, Dock.Right);
-            row.Children.AddRange([port, portLabel, host]);
-            server.Add(Field(c.Protocol == RemoteProtocol.S3 ? "Endpoint" : "Server", row, ConnectionField.Host, "Host", required: true, marked: host));
+            var hostField = Field(c.Protocol == RemoteProtocol.S3 ? "Endpoint" : "Server", host, ConnectionField.Host, "Host", required: true);
+            var portField = Field("Port", port, ConnectionField.Port, "Port", required: false);
+            var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,14,130") };
+            Grid.SetColumn(portField, 2);
+            row.Children.AddRange([hostField, portField]);
+            server.Add(row);
             if (c.Protocol == RemoteProtocol.S3)
             {
                 server.Add(Field("Region", Text(c.Region, v => c.Region = v.Trim(), "e.g. eu-central-1"), null, "Region", required: false));
@@ -926,37 +765,35 @@ public sealed class ConnectionWizard : Window
         box.TextChanged += (_, _) =>
         {
             set(box.Text ?? string.Empty);
+            FollowName();
             Recheck();
         };
         return box;
     }
 
     /// <summary>
-    /// A field as a row of its card: the caption on the left (with a red * when it is required), the input on the right
-    /// with the line for its problem and a note under it.
+    /// A field of a card: its caption (with a red * when it is required) over the input, the line for its problem and a
+    /// note under it.
     /// </summary>
-    private Grid Field(string caption, Control input, ConnectionField? field, string key, bool required, string? note = null, Control? marked = null)
+    private StackPanel Field(string caption, Control input, ConnectionField? field, string key, bool required, string? note = null, Control? marked = null)
     {
-        var head = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 7, 0, 0) };
-        head.Children.Add(new TextBlock { Text = caption, FontSize = 13, TextWrapping = TextWrapping.Wrap, MaxWidth = 150 });
+        var head = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3, Margin = new Thickness(1, 0, 0, 1) };
+        head.Children.Add(ConnectionLook.Muted(new TextBlock { Text = caption, FontSize = 12.5, TextWrapping = TextWrapping.Wrap }));
         if (required)
         {
-            var star = new TextBlock { Text = "*", FontSize = 13, FontWeight = FontWeight.Bold, Foreground = s_problem, Classes = { "noloc" } };
+            var star = ConnectionLook.Red(new TextBlock { Text = "*", FontSize = 13, FontWeight = FontWeight.Bold, Classes = { "noloc" } });
             ToolTip.SetTip(star, "Required");
             head.Children.Add(star);
         }
-        var message = new TextBlock { FontSize = 11, Foreground = s_problem, TextWrapping = TextWrapping.Wrap, IsVisible = false };
-        var right = new StackPanel { Spacing = 4 };
-        right.Children.AddRange([input, message]);
+        var message = ConnectionLook.Red(new TextBlock { FontSize = 11.5, TextWrapping = TextWrapping.Wrap, IsVisible = false });
+        var column = new StackPanel { Spacing = 5, Margin = new Thickness(0, 0, 0, 12) };
+        column.Children.AddRange([head, input, message]);
         if (note is not null)
         {
-            right.Children.Add(new TextBlock { Text = note, FontSize = 11, Opacity = 0.6, TextWrapping = TextWrapping.Wrap });
+            column.Children.Add(ConnectionLook.Muted(new TextBlock { Text = note, FontSize = 11.5, TextWrapping = TextWrapping.Wrap }, 3));
         }
-        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("160,*"), Margin = new Thickness(0, 0, 0, 10) };
-        Grid.SetColumn(right, 1);
-        row.Children.AddRange([head, right]);
         _marks.Add((field, key, marked ?? input, message)); // the box framed in red (not the port beside the server)
-        return row;
+        return column;
     }
 
     /// <summary>The problems of the details: the name (not empty, not another connection's) and what the type needs.</summary>
@@ -967,11 +804,7 @@ public sealed class ConnectionWizard : Window
             return [("Type", "Choose the type of the connection.")];
         }
         var problems = new List<(string, string)>();
-        if (string.IsNullOrWhiteSpace(c.Name))
-        {
-            problems.Add(("Name", "Enter a name for the connection."));
-        }
-        else if (Taken(c.Name, c))
+        if (!string.IsNullOrWhiteSpace(c.Name) && Taken(c.Name, c))
         {
             problems.Add(("Name", "Another connection has this name; choose another."));
         }
@@ -1002,6 +835,10 @@ public sealed class ConnectionWizard : Window
         if (problems.FirstOrDefault(p => !_marks.Any(m => m.Key == p.Key)) is { Text: { } other })
         {
             ShowResult(false, Core.Localization.Localizer.T(other));
+            if (_more is not null)
+            {
+                _more.IsExpanded = true;
+            }
         }
         return problems.Count == 0;
     }
@@ -1014,11 +851,11 @@ public sealed class ConnectionWizard : Window
         }
     }
 
-    private void ShowResult(bool ok, string text)
+    private void ShowResult(bool? ok, string text)
     {
-        _testResult.Text = (ok ? "✓ " : "✗ ") + text;
-        _testBox.BorderBrush = ok ? s_ok : s_problem;
-        _testBox.IsVisible = true;
+        _testResult.Text = (ok switch { true => "✓ ", false => "✗ ", _ => string.Empty }) + text;
+        ConnectionLook.Tint(_testResult, ok switch { true => "ok", false => "problem", _ => null });
+        ToolTip.SetTip(_testResult, text);
     }
 
     // ---------------------------------------------------------------- test, OK
@@ -1032,9 +869,8 @@ public sealed class ConnectionWizard : Window
         }
         _testCts?.Cancel();
         var cts = _testCts = new CancellationTokenSource(TimeSpan.FromMinutes(6));
-        _test.IsEnabled = _ok.IsEnabled = _back.IsEnabled = false;
-        ShowResult(true, Core.Localization.Localizer.T("Testing ..."));
-        _testBox.BorderBrush = Brushes.Gray;
+        _test.IsEnabled = _ok.IsEnabled = _save.IsEnabled = false;
+        ShowResult(null, Core.Localization.Localizer.T("Connecting ..."));
         Core.Net.ConnectionLog.Info(c, "Test ...");
         try
         {
@@ -1049,20 +885,21 @@ public sealed class ConnectionWizard : Window
         }
         finally
         {
-            _test.IsEnabled = _ok.IsEnabled = _back.IsEnabled = true;
+            _test.IsEnabled = _ok.IsEnabled = _save.IsEnabled = true;
         }
     }
 
-    /// <summary>OK: with every needed detail the connection is the result and the window closes.</summary>
-    public bool Finish()
+    /// <summary>Save (and connect): with every needed detail the connection is the result and the pages are done.</summary>
+    public bool Finish(bool connect = false)
     {
         if (_connection is not { } c || !Check())
         {
             return false;
         }
-        c.Name = c.Name.Trim();
+        c.Name = c.Name.Trim().Length > 0 ? c.Name.Trim() : SuggestName(c);
         c.Folder = c.Folder.Trim().Trim('/');
         Result = c;
+        ConnectAfterSave = connect;
         Close();
         return true;
     }

@@ -115,13 +115,13 @@ public sealed class ConnectionChecksUiTests : IDisposable
             tested++;
             return Task.FromResult("3 entries in /");
         }, _ => Task.FromResult<string?>(null)));
-        _fx.Track(wizard).Show();
+        _fx.Track(new Window { Content = wizard, Width = 1000, Height = 760 }).Show();
         await SettleAsync();
         bool Shown(string text) => wizard.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == text && t.IsEffectivelyVisible);
         TextBox Box(string name) => wizard.GetVisualDescendants().OfType<TextBox>().First(t => Avalonia.Automation.AutomationProperties.GetName(t) == name);
 
         // the type first: OK waits for it
-        Assert.True(Shown("Choose the type of the connection"));
+        Assert.True(Shown("Pick what you are connecting to. Have an address? Paste it and the details are filled in for you."));
         Assert.False(wizard.Finish());
 
         // FTP: the name suggested ("FTP" is taken), the folder of its group; OK marks the server
@@ -138,9 +138,9 @@ public sealed class ConnectionChecksUiTests : IDisposable
         await wizard.TestAsync();
         Assert.Equal(1, tested);
         Assert.Equal("✓ 3 entries in /", wizard.TestText);
-        Click(ButtonOf(wizard, "‹ Back"));
+        wizard.Back();
         await SettleAsync();
-        Assert.True(Shown("Choose the type of the connection"));
+        Assert.True(Shown("Pick what you are connecting to. Have an address? Paste it and the details are filled in for you."));
         wizard.ChooseType(RemoteProtocol.Sftp);
         await SettleAsync();
         Box("Server").Text = "h";
