@@ -357,45 +357,55 @@ public partial class MainWindow : Window
         }
     }
 
-    public bool IsInTray => _trayIcon is not null;
+    public bool IsInTray => _trayIcon is { IsVisible: true };
 
+    /// <summary>
+    /// The window goes to the notification area. The icon is made once and only shown / hidden afterwards: on Linux
+    /// (GNOME's StatusNotifierItem host) an icon disposed and made again stayed, and each minimizing added one more
+    /// (user's report, 22 November 2026).
+    /// </summary>
     private void ShowInTray()
     {
-        if (_trayIcon is not null || Avalonia.Application.Current is not { } app)
+        if (IsInTray || Avalonia.Application.Current is not { } app)
         {
             return;
         }
-        _trayIcon = new TrayIcon { Icon = Icon, ToolTipText = "NextCommander", IsVisible = true };
-        _trayIcon.Clicked += (_, _) => RestoreFromTray();
-        var menu = new NativeMenu();
-        var restore = new NativeMenuItem("Show");
-        restore.Click += (_, _) => RestoreFromTray();
-        var exit = new NativeMenuItem("Exit");
-        exit.Click += (_, _) =>
+        if (_trayIcon is null)
         {
-            RestoreFromTray();
-            Close();
-        };
-        menu.Items.Add(restore);
-        menu.Items.Add(exit);
-        _trayIcon.Menu = menu;
-        TrayIcon.SetIcons(app, [_trayIcon]);
+            _trayIcon = new TrayIcon { Icon = Icon, ToolTipText = "NextCommander", IsVisible = false };
+            _trayIcon.Clicked += (_, _) => RestoreFromTray();
+            var menu = new NativeMenu();
+            var restore = new NativeMenuItem(Core.Localization.Localizer.T("Show"));
+            restore.Click += (_, _) => RestoreFromTray();
+            var exit = new NativeMenuItem(Core.Localization.Localizer.T("Exit"));
+            exit.Click += (_, _) =>
+            {
+                RestoreFromTray();
+                Close();
+            };
+            menu.Items.Add(restore);
+            menu.Items.Add(exit);
+            _trayIcon.Menu = menu;
+            TrayIcon.SetIcons(app, [_trayIcon]);
+            Closed += (_, _) =>
+            {
+                // the program ends: the icon goes for good
+                TrayIcon.SetIcons(app, []);
+                _trayIcon?.Dispose();
+                _trayIcon = null;
+            };
+        }
+        _trayIcon.IsVisible = true;
         Hide();
     }
 
     public void RestoreFromTray()
     {
-        if (_trayIcon is null)
+        if (!IsInTray)
         {
             return;
         }
-        _trayIcon.IsVisible = false;
-        if (Avalonia.Application.Current is { } app)
-        {
-            TrayIcon.SetIcons(app, []);
-        }
-        _trayIcon.Dispose();
-        _trayIcon = null;
+        _trayIcon!.IsVisible = false; // kept for the next minimizing
         Show();
         WindowState = WindowState.Normal;
         Activate();
