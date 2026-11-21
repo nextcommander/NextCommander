@@ -3461,5 +3461,12 @@
   "TerminalView.LoggingTo": "Registrando en {0}",
   "TerminalView.OpenTheLogFolder": "Abrir la carpeta de registros",
   "TerminalView.StopLogging": "Detener el registro",
-  "TerminalView.WriteTheOutput": "Escribir la salida de esta pestaña en un archivo de texto"
+  "TerminalView.WriteTheOutput": "Escribir la salida de esta pestaña en un archivo de texto",
+  "TerminalView.CloseTheSearch": "Cerrar la búsqueda (Esc)",
+  "TerminalView.FindInTheOutput": "Buscar en la salida",
+  "TerminalView.FindInTheOutputAndScrollback": "Buscar en la salida y el historial (Ctrl+Mayús+F)",
+  "TerminalView.MatchCase": "Coincidir mayúsculas y minúsculas",
+  "TerminalView.NewerMatch": "Coincidencia más reciente (Mayús+Intro)",
+  "TerminalView.NoResults": "Sin resultados",
+  "TerminalView.OlderMatch": "Coincidencia más antigua (Intro)"
 }

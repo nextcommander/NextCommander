@@ -3461,5 +3461,12 @@
   "TerminalView.LoggingTo": "Logging to {0}",
   "TerminalView.OpenTheLogFolder": "Open the log folder",
   "TerminalView.StopLogging": "Stop logging",
-  "TerminalView.WriteTheOutput": "Write the output of this tab to a text file"
+  "TerminalView.WriteTheOutput": "Write the output of this tab to a text file",
+  "TerminalView.CloseTheSearch": "Close the search (Esc)",
+  "TerminalView.FindInTheOutput": "Find in the output",
+  "TerminalView.FindInTheOutputAndScrollback": "Find in the output and the scrollback (Ctrl+Shift+F)",
+  "TerminalView.MatchCase": "Match case",
+  "TerminalView.NewerMatch": "Newer match (Shift+Enter)",
+  "TerminalView.NoResults": "No results",
+  "TerminalView.OlderMatch": "Older match (Enter)"
 }

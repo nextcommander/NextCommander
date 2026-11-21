@@ -119,6 +119,7 @@ public sealed class EmulatedTerminal : TerminalTab
 
     public override void Clear()
     {
+        _screen.ClearFind();
         _screen.Vt.Clear();
         _screen.InvalidateVisual();
         // the shell draws its prompt again (a remote session is left alone)
@@ -138,6 +139,13 @@ public sealed class EmulatedTerminal : TerminalTab
     }
 
     public override void SetFont(string family, double size) => _screen.SetFont(family, size);
+
+    public override (int Current, int Count) Find(string text, bool matchCase, int direction) => _screen.Find(text, matchCase, direction);
+
+    public override void ClearFind() => _screen.ClearFind();
+
+    /// <summary>The first line shown (an index into scrollback + screen; tests).</summary>
+    public int TopLine => _screen.FirstLineShown;
 
     public override void Stop()
     {
@@ -161,6 +169,9 @@ internal sealed class TerminalScreen : Control
         Color.FromRgb(0x3B, 0x78, 0xFF), Color.FromRgb(0xB4, 0x00, 0x9E), Color.FromRgb(0x61, 0xD6, 0xD6), Color.FromRgb(0xF2, 0xF2, 0xF2),
     ];
 
+    private static readonly IBrush s_match = new SolidColorBrush(Color.FromArgb(0x70, 0xF2, 0xC9, 0x4C));
+    private static readonly IBrush s_currentMatch = new SolidColorBrush(Color.FromArgb(0xA0, 0xFF, 0x8C, 0x1A));
+
     private readonly EmulatedTerminal _owner;
     private readonly StringBuilder _pending = new();
     private FontFamily _font = new(NextCommander.Core.Config.AppSettings.DefaultTerminalFont);
@@ -173,6 +184,9 @@ internal sealed class TerminalScreen : Control
     private (int Line, int Column)? _selectionEnd;
     private bool _selecting;
     private bool _suppressText;
+    private readonly List<(int Line, int Column, int Width)> _matches = [];
+    private int _currentMatch = -1;
+    private (string Text, bool MatchCase)? _search;
 
     public TerminalScreen(EmulatedTerminal owner)
     {
@@ -262,6 +276,7 @@ internal sealed class TerminalScreen : Control
         {
             Vt.Resize(columns, rows);
             _owner.ResizeTerminal(columns, rows);
+            FindAgain();
             InvalidateVisual();
         }
     }
@@ -303,6 +318,125 @@ internal sealed class TerminalScreen : Control
 
     /// <summary>The first line shown: an index into scrollback + screen.</summary>
     private int TopLine => Vt.ScrollbackCount - _scrollOffset;
+
+    public int FirstLineShown => TopLine;
+
+    // ---------------------------------------------------------------- find
+
+    /// <summary>A line as text and the column of each of its characters (wide characters take two columns).</summary>
+    private static (string Text, List<int> Columns) Searchable(IReadOnlyList<VtCell> line)
+    {
+        var text = new StringBuilder(line.Count);
+        var columns = new List<int>(line.Count);
+        for (var column = 0; column < line.Count; column++)
+        {
+            var cell = line[column];
+            if (cell.CodePoint < 0)
+            {
+                continue;
+            }
+            var piece = cell.CodePoint > 0 ? char.ConvertFromUtf32(cell.CodePoint) : " ";
+            foreach (var c in piece)
+            {
+                text.Append(c);
+                columns.Add(column);
+            }
+        }
+        return (text.ToString(), columns);
+    }
+
+    /// <summary>See <see cref="TerminalTab.Find"/>.</summary>
+    public (int Current, int Count) Find(string text, bool matchCase, int direction)
+    {
+        var anchor = _currentMatch >= 0 && _currentMatch < _matches.Count ? _matches[_currentMatch] : ((int, int, int)?)null;
+        Search(text, matchCase);
+        if (_matches.Count > 0)
+        {
+            if (direction == 0 || anchor is not { } a)
+            {
+                _currentMatch = _matches.Count - 1; // the newest
+            }
+            else if (direction < 0)
+            {
+                var before = _matches.FindLastIndex(m => (m.Line, m.Column).CompareTo((a.Item1, a.Item2)) < 0);
+                _currentMatch = before >= 0 ? before : _matches.Count - 1;
+            }
+            else
+            {
+                var after = _matches.FindIndex(m => (m.Line, m.Column).CompareTo((a.Item1, a.Item2)) > 0);
+                _currentMatch = after >= 0 ? after : 0;
+            }
+            Reveal(_matches[_currentMatch].Line);
+        }
+        InvalidateVisual();
+        return (_currentMatch + 1, _matches.Count);
+    }
+
+    /// <summary>
+    /// The screen changed its size (lines moved between screen and scrollback): the matches are found again, the same
+    /// one counted from the newest stays the current one.
+    /// </summary>
+    private void FindAgain()
+    {
+        if (_search is not { } search || _currentMatch < 0)
+        {
+            return;
+        }
+        var fromNewest = _matches.Count - 1 - _currentMatch;
+        Search(search.Text, search.MatchCase);
+        if (_matches.Count > 0)
+        {
+            _currentMatch = Math.Clamp(_matches.Count - 1 - fromNewest, 0, _matches.Count - 1);
+            _scrollOffset = 0;
+            Reveal(_matches[_currentMatch].Line);
+        }
+    }
+
+    /// <summary>Every match of the text in scrollback and screen (none is current yet).</summary>
+    private void Search(string text, bool matchCase)
+    {
+        _matches.Clear();
+        _currentMatch = -1;
+        _search = text.Length > 0 ? (text, matchCase) : null;
+        if (text.Length > 0)
+        {
+            var comparison = matchCase ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+            var total = Vt.ScrollbackCount + Vt.Rows;
+            for (var index = 0; index < total; index++)
+            {
+                var (line, columns) = Searchable(LineAt(index));
+                var at = line.IndexOf(text, comparison);
+                while (at >= 0)
+                {
+                    var first = columns[at];
+                    var last = columns[at + text.Length - 1];
+                    _matches.Add((index, first, last - first + 1));
+                    at = line.IndexOf(text, at + text.Length, comparison);
+                }
+            }
+        }
+    }
+
+    /// <summary>Scrolls so that the line (scrollback + screen index) is shown, in the middle when it was not.</summary>
+    private void Reveal(int line)
+    {
+        if (line >= TopLine && line < TopLine + Vt.Rows)
+        {
+            return;
+        }
+        _scrollOffset = Math.Clamp(Vt.ScrollbackCount - (line - Vt.Rows / 2), 0, Vt.ScrollbackCount);
+    }
+
+    public void ClearFind()
+    {
+        _search = null;
+        if (_matches.Count > 0 || _currentMatch >= 0)
+        {
+            _matches.Clear();
+            _currentMatch = -1;
+            InvalidateVisual();
+        }
+    }
 
     private IReadOnlyList<VtCell> LineAt(int index) =>
         index < Vt.ScrollbackCount ? Vt.ScrollbackLine(index) : Vt.Line(index - Vt.ScrollbackCount);
@@ -389,6 +523,18 @@ internal sealed class TerminalScreen : Control
                     if (style.Flags.HasFlag(VtFlags.Strike))
                     {
                         context.DrawLine(new Pen(brush), new Point(rect.Left, rect.Center.Y), new Point(rect.Right, rect.Center.Y));
+                    }
+                }
+            }
+            if (_matches.Count > 0)
+            {
+                for (var m = 0; m < _matches.Count; m++)
+                {
+                    var match = _matches[m];
+                    if (match.Line == index)
+                    {
+                        context.FillRectangle(m == _currentMatch ? s_currentMatch : s_match,
+                            new Rect(Padding + match.Column * _cellWidth, y, match.Width * _cellWidth, _cellHeight));
                     }
                 }
             }
@@ -540,6 +686,12 @@ internal sealed class TerminalScreen : Control
         {
             e.Handled = true;
             _ = PasteAsync();
+            return;
+        }
+        if (ctrlShift && e.Key == Key.F)
+        {
+            e.Handled = true;
+            _owner.RequestFind();
             return;
         }
         if (mods == KeyModifiers.Shift && e.Key is Key.PageUp or Key.PageDown)

@@ -3461,5 +3461,12 @@
   "TerminalView.LoggingTo": "正在记录到 {0}",
   "TerminalView.OpenTheLogFolder": "打开日志文件夹",
   "TerminalView.StopLogging": "停止记录",
-  "TerminalView.WriteTheOutput": "将此标签页的输出写入文本文件"
+  "TerminalView.WriteTheOutput": "将此标签页的输出写入文本文件",
+  "TerminalView.CloseTheSearch": "关闭搜索 (Esc)",
+  "TerminalView.FindInTheOutput": "在输出中查找",
+  "TerminalView.FindInTheOutputAndScrollback": "在输出和回滚历史中查找 (Ctrl+Shift+F)",
+  "TerminalView.MatchCase": "区分大小写",
+  "TerminalView.NewerMatch": "较新的匹配项 (Shift+Enter)",
+  "TerminalView.NoResults": "无结果",
+  "TerminalView.OlderMatch": "较早的匹配项 (Enter)"
 }

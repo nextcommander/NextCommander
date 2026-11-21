@@ -114,6 +114,21 @@ public abstract class TerminalTab : Border
         LogChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <summary>
+    /// Finds <paramref name="text"/> in the output and scrollback and shows the match: <paramref name="direction"/> 0 the
+    /// newest one (the text changed), -1 the one before the current (older), +1 the one after it; it goes round at the
+    /// ends. Returns the match shown (1 based, 0: none) and how many there are.
+    /// </summary>
+    public abstract (int Current, int Count) Find(string text, bool matchCase, int direction);
+
+    /// <summary>Ends a search: the matches are no longer marked.</summary>
+    public abstract void ClearFind();
+
+    /// <summary>Ctrl+Shift+F in the terminal: the find bar.</summary>
+    public event EventHandler? FindRequested;
+
+    internal void RequestFind() => FindRequested?.Invoke(this, EventArgs.Empty);
+
     /// <summary>Output of the session for the log (any thread).</summary>
     protected void LogOutput(string text) => _log?.Write(text);
 }
