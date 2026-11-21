@@ -47,6 +47,7 @@ public sealed record AboutInfo(
         new("SMBLibrary", "LGPL-3.0"),
         new("SharpCompress", "MIT"),
         new("SharpZipLib", "MIT"),
+        new("DiscUtils", "MIT"),
         new("Blake3.NET", "BSD-2-Clause"),
         new("Markdig", "BSD-2-Clause"),
         new("PDFium", "BSD-3-Clause"),

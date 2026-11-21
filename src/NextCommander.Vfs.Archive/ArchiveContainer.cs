@@ -50,6 +50,7 @@ internal sealed class ArchiveContainer : IAsyncDisposable
 
     /// <summary>Why the archive cannot be changed; null when it can (zip).</summary>
     public string? ReadOnlyReason => IsSplit ? $"{File.Name}: a split archive is read-only."
+        : Kind == ArchiveKind.Iso ? $"{File.Name}: a disc image is read-only."
         : !ArchiveFormats.IsWritable(Kind) ? $"{File.Name}: this archive format is read-only (writable format: zip)."
         : null;
 
@@ -264,6 +265,28 @@ internal sealed class ArchiveContainer : IAsyncDisposable
                 }
                 break;
             }
+            case ArchiveKind.Iso:
+            {
+                using var file = OpenFile();
+                using var disc = DiscImage.Open(file);
+                foreach (var (key, isDirectory, size, modified) in DiscImage.Entries(disc))
+                {
+                    if (ArchiveFormats.NormalizeEntryPath(key) is { } path)
+                    {
+                        index.Add(new ArchiveItem
+                        {
+                            Path = path,
+                            Key = key,
+                            IsDirectory = isDirectory,
+                            ExplicitDirectory = isDirectory,
+                            Size = size,
+                            CompressedSize = size,
+                            Modified = modified == DateTime.MinValue ? index.ImpliedTime : modified,
+                        });
+                    }
+                }
+                break;
+            }
             case ArchiveKind.SingleGZip or ArchiveKind.SingleBZip2 or ArchiveKind.SingleXz or ArchiveKind.SingleZstd:
                 index.Add(new ArchiveItem
                 {
@@ -475,6 +498,19 @@ internal sealed class ArchiveContainer : IAsyncDisposable
                     }
                     reader.Dispose();
                     throw new FileNotFoundException("Not found in archive: " + item.Path);
+                }
+                case ArchiveKind.Iso:
+                {
+                    var disc = DiscImage.Open(file);
+                    try
+                    {
+                        return new OwningStream(disc.OpenFile(item.Key!, FileMode.Open, FileAccess.Read), disc, file);
+                    }
+                    catch
+                    {
+                        disc.Dispose();
+                        throw;
+                    }
                 }
                 case ArchiveKind.SingleGZip:
                     return new OwningStream(new GZipStream(file, CompressionMode.Decompress, leaveOpen: false));

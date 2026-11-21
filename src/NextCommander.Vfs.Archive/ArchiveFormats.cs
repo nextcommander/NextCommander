@@ -13,6 +13,8 @@ public enum ArchiveKind
     SingleBZip2,
     SingleXz,
     SingleZstd,
+    /// <summary>A disc image (.iso: ISO 9660 / Joliet, UDF), read-only.</summary>
+    Iso,
 }
 
 /// <summary>Archive type detection by file name.</summary>
@@ -46,6 +48,7 @@ public static class ArchiveFormats
         ["bz2"] = ArchiveKind.SingleBZip2,
         ["xz"] = ArchiveKind.SingleXz,
         ["zst"] = ArchiveKind.SingleZstd,
+        ["iso"] = ArchiveKind.Iso,
     };
 
     /// <summary>Zip based documents: opened as archives only explicitly (Ctrl+PgDn), Enter opens them normally.</summary>
