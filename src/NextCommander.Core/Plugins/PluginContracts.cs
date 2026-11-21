@@ -67,6 +67,22 @@ public interface IPluginEntryPoint
     string? Unavailable { get; }
 }
 
+/// <summary>
+/// A file system plugin's place for the folder of the active panel, listed in the Plugins menu while it fits (e.g. the
+/// Git history of the repository the folder is in). Implemented by the plugin's <see cref="Vfs.IFileSystemProvider"/>.
+/// </summary>
+public interface IPluginFolderEntry
+{
+    /// <summary>The menu entry, e.g. "Git history".</summary>
+    string EntryName { get; }
+
+    /// <summary>The group the entry is listed under, e.g. "Git".</summary>
+    string EntryGroup { get; }
+
+    /// <summary>The folder to open for <paramref name="folder"/>, or null when the entry does not fit it (cheap: called when the menu opens).</summary>
+    Vfs.VfsPath? RootFor(Vfs.VfsPath folder);
+}
+
 /// <summary>Packer and viewer plugins loaded in this process (file systems and columns have their own registries).</summary>
 public static class PluginCatalog
 {

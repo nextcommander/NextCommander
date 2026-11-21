@@ -141,8 +141,19 @@ public sealed class VfsPath : IEquatable<VfsPath>
             focusName = container.Name;
             return container.Parent;
         }
+        if (Origin?.Invoke(this) is { } origin)
+        {
+            focusName = origin.FocusName;
+            return origin.Folder;
+        }
         return null;
     }
+
+    /// <summary>
+    /// Where a root of a file system came from (<see cref="IOriginProvider"/>); set by the program from its provider
+    /// registry. Null: roots have nothing above them.
+    /// </summary>
+    public static Func<VfsPath, (VfsPath Folder, string FocusName)?>? Origin { get; set; }
 
     /// <summary>Last path segment ("" for a root).</summary>
     public string Name

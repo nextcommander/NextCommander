@@ -14,6 +14,16 @@ public interface IContainerProvider
     VfsPath GetRoot(VfsPath file);
 }
 
+/// <summary>
+/// A file system whose roots stand for a place elsewhere (a Git repository's history for its folder): one level up
+/// from such a root goes back there, like from an archive's root to the folder holding it.
+/// </summary>
+public interface IOriginProvider
+{
+    /// <summary>The folder a root of this file system came from (and the name to put the cursor on), or null.</summary>
+    (VfsPath Folder, string FocusName)? OriginOf(VfsPath root);
+}
+
 /// <summary>A provider that buffers changes (archives): flushed after jobs and on exit.</summary>
 public interface IFlushableProvider
 {
