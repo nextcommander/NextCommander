@@ -282,6 +282,9 @@ open a terminal at the bottom of the window. Press it again to hide it; the shel
   clears the screen, **Stop** restarts the shell.
 - **Tabs:** `+` opens another terminal, `▾` lists the installed shells (on Windows cmd, Windows PowerShell,
   PowerShell 7, Git Bash and WSL; elsewhere your shells). `exit` or the tab's `×` closes it.
+- **Snippets ▾** lists your saved commands: a click types one into the active tab (with Enter, or left on the line
+  to finish when *Press Enter after it* is off; with MultiExec into every checked tab). *Edit saved commands...*
+  opens the list on the *Misc.* page of the Configuration window (name in the menu, command, Enter).
 - **MultiExec** types into several tabs at once: while it is on (● MultiExec), each tab has a check box, and the
   keys, pasted text and command lines typed in one tab go to every checked tab as well (e.g. the same command on
   several servers). The terminal's own answers stay with their tab; a tab of the line console takes whole lines.

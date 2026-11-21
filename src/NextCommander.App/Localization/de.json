@@ -3470,5 +3470,14 @@
   "TerminalView.NoResults": "Keine Treffer",
   "TerminalView.OlderMatch": "Älterer Treffer (Eingabe)",
   "TerminalView.TypeHereToo": "Auch hier tippen (MultiExec)",
-  "TerminalView.MultiExecTip": "In mehrere Terminals gleichzeitig tippen: was in einem Tab getippt wird, geht an jeden markierten Tab"
+  "TerminalView.MultiExecTip": "In mehrere Terminals gleichzeitig tippen: was in einem Tab getippt wird, geht an jeden markierten Tab",
+  "Settings.Misc.Snippets": "Gespeicherte Befehle (Snippets)",
+  "Settings.Misc.Snippets.Description": "Befehle, die mit einem Klick im Snippets-Menü des Terminals an den aktiven Terminal-Tab gesendet werden (mit MultiExec an jeden markierten Tab).",
+  "SettingsWindow.AddCommand": "Befehl hinzufügen",
+  "SettingsWindow.CommandIsEmpty": "Befehl ist leer",
+  "SettingsWindow.PressEnterAfterIt": "Danach Eingabe drücken",
+  "TerminalView.Snippets": "Snippets ▾",
+  "TerminalView.SnippetsTip": "Gespeicherte Befehle: mit einem Klick an diesen Tab gesendet",
+  "TerminalView.EditSavedCommands": "Gespeicherte Befehle bearbeiten...",
+  "TerminalView.NoSavedCommandsYet": "Noch keine gespeicherten Befehle"
 }

@@ -107,6 +107,10 @@ public sealed class TerminalView : DockPanel
         _multiExec = HeaderButton("MultiExec", "Type into several terminals at once: what is typed in one tab goes to every tab checked", () => MultiExec = !MultiExec);
         _multiExec.Tag = "multiexec";
         buttons.Children.Add(_multiExec);
+        var snippets = HeaderButton("Snippets ▾", "Saved commands: sent to this tab with a click", () => { });
+        snippets.Tag = "snippets";
+        snippets.Click += (_, _) => ShowSnippetMenu(snippets);
+        buttons.Children.Add(snippets);
         buttons.Children.Add(HeaderButton("Find", "Find in the output and the scrollback (Ctrl+Shift+F)", OpenFind));
         buttons.Children.Add(HeaderButton("Panel folder", "Go to the folder of the active panel in the terminal", () => _active?.GoToPanelFolder()));
         buttons.Children.Add(HeaderButton("Clear", "Clear the output (Ctrl+L)", () => _active?.Clear()));
@@ -170,6 +174,45 @@ public sealed class TerminalView : DockPanel
     }
 
     private bool _multi;
+
+    /// <summary>The saved commands (read when the menu opens: the settings may have changed).</summary>
+    public Func<IReadOnlyList<Core.Config.TerminalSnippet>>? Snippets { get; set; }
+
+    /// <summary>"Edit saved commands...": the settings at the list.</summary>
+    public event EventHandler? EditSnippetsRequested;
+
+    /// <summary>Sends a saved command to the active tab (with MultiExec to the checked tabs too).</summary>
+    public void SendSnippet(Core.Config.TerminalSnippet snippet)
+    {
+        if (_active is null)
+        {
+            Activate();
+        }
+        _active?.TypeText(snippet.Text);
+    }
+
+    private void ShowSnippetMenu(Control anchor)
+    {
+        var flyout = new MenuFlyout();
+        var list = Snippets?.Invoke() ?? [];
+        foreach (var snippet in list)
+        {
+            var item = new MenuItem { Header = snippet.Name.Length > 0 ? snippet.Name : snippet.Command, Icon = MenuIcons.Create("terminal.snippet"), Classes = { "noloc" } };
+            ToolTip.SetTip(item, snippet.Command + (snippet.Enter ? " ⏎" : string.Empty));
+            var s = snippet;
+            item.Click += (_, _) => SendSnippet(s);
+            flyout.Items.Add(item);
+        }
+        if (list.Count == 0)
+        {
+            flyout.Items.Add(new MenuItem { Header = "No saved commands yet", IsEnabled = false });
+        }
+        flyout.Items.Add(new Separator());
+        var edit = new MenuItem { Header = "Edit saved commands...", Icon = MenuIcons.Create("terminal.snippets.edit") };
+        edit.Click += (_, _) => EditSnippetsRequested?.Invoke(this, EventArgs.Empty);
+        flyout.Items.Add(edit);
+        flyout.ShowAt(anchor);
+    }
 
     /// <summary>
     /// MultiExec (MobaXterm): keys, pasted text and command lines typed in a tab are typed in every tab checked in the
