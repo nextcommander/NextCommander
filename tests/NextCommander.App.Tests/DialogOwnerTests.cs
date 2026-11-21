@@ -20,7 +20,7 @@ public sealed class DialogOwnerTests
         // nothing over the main window: the question is the main window's
         var first = dialogs.AskErrorAsync(new JobError("a.txt", "in use"));
         await SettleAsync();
-        var question = main.OwnedWindows.OfType<ChoiceDialog<ErrorAction>>().Single();
+        var question = main.OwnedWindows.OfType<JobErrorDialog>().Single();
         question.Close();
         await first;
 
@@ -31,8 +31,8 @@ public sealed class DialogOwnerTests
         await SettleAsync();
         var second = dialogs.AskErrorAsync(new JobError("b.txt", "in use"));
         await SettleAsync();
-        question = progress.OwnedWindows.OfType<ChoiceDialog<ErrorAction>>().Single();
-        Assert.Empty(main.OwnedWindows.OfType<ChoiceDialog<ErrorAction>>());
+        question = progress.OwnedWindows.OfType<JobErrorDialog>().Single();
+        Assert.Empty(main.OwnedWindows.OfType<JobErrorDialog>());
         question.Close();
         await second;
         progress.Close();

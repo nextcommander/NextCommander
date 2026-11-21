@@ -175,6 +175,10 @@ public abstract class FileJob
     }
 
     private bool _skipAllErrors;
+    private readonly HashSet<ErrorKind> _skipKinds = [];
+
+    /// <summary>The user chose "Retry as administrator" for a denied item: it runs elevated when the job ends, without asking again.</summary>
+    public bool ElevationRequested { get; private set; }
 
     /// <summary>Runs <paramref name="action"/> with Retry/Skip/Cancel error handling. Returns false when skipped.</summary>
     protected async Task<bool> WithErrorHandlingAsync(string item, Func<Task> action, CancellationToken ct)
@@ -200,8 +204,13 @@ public abstract class FileJob
                         _denied.Add(item);
                     }
                 }
-                var error = new JobError(item, ex.Message);
-                if (_skipAllErrors)
+                var (kind, code) = JobError.KindOf(ex);
+                var snapshot = Progress.Snapshot();
+                var error = new JobError(item, ex.Message)
+                {
+                    Kind = kind, Code = code, Operation = Title, DoneFiles = snapshot.DoneFiles, TotalFiles = snapshot.TotalFiles,
+                };
+                if (_skipAllErrors || _skipKinds.Contains(kind))
                 {
                     AddError(item, ex.Message);
                     return false;
@@ -213,6 +222,16 @@ public abstract class FileJob
                         continue;
                     case ErrorAction.SkipAll:
                         _skipAllErrors = true;
+                        AddError(item, ex.Message);
+                        return false;
+                    case ErrorAction.SkipAllOfKind:
+                        _skipKinds.Add(kind);
+                        AddError(item, ex.Message);
+                        return false;
+                    case ErrorAction.Elevate:
+                        // the item is in AccessDenied already; the next denied ones join it without asking
+                        ElevationRequested = true;
+                        _skipKinds.Add(ErrorKind.AccessDenied);
                         AddError(item, ex.Message);
                         return false;
                     case ErrorAction.Skip:
