@@ -327,6 +327,11 @@ internal sealed class FakeDialogs : IDialogService
 
     public void ShowCompare(VfsEntry left, VfsEntry right, ToolContext context) => LastCompare = (left, right);
 
+    /// <summary>The last verify checksums window asked for (its job is run by the test).</summary>
+    public Views.Dialogs.VerifyChecksumsRequest? LastVerify { get; private set; }
+
+    public void ShowVerifyChecksums(Views.Dialogs.VerifyChecksumsRequest request) => LastVerify = request;
+
     public Task<AttributeChange?> ShowAttributesDialogAsync(IReadOnlyList<VfsEntry> entries) => Task.FromResult(NextAttributes);
 
     /// <summary>The checksum dialog: with <see cref="NextChecksum"/> its job runs (one file by that name, or a file each).</summary>

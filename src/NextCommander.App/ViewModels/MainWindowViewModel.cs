@@ -3478,23 +3478,30 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             await _dialogs.ShowMessageAsync("Checksum", "Select a checksum file (.md5, .sha, .sha256, .sha512, .sfv ...).");
             return;
         }
-        var job = new VerifyChecksumsJob(_registry, files) { Interaction = new UiJobInteraction(_dialogs) };
-        await RunJobAsync(job, false, null, []);
-        if (job.State is not (JobState.Completed or JobState.CompletedWithErrors))
+        // a window of its own: the verdict, every file's state, checking one again, selecting them in the panel
+        _dialogs.ShowVerifyChecksums(new Views.Dialogs.VerifyChecksumsRequest(files,
+            () => new VerifyChecksumsJob(_registry, files) { Interaction = new UiJobInteraction(_dialogs) },
+            _registry, SelectInActivePanelAsync, _dialogs.PickSaveFileAsync));
+        await Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Selects files in the active panel: it goes to the folder of the first one (when it is not there) and marks the
+    /// ones of that folder, the cursor on the first.
+    /// </summary>
+    public async Task SelectInActivePanelAsync(IReadOnlyList<VfsPath> files)
+    {
+        if (files.Count == 0 || files[0].Parent is not { } folder)
         {
             return;
         }
-        var ok = job.Results.Count(r => r.Status == ChecksumStatus.Ok);
-        var items = job.Results.OrderBy(r => r.Status == ChecksumStatus.Ok).Select(r => new QuickListItem(
-            (r.Status switch { ChecksumStatus.Ok => "✔ ", ChecksumStatus.Mismatch => "✘ ", ChecksumStatus.Missing => "? ", _ => "! " }) + r.Name,
-            r.Status switch
-            {
-                ChecksumStatus.Ok => "ok",
-                ChecksumStatus.Mismatch => $"MISMATCH: expected {r.Expected}, found {r.Actual}",
-                ChecksumStatus.Missing => "no files",
-                _ => "could not be read",
-            })).ToList();
-        await _dialogs.ShowQuickListAsync($"Verification: {ok} OK, {job.Results.Count - ok} with problems", items);
+        var panel = ActivePanel;
+        var here = files.Where(f => f.Parent?.ToString() == folder.ToString()).Select(f => f.Name).ToList();
+        if (panel.CurrentPath?.ToString() != folder.ToString())
+        {
+            await panel.NavigateAsync(folder, focusName: here[0]);
+        }
+        panel.ApplySelection(here);
     }
 
     private async Task SplitFileAsync()
