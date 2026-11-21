@@ -1199,6 +1199,9 @@ public sealed class AppSettings
     /// <summary>Saved FTP / SFTP connections (passwords live in the encrypted secret store).</summary>
     public List<RemoteConnection> Connections { get; set; } = [];
 
+    /// <summary>Saved SSH tunnels (Net > SSH tunnels...): port forwarding through a saved SSH connection.</summary>
+    public List<SshTunnel> SshTunnels { get; set; } = [];
+
     /// <summary>The folders of the connection manager (with their color labels; empty folders are kept too).</summary>
     public List<ConnectionFolder> ConnectionFolders { get; set; } = [];
 

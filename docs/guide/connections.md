@@ -47,6 +47,8 @@ Supported types:
 - **Download from URL...** and **Download the addresses of a list...**: download files from the web.
 - **Show hidden files on FTP**.
 - **Master password...**: see [Saved passwords](#saved-passwords-and-the-master-password).
+- **PC link...**, **Share with PC link**: see [PC link](#pc-link).
+- **SSH tunnels...**: see [SSH tunnels](#ssh-tunnels).
 
 In the button bar, the connection manager's button opens the manager while there is no saved connection; once
 there are some it is a drop-down (▾): **Connection manager...** first, then the saved connections grouped by type
@@ -320,6 +322,21 @@ off). With [rclone](https://rclone.org/downloads) installed (on the PATH or thro
 in the Plugins menu of the button bar lists the remotes of your rclone configuration; set them up with `rclone config`. Their passwords and tokens stay
 with rclone. NextCommander starts rclone once as a local API server (only on 127.0.0.1, with a random password) and
 stops it when it closes. Files are transferred through temporary files and keep their times where the service can.
+
+### SSH tunnels
+**Net > SSH tunnels...** keeps port forwardings that go through a saved SSH, SFTP or SCP connection (its login:
+the agent, a key or the saved password, the jump host, the proxy and the host key are used as for its files). Each
+tunnel is a card with its state (running, starting, stopped, or failed with the reason), **Start** / **Stop**,
+**Edit**, **Delete** and **Start with NextCommander**. **New tunnel** asks for:
+- the kind: **Local** (a port of this computer leads to a host and port as the server sees them, e.g. 127.0.0.1:15432
+  to the database `db.internal:5432` behind the server), **Remote** (a port of the server leads to a host and port as
+  this computer sees them, e.g. the server's port 8080 to `localhost:3000` here) or **SOCKS** (a SOCKS proxy on this
+  computer: browsers and tools set to it go out from the server);
+- the connection it goes through, where it listens (127.0.0.1: only this computer; 0.0.0.0: the network too; for a
+  remote tunnel the server must allow it with `GatewayPorts`) and where it leads.
+
+Tunnels marked **Start with NextCommander** start when the program starts; all tunnels stop when it closes. Starting,
+stopping and errors (a port already in use, a lost connection) are written to the connection's log.
 
 ### Remote sessions: RDP, VNC, SSH, Telnet, rsh, serial port
 These are sessions on another computer, not folders: choosing one in the connection manager (or *Net > Saved
