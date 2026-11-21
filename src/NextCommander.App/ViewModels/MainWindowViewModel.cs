@@ -2832,6 +2832,18 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
 
     private RemoteSession? _remote;
 
+    private TunnelService? _tunnels;
+
+    /// <summary>The SSH tunnels (made on first use when the application did not set them).</summary>
+    public TunnelService Tunnels
+    {
+        get => _tunnels ??= new TunnelService(_settings, () => Remote?.Hooks);
+        set => _tunnels = value;
+    }
+
+    /// <summary>nc_SshTunnels: the tunnels window.</summary>
+    private void ShowSshTunnels() => _dialogs.ShowSshTunnels(_settings, Tunnels, SaveSettings);
+
     /// <summary>PC link sharing on this computer (null in tests without it).</summary>
     public LinkService? Link { get; set; }
 

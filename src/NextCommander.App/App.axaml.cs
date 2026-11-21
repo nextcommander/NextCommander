@@ -75,9 +75,11 @@ public partial class App : Application
             var window = new MainWindow { DataContext = vm };
             Services.GetRequiredService<DialogService>().Owner = window;
             desktop.MainWindow = window;
+            _ = vm.Tunnels.StartAutomaticAsync(); // the tunnels that start with the program (dialogs need the owner)
             desktop.ShutdownRequested += (_, _) => vm.SaveSettings();
             desktop.Exit += (_, _) =>
             {
+                vm.Tunnels.StopAll();
                 // Write buffered archive changes and remove temp copies.
                 Services.GetRequiredService<NextCommander.Vfs.Archive.ArchiveFileSystemProvider>().DisposeAsync().AsTask().GetAwaiter().GetResult();
                 Services.GetRequiredService<NextCommander.Vfs.Remote.SftpFileSystemProvider>().DisposeAsync().AsTask().GetAwaiter().GetResult();

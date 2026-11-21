@@ -71,6 +71,9 @@ public interface IDialogService
     /// <summary>The queue window of F2 Queue (one; brought to the front when open). <paramref name="addSelection"/> is its + button.</summary>
     void ShowCopyQueue(JobQueue jobs, Func<Task> addSelection, Func<string, Task>? openFolder = null);
 
+    /// <summary>The SSH tunnels window (non-modal, one at a time).</summary>
+    void ShowSshTunnels(AppSettings settings, TunnelService tunnels, Action save);
+
     Task<string?> PickSaveFileAsync(string title, string suggestedName);
 
     Task<string?> PickOpenFileAsync(string title);
