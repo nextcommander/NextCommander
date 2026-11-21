@@ -236,9 +236,11 @@ built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC l
   checksum; read-only. Read with DiscUtils (MIT; `Vfs.Archive/DiscImage`): UDF when the image has it (DVD / Blu-ray),
   else ISO 9660 with Joliet names. Tested with images built by DiscUtils' CDBuilder; to be tried with real CD, DVD and
   Blu-ray images (Rock Ridge names of Linux images, hybrid ISO / UDF images).
-- [ ] Packing a folder into a new .iso (Files > Pack; DiscUtils' CDBuilder writes ISO 9660 + Joliet).
-- [ ] Mounting an image through the system (Windows Mount-DiskImage, Linux udisksctl loop-setup, macOS hdiutil), and
-  other images DiscUtils reads (VHD / VHDX / VMDK) if wanted.
+- [x] Packing into a new .iso (the pack dialog's ISO: ISO 9660 + Joliet with DiscUtils' CDBuilder; files up to 4 GB).
+- [x] Mounting an image through the system (Files > Archive > Mount / Unmount disc image: Windows Mount-DiskImage,
+  Linux udisks, macOS hdiutil; `Platform/DiskImages`). Tried on Windows with a real mount (`FM_TEST_MOUNT=1`); the
+  Linux and macOS commands are tested with recorded output, to be tried on those systems.
+- [ ] Other images DiscUtils reads (VHD / VHDX / VMDK), if wanted.
 
 ## AI support (ideas, to be evaluated)
 

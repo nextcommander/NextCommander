@@ -3565,5 +3565,16 @@
   "TerminalView.TypeInAllOn": "● Hepsine yaz",
   "ArchiveContainer.ADiscImageIsRead": "{0}: disk kalıbı salt okunurdur.",
   "DiscImage.NotADiscImage": "Disk kalıbı değil (ISO 9660 ya da UDF dosya sistemi bulunamadı).",
-  "DiscImage.NotReadable": "Okunabilir bir disk kalıbı değil: {0}"
+  "DiscImage.NotReadable": "Okunabilir bir disk kalıbı değil: {0}",
+  "Menu.nc_MountImage": "Disk kalıbını bağla",
+  "Menu.nc_UnmountImage": "Disk kalıbının bağlantısını kaldır",
+  "Command.nc_MountImage": "İmleçteki disk kalıbını bağla ve sürücüsünü aç",
+  "Command.nc_UnmountImage": "İmleçteki disk kalıbının bağlantısını kaldır",
+  "MainWindow.PutTheCursorOnAnImage": "İmleci bu bilgisayardaki bir disk kalıbına (.iso) getirin.",
+  "MainWindow.TheDiscImageIsNotMounted": "Disk kalıbı bağlı değil.",
+  "PackDialog.IsoDescription": "CD / DVD kalıbı (uzun adlı ISO 9660): diske yazılır ya da disk olarak bağlanır; sıkıştırma yok; dosyalar en çok 4 GB.",
+  "PackDialog.DiscImage": "Disk kalıbı",
+  "PackJob.TooLargeForADiscImage": "Disk kalıbı için çok büyük: ISO 9660 dosyası en çok 4 GB olabilir.",
+  "DiskImages.CouldNotBeUnmounted": "{0} bağlantısı kaldırılamadı: {1}",
+  "PackJob.CouldNotBeWritten": "Disk kalıbı yazılamadı: {0}"
 }

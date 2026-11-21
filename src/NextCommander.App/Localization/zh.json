@@ -3565,5 +3565,16 @@
   "TerminalView.TypeInAllOn": "● 全部输入",
   "ArchiveContainer.ADiscImageIsRead": "{0}：光盘映像为只读。",
   "DiscImage.NotADiscImage": "不是光盘映像（未找到 ISO 9660 或 UDF 文件系统）。",
-  "DiscImage.NotReadable": "不是可读取的光盘映像：{0}"
+  "DiscImage.NotReadable": "不是可读取的光盘映像：{0}",
+  "Menu.nc_MountImage": "装载光盘映像",
+  "Menu.nc_UnmountImage": "卸载光盘映像",
+  "Command.nc_MountImage": "装载光标处的光盘映像并打开其驱动器",
+  "Command.nc_UnmountImage": "卸载光标处的光盘映像",
+  "MainWindow.PutTheCursorOnAnImage": "请将光标置于本机上的光盘映像 (.iso)。",
+  "MainWindow.TheDiscImageIsNotMounted": "光盘映像未装载。",
+  "PackDialog.IsoDescription": "CD / DVD 映像（带长文件名的 ISO 9660）：可刻录或作为光盘装载；不压缩；单个文件最大 4 GB。",
+  "PackDialog.DiscImage": "光盘映像",
+  "PackJob.TooLargeForADiscImage": "对光盘映像来说过大：ISO 9660 文件最大为 4 GB。",
+  "DiskImages.CouldNotBeUnmounted": "无法卸载 {0}：{1}",
+  "PackJob.CouldNotBeWritten": "无法写入光盘映像：{0}"
 }
