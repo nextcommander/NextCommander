@@ -21,6 +21,9 @@ public sealed class TerminalView : DockPanel
     private readonly List<TerminalTab> _consoles = [];
     private readonly StackPanel _tabStrip = new() { Orientation = Orientation.Horizontal, Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
     private readonly Grid _host = new();
+    private readonly Button _monitor;
+    private readonly Border _monitorBar = new() { IsVisible = false, Padding = new Thickness(10, 3), Margin = new Thickness(0, 0, 0, 2) };
+    private readonly Dictionary<TerminalTab, ServerMonitor> _monitors = [];
     private readonly List<TerminalTab> _panes = [];
     private TerminalSplit _split;
     private TerminalTab? _active;
@@ -100,6 +103,11 @@ public sealed class TerminalView : DockPanel
             });
         _files.IsVisible = false;
         buttons.Children.Add(_files);
+        // an SSH session: CPU, memory, disk and network of its server in a bar above the terminal
+        _monitor = HeaderButton("Monitor", "CPU, memory, disk and network of this SSH session's server, read every few seconds", () => ToggleMonitor());
+        _monitor.Tag = "monitor";
+        _monitor.IsVisible = false;
+        buttons.Children.Add(_monitor);
         // the output of the tab into a text file (MobaXterm's session logs)
         _log = HeaderButton("Log", "Write the output of this tab to a text file", () => { });
         _log.Tag = "log";
@@ -175,6 +183,9 @@ public sealed class TerminalView : DockPanel
         _findBar = new Border { Child = findRow, IsVisible = false };
         SetDock(_findBar, Dock.Top);
         Children.Add(_findBar);
+        _monitorBar[!Border.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("FmStatusBrush");
+        SetDock(_monitorBar, Dock.Top);
+        Children.Add(_monitorBar);
         Children.Add(_host);
         this[!BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("FmStatusBrush");
     }
@@ -566,6 +577,128 @@ public sealed class TerminalView : DockPanel
         return console;
     }
 
+    // ---------------------------------------------------------------- monitor
+
+    /// <summary>Makes the probe that reads a server's counters (the application: an SSH connection with the session's login).</summary>
+    public Func<Core.Config.RemoteConnection, NextCommander.Vfs.Remote.IServerProbe>? ProbeFactory { get; set; }
+
+    /// <summary>How often the monitor reads (tests make it short).</summary>
+    public TimeSpan MonitorInterval { get; set; } = TimeSpan.FromSeconds(3);
+
+    /// <summary>The monitor of the active tab (null: off; tests).</summary>
+    public ServerMonitor? ActiveMonitor => _active is not null && _monitors.TryGetValue(_active, out var m) ? m : null;
+
+    /// <summary>The monitor bar shows (tests).</summary>
+    public bool IsMonitorShown => _monitorBar.IsVisible;
+
+    /// <summary>The texts of the monitor bar (tests).</summary>
+    public IEnumerable<string> MonitorTexts => Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(_monitorBar).OfType<TextBlock>().Select(t => t.Text ?? string.Empty);
+
+    /// <summary>The Monitor button: starts or stops the monitor of the active SSH tab.</summary>
+    public void ToggleMonitor()
+    {
+        if (_active is not { Connection: { Protocol: Core.Config.RemoteProtocol.Ssh } connection } tab || ProbeFactory is not { } factory)
+        {
+            return;
+        }
+        if (_monitors.Remove(tab, out var running))
+        {
+            running.Dispose();
+        }
+        else
+        {
+            var monitor = new ServerMonitor(factory(connection), MonitorInterval);
+            monitor.Updated += (_, _) =>
+            {
+                if (ReferenceEquals(tab, _active))
+                {
+                    ShowMonitor();
+                }
+            };
+            _monitors[tab] = monitor;
+            monitor.Start();
+        }
+        ShowMonitor();
+    }
+
+    private void StopMonitor(TerminalTab tab)
+    {
+        if (_monitors.Remove(tab, out var monitor))
+        {
+            monitor.Dispose();
+        }
+    }
+
+    private static readonly IBrush s_ok = new SolidColorBrush(Color.Parse("#2E9E44"));
+    private static readonly IBrush s_warn = new SolidColorBrush(Color.Parse("#C98A00"));
+    private static readonly IBrush s_bad = new SolidColorBrush(Color.Parse("#E5484D"));
+
+    /// <summary>The bar of the active tab's monitor (hidden when it has none).</summary>
+    private void ShowMonitor()
+    {
+        var monitor = ActiveMonitor;
+        _monitor.IsVisible = _active?.Connection?.Protocol == Core.Config.RemoteProtocol.Ssh && ProbeFactory is not null;
+        if (monitor is not null)
+        {
+            _monitor.Classes.Add("accent");
+        }
+        else
+        {
+            _monitor.Classes.Remove("accent");
+        }
+        _monitorBar.IsVisible = monitor is not null;
+        if (monitor is null)
+        {
+            return;
+        }
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 16 };
+        TextBlock Text(string text, double opacity = 1, string? cls = null)
+        {
+            var block = new TextBlock { Text = text, FontSize = 12, VerticalAlignment = VerticalAlignment.Center, Opacity = opacity };
+            if (cls is not null)
+            {
+                block.Classes.Add(cls);
+            }
+            return block;
+        }
+        Control Meter(string label, double? percent, string? detail = null)
+        {
+            var stack = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+            stack.Children.Add(Text(label, 0.7));
+            var value = Math.Clamp(percent ?? 0, 0, 100);
+            var track = new Border { Width = 56, Height = 6, CornerRadius = new CornerRadius(3), Background = new SolidColorBrush(Color.FromArgb(40, 128, 128, 128)), VerticalAlignment = VerticalAlignment.Center };
+            track.Child = new Border
+            {
+                Width = 56 * value / 100, HorizontalAlignment = HorizontalAlignment.Left, CornerRadius = new CornerRadius(3),
+                Background = value >= 85 ? s_bad : value >= 60 ? s_warn : s_ok,
+            };
+            stack.Children.Add(track);
+            stack.Children.Add(Text(percent is null ? "…" : value.ToString("0", System.Globalization.CultureInfo.CurrentCulture) + "%", 1, "noloc"));
+            if (detail is not null)
+            {
+                stack.Children.Add(Text(detail, 0.6, "noloc"));
+            }
+            return stack;
+        }
+        if (monitor.Status is { } s)
+        {
+            row.Children.Add(Meter("CPU", s.CpuPercent));
+            row.Children.Add(Meter("Memory", s.MemPercent, $"{Core.Net.ServerStats.Size(s.MemUsedKb * 1024.0)} / {Core.Net.ServerStats.Size(s.MemTotalKb * 1024.0)}"));
+            row.Children.Add(Meter("Disk /", s.DiskPercent, $"{Core.Net.ServerStats.Size(s.DiskUsedKb * 1024.0)} / {Core.Net.ServerStats.Size(s.DiskTotalKb * 1024.0)}"));
+            row.Children.Add(Text(s.RxPerSecond is { } rx && s.TxPerSecond is { } tx
+                ? $"↓ {Core.Net.ServerStats.Size(rx)}/s  ↑ {Core.Net.ServerStats.Size(tx)}/s" : "↓ …  ↑ …", 1, "noloc"));
+            row.Children.Add(Text(Core.Localization.Localizer.T("Load {0} ({1} CPUs)")
+                .Replace("{0}", s.Load1.ToString("0.00", System.Globalization.CultureInfo.CurrentCulture), StringComparison.Ordinal)
+                .Replace("{1}", s.Cpus.ToString(System.Globalization.CultureInfo.CurrentCulture), StringComparison.Ordinal), 0.8, "noloc"));
+            row.Children.Add(Text(Core.Localization.Localizer.T("Up {0}").Replace("{0}", Core.Net.ServerStats.Duration(s.Uptime), StringComparison.Ordinal), 0.8, "noloc"));
+        }
+        else
+        {
+            row.Children.Add(Text(monitor.Error is { } error ? error : Core.Localization.Localizer.T("Reading the server's counters..."), 0.75, monitor.Error is null ? null : "noloc"));
+        }
+        _monitorBar.Child = row;
+    }
+
     // ---------------------------------------------------------------- split
 
     /// <summary>How the terminal is split (Split menu): one tab, two side by side or one above the other, four.</summary>
@@ -677,6 +810,7 @@ public sealed class TerminalView : DockPanel
         _active = console;
         _files.IsVisible = console.Connection?.Protocol == Core.Config.RemoteProtocol.Ssh;
         UpdateLogButton();
+        ShowMonitor();
         Arrange();
         RebuildTabs();
         FindNext(0);
@@ -717,6 +851,7 @@ public sealed class TerminalView : DockPanel
         _active = console;
         _files.IsVisible = console.Connection?.Protocol == Core.Config.RemoteProtocol.Ssh;
         UpdateLogButton();
+        ShowMonitor();
         if (_split != TerminalSplit.None)
         {
             FillPanes();
@@ -736,6 +871,7 @@ public sealed class TerminalView : DockPanel
         }
         console.Stop();
         console.StopLog();
+        StopMonitor(console);
         _consoles.RemoveAt(index);
         _host.Children.Remove(console);
         var pane = _panes.IndexOf(console);
@@ -751,6 +887,7 @@ public sealed class TerminalView : DockPanel
             _active = null;
             _files.IsVisible = false;
             UpdateLogButton();
+            ShowMonitor();
             RebuildTabs();
             CloseRequested?.Invoke(this, EventArgs.Empty);
             return;
@@ -833,8 +970,10 @@ public sealed class TerminalView : DockPanel
         {
             console.Stop();
             console.StopLog();
+            StopMonitor(console);
         }
         _consoles.Clear();
+        ShowMonitor();
         _host.Children.Clear();
         _panes.Clear();
         _split = TerminalSplit.None;

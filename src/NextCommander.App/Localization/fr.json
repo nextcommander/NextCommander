@@ -3504,5 +3504,12 @@
   "TerminalView.OneTerminal": "Un terminal",
   "TerminalView.TwoSideBySide": "Deux côte à côte",
   "TerminalView.TwoAboveEachOther": "Deux, l’un au-dessus de l’autre",
-  "TerminalView.Four": "Quatre"
+  "TerminalView.Four": "Quatre",
+  "ServerMonitor.NoCounters": "Aucun compteur sur ce serveur (seuls les serveurs Linux ont /proc).",
+  "TerminalView.MonitorTip": "Processeur, mémoire, disque et réseau du serveur de cette session SSH, lus toutes les quelques secondes",
+  "TerminalView.Load": "Charge {0} ({1} processeurs)",
+  "TerminalView.Monitor": "Surveiller",
+  "TerminalView.Reading": "Lecture des compteurs du serveur...",
+  "TerminalView.Up": "Actif depuis {0}",
+  "TerminalView.DiskRoot": "Disque /"
 }
