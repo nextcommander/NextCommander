@@ -15,29 +15,49 @@ public sealed class DialogService : IDialogService
 
     private Window RequireOwner() => Owner ?? throw new InvalidOperationException("Dialog owner window is not set.");
 
+    /// <summary>
+    /// The window a question is shown over: the window of the application on top of the main window (a progress window,
+    /// a tool) when there is one, else the main window. A question owned by the main window could open behind a progress
+    /// window, which is owned by the main window too (user's report, 21 November 2026: Retry / Skip behind the progress).
+    /// </summary>
+    private Window DialogOwner()
+    {
+        var owner = RequireOwner();
+        for (var depth = 0; depth < 4; depth++)
+        {
+            var visible = owner.OwnedWindows.Where(w => w.IsVisible).ToList();
+            if ((visible.LastOrDefault(w => w.IsActive) ?? visible.LastOrDefault(w => w is ProgressWindow)) is not { } top)
+            {
+                break;
+            }
+            owner = top;
+        }
+        return owner;
+    }
+
     public async Task ShowMessageAsync(string title, string message)
     {
         var dialog = new ChoiceDialog<bool>(title, message, [("OK", true)], cancelValue: false);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
     }
 
     public async Task ShowAboutAsync(AboutInfo info)
     {
         var dialog = new AboutDialog(info);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
     }
 
     public async Task<bool> ConfirmAsync(string title, string message, string okText = "OK")
     {
         var dialog = new ChoiceDialog<bool>(title, message, [(okText, true), ("Cancel", false)], cancelValue: false);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
         return dialog.Result;
     }
 
     public async Task<string?> PromptAsync(string title, string message, string initialText, bool selectBaseName = false)
     {
         var dialog = new InputDialog(title, message, initialText, selectBaseName);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
         return dialog.Result;
     }
 
@@ -45,7 +65,7 @@ public sealed class DialogService : IDialogService
         CopyDialogOptions? options = null)
     {
         var dialog = new CopyDialog(move, description, target, verifyDefault, suggestions, options);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
         return dialog.Result;
     }
 
@@ -93,7 +113,7 @@ public sealed class DialogService : IDialogService
         ];
         var cancel = choices[^1].Item2;
         var dialog = new ChoiceDialog<ConflictResponse>("File already exists", message, choices, cancel, defaultIndex: 0, width: 860);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
 
         if (ReferenceEquals(dialog.Result, renameSentinel))
         {
@@ -110,7 +130,7 @@ public sealed class DialogService : IDialogService
         var dialog = new ChoiceDialog<ErrorAction>("Error", $"{error.Item}\n\n{error.Message}",
             [("Retry", ErrorAction.Retry), ("Skip", ErrorAction.Skip), ("Skip all", ErrorAction.SkipAll), ("Cancel", ErrorAction.Cancel)],
             cancelValue: ErrorAction.Cancel, defaultIndex: 1, width: 560);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
         return dialog.Result;
     }
 
@@ -140,7 +160,13 @@ public sealed class DialogService : IDialogService
             },
             job is CopyMoveJob copy && vm is not null ? () => vm.ActivePanel.NavigateAsync(copy.TargetDirectory) : null);
         var window = new ProgressWindow(job, options);
+        // a question already open (an error before the window came) stays on top of it
+        var asking = owner.OwnedWindows.Where(w => w.IsVisible && w.IsActive).ToList();
         window.Show(owner);
+        foreach (var question in asking)
+        {
+            question.Activate();
+        }
         var closed = false;
         window.Closed += (_, _) => closed = true; // closed while running: the job goes on in the background
         try
@@ -166,14 +192,14 @@ public sealed class DialogService : IDialogService
     public async Task<PackDialogResult?> ShowPackDialogAsync(string description, string target, NextCommander.Vfs.Archive.PackFormat format, PackDialogInput? input = null)
     {
         var dialog = new PackDialog(description, target, format, input);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
         return dialog.Result;
     }
 
     public async Task<string?> PromptPasswordAsync(string title, string message)
     {
         var dialog = new PasswordDialog(title, message);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
         return dialog.Result;
     }
 
@@ -220,28 +246,28 @@ public sealed class DialogService : IDialogService
     public async Task<AttributeChange?> ShowAttributesDialogAsync(IReadOnlyList<VfsEntry> entries)
     {
         var dialog = new AttributesDialog(entries);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
         return dialog.Result;
     }
 
     public async Task<NextCommander.Core.Tools.CreateChecksumsJob?> ShowChecksumDialogAsync(ChecksumDialogRequest request)
     {
         var dialog = new ChecksumDialog(request);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
         return dialog.Result;
     }
 
     public async Task<(string Password, bool Save)?> PromptLoginAsync(RemoteConnection connection, bool retry)
     {
         var dialog = new LoginDialog(connection, retry);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
         return dialog.Result;
     }
 
     public async Task<bool> ConfirmFingerprintAsync(string host, string fingerprint, string description, bool changed)
     {
         var dialog = new FingerprintDialog(host, fingerprint, description, changed);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
         return dialog.Result;
     }
 
@@ -255,14 +281,14 @@ public sealed class DialogService : IDialogService
     public async Task<(string? Current, string? New)?> ShowMasterPasswordDialogAsync(bool hasMaster)
     {
         var dialog = new MasterPasswordDialog(hasMaster);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
         return dialog.Result;
     }
 
     public async Task EditColumnSetsAsync(List<NextCommander.Core.Columns.ColumnSet> sets, IReadOnlyList<NextCommander.Core.Columns.ColumnField> fields, Action? applied = null)
     {
         var dialog = new ColumnSetDialog(sets, fields, applied);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
     }
 
     public async Task ShowCommandBrowserAsync(CommandBrowserRequest request)
@@ -279,19 +305,19 @@ public sealed class DialogService : IDialogService
     public async Task ShowFolderHistoryAsync(FolderHistoryRequest request)
     {
         var dialog = new FolderHistoryDialog(request);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
     }
 
     public async Task ShowSystemInfoAsync(SystemInfo info, Func<Task> openSettingsFolder)
     {
         var dialog = new SystemInfoDialog(info, openSettingsFolder);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
     }
 
     public async Task ShowPluginsAsync(PluginsRequest request)
     {
         var dialog = new PluginsDialog(request);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
     }
 
     public async Task ShowSettingsAsync(AppSettings settings, Action changed, IReadOnlyList<(string Text, Func<Task> Action)> extraActions, string? search = null)
@@ -319,13 +345,13 @@ public sealed class DialogService : IDialogService
     public async Task ShowPropertiesAsync(VfsEntry entry, Func<Task<SpaceInfo>>? measure)
     {
         var dialog = new PropertiesDialog(entry, measure);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
     }
 
     public async Task<string?> EditCommentAsync(string name, string? current)
     {
         var dialog = new CommentDialog(name, current);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
         return dialog.Result;
     }
 
@@ -447,21 +473,21 @@ public sealed class DialogService : IDialogService
     public async Task<QuickListResult?> ShowQuickListAsync(string title, IReadOnlyList<QuickListItem> items, IReadOnlyList<string>? actions = null)
     {
         var dialog = new QuickListDialog(title, items, actions);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
         return dialog.Result;
     }
 
     public async Task<string?> CaptureHotkeyAsync(string commandName)
     {
         var dialog = new HotkeyCaptureDialog(commandName);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
         return dialog.Result;
     }
 
     public async Task<NextCommander.Core.Config.ButtonDefinition?> EditButtonAsync(NextCommander.Core.Config.ButtonDefinition? existing)
     {
         var dialog = new ButtonEditDialog(existing, () => PickOpenFileAsync("Choose program"), (b, size) => Controls.ButtonBarControl.CreateIcon(b, size, null));
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
         return dialog.Result;
     }
 
@@ -469,7 +495,7 @@ public sealed class DialogService : IDialogService
         Func<NextCommander.Core.Config.ButtonDefinition, int, Control?> icon)
     {
         var dialog = new ButtonBarEditorDialog(title, buttons, iconSize, vertical, icon, PickOpenFileAsync);
-        await dialog.ShowDialog(RequireOwner());
+        await dialog.ShowDialog(DialogOwner());
         return dialog.Result;
     }
 
@@ -489,7 +515,7 @@ public sealed class DialogService : IDialogService
         }
         var vm = RequireOwner().DataContext as ViewModels.MainWindowViewModel;
         var dialog = new TreeDialog { Commands = vm is null ? null : vm.TreeCommandAsync, Drives = vm is null ? null : vm.FixedDriveRoots };
-        var shown = dialog.ShowDialog(RequireOwner());
+        var shown = dialog.ShowDialog(DialogOwner());
         await dialog.InitializeAsync(path, p => panel.ListSubdirectoriesAsync(p, max: 5000));
         await shown;
         return dialog.Result;
