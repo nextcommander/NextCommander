@@ -179,7 +179,8 @@ public sealed class ConnectionOptionsTests : IDisposable
 
         view.Reveal(rdp);
         await SettleAsync();
-        Click(view, "Files (SMB)");
+        // the files are in the connection's ⋯ menu
+        view.ConnectionMenu(rdp).Items.OfType<MenuItem>().First(m => Equals(m.Header, "Files (SMB)")).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         var result = Assert.Single(view.Result!.Connections);
         Assert.Equal((RemoteProtocol.Smb, "pc.example.com", @"CORP\ali"), (result.Protocol, result.Host, result.User)); // made from the remote desktop
 

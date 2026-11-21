@@ -783,7 +783,10 @@ public sealed partial class ConnectionManagerView
     }
 
     /// <summary>The connection's ⋯ menu: rename, duplicate, copy the address, its files, export, forget the password, delete.</summary>
-    private void ShowConnectionMenu(RemoteConnection c, Control anchor)
+    private void ShowConnectionMenu(RemoteConnection c, Control anchor) => ConnectionMenu(c).Open(anchor);
+
+    /// <summary>The items of a connection's ⋯ menu (tests use them without opening it).</summary>
+    public ContextMenu ConnectionMenu(RemoteConnection c)
     {
         var menu = new ContextMenu();
         menu.Items.Add(MenuItem("Rename", "connections.rename", () => StartRename(c), "F2"));
@@ -809,7 +812,7 @@ public sealed partial class ConnectionManagerView
         }));
         menu.Items.Add(new Separator());
         menu.Items.Add(MenuItem("Delete", "connections.delete", () => _ = DeleteAsync(Selected!), "Delete"));
-        menu.Open(anchor);
+        return menu;
     }
 
     // ---------------------------------------------------------------- the name in the header

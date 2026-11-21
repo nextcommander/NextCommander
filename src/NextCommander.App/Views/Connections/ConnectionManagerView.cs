@@ -805,12 +805,17 @@ public sealed partial class ConnectionManagerView : UserControl
         if (wizard.Result is not { } created)
         {
             ShowDetail();
+            FocusSelectedRow(); // the focused control went with the page: the keys (Esc, Alt+Left) come to the manager again
             return null;
         }
         Add(created);
         if (wizard.ConnectAfterSave)
         {
             Connect([created], right: false);
+        }
+        else
+        {
+            FocusSelectedRow();
         }
         return created;
     }
