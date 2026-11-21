@@ -1342,7 +1342,7 @@ public partial class MainWindow : Window
             RemoteProtocol.Rsh => new Services.Terminal.RshTerminal(connection, columns, rows),
             RemoteProtocol.Serial => new Services.Terminal.SerialTerminal(connection, columns, rows),
             _ => (Services.Terminal.PseudoTerminal)new Services.Terminal.TelnetTerminal(connection, columns, rows),
-        });
+        }, connection);
         if (IsTerminalMaximizedPage && _page != WorkspacePage.Terminal)
         {
             SelectPage(WorkspacePage.Terminal);
@@ -1364,6 +1364,7 @@ public partial class MainWindow : Window
             };
             // the height and the open tabs are kept in the settings
             _terminal.HeightRatioChanged += (_, _) => _vm.Settings.TerminalHeightRatio = Math.Round(_terminal.HeightRatio, 3);
+            _terminal.FilesRequested += (_, e) => _ = _vm.OpenSshFilesAsync(e.Connection, e.Folder);
             _terminal.TabsChanged += (_, _) =>
             {
                 // the shells are kept (not the remote sessions); only remote ones open: the shells stay as they were

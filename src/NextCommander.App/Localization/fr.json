@@ -3399,5 +3399,7 @@
   "Settings.Layout.GraphiteCompact": "Graphite (compact)",
   "Settings.Layout.AuroraFloatingRound": "Aurora (flottante, arrondi)",
   "Settings.Layout.NamesNextToTheIcons": "Noms à côté des icônes",
-  "Settings.Layout.NamesNextToTheIcons.Description": "Les boutons de la barre du haut affichent aussi leur nom."
+  "Settings.Layout.NamesNextToTheIcons.Description": "Les boutons de la barre du haut affichent aussi leur nom.",
+  "ConnectionManagerWindow.FilesSftp": "Fichiers (SFTP)",
+  "TerminalView.TheFilesOfThisSsh": "Les fichiers de l’ordinateur de cette session SSH dans un nouvel onglet du panneau actif (dans le dossier du shell s’il l’indique)"
 }

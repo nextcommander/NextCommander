@@ -166,6 +166,30 @@ Since 7 November 2026 colors come only from theme files (default: system colors,
 - [x] Remote desktop in a tab (user's request, 18 November 2026): only the panel's drive shared (IMsRdpClientNonScriptable3's DriveCollection, slots from mstscax.dll's type library); the session's end reason from the control's OnDisconnected event (a hand-made IDispatch sink on IMsTscAxEvents; the reason and GetErrorDescription's text; the state is polled only when the events cannot be had); FreeRDP in a tab follows the tab's size (its X11 windows resized, /dynamic-resolution kept). The drive, the events and the reason text were tried with the real control on Windows without a server; the Linux resizing is still to be tried.
 - [x] Telnet (telnet://; user's request, 17 November 2026): a tab of the internal terminal (`TelnetTerminal` on the terminal emulation; ECHO / SGA / BINARY taken, TERMINAL-TYPE xterm and NAWS offered, other options refused). Tested against a server on the loopback; to be tried against a real device.
 
+## Compared with MobaXterm (user's request, 21 November 2026)
+
+What MobaXterm's session manager and terminal have that the connection manager lacks, by value. Out of scope: the
+built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC link shares), the Cygwin tools.
+
+- [x] The files of an SSH session over SFTP: *Files (SFTP)* in the connection manager and in the title of an SSH tab of
+  the terminal (a saved SFTP / SCP connection to the same server, else the session's login as SFTP: key file, agent,
+  jump host, proxy and its saved password); opened in the shell's folder when the shell reports it (OSC 7).
+- [ ] SSH tunnels: local, remote and dynamic (SOCKS) port forwarding, saved, started / stopped by hand or at start.
+- [ ] Import PuTTY sessions (registry) and MobaXterm's `.mxtsessions`; export connections to a file (without passwords)
+  and import such a file.
+- [x] Reconnect a remote session that ended: already there (an ended SSH / Telnet tab connects again with Enter).
+- [ ] Log a terminal session's output to a file.
+- [ ] Find in the terminal's scrollback.
+- [ ] MultiExec: type into several terminal tabs at once.
+- [ ] Saved commands (snippets) sent to the terminal with a click.
+- [ ] Shared credentials: one user / password entry used by several connections.
+- [ ] SSH agent forwarding (whether SSH.NET can do it is to be found out first).
+- [ ] Split terminal: two or four terminals in one tab.
+- [ ] Monitor bar of an SSH server: CPU, memory, disk and network through commands over SSH.
+- [ ] A connection's own terminal look: font, color scheme, tab color (a production server in red).
+- [ ] Network tools: Wake-on-LAN, ping, port scan.
+- [ ] Highlighting words such as "error" / "warning" in the terminal output.
+
 ## Internal terminal
 - [x] Terminal at the bottom of the window via the button at the end of the command line / Ctrl+` (cmd.exe or $SHELL, redirected input/output). Commands are typed after the prompt, inside the output area.
 - [x] Real terminal emulation (Windows ConPTY / Linux, macOS pty; VT100 / xterm screen): colors, programs that draw the screen themselves, Ctrl+C signal. When turned off in the settings, the line console is used. The app was tried on Linux (Ubuntu 26.10) and macOS (M5); on macOS job control (Ctrl+Z) may not work because the shell has no controlling terminal.

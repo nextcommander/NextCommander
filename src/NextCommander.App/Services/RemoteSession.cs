@@ -75,13 +75,35 @@ public sealed class RemoteSession
 
     private RemoteConnection Resolve(string scheme, string authority) =>
         _settings.Connections.FirstOrDefault(c => (c.Scheme == scheme || (scheme == "ftps" && c.Scheme == "ftps")) && c.Authority == authority)?.Clone()
+        ?? (_remembered.TryGetValue(scheme + "://" + authority, out var remembered) ? remembered.Clone() : null)
         ?? RemoteConnection.FromAuthority(scheme, authority);
+
+    private readonly ConcurrentDictionary<string, RemoteConnection> _remembered = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, string> _passwordOf = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// A connection that is not saved (the files of an SSH session, a remote desktop's SMB share): opened by its address,
+    /// it keeps its login settings; <paramref name="passwordFrom"/> is the secret whose saved password it may use (the
+    /// SSH session's).
+    /// </summary>
+    public void Remember(RemoteConnection connection, string? passwordFrom = null)
+    {
+        _remembered[connection.SecretId] = connection.Clone();
+        if (passwordFrom is not null && passwordFrom != connection.SecretId)
+        {
+            _passwordOf[connection.SecretId] = passwordFrom;
+        }
+    }
 
     private async Task<string?> GetPasswordAsync(RemoteConnection connection, bool retry)
     {
         if (!retry && Secrets.Contains(connection.SecretId) && await Secrets.GetAsync(connection.SecretId) is { } saved)
         {
             return saved;
+        }
+        if (!retry && _passwordOf.TryGetValue(connection.SecretId, out var other) && Secrets.Contains(other) && await Secrets.GetAsync(other) is { } shared)
+        {
+            return shared; // the SSH session's saved password for its files
         }
         var answer = await OnUiAsync(() => _dialogs.PromptLoginAsync(connection, retry));
         if (answer is not { } a)
