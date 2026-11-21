@@ -175,6 +175,10 @@ internal sealed class FakeDialogs : IDialogService
 
     public void ShowCopyQueue(JobQueue jobs, Func<Task> addSelection, Func<string, Task>? openFolder = null) => CopyQueueShown++;
 
+    public int SshTunnelsShown { get; private set; }
+
+    public void ShowSshTunnels(AppSettings settings, TunnelService tunnels, Action save) => SshTunnelsShown++;
+
     public Task<CopyDialogResult?> ShowCopyDialogAsync(bool move, string description, string target, bool verifyDefault, IReadOnlyList<string> suggestions,
         Views.Dialogs.CopyDialogOptions? options = null)
     {

@@ -59,6 +59,8 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
   view of the machines on your local network.
 - Proxies: the system's, HTTP, HTTPS, SOCKS4 / 4a / 5, an SSH tunnel or a PAC script, for the whole program or
   per connection.
+- SSH tunnels: local, remote and SOCKS port forwarding through a saved SSH connection, started by hand or with the
+  program.
 - Browse the trash / Recycle Bin in a panel: restore, copy out, delete for good, empty.
 - Phones, cameras and players connected over USB (MTP) appear as drives: copy photos off a phone, put files on it,
   make folders, rename and delete (Windows; Linux: the folders GNOME mounts for them, or through libmtp on other

@@ -105,6 +105,7 @@ public sealed partial class MainWindowViewModel
         c.Register("nc_LinkConnect", "PC link: the computers connected by a cable or the network that share folders",
             _ => ActivePanel.NavigateAsync(NextCommander.Vfs.Remote.Link.LinkFileSystemProvider.Root));
         c.Register("nc_LinkShare", "PC link: share the folders of the settings with other computers (on / off)", _ => ToggleLinkSharingAsync());
+        c.Register("nc_SshTunnels", "SSH tunnels: ports forwarded through a saved SSH connection", ShowSshTunnels);
         c.Register("nc_FtpNewConnection", "Connect by address (Ctrl+N)", _ => QuickConnectAsync());
         c.Register("nc_FtpHiddenFiles", "Show hidden files on FTP", ToggleFtpHidden);
         c.Register("nc_FtpDownloadList", "Download the addresses in the list", _ => DownloadFromListAsync());

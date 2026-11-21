@@ -350,6 +350,27 @@ public sealed class DialogService : IDialogService
         }
     }
 
+    private Views.Connections.SshTunnelsWindow? _tunnels;
+
+    public void ShowSshTunnels(AppSettings settings, TunnelService tunnels, Action save)
+    {
+        if (_tunnels is { } open)
+        {
+            open.Activate();
+            return;
+        }
+        _tunnels = new Views.Connections.SshTunnelsWindow(settings, tunnels, save);
+        _tunnels.Closed += (_, _) => _tunnels = null;
+        if (Owner is { } owner)
+        {
+            _tunnels.Show(owner);
+        }
+        else
+        {
+            _tunnels.Show();
+        }
+    }
+
     public void ShowTransferManager(JobQueue jobs)
     {
         if (_transfers is { } open)
