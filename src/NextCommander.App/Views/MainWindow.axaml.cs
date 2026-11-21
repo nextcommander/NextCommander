@@ -1135,6 +1135,13 @@ public partial class MainWindow : Window
             }
         }
 
+        // the connection manager's page: back, forward and its overview also while the focus is not inside it
+        if (_page == WorkspacePage.Connections && ConnectionManager is { } manager && manager.Navigate(e))
+        {
+            e.Handled = true;
+            return;
+        }
+
         // another page than the files: only the commands that do not work on the hidden panels
         if (_page != WorkspacePage.Files)
         {

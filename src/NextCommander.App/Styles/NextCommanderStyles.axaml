@@ -641,6 +641,122 @@
   <Style Selector="CheckBox.switch:disabled">
     <Setter Property="Opacity" Value="0.6" />
   </Style>
+
+  <!--
+    The connection manager and the new connection pages (the user's template, 21 November 2026). The Conn* colors are
+    put into the view's resources by ConnectionLook.Apply (light and dark).
+  -->
+  <Style Selector=":is(UserControl).connlook TextBox">
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector=":is(UserControl).connlook ComboBox">
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector=":is(UserControl).connlook TabItem">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="Padding" Value="12,0" />
+  </Style>
+  <Style Selector=":is(UserControl).connlook TabItem TextBlock">
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+  <Style Selector="Button.conncard">
+    <Setter Property="Background" Value="{DynamicResource ConnCard}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ConnStroke}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="VerticalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Top" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.conncard:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.conncard:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ConnCardHover}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ConnStroke2}" />
+    <Setter Property="Foreground" Value="{DynamicResource ConnText}" />
+  </Style>
+  <Style Selector="Button.conncard:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource ConnAccent}" />
+  </Style>
+  <Style Selector="ToggleButton.connchip">
+    <Setter Property="Background" Value="{DynamicResource ConnControl}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ConnStroke2}" />
+    <Setter Property="Foreground" Value="{DynamicResource ConnText2}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="13" />
+    <Setter Property="MinHeight" Value="26" />
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="ToggleButton.connchip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ConnCardHover}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ConnStroke2}" />
+    <Setter Property="Foreground" Value="{DynamicResource ConnText}" />
+  </Style>
+  <Style Selector="ToggleButton.connchip:checked /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.connchip:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ConnAccentSoft}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ConnAccent}" />
+    <Setter Property="Foreground" Value="{DynamicResource ConnAccent}" />
+  </Style>
+  <!-- the favorite star of a connection's header: no frame, gold while it is a favorite -->
+  <Style Selector="ToggleButton.connstar">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource ConnText3}" />
+    <Setter Property="Width" Value="32" />
+    <Setter Property="Height" Value="32" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="ToggleButton.connstar:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ConnHover}" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector="ToggleButton.connstar:checked /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.connstar:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Foreground" Value="#D79A1C" />
+  </Style>
+  <!-- the list of connections: a quiet selection (not the accent color), rounded rows -->
+  <Style Selector="ListBox.conntree ListBoxItem">
+    <Setter Property="Padding" Value="8,4" />
+    <Setter Property="Margin" Value="0,1" />
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="ListBox.conntree ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="ListBox.conntree ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ConnHover}" />
+    <Setter Property="Foreground" Value="{DynamicResource ConnText}" />
+  </Style>
+  <Style Selector="ListBox.conntree ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter, ListBox.conntree ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter, ListBox.conntree ListBoxItem:selected:focus /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ConnSelected}" />
+    <Setter Property="Foreground" Value="{DynamicResource ConnText}" />
+  </Style>
+  <Style Selector="Expander.connmore">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Background" Value="{DynamicResource ConnCard}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ConnStroke}" />
+  </Style>
+  <Style Selector="Expander.connmore /template/ ToggleButton#ExpanderHeader">
+    <Setter Property="Background" Value="{DynamicResource ConnCard}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ConnStroke}" />
+    <Setter Property="MinHeight" Value="52" />
+  </Style>
+  <Style Selector="Expander.connmore /template/ Border#ExpanderContent">
+    <Setter Property="Background" Value="{DynamicResource ConnCard}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ConnStroke}" />
+    <Setter Property="Padding" Value="16,4,16,12" />
+  </Style>
   <Style Selector="StackPanel.buttonrow">
     <Setter Property="Orientation" Value="Horizontal" />
     <Setter Property="Spacing" Value="8" />

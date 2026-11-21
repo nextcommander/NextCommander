@@ -17,7 +17,7 @@
     "Controls.DisabledText": "#6E6E6E",          // Text of disabled controls
     "Lists.HoverBackground": "#2A2D2E",          // Row under the mouse in lists (settings, dialog boxes)
     "Lists.SelectedBackground": "#37373D",       // Selected row in lists
-    "MenuBar.Background": "#3C3C3C",             // Background of the main menu bar
+    "MenuBar.Background": "#1E1E1E",             // Background of the main menu bar (as the file list)
     "MenuBar.Text": "#CCCCCC",                   // Text of the main menu bar
     "Menu.Background": "#252526",                // Background of drop-down and context menus
     "Menu.Border": "#454545",                    // Frame of drop-down and context menus
@@ -26,8 +26,10 @@
     "Menu.HoverText": "#CCCCCC",                 // Text of the menu item under the mouse
     "Menu.GestureText": "#858585",               // Shortcut keys shown in menus
     "Menu.DisabledText": "#6E6E6E",              // Disabled menu items
-    "ButtonBar.Background": "#333333",           // Background of the button bar
+    "ButtonBar.Background": "#1E1E1E",           // Background of the button bar (as the file list)
     "Drives.Icon": "#9DA5B4",                    // Icons on the drive buttons
+    "Drives.Background": "#1E1E1E",              // Line of the drive box above the panel (as the file list)
+    "Bars.Line": "#3C3C3C",                      // Line under the menu bar, the button bar and the drive buttons
     "Tabs.Background": "#252526",                // Folder tab strip
     "Tabs.ActiveBackground": "#1E1E1E",          // Active tab
     "Tabs.PassiveLine": "#8C007ACC",             // Faint underline of the selected tab in the inactive panel

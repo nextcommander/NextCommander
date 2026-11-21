@@ -301,6 +301,9 @@ public sealed class RemoteConnection
     /// <summary>The shared login the connection uses (<see cref="SharedCredential.Id"/>; null: its own user and password).</summary>
     public string? CredentialId { get; set; }
 
+    /// <summary>When it was opened from the connection manager last (the manager's recently used).</summary>
+    public DateTime? LastUsed { get; set; }
+
     /// <summary>FTP: the encoding of file names (empty: UTF-8 when the server supports it, otherwise the system's).</summary>
     public string? FtpEncoding { get; set; }
 
