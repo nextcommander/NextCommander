@@ -186,7 +186,7 @@ built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC l
 - [x] Shared credentials: one user / password entry used by several connections (Login / Logins... in the connection editor, `SharedCredential`, the password under `credential:<id>`).
 - [ ] SSH agent forwarding: not possible with SSH.NET 2026.0.0 (checked 21 November 2026): its channel messages know only session, x11, direct-tcpip and forwarded-tcpip, so the server's `auth-agent@openssh.com` channel cannot be accepted, nor can `auth-agent-req@openssh.com` be sent. Needs a change in SSH.NET (or another SSH library).
 - [x] Split terminal: two or four terminals in one tab (the terminal's Split menu: side by side, one above the other, four).
-- [ ] Monitor bar of an SSH server: CPU, memory, disk and network through commands over SSH.
+- [x] Monitor bar of an SSH server: CPU, memory, disk and network through commands over SSH (the terminal's Monitor button; Linux /proc, `ServerStats`; tested with recorded output, to be tried against real servers).
 - [ ] A connection's own terminal look: font, color scheme, tab color (a production server in red).
 - [ ] Network tools: Wake-on-LAN, ping, port scan.
 - [ ] Highlighting words such as "error" / "warning" in the terminal output.

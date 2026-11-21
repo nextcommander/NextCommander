@@ -3504,5 +3504,12 @@
   "TerminalView.OneTerminal": "Tek terminal",
   "TerminalView.TwoSideBySide": "Yan yana iki",
   "TerminalView.TwoAboveEachOther": "Üst üste iki",
-  "TerminalView.Four": "Dört"
+  "TerminalView.Four": "Dört",
+  "ServerMonitor.NoCounters": "Bu sunucuda sayaç yok (yalnızca Linux sunucularında /proc var).",
+  "TerminalView.MonitorTip": "Bu SSH oturumunun sunucusunun CPU, bellek, disk ve ağ durumu, birkaç saniyede bir okunur",
+  "TerminalView.Load": "Yük {0} ({1} CPU)",
+  "TerminalView.Monitor": "İzle",
+  "TerminalView.Reading": "Sunucunun sayaçları okunuyor...",
+  "TerminalView.Up": "Açık: {0}",
+  "TerminalView.DiskRoot": "Disk /"
 }

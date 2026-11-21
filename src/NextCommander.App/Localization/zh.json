@@ -3504,5 +3504,12 @@
   "TerminalView.OneTerminal": "一个终端",
   "TerminalView.TwoSideBySide": "左右两个",
   "TerminalView.TwoAboveEachOther": "上下两个",
-  "TerminalView.Four": "四个"
+  "TerminalView.Four": "四个",
+  "ServerMonitor.NoCounters": "此服务器没有计数器（只有 Linux 服务器有 /proc）。",
+  "TerminalView.MonitorTip": "此 SSH 会话服务器的 CPU、内存、磁盘和网络，每隔几秒读取一次",
+  "TerminalView.Load": "负载 {0}（{1} 个 CPU）",
+  "TerminalView.Monitor": "监控",
+  "TerminalView.Reading": "正在读取服务器计数器...",
+  "TerminalView.Up": "已运行 {0}",
+  "TerminalView.DiskRoot": "磁盘 /"
 }

@@ -1366,6 +1366,7 @@ public partial class MainWindow : Window
             _terminal.HeightRatioChanged += (_, _) => _vm.Settings.TerminalHeightRatio = Math.Round(_terminal.HeightRatio, 3);
             _terminal.FilesRequested += (_, e) => _ = _vm.OpenSshFilesAsync(e.Connection, e.Folder);
             _terminal.Snippets = () => _vm.Settings.TerminalSnippets;
+            _terminal.ProbeFactory = c => new NextCommander.Vfs.Remote.SshServerProbe(c.Clone(), _vm.Remote?.Hooks ?? new NextCommander.Vfs.Remote.RemoteHooks());
             _terminal.EditSnippetsRequested += (_, _) => _ = _vm.EditTerminalSnippetsAsync();
             _terminal.LogFolderRequested += (_, folder) =>
             {
