@@ -39,10 +39,11 @@ public sealed class PackDialog : Window
         ("TGZ", PackFormat.TarGz, "Linux standard", "tar + gzip: the usual format on Linux and macOS."),
         ("TBZ", PackFormat.TarBz2, "Smaller, slower", "tar + bzip2: smaller than gzip, slower to pack."),
         ("TZST", PackFormat.TarZst, "Fast and small", "tar + Zstandard: fast packing with good compression."),
+        ("ISO", PackFormat.Iso, "Disc image", "A CD / DVD image (ISO 9660 with long names): burned or mounted as a disc; no compression; files up to 4 GB."),
     ];
 
     /// <summary>Extensions the name may end in (swapped when the packer changes).</summary>
-    private static readonly string[] s_extensions = ["zip", "7z", "tar", "tar.gz", "tgz", "tar.bz2", "tbz", "tar.zst", "tzst", "exe", "sfx"];
+    private static readonly string[] s_extensions = ["zip", "7z", "tar", "tar.gz", "tgz", "tar.bz2", "tbz", "tar.zst", "tzst", "iso", "exe", "sfx"];
 
     /// <summary>The words for a password's strength 0..4.</summary>
     private static readonly string[] s_strengths = ["Very weak", "Weak", "Fair", "Good", "Strong"];
@@ -555,7 +556,7 @@ public sealed class PackDialog : Window
 
     private bool ZipChosen => Selected.Format == PackFormat.Zip && Selected.Plugin is null;
 
-    private bool HasLevel => Selected.Plugin is not null || Selected.Format != PackFormat.Tar;
+    private bool HasLevel => Selected.Plugin is not null || Selected.Format is not (PackFormat.Tar or PackFormat.Iso);
 
     private bool CanEncrypt => Selected.Plugin is { } p ? p.SupportsPassword : Selected.Format is PackFormat.Zip or PackFormat.SevenZip;
 
@@ -598,7 +599,7 @@ public sealed class PackDialog : Window
             PackFormat.SevenZip => 0.32,
             PackFormat.TarBz2 => 0.36,
             PackFormat.TarZst => 0.35,
-            PackFormat.Tar => 1.0,
+            PackFormat.Tar or PackFormat.Iso => 1.0,
             _ => 0.40,
         };
         var ratio = level == 0 ? 1.0 : Math.Min(1, baseRatio + level switch { <= 2 => 0.08, <= 4 => 0.04, <= 6 => 0, <= 8 => -0.02, _ => -0.04 });

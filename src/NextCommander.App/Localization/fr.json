@@ -3565,5 +3565,16 @@
   "TerminalView.TypeInAllOn": "● Taper dans tous",
   "ArchiveContainer.ADiscImageIsRead": "{0} : une image disque est en lecture seule.",
   "DiscImage.NotADiscImage": "Pas une image disque (aucun système de fichiers ISO 9660 ou UDF trouvé).",
-  "DiscImage.NotReadable": "Pas une image disque lisible : {0}"
+  "DiscImage.NotReadable": "Pas une image disque lisible : {0}",
+  "Menu.nc_MountImage": "Monter l’image disque",
+  "Menu.nc_UnmountImage": "Démonter l’image disque",
+  "Command.nc_MountImage": "Monter l’image disque sous le curseur et ouvrir son lecteur",
+  "Command.nc_UnmountImage": "Démonter l’image disque sous le curseur",
+  "MainWindow.PutTheCursorOnAnImage": "Placez le curseur sur une image disque (.iso) de cet ordinateur.",
+  "MainWindow.TheDiscImageIsNotMounted": "L’image disque n’est pas montée.",
+  "PackDialog.IsoDescription": "Une image CD / DVD (ISO 9660 avec noms longs) : gravée ou montée comme un disque ; sans compression ; fichiers jusqu’à 4 Go.",
+  "PackDialog.DiscImage": "Image disque",
+  "PackJob.TooLargeForADiscImage": "Trop volumineux pour une image disque : un fichier ISO 9660 fait au plus 4 Go.",
+  "DiskImages.CouldNotBeUnmounted": "{0} n’a pas pu être démonté : {1}",
+  "PackJob.CouldNotBeWritten": "L’image disque n’a pas pu être écrite : {0}"
 }

@@ -44,6 +44,8 @@ public static class MenuIcons
         ["nc_SetAttrib"] = new("MiAttrib", Blue),
         ["nc_PackFiles"] = new("FmArchiveIcon", Purple, "OvPlus", Green),
         ["nc_UnpackFiles"] = new("FmArchiveIcon", Purple, "OvArrowDown", Green),
+        ["nc_MountImage"] = new("FmArchiveIcon", Blue, "OvPlus", Green),
+        ["nc_UnmountImage"] = new("FmArchiveIcon", Blue, "OvX", Red),
         ["nc_TestArchive"] = new("FmArchiveIcon", Purple, "OvCheck", Green),
         ["nc_OpenArchive"] = new("FmArchiveIcon", Purple, "OvArrowRight", Blue),
         ["nc_CompareFilesByContent"] = new("MiCompare", Blue),

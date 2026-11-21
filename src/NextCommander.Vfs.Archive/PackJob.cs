@@ -17,6 +17,9 @@ public enum PackFormat
 
     /// <summary>Written with the 7-Zip command line program (<see cref="SevenZipCli"/>).</summary>
     SevenZip,
+
+    /// <summary>A disc image (ISO 9660 with Joliet names; no compression), written with DiscUtils.</summary>
+    Iso,
 }
 
 public sealed record PackOptions
@@ -101,6 +104,7 @@ public sealed class PackJob : FileJob
         PackFormat.TarGz => ".tar.gz",
         PackFormat.TarBz2 => ".tar.bz2",
         PackFormat.SevenZip => ".7z",
+        PackFormat.Iso => ".iso",
         _ => ".tar.zst",
     };
 
@@ -174,6 +178,10 @@ public sealed class PackJob : FileJob
             else if (_options.Format == PackFormat.SevenZip)
             {
                 await WriteSevenZipAsync(local, items, ct).ConfigureAwait(false);
+            }
+            else if (_options.Format == PackFormat.Iso)
+            {
+                await WriteIsoAsync(local, items, ct).ConfigureAwait(false);
             }
             else
             {
@@ -559,6 +567,97 @@ public sealed class PackJob : FileJob
         public void Report(long value) => report(value);
     }
 
+    /// <summary>The largest file an ISO 9660 image holds (one extent: 4 GB less one byte).</summary>
+    public const long IsoMaxFileSize = uint.MaxValue;
+
+    /// <summary>
+    /// The volume label of an image from its file name ("Backup 2026-11.iso" → "BACKUP_2026_11"): ISO 9660 allows
+    /// A-Z, 0-9 and _ and at most 32 characters.
+    /// </summary>
+    public static string IsoVolumeLabel(string fileName)
+    {
+        var name = Path.GetFileNameWithoutExtension(fileName).ToUpperInvariant();
+        var label = new string([.. name.Select(c => c is (>= 'A' and <= 'Z') or (>= '0' and <= '9') ? c : '_')]).Trim('_');
+        while (label.Contains("__", StringComparison.Ordinal))
+        {
+            label = label.Replace("__", "_", StringComparison.Ordinal);
+        }
+        return label.Length == 0 ? "DISC" : label[..Math.Min(32, label.Length)];
+    }
+
+    /// <summary>
+    /// A disc image: the folders and files with their Joliet names (and times), written in one pass by DiscUtils'
+    /// CDBuilder. Local files are read while the image is written; files elsewhere (servers, archives) are copied to a
+    /// temporary folder first. A file of 4 GB or more does not fit (ISO 9660) and is left out with an error.
+    /// </summary>
+    private async Task WriteIsoAsync(string local, List<Item> items, CancellationToken ct)
+    {
+        var builder = new DiscUtils.Iso9660.CDBuilder { UseJoliet = true, VolumeIdentifier = IsoVolumeLabel(_target.Name) };
+        var staging = Path.Combine(ArchiveSettings.TempRoot, "iso-" + Guid.NewGuid().ToString("N"));
+        var readLater = 0L;
+        try
+        {
+            foreach (var item in items)
+            {
+                await CheckpointAsync(ct).ConfigureAwait(false);
+                var name = item.Name.Replace('/', '\\');
+                if (item.Entry.IsDirectory)
+                {
+                    builder.AddDirectory(name).CreationTime = item.Entry.LastWriteTime.ToUniversalTime();
+                    continue;
+                }
+                if (item.Entry.Size > IsoMaxFileSize)
+                {
+                    await WithErrorHandlingAsync(item.Entry.Path.ToDisplayString(),
+                        () => throw new IOException("Too large for a disc image: an ISO 9660 file can be at most 4 GB."), ct).ConfigureAwait(false);
+                    Progress.SkipFile(item.Entry.Size);
+                    continue;
+                }
+                string source;
+                if (item.Entry.Path.IsLocal)
+                {
+                    source = item.Entry.Path.Path;
+                    readLater += item.Entry.Size;
+                }
+                else
+                {
+                    Directory.CreateDirectory(staging);
+                    source = Path.Combine(staging, builder.GetHashCode().ToString("x", System.Globalization.CultureInfo.InvariantCulture) + "-" + items.IndexOf(item).ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    var copied = false;
+                    await CopyAsync(item.Entry, async from =>
+                    {
+                        await using var to = File.Create(source);
+                        await from.CopyToAsync(to, ct).ConfigureAwait(false);
+                        copied = true;
+                    }, ct).ConfigureAwait(false);
+                    if (!copied)
+                    {
+                        continue;
+                    }
+                }
+                builder.AddFile(name, source).CreationTime = item.Entry.LastWriteTime.ToUniversalTime(); // the image keeps UTC
+            }
+            Progress.BeginItem(_target.Name, readLater);
+            await Task.Run(() =>
+            {
+                using var output = new FileStream(local, FileMode.Create, FileAccess.Write, FileShare.None, 1024 * 1024);
+                using var counted = new ProgressWriteStream(output, this, readLater, ct);
+                builder.Build(counted);
+            }, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or NotSupportedException)
+        {
+            throw new IOException("The disc image could not be written: " + ex.Message, ex);
+        }
+        finally
+        {
+            if (Directory.Exists(staging))
+            {
+                Directory.Delete(staging, recursive: true);
+            }
+        }
+    }
+
     private async Task WriteTarAsync(Stream output, List<Item> items, CancellationToken ct)
     {
         var compression = _options.Format switch
@@ -595,6 +694,49 @@ public sealed class PackJob : FileJob
 }
 
 /// <summary>Counts bytes read for the progress window and honors pause / cancel between reads.</summary>
+/// <summary>The image being written: its bytes count as progress (up to the files' size), pause and cancel are honored.</summary>
+internal sealed class ProgressWriteStream(Stream inner, PackJob job, long limit, CancellationToken ct) : Stream
+{
+    private long _reported;
+
+    public override bool CanRead => false;
+
+    public override bool CanSeek => inner.CanSeek;
+
+    public override bool CanWrite => true;
+
+    public override long Length => inner.Length;
+
+    public override long Position
+    {
+        get => inner.Position;
+        set => inner.Position = value;
+    }
+
+    public override void Write(byte[] buffer, int offset, int count) => Write(buffer.AsSpan(offset, count));
+
+    public override void Write(ReadOnlySpan<byte> buffer)
+    {
+        ct.ThrowIfCancellationRequested();
+        job.WaitAsync(ct).GetAwaiter().GetResult();
+        inner.Write(buffer);
+        var report = (int)Math.Min(buffer.Length, Math.Max(0, limit - _reported));
+        if (report > 0)
+        {
+            _reported += report;
+            job.Report(report);
+        }
+    }
+
+    public override void Flush() => inner.Flush();
+
+    public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+    public override long Seek(long offset, SeekOrigin origin) => inner.Seek(offset, origin);
+
+    public override void SetLength(long value) => inner.SetLength(value);
+}
+
 internal sealed class ProgressReadStream(Stream inner, PackJob job, CancellationToken ct) : Stream
 {
     public override bool CanRead => true;

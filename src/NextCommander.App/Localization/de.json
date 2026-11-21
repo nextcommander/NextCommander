@@ -3565,5 +3565,16 @@
   "TerminalView.TypeInAllOn": "● In alle tippen",
   "ArchiveContainer.ADiscImageIsRead": "{0}: ein Disc-Image ist schreibgeschützt.",
   "DiscImage.NotADiscImage": "Kein Disc-Image (kein ISO-9660- oder UDF-Dateisystem gefunden).",
-  "DiscImage.NotReadable": "Kein lesbares Disc-Image: {0}"
+  "DiscImage.NotReadable": "Kein lesbares Disc-Image: {0}",
+  "Menu.nc_MountImage": "Disc-Image einbinden",
+  "Menu.nc_UnmountImage": "Disc-Image auswerfen",
+  "Command.nc_MountImage": "Das Disc-Image unter dem Cursor einbinden und sein Laufwerk öffnen",
+  "Command.nc_UnmountImage": "Das Disc-Image unter dem Cursor auswerfen",
+  "MainWindow.PutTheCursorOnAnImage": "Setzen Sie den Cursor auf ein Disc-Image (.iso) auf diesem Computer.",
+  "MainWindow.TheDiscImageIsNotMounted": "Das Disc-Image ist nicht eingebunden.",
+  "PackDialog.IsoDescription": "Ein CD-/DVD-Image (ISO 9660 mit langen Namen): als Disc gebrannt oder eingebunden; keine Komprimierung; Dateien bis 4 GB.",
+  "PackDialog.DiscImage": "Disc-Image",
+  "PackJob.TooLargeForADiscImage": "Zu groß für ein Disc-Image: eine ISO-9660-Datei darf höchstens 4 GB groß sein.",
+  "DiskImages.CouldNotBeUnmounted": "{0} konnte nicht ausgeworfen werden: {1}",
+  "PackJob.CouldNotBeWritten": "Das Disc-Image konnte nicht geschrieben werden: {0}"
 }

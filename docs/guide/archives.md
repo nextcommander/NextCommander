@@ -16,7 +16,7 @@ in place.
 | rar (including RAR5) | yes | no | no |
 | tar, tar.gz, tar.bz2, tar.xz, tar.zst | yes | no | tar, tar.gz, tar.bz2, tar.zst |
 | single files: .gz, .bz2, .xz, .zst | yes | no | no |
-| disc images: .iso (ISO 9660 with Joliet names, UDF) | yes | no | no |
+| disc images: .iso (ISO 9660 with Joliet names, UDF) | yes | no | iso (ISO 9660 + Joliet) |
 
 Plugins can add more formats.
 
@@ -28,6 +28,17 @@ Split archives are read-only. The later volumes do not open by themselves.
 **Disc images:** Enter on an `.iso` file shows the files of the disc: CD images by their ISO 9660 file system with
 the long (Joliet) names, DVD and Blu-ray images by their UDF file system. Files can be viewed, copied out, searched
 and compared like any archive's; the image itself is not changed.
+
+**Packing into a disc image:** choose **ISO** in the pack dialog (Alt+F5): the files and folders become an ISO 9660
+image with long (Joliet) names and their dates, ready to burn or mount. There is no compression; a single file can
+be at most 4 GB (larger ones are left out with an error). The volume label comes from the file name (`Backup
+2026-11.iso` → `BACKUP_2026_11`).
+
+**Mounting:** *Files > Archive > Mount disc image* mounts the `.iso` under the cursor through the system, read-only,
+and opens its drive in the panel; on a mounted image it goes to its drive. *Unmount disc image* takes it away. A
+mounted image is an ordinary drive: every program can open its files and an installer on it runs. Windows mounts with
+Mount-DiskImage (no administrator rights needed), Linux with udisks (a loop device under /media or /run/media),
+macOS with hdiutil (under /Volumes).
 
 ## Opening an archive
 

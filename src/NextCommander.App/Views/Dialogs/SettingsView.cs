@@ -2338,7 +2338,7 @@ public sealed class SettingsView : UserControl
 
             // Packer
             Choice(packer, "Packer", "Default archive format", "Format preselected in the Alt+F5 dialog.",
-                [("zip", "zip"), ("7z", "7z"), ("tar", "tar"), ("tar.gz", "tar.gz"), ("tar.bz2", "tar.bz2"), ("tar.zst", "tar.zst")], s => s.PackFormat, (s, v) => s.PackFormat = v),
+                [("zip", "zip"), ("7z", "7z"), ("tar", "tar"), ("tar.gz", "tar.gz"), ("tar.bz2", "tar.bz2"), ("tar.zst", "tar.zst"), ("iso", "iso")], s => s.PackFormat, (s, v) => s.PackFormat = v),
             Bool(packer, "Archives", "Set the archive date to the date of its newest file", "Applies to archives packed to a local disk.",
                 s => s.PackSetArchiveDate, (s, v) => s.PackSetArchiveDate = v),
             Bool(packer, "Archives", "Enter opens archives", "When off, archives open with the system application (Ctrl+PgDn always enters).", s => s.OpenArchivesOnEnter, (s, v) => s.OpenArchivesOnEnter = v),

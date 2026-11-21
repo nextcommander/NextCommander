@@ -38,7 +38,7 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
 
 ### Archives
 - Open zip, 7z, rar, tar and other archives, and .iso disc images, like folders; change zip files in place.
-- Pack to zip, tar and (with 7-Zip installed) 7z, with passwords; unpack and test archives.
+- Pack to zip, tar, iso and (with 7-Zip installed) 7z, with passwords; unpack and test archives; mount .iso images.
 
 ### Remote and cloud
 - FTP, FTPS, SFTP, SCP, WebDAV, SMB, Amazon S3 (and compatible stores), Azure Blob Storage, Azure Files,
