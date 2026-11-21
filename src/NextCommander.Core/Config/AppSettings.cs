@@ -1264,6 +1264,9 @@ public sealed class AppSettings
 
     public Tools.ChecksumKind ChecksumKind { get; set; } = Tools.ChecksumKind.Sha256;
 
+    /// <summary>Create checksums: BSD style lines ("SHA256 (name) = hash") the last time (the dialog's line format).</summary>
+    public bool ChecksumBsd { get; set; }
+
     public string SplitSize { get; set; } = "100M";
 
     public List<string> SearchTextHistory { get; set; } = [];

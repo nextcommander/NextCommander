@@ -3451,21 +3451,22 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             return;
         }
         var baseName = sources.Count == 1 ? (sources[0].IsDirectory ? sources[0].Name : sources[0].BaseName) : (dir.Name is { Length: > 0 } n ? n : "checksums");
-        if (await _dialogs.ShowChecksumDialogAsync(baseName, _settings.ChecksumKind) is not { } choice)
+        // the dialog reads the files itself (its progress, the checksums, the comparison with an expected one)
+        var request = new Views.Dialogs.ChecksumDialogRequest(sources, dir, baseName, _settings.ChecksumKind, _settings.ChecksumBsd, choice =>
         {
-            return;
-        }
-        _settings.ChecksumKind = choice.Kind;
-        VfsPath? single = null;
-        if (choice.SingleFileName is { } name)
-        {
-            if (string.IsNullOrWhiteSpace(name))
+            _settings.ChecksumKind = choice.Kind;
+            _settings.ChecksumBsd = choice.Bsd || (_settings.ChecksumBsd && choice.Kind == ChecksumKind.Crc32);
+            return new CreateChecksumsJob(_registry, sources, choice.Kind, choice.Output == Views.Dialogs.ChecksumOutput.OneFile ? choice.SingleFile : null)
             {
-                return;
-            }
-            single = dir.Combine(name);
+                Interaction = new UiJobInteraction(_dialogs),
+                Bsd = choice.Bsd,
+                WriteFiles = choice.Output != Views.Dialogs.ChecksumOutput.Clipboard,
+            };
+        });
+        if (await _dialogs.ShowChecksumDialogAsync(request) is { } job && job.WriteFiles)
+        {
+            await AfterJobAsync(job, panel, sources); // the new files in the panel, the operation log
         }
-        await RunJobAsync(new CreateChecksumsJob(_registry, sources, choice.Kind, single) { Interaction = new UiJobInteraction(_dialogs) }, false, panel, sources);
     }
 
     /// <summary>Checks the selected checksum files (.md5, .sha, .sha256, .sfv ...) and lists the results.</summary>

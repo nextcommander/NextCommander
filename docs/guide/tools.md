@@ -237,8 +237,16 @@ panel is next to it, *Folder...* scans another folder (chosen in the folder tree
 
 *Files > Checksum*:
 
-- **Create checksums (MD5/SHA)...:** CRC32 (SFV), MD5, SHA-1, SHA-256, SHA-384, SHA-512, BLAKE3 and, where the
-  system supports it, SHA-3. One file for all selected files, or one per file.
+- **Create checksums (MD5/SHA)...:** the algorithm is chosen on cards: MD5, SHA-1, **SHA-256** (recommended: what
+  download pages and Linux images publish), SHA-512, BLAKE3 (the fastest), CRC32 (an .sfv file; finds copy errors only)
+  and SHA-384 and, where the system supports it, SHA-3. A line under the cards says what each is good for; the old ones
+  are marked. The result goes into **one checksum file** (its name follows the algorithm's extension; **…** chooses
+  another folder), **a file beside each file**, or **only the clipboard** (no file is written). The **preview** shows
+  the lines in the *Standard* format (`hash *name`, read by sha256sum and most tools) or the *BSD style*
+  (`SHA256 (name) = hash`, macOS and BSD). **Create** reads the files in the dialog with its progress, then shows the
+  checksums (*Copy* copies them); **Done** closes it. An **expected checksum** pasted under the preview is compared
+  with the result (*Match* names the file; one of another length offers that algorithm); pasted before, it chooses
+  the algorithm of its length when only one has it.
 - **Verify checksums:** reads checksum files in the common formats and lists the files that are OK, different or
   missing.
 

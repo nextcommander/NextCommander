@@ -329,8 +329,19 @@ internal sealed class FakeDialogs : IDialogService
 
     public Task<AttributeChange?> ShowAttributesDialogAsync(IReadOnlyList<VfsEntry> entries) => Task.FromResult(NextAttributes);
 
-    public Task<(NextCommander.Core.Tools.ChecksumKind Kind, string? SingleFileName)?> ShowChecksumDialogAsync(string baseName, NextCommander.Core.Tools.ChecksumKind kind) =>
-        Task.FromResult(NextChecksum);
+    /// <summary>The checksum dialog: with <see cref="NextChecksum"/> its job runs (one file by that name, or a file each).</summary>
+    public async Task<NextCommander.Core.Tools.CreateChecksumsJob?> ShowChecksumDialogAsync(Views.Dialogs.ChecksumDialogRequest request)
+    {
+        if (NextChecksum is not { } next)
+        {
+            return null;
+        }
+        var job = request.MakeJob(new Views.Dialogs.ChecksumChoice(next.Kind,
+            next.SingleFileName is null ? Views.Dialogs.ChecksumOutput.EachFile : Views.Dialogs.ChecksumOutput.OneFile,
+            next.SingleFileName is null ? null : request.Folder.Combine(next.SingleFileName), false));
+        await job.RunAsync();
+        return job;
+    }
 
     /// <summary>Answer of the next pack dialog (null = cancel).</summary>
     public PackDialogResult? NextPack { get; set; }
