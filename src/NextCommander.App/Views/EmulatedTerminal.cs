@@ -116,6 +116,12 @@ public sealed class EmulatedTerminal : TerminalTab
 
     public override void Receive(string text) => Send(text);
 
+    public override void TypeText(string text)
+    {
+        Type(text);
+        Dispatcher.UIThread.Post(() => _screen.Focus(), DispatcherPriority.Input);
+    }
+
     public override void Restart()
     {
         var old = _terminal;

@@ -1365,6 +1365,8 @@ public partial class MainWindow : Window
             // the height and the open tabs are kept in the settings
             _terminal.HeightRatioChanged += (_, _) => _vm.Settings.TerminalHeightRatio = Math.Round(_terminal.HeightRatio, 3);
             _terminal.FilesRequested += (_, e) => _ = _vm.OpenSshFilesAsync(e.Connection, e.Folder);
+            _terminal.Snippets = () => _vm.Settings.TerminalSnippets;
+            _terminal.EditSnippetsRequested += (_, _) => _ = _vm.EditTerminalSnippetsAsync();
             _terminal.LogFolderRequested += (_, folder) =>
             {
                 Directory.CreateDirectory(folder);

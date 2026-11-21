@@ -1508,6 +1508,8 @@ public sealed class SettingsView : UserControl
                     }
                 }
                 return null;
+            case TerminalSnippet snippet:
+                return string.IsNullOrWhiteSpace(snippet.Command) ? "Command is empty" : null;
             case ColorRule rule:
                 if (string.IsNullOrWhiteSpace(rule.Mask))
                 {
@@ -1660,6 +1662,21 @@ public sealed class SettingsView : UserControl
     };
 
     /// <summary>Configuration > Misc.: the Start menu.</summary>
+    private static ListEditorOptions<TerminalSnippet> SnippetOptions() => new()
+    {
+        Create = () => new TerminalSnippet { Name = "New command" },
+        Clone = CloneEntry,
+        Summary = s => s.Name.Length > 0 ? s.Name : s.Command,
+        Validate = s => ValidateEntry(s),
+        AddText = "Add command",
+        Fields =
+        [
+            new("Name in the menu", ListFieldKind.Text, s => s.Name, (s, v) => s.Name = v ?? string.Empty),
+            new("Command", ListFieldKind.Text, s => s.Command, (s, v) => s.Command = v ?? string.Empty) { PlaceholderText = "e.g. tail -f /var/log/syslog" },
+            new("Press Enter after it", ListFieldKind.Bool, s => s.Enter.ToString(), (s, v) => s.Enter = bool.TryParse(v, out var enter) && enter),
+        ],
+    };
+
     private static ListEditorOptions<ButtonDefinition> StartMenuOptions() => new()
     {
         Create = () => new ButtonDefinition { Label = "New program", Command = string.Empty },
@@ -2383,6 +2400,9 @@ public sealed class SettingsView : UserControl
                 s => s.TerminalLogAll, (s, v) => s.TerminalLogAll = v),
             Text(misc, "Internal terminal", "Folder of the terminal logs", "Where the log files of the terminal tabs go (empty: logs/terminal in the settings folder).",
                 s => s.TerminalLogFolder, (s, v) => s.TerminalLogFolder = v ?? string.Empty, "logs/terminal in the settings folder"),
+            ListItem(misc, "Internal terminal", "Saved commands (snippets)",
+                "Commands sent to the active terminal tab with a click in the terminal's Snippets menu (with MultiExec to every checked tab).",
+                s => s.TerminalSnippets, (s, v) => s.TerminalSnippets = v, SnippetOptions()),
             ListItem(misc, "Start menu", "Start menu", "The items of the Start menu: a program (with parameters and start folder) or a nc_ command; separators group them.",
                 s => s.StartMenu, (s, v) => s.StartMenu = v, StartMenuOptions()),
 

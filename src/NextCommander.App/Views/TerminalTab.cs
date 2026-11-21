@@ -132,6 +132,9 @@ public abstract class TerminalTab : Border
 
     protected void RaiseTyped(string text) => Typed?.Invoke(this, text);
 
+    /// <summary>Text typed as by the user (a saved command): goes on to the other tabs with MultiExec; "\r" is Enter.</summary>
+    public abstract void TypeText(string text);
+
     /// <summary>Text typed in another tab (MultiExec): keys and pasted text, "\r" ends a line.</summary>
     public abstract void Receive(string text);
 

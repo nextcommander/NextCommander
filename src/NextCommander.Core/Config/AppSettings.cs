@@ -622,6 +622,9 @@ public sealed class AppSettings
     /// <summary>Internal terminal: the folder of the log files (empty: logs/terminal in the settings folder).</summary>
     public string TerminalLogFolder { get; set; } = string.Empty;
 
+    /// <summary>Internal terminal: saved commands sent with a click (the Snippets menu of the terminal).</summary>
+    public List<TerminalSnippet> TerminalSnippets { get; set; } = [];
+
     /// <summary>Internal terminal: its height as a part of the window (kept between sessions).</summary>
     public double TerminalHeightRatio { get; set; } = 0.45;
 

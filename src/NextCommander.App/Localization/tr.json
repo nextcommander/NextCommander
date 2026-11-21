@@ -3470,5 +3470,14 @@
   "TerminalView.NoResults": "Sonuç yok",
   "TerminalView.OlderMatch": "Daha eski eşleşme (Enter)",
   "TerminalView.TypeHereToo": "Buraya da yaz (MultiExec)",
-  "TerminalView.MultiExecTip": "Aynı anda birden çok terminale yaz: bir sekmede yazılan, işaretli tüm sekmelere gider"
+  "TerminalView.MultiExecTip": "Aynı anda birden çok terminale yaz: bir sekmede yazılan, işaretli tüm sekmelere gider",
+  "Settings.Misc.Snippets": "Kayıtlı komutlar (snippet'ler)",
+  "Settings.Misc.Snippets.Description": "Terminalin Snippet'ler menüsünden tek tıkla etkin terminal sekmesine gönderilen komutlar (MultiExec açıkken işaretli tüm sekmelere).",
+  "SettingsWindow.AddCommand": "Komut ekle",
+  "SettingsWindow.CommandIsEmpty": "Komut boş",
+  "SettingsWindow.PressEnterAfterIt": "Ardından Enter'a bas",
+  "TerminalView.Snippets": "Snippet'ler ▾",
+  "TerminalView.SnippetsTip": "Kayıtlı komutlar: tek tıkla bu sekmeye gönderilir",
+  "TerminalView.EditSavedCommands": "Kayıtlı komutları düzenle...",
+  "TerminalView.NoSavedCommandsYet": "Henüz kayıtlı komut yok"
 }

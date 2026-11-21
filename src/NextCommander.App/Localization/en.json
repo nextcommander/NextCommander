@@ -3470,5 +3470,14 @@
   "TerminalView.NoResults": "No results",
   "TerminalView.OlderMatch": "Older match (Enter)",
   "TerminalView.TypeHereToo": "Type here too (MultiExec)",
-  "TerminalView.MultiExecTip": "Type into several terminals at once: what is typed in one tab goes to every tab checked"
+  "TerminalView.MultiExecTip": "Type into several terminals at once: what is typed in one tab goes to every tab checked",
+  "Settings.Misc.Snippets": "Saved commands (snippets)",
+  "Settings.Misc.Snippets.Description": "Commands sent to the active terminal tab with a click in the terminal's Snippets menu (with MultiExec to every checked tab).",
+  "SettingsWindow.AddCommand": "Add command",
+  "SettingsWindow.CommandIsEmpty": "Command is empty",
+  "SettingsWindow.PressEnterAfterIt": "Press Enter after it",
+  "TerminalView.Snippets": "Snippets ▾",
+  "TerminalView.SnippetsTip": "Saved commands: sent to this tab with a click",
+  "TerminalView.EditSavedCommands": "Edit saved commands...",
+  "TerminalView.NoSavedCommandsYet": "No saved commands yet"
 }

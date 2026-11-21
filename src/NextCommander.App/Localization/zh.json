@@ -3470,5 +3470,14 @@
   "TerminalView.NoResults": "无结果",
   "TerminalView.OlderMatch": "较早的匹配项 (Enter)",
   "TerminalView.TypeHereToo": "也在此输入 (MultiExec)",
-  "TerminalView.MultiExecTip": "同时向多个终端输入：在一个标签页中输入的内容会发送到所有勾选的标签页"
+  "TerminalView.MultiExecTip": "同时向多个终端输入：在一个标签页中输入的内容会发送到所有勾选的标签页",
+  "Settings.Misc.Snippets": "已保存的命令（代码片段）",
+  "Settings.Misc.Snippets.Description": "在终端的“代码片段”菜单中单击即可发送到当前终端标签页的命令（开启 MultiExec 时发送到所有勾选的标签页）。",
+  "SettingsWindow.AddCommand": "添加命令",
+  "SettingsWindow.CommandIsEmpty": "命令为空",
+  "SettingsWindow.PressEnterAfterIt": "之后按 Enter",
+  "TerminalView.Snippets": "代码片段 ▾",
+  "TerminalView.SnippetsTip": "已保存的命令：单击即可发送到此标签页",
+  "TerminalView.EditSavedCommands": "编辑已保存的命令...",
+  "TerminalView.NoSavedCommandsYet": "还没有已保存的命令"
 }
