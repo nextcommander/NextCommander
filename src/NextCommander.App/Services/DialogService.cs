@@ -215,6 +215,8 @@ public sealed class DialogService : IDialogService
 
     public void ShowCompare(VfsEntry left, VfsEntry right, ToolContext context) => ShowTool(new Views.Tools.CompareWindow(left, right, context));
 
+    public void ShowVerifyChecksums(VerifyChecksumsRequest request) => ShowTool(new VerifyChecksumsWindow(request));
+
     public async Task<AttributeChange?> ShowAttributesDialogAsync(IReadOnlyList<VfsEntry> entries)
     {
         var dialog = new AttributesDialog(entries);

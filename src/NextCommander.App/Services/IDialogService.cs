@@ -103,6 +103,9 @@ public interface IDialogService
     /// <summary>Compare by content (non-modal).</summary>
     void ShowCompare(VfsEntry left, VfsEntry right, ToolContext context);
 
+    /// <summary>Verify checksums: a window that checks the files and shows the verdict and every file's state.</summary>
+    void ShowVerifyChecksums(Views.Dialogs.VerifyChecksumsRequest request);
+
     Task<AttributeChange?> ShowAttributesDialogAsync(IReadOnlyList<VfsEntry> entries);
 
     /// <summary>Algorithm and target of new checksum files; SingleFileName null = one file per source.</summary>
