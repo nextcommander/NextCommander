@@ -36,7 +36,7 @@ public sealed record ServerStatus(
 }
 
 /// <summary>
-/// The monitor bar of an SSH session (MobaXterm's remote monitoring, user's request, 21 November 2026): one shell command
+/// The monitor bar of an SSH session (user's request, 21 November 2026): one shell command
 /// reads /proc (load, CPU times, memory, network bytes, uptime), the CPU count and df of the root; two readings give the
 /// CPU use and the network rates. Servers without /proc (macOS, the BSDs) give nothing (<see cref="Parse"/> is null).
 /// </summary>

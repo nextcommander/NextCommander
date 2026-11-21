@@ -400,7 +400,7 @@ public sealed partial class ConnectionManagerView
         }
         if (c.Protocol == RemoteProtocol.Ssh)
         {
-            // the files of an SSH session's computer (MobaXterm's SFTP browser): a saved SFTP connection, else the same login over SFTP
+            // the files of an SSH session's computer: a saved SFTP connection, else the same login over SFTP
             AddFooter(FooterButton("Files (SFTP)", () => Connect([c.FilesOverSsh(_settings.Connections)], right: false), icon: "MiFolderOpen"), right: false);
         }
         AddFooter(FooterButton("Delete", () => _ = DeleteAsync(Selected!), icon: "MiTrash", danger: true), right: false);

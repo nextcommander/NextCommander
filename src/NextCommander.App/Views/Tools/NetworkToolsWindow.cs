@@ -10,7 +10,7 @@ using NextCommander.Core.Net;
 namespace NextCommander.App.Views.Tools;
 
 /// <summary>
-/// Net > Network tools (MobaXterm's network tools, user's request, 21 November 2026): ping a host, scan its TCP ports,
+/// Net > Network tools (user's request, 21 November 2026): ping a host, scan its TCP ports,
 /// wake a computer with Wake-on-LAN. Results are listed as they come; Stop ends a ping or a scan.
 /// </summary>
 public sealed class NetworkToolsWindow : Window

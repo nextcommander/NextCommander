@@ -8,7 +8,7 @@ using NextCommander.Core.Localization;
 namespace NextCommander.App.Views.Connections;
 
 /// <summary>
-/// The logins shared by several connections (Logins... in the connection editor; MobaXterm's shared credentials): a
+/// The logins shared by several connections (Logins... in the connection editor): a
 /// list on the left, the name, user, password and key file of the chosen one on the right, and the connections that use
 /// it. Works on copies; OK writes the list back, stores the passwords typed and gives the connections their logins'
 /// users and keys again.

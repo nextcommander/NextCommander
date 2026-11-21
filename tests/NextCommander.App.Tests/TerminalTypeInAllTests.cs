@@ -11,8 +11,8 @@ using static NextCommander.App.Tests.UiFixture;
 
 namespace NextCommander.App.Tests;
 
-/// <summary>MultiExec: typing into several terminal tabs at once (MobaXterm).</summary>
-public sealed class TerminalMultiExecTests
+/// <summary>"Type in all": typing into several terminal tabs at once.</summary>
+public sealed class TerminalTypeInAllTests
 {
     /// <summary>Keeps what the shell was sent.</summary>
     private sealed class RecordingTerminal : PseudoTerminal
@@ -62,10 +62,10 @@ public sealed class TerminalMultiExecTests
         Assert.Equal(string.Empty, terminals[1].Sent.ToString());
 
         // on: every tab, a check box in each tab to leave one out
-        view.MultiExec = true;
+        view.TypeInAll = true;
         await SettleAsync();
-        Assert.Equal(3, window.GetLogicalDescendants().OfType<CheckBox>().Count(c => ToolTip.GetTip(c) as string == "Type here too (MultiExec)"));
-        db.MultiExecIncluded = false;
+        Assert.Equal(3, window.GetLogicalDescendants().OfType<CheckBox>().Count(c => ToolTip.GetTip(c) as string == "Type here too (Type in all)"));
+        db.TypeInAllIncluded = false;
         foreach (var t in terminals)
         {
             t.Sent.Clear();
@@ -87,7 +87,7 @@ public sealed class TerminalMultiExecTests
         Assert.NotEqual(string.Empty, terminals[0].Sent.ToString());
         Assert.Equal(string.Empty, terminals[1].Sent.ToString());
 
-        view.MultiExec = false;
+        view.TypeInAll = false;
         terminals[0].Sent.Clear();
         TypeIn(web2, "ls");
         Assert.Equal(string.Empty, terminals[0].Sent.ToString());

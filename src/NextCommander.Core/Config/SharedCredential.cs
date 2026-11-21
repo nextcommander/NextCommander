@@ -1,7 +1,7 @@
 namespace NextCommander.Core.Config;
 
 /// <summary>
-/// A login used by several saved connections (MobaXterm's shared credentials, user's request, 21 November 2026): a
+/// A login used by several saved connections (user's request, 21 November 2026): a
 /// user, an optional private key file and a password kept once in the password store (<see cref="SecretId"/>). The
 /// connections that use it (<see cref="RemoteConnection.CredentialId"/>) take its user and key file, and its password
 /// when one is saved or typed for any of them.

@@ -8,7 +8,7 @@ using static NextCommander.App.Tests.UiFixture;
 
 namespace NextCommander.App.Tests;
 
-/// <summary>Two or four terminals side by side in the internal terminal (MobaXterm's split terminal).</summary>
+/// <summary>Two or four terminals side by side in the internal terminal.</summary>
 public sealed class TerminalSplitTests
 {
     private sealed class QuietTerminal : PseudoTerminal

@@ -8,7 +8,7 @@ using static NextCommander.App.Tests.UiFixture;
 
 namespace NextCommander.App.Tests;
 
-/// <summary>The files of an SSH session over SFTP (MobaXterm's SFTP browser next to an SSH session).</summary>
+/// <summary>The files of an SSH session over SFTP (a file browser next to an SSH session).</summary>
 public sealed class SshFilesTests : IDisposable
 {
     private readonly UiFixture _fx = new();

@@ -107,7 +107,7 @@ public sealed class EmulatedTerminal : TerminalTab
 
     internal void ResizeTerminal(int columns, int rows) => _terminal?.Resize(columns, rows);
 
-    /// <summary>Keys and pasted text of the user: to this shell, and with MultiExec to the other tabs.</summary>
+    /// <summary>Keys and pasted text of the user: to this shell, and with "Type in all" to the other tabs.</summary>
     internal void Type(string text)
     {
         Send(text);

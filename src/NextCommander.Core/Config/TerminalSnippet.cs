@@ -1,7 +1,7 @@
 namespace NextCommander.Core.Config;
 
 /// <summary>
-/// A saved command of the internal terminal (MobaXterm's macros / snippets, user's request, 21 November 2026): sent to
+/// A saved command of the internal terminal (snippets, user's request, 21 November 2026): sent to
 /// the active tab with a click in the terminal's Snippets menu, with Enter or left on the line to finish.
 /// </summary>
 public sealed class TerminalSnippet

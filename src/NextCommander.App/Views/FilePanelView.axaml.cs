@@ -779,7 +779,7 @@ public partial class FilePanelView : UserControl
     /// <summary>The keyboard modifiers of the last input (Shift+right click opens the application's menu).</summary>
     private KeyModifiers CurrentModifiers { get; set; }
 
-    /// <summary>Right button selection (Norton Commander style): marks the row; held (<see cref="RightHoldDelay"/>), opens the context menu.</summary>
+    /// <summary>Right button selection (classic two-panel style): marks the row; held (<see cref="RightHoldDelay"/>), opens the context menu.</summary>
     private bool HandleRightButtonSelect(Control list, FileItemViewModel item, PointerPressedEventArgs e)
     {
         if (_vm is not { } vm || item.IsParent

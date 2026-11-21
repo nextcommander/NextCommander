@@ -10,7 +10,7 @@ using static NextCommander.App.Tests.UiFixture;
 
 namespace NextCommander.App.Tests;
 
-/// <summary>Saved commands sent to the terminal with a click (MobaXterm's macros).</summary>
+/// <summary>Saved commands sent to the terminal with a click.</summary>
 public sealed class TerminalSnippetTests : IDisposable
 {
     private readonly UiFixture _fx = new();
@@ -33,7 +33,7 @@ public sealed class TerminalSnippetTests : IDisposable
     }
 
     [AvaloniaFact]
-    public async Task A_snippet_is_typed_into_the_active_tab_and_with_multiexec_into_the_others()
+    public async Task A_snippet_is_typed_into_the_active_tab_and_with_type_in_all_into_the_others()
     {
         var view = new TerminalView();
         var window = new Window { Content = view, Width = 900, Height = 400 };
@@ -50,7 +50,7 @@ public sealed class TerminalSnippetTests : IDisposable
         view.SendSnippet(new TerminalSnippet { Name = "Grep", Command = "grep -i error ", Enter = false });
         Assert.Equal("df -h\rgrep -i error ", second.Sent.ToString());
 
-        view.MultiExec = true;
+        view.TypeInAll = true;
         view.Select(b);
         second.Sent.Clear();
         view.SendSnippet(new TerminalSnippet { Command = "uptime" });

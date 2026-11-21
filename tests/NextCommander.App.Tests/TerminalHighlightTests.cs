@@ -11,7 +11,7 @@ using static NextCommander.App.Tests.UiFixture;
 
 namespace NextCommander.App.Tests;
 
-/// <summary>Words such as error, warning, done colored in the terminal's output (MobaXterm's syntax highlighting).</summary>
+/// <summary>Words such as error, warning, done colored in the terminal's output.</summary>
 [Collection("Appearance")]
 public sealed class TerminalHighlightTests
 {

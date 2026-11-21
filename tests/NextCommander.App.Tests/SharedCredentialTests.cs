@@ -9,7 +9,7 @@ using static NextCommander.App.Tests.UiFixture;
 
 namespace NextCommander.App.Tests;
 
-/// <summary>Logins shared by several connections (MobaXterm's shared credentials).</summary>
+/// <summary>Logins shared by several connections.</summary>
 public sealed class SharedCredentialTests : IDisposable
 {
     private readonly UiFixture _fx = new();
