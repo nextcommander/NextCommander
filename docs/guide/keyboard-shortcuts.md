@@ -131,7 +131,7 @@ Operation > Selection (with Num +)* > *Also select directories* makes them take 
 | Ctrl+F | Connection manager... |
 | Ctrl+N | Connect by address... |
 | Ctrl+Shift+F | Disconnect |
-| Ctrl+` | Internal terminal |
+| Ctrl+` | Internal terminal (a page with its tab; on that page: back to the files) |
 | Ctrl+Alt+T | Open command prompt window |
 | Ctrl+Shift+E | Show in system file manager |
 | Ctrl+Alt+S | Options... (the Configuration window) |
@@ -164,6 +164,21 @@ Operation > Selection (with Num +)* > *Also select directories* makes them take 
 | F2 | Reload |
 | Ctrl+mouse wheel | Font size |
 | Esc | Close the find bar, otherwise Lister |
+
+## Inside the connection manager
+
+| Key | Command |
+|---|---|
+| Ctrl+N | New connection |
+| Ctrl+F | The search of the list |
+| Alt+Left / Alt+Right | Back / forward through the pages seen (also the mouse's back and forward buttons) |
+| Alt+Home | The overview (recently used, connect to an address) |
+| Enter / Shift+Enter | Connect the selected connection (in the active / the right panel) |
+| F2 | Rename in place |
+| Ctrl+D | Duplicate |
+| Delete, Ctrl+Z | Delete (a folder with its content), put it back |
+| Ctrl+S | Save the changes |
+| Esc | Cancel the new connection or the renaming; else close the manager |
 
 ## Inside the editor (F4)
 

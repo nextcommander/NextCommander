@@ -273,8 +273,15 @@ panel is next to it, *Folder...* scans another folder (chosen in the folder tree
 
 ## Built-in terminal
 
-Press Ctrl+` (or *Commands > Internal terminal*, or the terminal button at the end of the command line) to
-open a terminal at the bottom of the window. Press it again to hide it; the shell keeps running.
+Press Ctrl+` (or *Commands > Internal terminal*, or the internal terminal button of the button bar) to open the
+terminal as a page of its own: a **Terminal** tab appears next to the files tab. Ctrl+` on that page goes back to the
+files (the shells keep running) and again to the terminal. Telnet, SSH, rsh and serial sessions open there too.
+
+The terminal button at the end of the **command line** opens it at the **bottom of the window**, below the panels
+instead; while it has the focus there, Ctrl+` hides it (the shell keeps running).
+
+- **Tabs** of the terminal sit next to its title; when there are more than fit, they scroll sideways (with the mouse
+  wheel; the active tab is brought into view) and the buttons on the right stay in place.
 
 - It is a real terminal: colors and full-screen programs such as vim, mc, top and less work, and Ctrl+C stops the
   running program.
@@ -307,11 +314,10 @@ open a terminal at the bottom of the window. Press it again to hide it; the shel
   closing the tab. *Open the log folder* shows the folder in the active panel. The files are named after the tab
   (an SSH / Telnet session after its connection) and the time, in `logs/terminal` of the settings folder or the
   folder set on the *Misc.* page, which can also log every new tab.
-- Drag its top edge to change its height. The □ button (or a double click on its title, or the internal terminal
-  button of the button bar) maximizes it: it becomes a page of its own with a **Terminal** tab next to the files tab,
-  and the files tab takes you back to the panels while its shells keep running. The tab's `×` (or ❐) puts it back
-  below the panels.
-- While the terminal has the focus, all keys go to the shell; only Ctrl+` returns. Ctrl+Shift+C / Ctrl+Shift+V
+- Below the panels, drag its top edge to change its height. The □ button (or a double click on its title) makes it a
+  page of its own with a **Terminal** tab next to the files tab; the files tab takes you back to the panels while its
+  shells keep running. The tab's `×` (or ❐) puts it back below the panels.
+- While the terminal has the focus, all keys go to the shell; only Ctrl+` returns to the files. Ctrl+Shift+C / Ctrl+Shift+V
   copy and paste, and a right click copies the selection or pastes. The mouse wheel and Shift+Page Up / Page Down
   scroll back.
 - The default shell and the terminal font are set on the *Misc.* and *Display > Font* pages of the
@@ -319,7 +325,7 @@ open a terminal at the bottom of the window. Press it again to hide it; the shel
   NextCommander.
 
 *Commands > Open command prompt window* (Ctrl+Alt+T) opens your system's own terminal window in the current
-folder instead.
+folder instead. It is no longer on the default button bar; *Configuration > Button bar...* can add it.
 
 ## File index
 
