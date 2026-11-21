@@ -93,6 +93,8 @@ public sealed class ButtonBarControl : UserControl
         AddBarItems(menu);
         WatchIcons(menu);
         ContextMenu = menu;
+        // the empty part of the bar takes the right click too (without a background it lets the pointer through)
+        Background = Brushes.Transparent;
     }
 
     /// <summary>The items for the whole bar: new button, edit the bar, reset it to the default buttons.</summary>

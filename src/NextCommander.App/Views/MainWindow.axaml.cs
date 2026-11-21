@@ -89,6 +89,18 @@ public partial class MainWindow : Window
         Closed += (_, _) => taskbarTimer.Stop();
         TopBarHost.Child = _topBar;
         VerticalBarHost.Child = _verticalBar;
+        // a right click on the bars' frame (their padding) opens the bar's menu like one on its empty part
+        foreach (var (host, bar) in new[] { ((Control)TopBarHost, _topBar), (VerticalBarHost, _verticalBar) })
+        {
+            host.ContextRequested += (_, e) =>
+            {
+                if (!e.Handled && bar.ContextMenu is { } barMenu)
+                {
+                    barMenu.Open(bar);
+                    e.Handled = true;
+                }
+            };
+        }
         VerticalBarHost.PropertyChanged += (_, e) =>
         {
             if (e.Property == BoundsProperty || e.Property == IsVisibleProperty)
