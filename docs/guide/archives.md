@@ -16,6 +16,7 @@ in place.
 | rar (including RAR5) | yes | no | no |
 | tar, tar.gz, tar.bz2, tar.xz, tar.zst | yes | no | tar, tar.gz, tar.bz2, tar.zst |
 | single files: .gz, .bz2, .xz, .zst | yes | no | no |
+| disc images: .iso (ISO 9660 with Joliet names, UDF) | yes | no | no |
 
 Plugins can add more formats.
 
@@ -23,6 +24,10 @@ Plugins can add more formats.
 file splitter writes them; also `name.zip.001` and the other formats) opens from its first volume like a single
 archive: Enter on `name.7z.001` shows its contents, read from all volumes in turn (nothing is joined on the disk).
 Split archives are read-only. The later volumes do not open by themselves.
+
+**Disc images:** Enter on an `.iso` file shows the files of the disc: CD images by their ISO 9660 file system with
+the long (Joliet) names, DVD and Blu-ray images by their UDF file system. Files can be viewed, copied out, searched
+and compared like any archive's; the image itself is not changed.
 
 ## Opening an archive
 

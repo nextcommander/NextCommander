@@ -232,11 +232,13 @@ built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC l
 - [x] MTP: free space of the phone's storages in the footer (WPD storage capacity, `IVolumeSpaceProvider`); a phone folder shown in a panel is read again every 3 s (ids only) and the panel refreshes when files come or go (Configuration > Refresh: removable drives). To be tried with a real phone.
 
 ## Disc images (user's request, 21 November 2026)
-- [ ] ISO files: open an .iso (ISO 9660 with Joliet / Rock Ridge names, UDF for DVD / Blu-ray images) like an archive
-  in a panel: browse, view, copy out, search inside (Alt+F7), compare and checksum; read-only. Packing a folder into
-  a new .iso (Files > Pack) as a later step. To be found out first: SharpCompress has no ISO reader; candidates are
-  DiscUtils (MIT, ISO 9660 / UDF, also VHD / VHDX / VMDK) and 7-Zip's command line (already used for 7z, reads ISO and
-  UDF); mounting through the system (Windows Mount-DiskImage, Linux udisksctl loop-setup, macOS hdiutil) as an option.
+- [x] ISO files open like an archive in a panel (Enter on an .iso): browse, view, copy out, search inside, compare,
+  checksum; read-only. Read with DiscUtils (MIT; `Vfs.Archive/DiscImage`): UDF when the image has it (DVD / Blu-ray),
+  else ISO 9660 with Joliet names. Tested with images built by DiscUtils' CDBuilder; to be tried with real CD, DVD and
+  Blu-ray images (Rock Ridge names of Linux images, hybrid ISO / UDF images).
+- [ ] Packing a folder into a new .iso (Files > Pack; DiscUtils' CDBuilder writes ISO 9660 + Joliet).
+- [ ] Mounting an image through the system (Windows Mount-DiskImage, Linux udisksctl loop-setup, macOS hdiutil), and
+  other images DiscUtils reads (VHD / VHDX / VMDK) if wanted.
 
 ## AI support (ideas, to be evaluated)
 

@@ -3562,5 +3562,8 @@
   "ConnectionWizard.OrASharedLogin": "或多个连接共享的登录（连接编辑器中的“登录...”）。",
   "ConnectionWizard.UserOfThisLogin": "用户 {0} 以及此登录的密码（或密钥）。",
   "TerminalView.TypeInAll": "全部输入",
-  "TerminalView.TypeInAllOn": "● 全部输入"
+  "TerminalView.TypeInAllOn": "● 全部输入",
+  "ArchiveContainer.ADiscImageIsRead": "{0}：光盘映像为只读。",
+  "DiscImage.NotADiscImage": "不是光盘映像（未找到 ISO 9660 或 UDF 文件系统）。",
+  "DiscImage.NotReadable": "不是可读取的光盘映像：{0}"
 }

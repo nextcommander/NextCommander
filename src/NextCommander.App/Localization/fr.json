@@ -3562,5 +3562,8 @@
   "ConnectionWizard.OrASharedLogin": "Ou un identifiant partagé par plusieurs connexions (Identifiants... dans l’éditeur de connexions).",
   "ConnectionWizard.UserOfThisLogin": "Utilisateur {0} et le mot de passe (ou la clé) de cet identifiant.",
   "TerminalView.TypeInAll": "Taper dans tous",
-  "TerminalView.TypeInAllOn": "● Taper dans tous"
+  "TerminalView.TypeInAllOn": "● Taper dans tous",
+  "ArchiveContainer.ADiscImageIsRead": "{0} : une image disque est en lecture seule.",
+  "DiscImage.NotADiscImage": "Pas une image disque (aucun système de fichiers ISO 9660 ou UDF trouvé).",
+  "DiscImage.NotReadable": "Pas une image disque lisible : {0}"
 }
