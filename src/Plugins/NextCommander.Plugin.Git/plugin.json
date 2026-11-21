@@ -1,0 +1,6 @@
+{
+  "Name": "git",
+  "Assembly": "NextCommander.Plugin.Git.dll",
+  "Description": "Git: the branches, tags and commits of a repository as folders (git://), and the Git state, last commit and author of files as columns. Uses the installed git.",
+  "Version": "1.0"
+}

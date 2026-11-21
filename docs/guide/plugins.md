@@ -8,15 +8,19 @@ A plugin is a .NET assembly that NextCommander loads at start. It can add:
 |---|---|---|
 | A file system | `IFileSystemProvider` | Paths with the plugin's scheme (`hello://host/folder`) open in a panel; copy, move, delete, view and edit work across it and every other file system. |
 | A place to start | `IPluginEntryPoint` (on the file system) | An entry in the **Plugins** menu of the button bar. |
+| A place for the current folder | `IPluginFolderEntry` (on the file system) | An entry at the top of the **Plugins** menu while the active panel's folder fits (e.g. *Git history* in a repository). |
+| A way back up | `IOriginProvider` (on the file system) | ".." from the file system's root goes back to the folder it came from. |
 | An archive format to read | `IContainerProvider` (on the file system) | Enter / Ctrl+PgDn on such a file opens it like a folder. |
 | Columns | `IColumnProvider` | *Show > Display > Custom view modes > Edit view modes...*: the plugin's fields can be added to a view mode. |
 | An archive format to write | `IPackerPlugin` | A packer in the Pack dialog (Alt+F5). |
 | A viewer | `IViewerPlugin` | The Lister (F3) shows files it wants (key 6). |
 
-The rclone support of NextCommander is itself a plugin
-([src/Plugins/NextCommander.Plugin.Rclone](../../src/Plugins/NextCommander.Plugin.Rclone)), and
+The rclone and the Git support of NextCommander are themselves plugins
+([src/Plugins/NextCommander.Plugin.Rclone](../../src/Plugins/NextCommander.Plugin.Rclone),
+[src/Plugins/NextCommander.Plugin.Git](../../src/Plugins/NextCommander.Plugin.Git); see [Git](#git) below), and
 [tests/SamplePlugin](../../tests/SamplePlugin) is a small example with a column and a `hello://` file system.
 
+- [Git](#git)
 - [Using plugins](#using-plugins)
 - [Writing a plugin](#writing-a-plugin)
 - [File systems](#file-systems)
@@ -25,6 +29,21 @@ The rclone support of NextCommander is itself a plugin
 - [Packers and viewers](#packers-and-viewers)
 - [Testing and finding problems](#testing-and-finding-problems)
 - [Shipping a plugin with NextCommander](#shipping-a-plugin-with-nextcommander)
+
+## Git
+
+The Git plugin comes with NextCommander and uses the installed `git` (git-scm.com; or `FM_GIT` with its path).
+
+- **Git history:** while the active panel is in a folder of a repository, the **Plugins** menu offers *Git history*
+  at its top. It opens the repository's history as read-only folders: **branches**, **tags** and **commits** (the
+  newest 300 of the current branch, named `2026-11-21 23.40 1a2b3c4 subject`). Each holds the files as they are there:
+  view an old version with F3, compare it with today's file, or copy it out. A slash in a branch name is shown as `⁄`
+  (`feature⁄login`), so the branch stays one folder. ".." from the history's root goes back to the repository.
+- **Columns:** *Git status* (Modified, Modified (staged), Added, Deleted, Renamed, Untracked, Ignored, Conflict;
+  a folder: *Changes inside* or *Ignored*), *Last commit* (the subject of the last commit that changed the file or
+  folder), *Commit author*, *Commit date* and *Commit*. Add them to a view mode (*Show > Display > Custom view modes >
+  Edit view modes...*). They are filled in the background: one `git status` per repository every few seconds and one
+  `git log` per folder.
 
 ## Using plugins
 
@@ -297,6 +316,22 @@ public sealed class HelloFileSystem : IFileSystemProvider, IPluginEntryPoint
 
 Choosing the entry opens `EntryRoot` in the active panel, or shows `Unavailable` when it is not null. The rclone
 plugin uses it to explain how to install rclone when it is missing.
+
+A place that depends on the folder of the active panel implements `IPluginFolderEntry` instead: `RootFor(folder)`
+returns the folder to open, or null when the entry does not fit. It is called each time the menu opens, so keep it
+cheap (the Git plugin looks for a `.git` folder above). Such entries come first in the Plugins menu.
+
+```csharp
+public string EntryName => "Git history";
+
+public string EntryGroup => "Git";
+
+public VfsPath? RootFor(VfsPath folder) =>
+    folder.IsLocal && RepositoryOf(folder.Path) is { } repository ? RootOf(repository) : null;
+```
+
+With `IOriginProvider`, ".." from a root of the file system goes back where it came from: `OriginOf(root)` returns
+that folder and the name to put the cursor on (or null).
 
 ## Columns
 

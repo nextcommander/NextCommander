@@ -62,6 +62,10 @@ public sealed class ProviderRegistry
         }
     }
 
+    /// <summary>Where a root of a file system came from (<see cref="IOriginProvider"/>), or null.</summary>
+    public (VfsPath Folder, string FocusName)? OriginOf(VfsPath root) =>
+        _providers.FirstOrDefault(p => p.CanHandle(root)) is IOriginProvider origin ? origin.OriginOf(root) : null;
+
     public IFileSystemProvider Resolve(VfsPath path) =>
         _providers.FirstOrDefault(p => p.CanHandle(path))
         ?? throw new NotSupportedException($"No file system provider for '{path.Scheme}'.");

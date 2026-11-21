@@ -382,6 +382,7 @@ public partial class App : Application
         services.AddSingleton(sp =>
         {
             var registry = new ProviderRegistry(sp.GetServices<IFileSystemProvider>());
+            VfsPath.Origin = registry.OriginOf; // ".." from a plugin's root (a Git history) back to where it came from
             var archives = sp.GetRequiredService<NextCommander.Vfs.Archive.ArchiveFileSystemProvider>();
             archives.Registry = registry;
             var dialogs = sp.GetRequiredService<IDialogService>();

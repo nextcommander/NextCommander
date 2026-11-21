@@ -104,6 +104,62 @@ public sealed class ConnectionsMenuTests : IDisposable
         Assert.False(vm.HasPluginMenu);
     }
 
+    [AvaloniaFact]
+    public async Task A_plugin_offers_a_place_for_the_folder_of_the_active_panel()
+    {
+        var (w, vm) = await _fx.OpenAsync();
+        var plugin = new LoadedPlugin { Folder = Path.Combine(_fx.Root, "plugins", "history") };
+        plugin.FileSystems.Add(new FakeFolderEntry(_fx.L()));
+        plugin.FileSystems.Add(new FakeEntryPoint("fake"));
+        vm.Plugins.Add(plugin);
+        vm.ApplySettings();
+        await SettleAsync();
+
+        // in the folder it is for: its entry first (with the place it opens), then the plugins' groups
+        var items = PluginMenus.Items(vm);
+        var history = Assert.IsType<MenuItem>(items[0]);
+        Assert.Equal("Folder history", history.Header);
+        Assert.Equal("history://left/", ToolTip.GetTip(history));
+        Assert.IsType<Separator>(items[1]);
+        Assert.Equal("fake", ((MenuItem)items[2]).Header);
+
+        // elsewhere: not offered
+        await vm.ActivePanel.NavigateAsync(VfsPath.Local(_fx.R()));
+        Assert.Equal(["fake"], PluginMenus.Items(vm).OfType<MenuItem>().Select(i => (string)i.Header!));
+    }
+
+    /// <summary>A plugin's place for one local folder ("Folder history").</summary>
+    private sealed class FakeFolderEntry(string folder) : IFileSystemProvider, IPluginFolderEntry
+    {
+        public string Scheme => "history";
+
+        public ProviderCapabilities Capabilities => ProviderCapabilities.Read;
+
+        public string EntryName => "Folder history";
+
+        public string EntryGroup => "history";
+
+        public VfsPath? RootFor(VfsPath place) =>
+            place.IsLocal && string.Equals(place.Path.TrimEnd('\\', '/'), folder.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase)
+                ? VfsPath.Create("history", "left", "/") : null;
+
+        public Task<IReadOnlyList<VfsEntry>> ListAsync(VfsPath directory, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<VfsEntry>>([]);
+
+        public Task<VfsEntry?> GetEntryAsync(VfsPath path, CancellationToken cancellationToken) => Task.FromResult<VfsEntry?>(null);
+
+        public Task<Stream> OpenReadAsync(VfsPath path, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<Stream> OpenWriteAsync(VfsPath path, bool overwrite, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task CreateDirectoryAsync(VfsPath path, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task DeleteAsync(VfsPath path, bool recursive, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task MoveAsync(VfsPath source, VfsPath destination, bool overwrite, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task SetTimesAsync(VfsPath path, DateTime? creationTime, DateTime? lastWriteTime, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
     /// <summary>A plugin file system with an entry point whose program is missing.</summary>
     private sealed class FakeEntryPoint(string scheme) : IFileSystemProvider, IPluginEntryPoint
     {
