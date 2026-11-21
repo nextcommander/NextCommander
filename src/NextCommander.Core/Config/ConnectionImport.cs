@@ -13,7 +13,7 @@ public sealed record ImportedConnection(RemoteConnection Connection, string? Pas
 /// passwords come along (FileZilla's base64 ones; WinSCP's obfuscated ones); FileZilla's master-password-encrypted
 /// ones cannot be read and are left out.
 /// </summary>
-public static class ConnectionImport
+public static partial class ConnectionImport
 {
     // ---------------------------------------------------------------- FileZilla
 

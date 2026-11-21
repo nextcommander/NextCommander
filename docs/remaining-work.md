@@ -175,8 +175,9 @@ built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC l
   the terminal (a saved SFTP / SCP connection to the same server, else the session's login as SFTP: key file, agent,
   jump host, proxy and its saved password); opened in the shell's folder when the shell reports it (OSC 7).
 - [x] SSH tunnels: local, remote and dynamic (SOCKS) port forwarding, saved, started / stopped by hand or at start (Net > SSH tunnels..., `TunnelService`, `SshTunnelRunner`; tested with a fake runner, to be tried against a real server).
-- [ ] Import PuTTY sessions (registry) and MobaXterm's `.mxtsessions`; export connections to a file (without passwords)
-  and import such a file.
+- [x] Import PuTTY sessions (registry) and MobaXterm's `.mxtsessions`; export connections to a file (without passwords)
+  and import such a file (`ConnectionImport.Sessions.cs`; the MobaXterm fields follow a reverse-engineered description
+  of version 26.3, Telnet / rsh / FTP by host, port and user only: to be tried with real files).
 - [x] Reconnect a remote session that ended: already there (an ended SSH / Telnet tab connects again with Enter).
 - [ ] Log a terminal session's output to a file.
 - [ ] Find in the terminal's scrollback.
