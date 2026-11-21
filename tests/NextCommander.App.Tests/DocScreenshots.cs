@@ -572,12 +572,16 @@ public sealed class DocScreenshots
         await vm.Left.NavigateAsync(VfsPath.Local(D("Photos")));
         await vm.Right.NavigateAsync(VfsPath.Local(D("Backup", "Photos")));
         await vm.ExecuteAsync("nc_FindDuplicates");
+        // a page of the main window with its own tab, as in the program
         var duplicates = new DuplicatesView(_dialogs.LastDuplicates!) { Confirm = false };
-        await Shot(new Window { Content = duplicates }, "duplicates.png", 1200, 760, async () =>
-        {
-            await duplicates.StartAsync();
-            duplicates.MarkAllBut(DuplicateKeep.FirstFolder);
-        });
+        w.ShowDuplicates(duplicates);
+        await SettleAsync(6);
+        await duplicates.StartAsync();
+        duplicates.MarkAllBut(DuplicateKeep.FirstFolder);
+        await SettleAsync(8);
+        Save(w, "duplicates.png");
+        duplicates.Close();
+        await SettleAsync(3);
     }
 
     // ------------------------------------------------------------------ settings and dialogs
@@ -585,16 +589,16 @@ public sealed class DocScreenshots
     private async Task SettingsAsync()
     {
         var (w, vm) = await OpenAsync(D("Projects", "Website"), D("Backup", "Website 2026-10"));
-        var background = w.CaptureRenderedFrame()!;
         foreach (var (page, name) in new[]
         {
             ("Layout", "configuration.png"), ("Display/Color", "configuration-color.png"), ("Display/Icons", "configuration-icons.png"),
             ("Packer/7-Zip", "configuration-7zip.png"), ("Display/Language", "languages.png"),
         })
         {
-            var settings = new SettingsWindow(vm.Settings, () => { }, []) { Width = 1100, Height = 780 };
-            _windows.Add(settings);
-            settings.Show();
+            // the options: a page of the main window with its own tab, as in the program
+            var settings = new SettingsView(vm.Settings, () => { }, []);
+            var shown = w.ShowSettingsAsync(settings);
+            await SettleAsync(4);
             settings.SelectPage(page);
             await SettleAsync(8);
             // the processor count of the machine stays out ("0 = 7-Zip decides (16 processors).")
@@ -608,8 +612,10 @@ public sealed class DocScreenshots
                 settings.GetVisualDescendants().OfType<ComboBox>().First(c => c.ItemsSource is IEnumerable<string> items && items.Contains("Türkçe")).IsDropDownOpen = true;
                 await SettleAsync(8);
             }
-            Save(Compose(background, settings.CaptureRenderedFrame()!, settings.Title ?? "Configuration"), name);
+            Save(w, name);
             settings.Close();
+            await shown;
+            await SettleAsync(3);
         }
     }
 
@@ -633,13 +639,13 @@ public sealed class DocScreenshots
         var manager = new NextCommander.App.Views.Connections.ConnectionManagerView(new NextCommander.App.Views.Connections.ConnectionManagerRequest(sample, () => { },
             (_, _) => Task.FromResult(string.Empty), _ => false, _ => Task.CompletedTask, (_, _) => Task.CompletedTask, _ => Task.FromResult<string?>(null)))
 ;
-        var managerHost = new Window { Content = manager, Width = 1080, Height = 680, Title = "Connection manager" };
-        _windows.Add(managerHost);
-        managerHost.Show();
+        // a page of the main window with its own tab, as in the program
+        var managerShown = w.ShowConnectionManagerAsync(manager);
+        await SettleAsync(4);
         manager.Toggle("Work/Production");
         manager.Reveal(sample.Connections[0]);
         await SettleAsync(8);
-        Save(Compose(background, managerHost.CaptureRenderedFrame()!, managerHost.Title ?? string.Empty), "connections.png");
+        Save(w, "connections.png");
 
         // its overview (recently used, an address) and the details of a new connection
         sample.Connections[0].LastUsed = new DateTime(2026, 11, 20, 9, 42, 0);
@@ -647,15 +653,17 @@ public sealed class DocScreenshots
         sample.Connections[2].LastUsed = new DateTime(2026, 11, 12, 11, 30, 0);
         manager.GoHome();
         await SettleAsync(8);
-        Save(Compose(background, managerHost.CaptureRenderedFrame()!, managerHost.Title ?? string.Empty), "connections-overview.png");
+        Save(w, "connections-overview.png");
         var adding = manager.NewConnectionAsync();
         await SettleAsync(4);
         manager.Wizard!.ChooseType(RemoteProtocol.Sftp);
         await SettleAsync(8);
-        Save(Compose(background, managerHost.CaptureRenderedFrame()!, managerHost.Title ?? string.Empty), "connections-new.png");
+        Save(w, "connections-new.png");
         manager.Wizard.Close();
         await adding;
-        managerHost.Close();
+        manager.Close();
+        await managerShown;
+        await SettleAsync(3);
 
         // About (neutral folders)
         var info = new AboutInfo(UpdateChecker.DisplayVersion(typeof(MainWindowViewModel).Assembly), "© 2026 NextCommander", Environment.Version.ToString(),
