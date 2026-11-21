@@ -253,6 +253,7 @@ public static class MenuIcons
         ["nc_LinkConnect"] = new("MiMonitor", Blue, "OvArrowRight", Green),
         ["nc_LinkShare"] = new("MiMonitor", Teal, "OvArrowLeft", Green),
         ["nc_SshTunnels"] = new("MiNetwork", Purple, "OvArrowRight", Green),
+        ["nc_NetworkTools"] = new("MiGlobe", Teal),
 
         // the connection manager's own menus
         ["connections.new"] = new("MiGlobe", Blue, "OvPlus", Green),

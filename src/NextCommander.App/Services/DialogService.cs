@@ -352,6 +352,27 @@ public sealed class DialogService : IDialogService
 
     private Views.Connections.SshTunnelsWindow? _tunnels;
 
+    private Views.Tools.NetworkToolsWindow? _networkTools;
+
+    public void ShowNetworkTools(string? host)
+    {
+        if (_networkTools is { } open)
+        {
+            open.Activate();
+            return;
+        }
+        _networkTools = new Views.Tools.NetworkToolsWindow(host);
+        _networkTools.Closed += (_, _) => _networkTools = null;
+        if (Owner is { } owner)
+        {
+            _networkTools.Show(owner);
+        }
+        else
+        {
+            _networkTools.Show();
+        }
+    }
+
     public void ShowSshTunnels(AppSettings settings, TunnelService tunnels, Action save)
     {
         if (_tunnels is { } open)
