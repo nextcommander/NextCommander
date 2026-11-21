@@ -106,7 +106,8 @@ public interface IDialogService
     Task<AttributeChange?> ShowAttributesDialogAsync(IReadOnlyList<VfsEntry> entries);
 
     /// <summary>Algorithm and target of new checksum files; SingleFileName null = one file per source.</summary>
-    Task<(NextCommander.Core.Tools.ChecksumKind Kind, string? SingleFileName)?> ShowChecksumDialogAsync(string baseName, NextCommander.Core.Tools.ChecksumKind kind);
+    /// <summary>Create checksums: the dialog reads the files itself; the job that ran, or null when closed without it.</summary>
+    Task<NextCommander.Core.Tools.CreateChecksumsJob?> ShowChecksumDialogAsync(Views.Dialogs.ChecksumDialogRequest request);
 
     /// <summary>Server login: password and "save it".</summary>
     Task<(string Password, bool Save)?> PromptLoginAsync(RemoteConnection connection, bool retry);
