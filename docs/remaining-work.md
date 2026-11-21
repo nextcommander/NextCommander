@@ -179,7 +179,7 @@ built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC l
   and import such a file (`ConnectionImport.Sessions.cs`; the MobaXterm fields follow a reverse-engineered description
   of version 26.3, Telnet / rsh / FTP by host, port and user only: to be tried with real files).
 - [x] Reconnect a remote session that ended: already there (an ended SSH / Telnet tab connects again with Enter).
-- [ ] Log a terminal session's output to a file.
+- [x] Log a terminal session's output to a file (the terminal's **Log** button, or every tab by the setting; plain text, `Core/Text/TerminalLog`).
 - [ ] Find in the terminal's scrollback.
 - [ ] MultiExec: type into several terminal tabs at once.
 - [ ] Saved commands (snippets) sent to the terminal with a click.

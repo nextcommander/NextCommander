@@ -3450,5 +3450,16 @@
   "ConnectionManagerView.ExportAll": "Tüm bağlantıları dosyaya aktar...",
   "ConnectionManagerView.ExportConnections": "Bağlantıları dışa aktar",
   "ConnectionManagerView.Exported": "{0} bağlantı dışa aktarıldı (parolalar olmadan)",
-  "ConnectionImport.NotAConnectionsFile": "Bu bir NextCommander bağlantı dosyası değil."
+  "ConnectionImport.NotAConnectionsFile": "Bu bir NextCommander bağlantı dosyası değil.",
+  "Settings.Misc.LogEveryTab": "Her sekmenin çıktısını kaydet",
+  "Settings.Misc.LogEveryTab.Description": "Her yeni terminal sekmesi gösterdiğini bir metin dosyasına yazar (renkler ve kontrol kodları olmadan). Terminalin Kayıt düğmesi bunu tek bir sekme için yapar.",
+  "Settings.Misc.TerminalLogFolder": "Terminal kayıtlarının klasörü",
+  "Settings.Misc.TerminalLogFolder.Description": "Terminal sekmelerinin kayıt dosyalarının yazılacağı yer (boş: ayarlar klasöründe logs/terminal).",
+  "SettingsWindow.LogsTerminalFolder": "ayarlar klasöründe logs/terminal",
+  "TerminalView.LogOn": "● Kayıt",
+  "TerminalView.LogThisTab": "Bu sekmeyi dosyaya kaydet",
+  "TerminalView.LoggingTo": "Kaydediliyor: {0}",
+  "TerminalView.OpenTheLogFolder": "Kayıt klasörünü aç",
+  "TerminalView.StopLogging": "Kaydı durdur",
+  "TerminalView.WriteTheOutput": "Bu sekmenin çıktısını bir metin dosyasına yaz"
 }

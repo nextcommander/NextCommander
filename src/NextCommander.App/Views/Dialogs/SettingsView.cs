@@ -2378,6 +2378,11 @@ public sealed class SettingsView : UserControl
             Bool(misc, "Internal terminal", "Real terminal (colors, full screen programs)",
                 "The shell runs on a pseudo terminal (ConPTY on Windows, a pty on Linux and macOS): colors, cursor movement and full screen programs such as vim, mc and top work. When off, a simple line console is used. Applies to newly opened tabs.",
                 s => s.TerminalEmulation, (s, v) => s.TerminalEmulation = v),
+            Bool(misc, "Internal terminal", "Log the output of every tab",
+                "Each new terminal tab writes what it shows to a text file (without colors and control codes). The Log button of the terminal does it for one tab.",
+                s => s.TerminalLogAll, (s, v) => s.TerminalLogAll = v),
+            Text(misc, "Internal terminal", "Folder of the terminal logs", "Where the log files of the terminal tabs go (empty: logs/terminal in the settings folder).",
+                s => s.TerminalLogFolder, (s, v) => s.TerminalLogFolder = v ?? string.Empty, "logs/terminal in the settings folder"),
             ListItem(misc, "Start menu", "Start menu", "The items of the Start menu: a program (with parameters and start folder) or a nc_ command; separators group them.",
                 s => s.StartMenu, (s, v) => s.StartMenu = v, StartMenuOptions()),
 

@@ -266,6 +266,9 @@ public static class MenuIcons
         ["connections.delete"] = new("MiTrash", Red),
         ["connections.import"] = new("MiArrowDown", Blue),
         ["connections.export"] = new("MiArrowUp", Green),
+        ["terminal.log"] = new("MiPencil", Red),
+        ["terminal.logstop"] = new("MiX", Red),
+        ["terminal.logfolder"] = new("MiFolderOpen", Yellow),
         ["nc_Plugins"] = new("MiPlug", Purple),
         // Commands
         ["nc_SearchFor"] = new("MiSearch", Blue),

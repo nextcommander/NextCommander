@@ -3450,5 +3450,16 @@
   "ConnectionManagerView.ExportAll": "Exportar todas las conexiones a un archivo...",
   "ConnectionManagerView.ExportConnections": "Exportar conexiones",
   "ConnectionManagerView.Exported": "{0} conexiones exportadas (sin contraseñas)",
-  "ConnectionImport.NotAConnectionsFile": "Este no es un archivo de conexiones de NextCommander."
+  "ConnectionImport.NotAConnectionsFile": "Este no es un archivo de conexiones de NextCommander.",
+  "Settings.Misc.LogEveryTab": "Registrar la salida de cada pestaña",
+  "Settings.Misc.LogEveryTab.Description": "Cada nueva pestaña del terminal escribe lo que muestra en un archivo de texto (sin colores ni códigos de control). El botón Registro del terminal lo hace para una pestaña.",
+  "Settings.Misc.TerminalLogFolder": "Carpeta de los registros del terminal",
+  "Settings.Misc.TerminalLogFolder.Description": "Dónde se guardan los registros de las pestañas del terminal (vacío: logs/terminal en la carpeta de configuración).",
+  "SettingsWindow.LogsTerminalFolder": "logs/terminal en la carpeta de configuración",
+  "TerminalView.LogOn": "● Registro",
+  "TerminalView.LogThisTab": "Registrar esta pestaña en un archivo",
+  "TerminalView.LoggingTo": "Registrando en {0}",
+  "TerminalView.OpenTheLogFolder": "Abrir la carpeta de registros",
+  "TerminalView.StopLogging": "Detener el registro",
+  "TerminalView.WriteTheOutput": "Escribir la salida de esta pestaña en un archivo de texto"
 }

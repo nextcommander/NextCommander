@@ -69,4 +69,51 @@ public abstract class TerminalTab : Border
     }
 
     protected void RaiseShellExited() => ShellExited?.Invoke(this, EventArgs.Empty);
+
+    private volatile Core.Text.TerminalLog? _log;
+
+    /// <summary>The log file the output goes to (null: not logged).</summary>
+    public Core.Text.TerminalLog? Log => _log;
+
+    /// <summary>Logging started or stopped.</summary>
+    public event EventHandler? LogChanged;
+
+    /// <summary>
+    /// Writes the output from now on to a new file in <paramref name="folder"/> (empty: logs/terminal in the settings
+    /// folder); false when the file cannot be made (the reason in <paramref name="error"/>).
+    /// </summary>
+    public bool StartLog(string? folder, out string? error)
+    {
+        error = null;
+        if (_log is not null)
+        {
+            return true;
+        }
+        try
+        {
+            _log = Core.Text.TerminalLog.Start(folder, Connection is { } c ? Core.Net.ConnectionLog.NameOf(c) : Title);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            error = ex.Message;
+            return false;
+        }
+        LogChanged?.Invoke(this, EventArgs.Empty);
+        return true;
+    }
+
+    /// <summary>Ends the log file (the tab goes on).</summary>
+    public void StopLog()
+    {
+        if (_log is not { } log)
+        {
+            return;
+        }
+        _log = null;
+        log.Dispose();
+        LogChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Output of the session for the log (any thread).</summary>
+    protected void LogOutput(string text) => _log?.Write(text);
 }

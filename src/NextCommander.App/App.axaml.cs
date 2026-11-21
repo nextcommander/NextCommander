@@ -36,6 +36,7 @@ public partial class App : Application
             NextCommander.App.Services.OperationLog.DefaultFile = Path.Combine(s_logDirectory, "operations.log");
             // each connection's own log; its errors go to the program log too
             NextCommander.Core.Net.ConnectionLog.Folder = Path.Combine(s_logDirectory, "connections");
+            NextCommander.Core.Text.TerminalLog.DefaultFolder = Path.Combine(s_logDirectory, "terminal");
             NextCommander.Core.Net.ConnectionLog.Written += (_, entry) =>
             {
                 if (entry.Level == NextCommander.Core.Net.ConnectionLogLevel.Error)

@@ -3450,5 +3450,16 @@
   "ConnectionManagerView.ExportAll": "Export all connections to a file...",
   "ConnectionManagerView.ExportConnections": "Export connections",
   "ConnectionManagerView.Exported": "{0} connections exported (without passwords)",
-  "ConnectionImport.NotAConnectionsFile": "This is not a connections file of NextCommander."
+  "ConnectionImport.NotAConnectionsFile": "This is not a connections file of NextCommander.",
+  "Settings.Misc.LogEveryTab": "Log the output of every tab",
+  "Settings.Misc.LogEveryTab.Description": "Each new terminal tab writes what it shows to a text file (without colors and control codes). The Log button of the terminal does it for one tab.",
+  "Settings.Misc.TerminalLogFolder": "Folder of the terminal logs",
+  "Settings.Misc.TerminalLogFolder.Description": "Where the log files of the terminal tabs go (empty: logs/terminal in the settings folder).",
+  "SettingsWindow.LogsTerminalFolder": "logs/terminal in the settings folder",
+  "TerminalView.LogOn": "● Log",
+  "TerminalView.LogThisTab": "Log this tab to a file",
+  "TerminalView.LoggingTo": "Logging to {0}",
+  "TerminalView.OpenTheLogFolder": "Open the log folder",
+  "TerminalView.StopLogging": "Stop logging",
+  "TerminalView.WriteTheOutput": "Write the output of this tab to a text file"
 }

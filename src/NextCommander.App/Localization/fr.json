@@ -3450,5 +3450,16 @@
   "ConnectionManagerView.ExportAll": "Exporter toutes les connexions dans un fichier...",
   "ConnectionManagerView.ExportConnections": "Exporter les connexions",
   "ConnectionManagerView.Exported": "{0} connexions exportées (sans mots de passe)",
-  "ConnectionImport.NotAConnectionsFile": "Ce n’est pas un fichier de connexions de NextCommander."
+  "ConnectionImport.NotAConnectionsFile": "Ce n’est pas un fichier de connexions de NextCommander.",
+  "Settings.Misc.LogEveryTab": "Journaliser la sortie de chaque onglet",
+  "Settings.Misc.LogEveryTab.Description": "Chaque nouvel onglet du terminal écrit ce qu’il affiche dans un fichier texte (sans couleurs ni codes de contrôle). Le bouton Journal du terminal le fait pour un onglet.",
+  "Settings.Misc.TerminalLogFolder": "Dossier des journaux du terminal",
+  "Settings.Misc.TerminalLogFolder.Description": "Où vont les journaux des onglets du terminal (vide : logs/terminal dans le dossier des paramètres).",
+  "SettingsWindow.LogsTerminalFolder": "logs/terminal dans le dossier des paramètres",
+  "TerminalView.LogOn": "● Journal",
+  "TerminalView.LogThisTab": "Journaliser cet onglet dans un fichier",
+  "TerminalView.LoggingTo": "Journalisation dans {0}",
+  "TerminalView.OpenTheLogFolder": "Ouvrir le dossier des journaux",
+  "TerminalView.StopLogging": "Arrêter la journalisation",
+  "TerminalView.WriteTheOutput": "Écrire la sortie de cet onglet dans un fichier texte"
 }

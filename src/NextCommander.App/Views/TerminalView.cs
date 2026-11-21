@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -25,6 +26,7 @@ public sealed class TerminalView : DockPanel
     private double _resizeHeight;
     private readonly Button _maximize;
     private readonly Button _files;
+    private readonly Button _log;
 
     /// <summary>"Files (SFTP)" of an SSH session: its connection and the shell's folder (null: not known).</summary>
     public event EventHandler<(Core.Config.RemoteConnection Connection, string? Folder)>? FilesRequested;
@@ -91,6 +93,11 @@ public sealed class TerminalView : DockPanel
             });
         _files.IsVisible = false;
         buttons.Children.Add(_files);
+        // the output of the tab into a text file (MobaXterm's session logs)
+        _log = HeaderButton("Log", "Write the output of this tab to a text file", () => { });
+        _log.Tag = "log";
+        _log.Click += (_, _) => ShowLogMenu(_log);
+        buttons.Children.Add(_log);
         buttons.Children.Add(HeaderButton("Panel folder", "Go to the folder of the active panel in the terminal", () => _active?.GoToPanelFolder()));
         buttons.Children.Add(HeaderButton("Clear", "Clear the output (Ctrl+L)", () => _active?.Clear()));
         buttons.Children.Add(HeaderButton("Stop", "Stop the running program and restart the shell (Ctrl+C)", () => _active?.Restart()));
@@ -124,6 +131,82 @@ public sealed class TerminalView : DockPanel
         Children.Add(_host);
         this[!BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("FmStatusBrush");
     }
+
+    /// <summary>"Open the log folder": the folder of the terminal logs in the active panel.</summary>
+    public event EventHandler<string>? LogFolderRequested;
+
+    /// <summary>Every new tab writes its output to a log file (setting).</summary>
+    public bool LogAll { get; set; }
+
+    /// <summary>The folder of the log files (setting; empty: logs/terminal in the settings folder).</summary>
+    public string? LogFolder { get; set; }
+
+    /// <summary>The folder the logs go to now.</summary>
+    public string LogFolderPath => string.IsNullOrWhiteSpace(LogFolder)
+        ? Core.Text.TerminalLog.DefaultFolder ?? Path.GetTempPath()
+        : Environment.ExpandEnvironmentVariables(LogFolder.Trim());
+
+    /// <summary>Why the last log could not start (null: it did).</summary>
+    public string? LogError { get; private set; }
+
+    /// <summary>Starts or stops the log of the active tab (the Log menu; tests).</summary>
+    public void ToggleLog()
+    {
+        if (_active is not { } tab)
+        {
+            return;
+        }
+        if (tab.Log is not null)
+        {
+            tab.StopLog();
+        }
+        else
+        {
+            StartLog(tab);
+        }
+    }
+
+    private void StartLog(TerminalTab tab)
+    {
+        LogError = tab.StartLog(LogFolder, out var error) ? null : error;
+    }
+
+    private void ShowLogMenu(Control anchor)
+    {
+        var flyout = new MenuFlyout();
+        var logging = _active?.Log is not null;
+        var toggle = new MenuItem { Header = logging ? "Stop logging" : "Log this tab to a file", Icon = MenuIcons.Create(logging ? "terminal.logstop" : "terminal.log"), IsEnabled = _active is not null };
+        toggle.Click += (_, _) => ToggleLog();
+        flyout.Items.Add(toggle);
+        var folder = new MenuItem { Header = "Open the log folder", Icon = MenuIcons.Create("terminal.logfolder") };
+        folder.Click += (_, _) => LogFolderRequested?.Invoke(this, LogFolderPath);
+        flyout.Items.Add(folder);
+        if (LogError is { } error)
+        {
+            flyout.Items.Add(new Separator());
+            flyout.Items.Add(new MenuItem { Header = error, IsEnabled = false, Classes = { "noloc" } });
+        }
+        flyout.ShowAt(anchor);
+    }
+
+    /// <summary>The Log button shows whether the active tab is logged (its file in the tip).</summary>
+    private void UpdateLogButton()
+    {
+        var log = _active?.Log;
+        _log.Content = log is not null ? "● Log" : "Log";
+        if (log is not null)
+        {
+            _log.Foreground = new SolidColorBrush(Color.Parse("#E5484D"));
+        }
+        else
+        {
+            _log.ClearValue(TemplatedControl.ForegroundProperty);
+        }
+        ToolTip.SetTip(_log, log is not null ? Core.Localization.Localizer.T("Logging to {0}").Replace("{0}", log.Path, StringComparison.Ordinal) : "Write the output of this tab to a text file");
+    }
+
+    /// <summary>The Log button is on (the active tab is logged; tests).</summary>
+    public bool IsLogging => _active?.Log is not null;
 
     /// <summary>The close button was pressed or the last tab was closed.</summary>
     public event EventHandler? CloseRequested;
@@ -270,6 +353,17 @@ public sealed class TerminalView : DockPanel
             : new TerminalConsole(shell, () => CurrentFolder?.Invoke()) { Connection = connection };
         console.SetFont(_font.Family, _font.Size);
         console.ShellExited += (_, _) => CloseTab(console); // "exit" closes the tab like in VS Code
+        console.LogChanged += (_, _) =>
+        {
+            if (ReferenceEquals(console, _active))
+            {
+                UpdateLogButton();
+            }
+        };
+        if (LogAll)
+        {
+            StartLog(console);
+        }
         _consoles.Add(console);
         _host.Children.Add(console);
         Select(console);
@@ -281,6 +375,7 @@ public sealed class TerminalView : DockPanel
     {
         _active = console;
         _files.IsVisible = console.Connection?.Protocol == Core.Config.RemoteProtocol.Ssh;
+        UpdateLogButton();
         foreach (var c in _consoles)
         {
             c.IsVisible = ReferenceEquals(c, console);
@@ -297,6 +392,7 @@ public sealed class TerminalView : DockPanel
             return;
         }
         console.Stop();
+        console.StopLog();
         _consoles.RemoveAt(index);
         _host.Children.Remove(console);
         TabsChanged?.Invoke(this, EventArgs.Empty);
@@ -304,6 +400,7 @@ public sealed class TerminalView : DockPanel
         {
             _active = null;
             _files.IsVisible = false;
+            UpdateLogButton();
             RebuildTabs();
             CloseRequested?.Invoke(this, EventArgs.Empty);
             return;
@@ -369,6 +466,7 @@ public sealed class TerminalView : DockPanel
         foreach (var console in _consoles)
         {
             console.Stop();
+            console.StopLog();
         }
         _consoles.Clear();
         _host.Children.Clear();
