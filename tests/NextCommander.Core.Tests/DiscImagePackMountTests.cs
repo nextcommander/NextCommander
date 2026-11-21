@@ -125,6 +125,72 @@ public sealed class DiscImagePackMountTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Linux_finds_unmounts_and_mounts_the_partition_of_a_hybrid_image()
+    {
+        // a hybrid ISO (most Linux images): the desktop mounted its first partition, not the loop device itself
+        var image = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "ubuntu-26.04.iso"));
+        var (oldRun, oldLoops, oldTable, oldParts) = (DiskImages.Run, DiskImages.LinuxLoops, DiskImages.LinuxMountTable, DiskImages.LinuxPartitionsOf);
+        var loops = new List<(string, string)> { ("/dev/loop5", image) };
+        var table = "/dev/sda2 / ext4 rw 0 0\n/dev/loop5p1 /media/u/Ubuntu\\04026.04 iso9660 ro,nosuid 0 0\n";
+        var calls = new List<string>();
+        try
+        {
+            DiskImages.LinuxLoops = () => loops;
+            DiskImages.LinuxMountTable = () => table;
+            DiskImages.LinuxPartitionsOf = device => [device + "p1", device + "p2"];
+            DiskImages.Run = (program, arguments, _) =>
+            {
+                var call = program + " " + string.Join(' ', arguments);
+                calls.Add(call);
+                if (call.Contains("unmount -b /dev/loop5p1", StringComparison.Ordinal))
+                {
+                    table = "/dev/sda2 / ext4 rw 0 0\n";
+                }
+                if (call.Contains("loop-delete", StringComparison.Ordinal))
+                {
+                    loops.Clear();
+                }
+                if (call.Contains("loop-setup", StringComparison.Ordinal))
+                {
+                    loops.Add(("/dev/loop6", image));
+                    return Task.FromResult((0, $"Mapped file {image} as /dev/loop6.\n", string.Empty));
+                }
+                if (call.EndsWith("-b /dev/loop6", StringComparison.Ordinal) && call.Contains(" mount ", StringComparison.Ordinal))
+                {
+                    return Task.FromResult((1, string.Empty, "Object /dev/loop6 is not a mountable filesystem."));
+                }
+                if (call.Contains("mount --no-user-interaction -b /dev/loop6p1", StringComparison.Ordinal))
+                {
+                    table += "/dev/loop6p1 /media/u/DISC iso9660 ro 0 0\n";
+                    return Task.FromResult((0, "Mounted /dev/loop6p1 at /media/u/DISC\n", string.Empty));
+                }
+                return Task.FromResult((0, string.Empty, string.Empty));
+            };
+
+            // mounted (on its partition): found; unmounted: the partition, then the loop device let go
+            Assert.Equal("/media/u/Ubuntu 26.04", await DiskImages.LinuxMountedAtAsync(image, CancellationToken.None));
+            await DiskImages.LinuxUnmountAsync(image, CancellationToken.None);
+            Assert.Equal(["udisksctl unmount --no-user-interaction -b /dev/loop5p1", "udisksctl loop-delete --no-user-interaction -b /dev/loop5"], calls);
+            Assert.Null(await DiskImages.LinuxMountedAtAsync(image, CancellationToken.None));
+
+            // mounted again, nothing mounting it by itself: the device cannot be, its first partition is
+            Assert.Equal("/media/u/DISC", await DiskImages.LinuxMountAsync(image, CancellationToken.None));
+            Assert.Contains("udisksctl mount --no-user-interaction -b /dev/loop6p1", calls);
+        }
+        finally
+        {
+            (DiskImages.Run, DiskImages.LinuxLoops, DiskImages.LinuxMountTable, DiskImages.LinuxPartitionsOf) = (oldRun, oldLoops, oldTable, oldParts);
+        }
+    }
+
+    [Fact]
+    public void The_mount_table_is_read_with_partitions_and_escapes()
+    {
+        const string table = "/dev/loop5 /mnt/a iso9660 ro 0 0\n/dev/loop50 /mnt/other ext4 rw 0 0\n/dev/loop5p2 /media/u/My\\040Disc\\134x udf ro 0 0\n";
+        Assert.Equal([("/dev/loop5", "/mnt/a"), ("/dev/loop5p2", "/media/u/My Disc\\x")], DiskImages.ParseMounts(table, "/dev/loop5"));
+    }
+
+    [Fact]
     public async Task Windows_mounts_through_powershell_once()
     {
         if (!OperatingSystem.IsWindows())
