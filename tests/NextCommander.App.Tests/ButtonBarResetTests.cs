@@ -1,3 +1,5 @@
+using Avalonia;
+using Avalonia.Input;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
@@ -14,6 +16,27 @@ public sealed class ButtonBarResetTests : IDisposable
     private readonly UiFixture _fx = new();
 
     public void Dispose() => _fx.Dispose();
+
+    [AvaloniaFact]
+    public async Task A_right_click_on_the_empty_part_of_the_bar_opens_its_menu()
+    {
+        var (w, _) = await _fx.OpenAsync();
+        var bar = w.GetVisualDescendants().OfType<ButtonBarControl>().Single(b => !b.IsVertical);
+        await SettleAsync();
+
+        // the empty part after the last button takes the pointer (it let it through without a background)
+        var last = bar.GetVisualDescendants().OfType<Button>().Where(b => b.IsEffectivelyVisible).Max(b => b.TranslatePoint(new Avalonia.Point(b.Bounds.Width, 0), bar)!.Value.X);
+        var empty = new Avalonia.Point((last + bar.Bounds.Width) / 2, bar.Bounds.Height / 2);
+        Assert.True(empty.X > last + 4);
+        Assert.Same(bar, bar.InputHitTest(empty) is Avalonia.Visual hit ? hit.FindAncestorOfType<ButtonBarControl>(includeSelf: true) : null);
+
+        // a right click there: the bar's menu
+        w.MouseDown(bar.TranslatePoint(empty, w)!.Value, Avalonia.Input.MouseButton.Right);
+        w.MouseUp(bar.TranslatePoint(empty, w)!.Value, Avalonia.Input.MouseButton.Right);
+        await SettleAsync(4);
+        Assert.True(bar.ContextMenu!.IsOpen);
+        bar.ContextMenu.Close();
+    }
 
     [AvaloniaTheory]
     [InlineData(false)]
