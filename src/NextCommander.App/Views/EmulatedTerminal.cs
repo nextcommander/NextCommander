@@ -45,6 +45,8 @@ public sealed class EmulatedTerminal : TerminalTab
     /// <summary>Scrollback and screen as text.</summary>
     public override string OutputText => _screen.Vt.AllText();
 
+    public override string? WorkingDirectory => _screen.Vt.WorkingDirectory;
+
     public override void Activate()
     {
         if (_terminal is null || _terminal.HasExited)

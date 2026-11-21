@@ -24,6 +24,22 @@ public sealed class TerminalView : DockPanel
     private double? _resizeStartY;
     private double _resizeHeight;
     private readonly Button _maximize;
+    private readonly Button _files;
+
+    /// <summary>"Files (SFTP)" of an SSH session: its connection and the shell's folder (null: not known).</summary>
+    public event EventHandler<(Core.Config.RemoteConnection Connection, string? Folder)>? FilesRequested;
+
+    /// <summary>"Files (SFTP)" is offered (the active tab is an SSH session; tests).</summary>
+    public bool OffersFiles => _files.IsVisible;
+
+    /// <summary>"Files (SFTP)" of the active tab (tests).</summary>
+    public void OpenFiles()
+    {
+        if (_active?.Connection is { Protocol: Core.Config.RemoteProtocol.Ssh } ssh)
+        {
+            FilesRequested?.Invoke(this, (ssh, _active.WorkingDirectory));
+        }
+    }
 
     /// <summary>Height as a part of the window: kept when the window is resized.</summary>
     private double _ratio = 0.45;
@@ -64,6 +80,17 @@ public sealed class TerminalView : DockPanel
         // header: title, tabs, new tab, actions
         var header = new DockPanel { Margin = new Thickness(8, 0, 4, 2) };
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 2 };
+        // an SSH session: its computer's files over SFTP in a panel (where the shell is, when it says)
+        _files = HeaderButton("Files (SFTP)", "The files of this SSH session's computer in a new tab of the active panel (in the shell's folder when the shell reports it)",
+            () =>
+            {
+                if (_active?.Connection is { Protocol: Core.Config.RemoteProtocol.Ssh } ssh)
+                {
+                    FilesRequested?.Invoke(this, (ssh, _active.WorkingDirectory));
+                }
+            });
+        _files.IsVisible = false;
+        buttons.Children.Add(_files);
         buttons.Children.Add(HeaderButton("Panel folder", "Go to the folder of the active panel in the terminal", () => _active?.GoToPanelFolder()));
         buttons.Children.Add(HeaderButton("Clear", "Clear the output (Ctrl+L)", () => _active?.Clear()));
         buttons.Children.Add(HeaderButton("Stop", "Stop the running program and restart the shell (Ctrl+C)", () => _active?.Restart()));
@@ -234,12 +261,13 @@ public sealed class TerminalView : DockPanel
 
     /// <summary>A new tab with <paramref name="shell"/> (null: the default shell).</summary>
     /// <remarks>With <paramref name="connect"/> the tab is a remote session (Telnet) on a terminal screen.</remarks>
-    public TerminalTab NewTab(TerminalSession.ShellInfo? shell = null, Func<int, int, Services.Terminal.PseudoTerminal>? connect = null)
+    public TerminalTab NewTab(TerminalSession.ShellInfo? shell = null, Func<int, int, Services.Terminal.PseudoTerminal>? connect = null,
+        Core.Config.RemoteConnection? connection = null)
     {
         shell ??= TerminalSession.ShellFor(Shell);
         TerminalTab console = connect is not null || (Emulation && Services.Terminal.PseudoTerminal.IsSupported)
-            ? new EmulatedTerminal(shell, () => CurrentFolder?.Invoke(), connect)
-            : new TerminalConsole(shell, () => CurrentFolder?.Invoke());
+            ? new EmulatedTerminal(shell, () => CurrentFolder?.Invoke(), connect) { Connection = connection }
+            : new TerminalConsole(shell, () => CurrentFolder?.Invoke()) { Connection = connection };
         console.SetFont(_font.Family, _font.Size);
         console.ShellExited += (_, _) => CloseTab(console); // "exit" closes the tab like in VS Code
         _consoles.Add(console);
@@ -252,6 +280,7 @@ public sealed class TerminalView : DockPanel
     public void Select(TerminalTab console)
     {
         _active = console;
+        _files.IsVisible = console.Connection?.Protocol == Core.Config.RemoteProtocol.Ssh;
         foreach (var c in _consoles)
         {
             c.IsVisible = ReferenceEquals(c, console);
@@ -274,6 +303,7 @@ public sealed class TerminalView : DockPanel
         if (_consoles.Count == 0)
         {
             _active = null;
+            _files.IsVisible = false;
             RebuildTabs();
             CloseRequested?.Invoke(this, EventArgs.Empty);
             return;

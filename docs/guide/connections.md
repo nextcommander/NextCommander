@@ -64,7 +64,7 @@ The manager opens as a page of its own with a tab, like the maximized internal t
 goes back to the panels while the manager stays open; ✕, its tab's × or Esc closes it. The connections are on the
 left, in folders; the selected connection or folder is on the right. Above the list is the toolbar: **＋ New**, a new
 folder and Import (FileZilla, WinSCP). The actions of the selected connection are in the bar above it, all in the accent color: *Test*,
-*Duplicate*, *Delete* (for a remote desktop also *Files (SMB)*) on the left, **Save** and **Connect** on the right; for
+*Duplicate*, *Delete* (for a remote desktop also *Files (SMB)*, for SSH *Files (SFTP)*) on the left, **Save** and **Connect** on the right; for
 a folder *New connection*, *New subfolder*, *Delete* and *Connect to all*. Messages ("Saved", "Moved") show under them.
 The manager opens with its first connection selected; without connections it shows **＋ New** and **Import...**.
 
@@ -363,7 +363,11 @@ connections*, `nc_OpenConnection name`) does not change the panel.
   set. The server's key is checked as for SFTP (a key trusted for SFTP on the same server is trusted here too; a
   pinned key must match). The terminal type (xterm-256color unless you set another) and the window size go to the
   server, again when the window changes. *Command when it opens* is typed into the shell first (e.g. `tmux attach`).
-  `exit` closes the session; the tab stays with the last screen.
+  `exit` closes the session; the tab stays with the last screen, and Enter connects again.
+  **Files (SFTP)** (in the terminal's title while an SSH tab is shown, and in the connection manager) opens the
+  server's files in a new tab of the active panel: through a saved SFTP or SCP connection to the same server, else
+  with the session's own login (key file, agent, jump host, proxy and its saved password). When the shell reports its
+  folder (OSC 7, as many prompts do), the files open in that folder; otherwise at the root.
 - **VNC** opens in a VNC viewer of this computer: a `vncviewer` (TigerVNC, UltraVNC, TurboVNC), RealVNC Viewer or
   TightVNC (on Windows also where they are installed), macOS's Screen Sharing, or Remmina / KRDC on Linux. Port 5900
   is display `:0`, 5901 display `:1` and so on. Options: full screen, view only (no keys or mouse sent). The viewer

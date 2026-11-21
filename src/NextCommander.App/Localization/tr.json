@@ -3399,5 +3399,7 @@
   "Settings.Layout.GraphiteCompact": "Graphite (sıkışık)",
   "Settings.Layout.AuroraFloatingRound": "Aurora (yüzen, yuvarlak)",
   "Settings.Layout.NamesNextToTheIcons": "Simgelerin yanında adlar",
-  "Settings.Layout.NamesNextToTheIcons.Description": "Üstteki çubuğun düğmeleri adlarını da gösterir."
+  "Settings.Layout.NamesNextToTheIcons.Description": "Üstteki çubuğun düğmeleri adlarını da gösterir.",
+  "ConnectionManagerWindow.FilesSftp": "Dosyalar (SFTP)",
+  "TerminalView.TheFilesOfThisSsh": "Bu SSH oturumunun bilgisayarındaki dosyalar etkin panelin yeni bir sekmesinde (kabuk bildiriyorsa kabuğun klasöründe)"
 }

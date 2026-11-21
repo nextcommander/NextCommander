@@ -29,6 +29,12 @@ public abstract class TerminalTab : Border
     /// <summary>A session on another computer (Telnet): no local folder, not kept with the shells between starts.</summary>
     public virtual bool IsRemote => false;
 
+    /// <summary>The connection of a remote session (SSH, Telnet ...); null for a local shell.</summary>
+    public Core.Config.RemoteConnection? Connection { get; init; }
+
+    /// <summary>The folder the shell reported last (OSC 7), null when it reports none.</summary>
+    public virtual string? WorkingDirectory => null;
+
     /// <summary>What the terminal shows as text (output and, for the line console, the command being typed).</summary>
     public abstract string OutputText { get; }
 

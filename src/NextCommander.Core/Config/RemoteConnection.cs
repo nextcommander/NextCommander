@@ -574,4 +574,34 @@ public sealed class RemoteConnection
     }
 
     public RemoteConnection Clone() => (RemoteConnection)MemberwiseClone();
+
+    /// <summary>
+    /// The files of an SSH session's computer (MobaXterm's SFTP browser next to an SSH session; user's request,
+    /// 21 November 2026): a saved SFTP or SCP connection to the same server, port and user, else this connection as SFTP
+    /// with the same login (key file, agent, jump host, proxy); <paramref name="folder"/> is where it starts (null: the root).
+    /// </summary>
+    public RemoteConnection FilesOverSsh(IEnumerable<RemoteConnection> saved, string? folder = null)
+    {
+        var files = saved.FirstOrDefault(s => s.Protocol is RemoteProtocol.Sftp or RemoteProtocol.Scp
+                && s.Host.Equals(Host, StringComparison.OrdinalIgnoreCase) && s.EffectivePort == EffectivePort
+                && (User.Length == 0 || s.User == User))?.Clone()
+            ?? With(c =>
+            {
+                c.Protocol = RemoteProtocol.Sftp;
+                c.Port = EffectivePort == DefaultPort(RemoteProtocol.Sftp) ? 0 : EffectivePort;
+                c.InitialPath = "/";
+            });
+        if (!string.IsNullOrEmpty(folder))
+        {
+            files.InitialPath = folder;
+        }
+        return files;
+    }
+
+    private RemoteConnection With(Action<RemoteConnection> change)
+    {
+        var copy = Clone();
+        change(copy);
+        return copy;
+    }
 }

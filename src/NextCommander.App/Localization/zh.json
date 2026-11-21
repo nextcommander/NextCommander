@@ -3399,5 +3399,7 @@
   "Settings.Layout.GraphiteCompact": "Graphite（紧凑）",
   "Settings.Layout.AuroraFloatingRound": "Aurora（浮动、圆形）",
   "Settings.Layout.NamesNextToTheIcons": "图标旁显示名称",
-  "Settings.Layout.NamesNextToTheIcons.Description": "顶部栏的按钮同时显示名称。"
+  "Settings.Layout.NamesNextToTheIcons.Description": "顶部栏的按钮同时显示名称。",
+  "ConnectionManagerWindow.FilesSftp": "文件 (SFTP)",
+  "TerminalView.TheFilesOfThisSsh": "在活动面板的新标签页中打开此 SSH 会话所在计算机的文件（若 shell 报告了当前文件夹则在该文件夹中）"
 }
