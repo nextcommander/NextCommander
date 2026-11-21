@@ -3558,5 +3558,7 @@
   "SettingsWindow.AddWords": "添加字词",
   "SettingsWindow.NoWords": "没有字词",
   "SettingsWindow.NotAColorHex": "不是颜色：“{0}”(#RRGGBB)",
-  "SettingsWindow.Words": "字词"
+  "SettingsWindow.Words": "字词",
+  "ConnectionWizard.OrASharedLogin": "或多个连接共享的登录（连接编辑器中的“登录...”）。",
+  "ConnectionWizard.UserOfThisLogin": "用户 {0} 以及此登录的密码（或密钥）。"
 }

@@ -3558,5 +3558,7 @@
   "SettingsWindow.AddWords": "Añadir palabras",
   "SettingsWindow.NoWords": "Sin palabras",
   "SettingsWindow.NotAColorHex": "No es un color: \"{0}\" (#RRGGBB)",
-  "SettingsWindow.Words": "Palabras"
+  "SettingsWindow.Words": "Palabras",
+  "ConnectionWizard.OrASharedLogin": "O un inicio de sesión compartido por varias conexiones (Inicios de sesión... en el editor de conexiones).",
+  "ConnectionWizard.UserOfThisLogin": "Usuario {0} y la contraseña (o clave) de este inicio de sesión."
 }

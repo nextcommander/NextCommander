@@ -131,4 +131,43 @@ public sealed class SharedCredentialTests : IDisposable
         Assert.Equal("CORP\\ops", settings.Connections[1].User);
         window.Close();
     }
+    [AvaloniaFact]
+    public async Task The_new_connection_wizard_offers_the_shared_logins()
+    {
+        var settings = Settings(out var admin);
+        admin.KeyFile = "admin.ppk";
+        var wizard = new ConnectionWizard(new ConnectionWizardRequest(settings, (_, _) => Task.FromResult(string.Empty), _ => Task.FromResult<string?>(null)));
+        wizard.Show();
+        await SettleAsync();
+        wizard.ChooseType(RemoteProtocol.Sftp);
+        await SettleAsync();
+        ComboBox Login() => wizard.GetLogicalDescendants().OfType<ComboBox>().Single(c => Avalonia.Automation.AutomationProperties.GetName(c) == "Login");
+        bool HasBox(string name) => wizard.GetLogicalDescendants().OfType<TextBox>().Any(t => t.PlaceholderText == name);
+        Assert.Equal(["Own user and password", "Domain admin"], Login().ItemsSource!.Cast<string>());
+        Assert.True(HasBox("user name"));
+
+        // a shared login: its user and key, no user or key fields; back to its own: they come again, empty
+        Login().SelectedIndex = 1;
+        await SettleAsync();
+        Assert.Equal((admin.Id, "CORP\\admin", "admin.ppk"), (wizard.Connection!.CredentialId, wizard.Connection.User, wizard.Connection.KeyFile));
+        Assert.False(HasBox("user name"));
+        Assert.Contains(wizard.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text?.StartsWith("User CORP\\admin and the password", StringComparison.Ordinal) == true);
+        Login().SelectedIndex = 0;
+        await SettleAsync();
+        Assert.Equal((null, string.Empty), (wizard.Connection!.CredentialId, wizard.Connection.User));
+        Assert.True(HasBox("user name"));
+
+        // without shared logins the choice is not offered
+        Login().SelectedIndex = 1;
+        await SettleAsync();
+        wizard.Connection!.Host = "web1";
+        wizard.Connection.Name = "web new";
+        Assert.True(wizard.Finish());
+        Assert.Equal(admin.Id, wizard.Result!.CredentialId);
+        settings.SharedCredentials.Clear();
+        wizard.ChooseType(RemoteProtocol.Ftp);
+        await SettleAsync();
+        Assert.DoesNotContain(wizard.GetLogicalDescendants().OfType<ComboBox>(), c => Avalonia.Automation.AutomationProperties.GetName(c) == "Login");
+        wizard.Close();
+    }
 }

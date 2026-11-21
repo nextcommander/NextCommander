@@ -3558,5 +3558,7 @@
   "SettingsWindow.AddWords": "Ajouter des mots",
   "SettingsWindow.NoWords": "Aucun mot",
   "SettingsWindow.NotAColorHex": "Pas une couleur : « {0} » (#RRGGBB)",
-  "SettingsWindow.Words": "Mots"
+  "SettingsWindow.Words": "Mots",
+  "ConnectionWizard.OrASharedLogin": "Ou un identifiant partagé par plusieurs connexions (Identifiants... dans l’éditeur de connexions).",
+  "ConnectionWizard.UserOfThisLogin": "Utilisateur {0} et le mot de passe (ou la clé) de cet identifiant."
 }

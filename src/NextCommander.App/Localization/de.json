@@ -3558,5 +3558,7 @@
   "SettingsWindow.AddWords": "Wörter hinzufügen",
   "SettingsWindow.NoWords": "Keine Wörter",
   "SettingsWindow.NotAColorHex": "Keine Farbe: \"{0}\" (#RRGGBB)",
-  "SettingsWindow.Words": "Wörter"
+  "SettingsWindow.Words": "Wörter",
+  "ConnectionWizard.OrASharedLogin": "Oder eine von mehreren Verbindungen geteilte Anmeldung (Anmeldungen... im Verbindungseditor).",
+  "ConnectionWizard.UserOfThisLogin": "Benutzer {0} und das Passwort (oder der Schlüssel) dieser Anmeldung."
 }

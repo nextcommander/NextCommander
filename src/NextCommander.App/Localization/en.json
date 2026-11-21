@@ -3558,5 +3558,7 @@
   "SettingsWindow.AddWords": "Add words",
   "SettingsWindow.NoWords": "No words",
   "SettingsWindow.NotAColorHex": "Not a color: \"{0}\" (#RRGGBB)",
-  "SettingsWindow.Words": "Words"
+  "SettingsWindow.Words": "Words",
+  "ConnectionWizard.OrASharedLogin": "Or a login shared by several connections (Logins... in the connection editor).",
+  "ConnectionWizard.UserOfThisLogin": "User {0} and the password (or key) of this login."
 }
