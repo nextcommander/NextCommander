@@ -1587,7 +1587,7 @@
   "Settings.Operation.SelectionModeTouchOnly.Description": "Tippen wählt aus, Halten öffnet das Kontextmenü; die Maus arbeitet wie gewohnt.",
   "Settings.Operation.SelectOnlyTheNameWhen": "Beim Umbenennen nur den Namen markieren",
   "Settings.Operation.SelectOnlyTheNameWhen.Description": "Die Erweiterung wird nicht markiert.",
-  "Settings.Operation.SelectWithTheRightButton": "Mit der rechten Maustaste auswählen (Norton Commander-Stil)",
+  "Settings.Operation.SelectWithTheRightButton": "Mit der rechten Maustaste auswählen (klassischer Zwei-Fenster-Stil)",
   "Settings.Operation.SelectWithTheRightButton.Description": "Rechtsklick markiert die Datei; gehalten (0,6 s) öffnet er das Kontextmenü. Unter macOS öffnet ein Rechtsklick mit der Maus (zwei Finger, Ctrl+Klick) immer das Menü, markiert wird mit Cmd+Klick.",
   "Settings.Operation.ShowProgressInTheTitle": "Fortschritt im Titel anzeigen",
   "Settings.Operation.ShowProgressInTheTitle.Description": "Prozentwert im Fenstertitel bei langen Vorgängen.",
@@ -3469,10 +3469,10 @@
   "TerminalView.NewerMatch": "Neuerer Treffer (Umschalt+Eingabe)",
   "TerminalView.NoResults": "Keine Treffer",
   "TerminalView.OlderMatch": "Älterer Treffer (Eingabe)",
-  "TerminalView.TypeHereToo": "Auch hier tippen (MultiExec)",
-  "TerminalView.MultiExecTip": "In mehrere Terminals gleichzeitig tippen: was in einem Tab getippt wird, geht an jeden markierten Tab",
+  "TerminalView.TypeHereToo": "Auch hier tippen (In alle tippen)",
+  "TerminalView.TypeInAllTip": "In mehrere Terminals gleichzeitig tippen: was in einem Tab getippt wird, geht an jeden markierten Tab",
   "Settings.Misc.Snippets": "Gespeicherte Befehle (Snippets)",
-  "Settings.Misc.Snippets.Description": "Befehle, die mit einem Klick im Snippets-Menü des Terminals an den aktiven Terminal-Tab gesendet werden (mit MultiExec an jeden markierten Tab).",
+  "Settings.Misc.Snippets.Description": "Befehle, die mit einem Klick im Snippets-Menü des Terminals an den aktiven Terminal-Tab gesendet werden (mit In alle tippen an jeden markierten Tab).",
   "SettingsWindow.AddCommand": "Befehl hinzufügen",
   "SettingsWindow.CommandIsEmpty": "Befehl ist leer",
   "SettingsWindow.PressEnterAfterIt": "Danach Eingabe drücken",
@@ -3560,5 +3560,7 @@
   "SettingsWindow.NotAColorHex": "Keine Farbe: \"{0}\" (#RRGGBB)",
   "SettingsWindow.Words": "Wörter",
   "ConnectionWizard.OrASharedLogin": "Oder eine von mehreren Verbindungen geteilte Anmeldung (Anmeldungen... im Verbindungseditor).",
-  "ConnectionWizard.UserOfThisLogin": "Benutzer {0} und das Passwort (oder der Schlüssel) dieser Anmeldung."
+  "ConnectionWizard.UserOfThisLogin": "Benutzer {0} und das Passwort (oder der Schlüssel) dieser Anmeldung.",
+  "TerminalView.TypeInAll": "In alle tippen",
+  "TerminalView.TypeInAllOn": "● In alle tippen"
 }

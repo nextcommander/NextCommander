@@ -448,7 +448,7 @@ public sealed class AppSettings
     /// <summary>Rows kept visible below (and above) the cursor while scrolling.</summary>
     public int ExtraLinesAroundCursor { get; set; }
 
-    /// <summary>Right mouse button marks files (Norton Commander style); held for a second it opens the context menu.</summary>
+    /// <summary>Right mouse button marks files (classic two-panel style); held for a second it opens the context menu.</summary>
     public bool RightButtonSelects { get; set; } = true;
 
     /// <summary>The context menu of the file list is the system's (Windows Explorer's); Shift+right click opens the application's.</summary>

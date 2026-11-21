@@ -10,7 +10,7 @@ using static NextCommander.App.Tests.UiFixture;
 
 namespace NextCommander.App.Tests;
 
-/// <summary>Finding in the terminal's output and scrollback (MobaXterm's terminal search).</summary>
+/// <summary>Finding in the terminal's output and scrollback.</summary>
 public sealed class TerminalFindTests
 {
     private sealed class QuietTerminal : PseudoTerminal

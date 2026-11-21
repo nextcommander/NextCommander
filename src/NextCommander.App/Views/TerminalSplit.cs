@@ -1,6 +1,6 @@
 namespace NextCommander.App.Views;
 
-/// <summary>How the internal terminal shows its tabs (the Split menu; MobaXterm's split terminal, user's request, 21 November 2026).</summary>
+/// <summary>How the internal terminal shows its tabs (the Split menu; user's request, 21 November 2026).</summary>
 public enum TerminalSplit
 {
     /// <summary>One tab at a time.</summary>

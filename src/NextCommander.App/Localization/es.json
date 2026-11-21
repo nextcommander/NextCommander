@@ -1587,7 +1587,7 @@
   "Settings.Operation.SelectionModeTouchOnly.Description": "Tocar selecciona, mantener pulsado abre el menú contextual; el mouse funciona como siempre.",
   "Settings.Operation.SelectOnlyTheNameWhen": "Seleccionar solo el nombre al cambiar el nombre",
   "Settings.Operation.SelectOnlyTheNameWhen.Description": "La extensión no se selecciona.",
-  "Settings.Operation.SelectWithTheRightButton": "Seleccionar con el botón derecho (estilo Norton Commander)",
+  "Settings.Operation.SelectWithTheRightButton": "Seleccionar con el botón derecho (estilo clásico de dos paneles)",
   "Settings.Operation.SelectWithTheRightButton.Description": "El clic derecho marca el archivo; si se mantiene (0,6 s), abre el menú contextual. En macOS, el clic derecho con el mouse (dos dedos, Ctrl+clic) siempre abre el menú y se marca con Cmd+clic.",
   "Settings.Operation.ShowProgressInTheTitle": "Mostrar el progreso en el título",
   "Settings.Operation.ShowProgressInTheTitle.Description": "Porcentaje en el título de la ventana durante las operaciones largas.",
@@ -3469,10 +3469,10 @@
   "TerminalView.NewerMatch": "Coincidencia más reciente (Mayús+Intro)",
   "TerminalView.NoResults": "Sin resultados",
   "TerminalView.OlderMatch": "Coincidencia más antigua (Intro)",
-  "TerminalView.TypeHereToo": "Escribir aquí también (MultiExec)",
-  "TerminalView.MultiExecTip": "Escribir en varios terminales a la vez: lo que se escribe en una pestaña va a todas las pestañas marcadas",
+  "TerminalView.TypeHereToo": "Escribir aquí también (Escribir en todas)",
+  "TerminalView.TypeInAllTip": "Escribir en varios terminales a la vez: lo que se escribe en una pestaña va a todas las pestañas marcadas",
   "Settings.Misc.Snippets": "Comandos guardados (fragmentos)",
-  "Settings.Misc.Snippets.Description": "Comandos enviados a la pestaña activa del terminal con un clic en el menú Fragmentos del terminal (con MultiExec a cada pestaña marcada).",
+  "Settings.Misc.Snippets.Description": "Comandos enviados a la pestaña activa del terminal con un clic en el menú Fragmentos del terminal (con Escribir en todas a cada pestaña marcada).",
   "SettingsWindow.AddCommand": "Añadir comando",
   "SettingsWindow.CommandIsEmpty": "El comando está vacío",
   "SettingsWindow.PressEnterAfterIt": "Pulsar Intro después",
@@ -3560,5 +3560,7 @@
   "SettingsWindow.NotAColorHex": "No es un color: \"{0}\" (#RRGGBB)",
   "SettingsWindow.Words": "Palabras",
   "ConnectionWizard.OrASharedLogin": "O un inicio de sesión compartido por varias conexiones (Inicios de sesión... en el editor de conexiones).",
-  "ConnectionWizard.UserOfThisLogin": "Usuario {0} y la contraseña (o clave) de este inicio de sesión."
+  "ConnectionWizard.UserOfThisLogin": "Usuario {0} y la contraseña (o clave) de este inicio de sesión.",
+  "TerminalView.TypeInAll": "Escribir en todas",
+  "TerminalView.TypeInAllOn": "● Escribir en todas"
 }

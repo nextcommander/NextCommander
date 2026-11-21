@@ -16,7 +16,7 @@ public enum TunnelKind
 }
 
 /// <summary>
-/// A saved SSH tunnel (the tunnel manager of the Net menu; MobaXterm's SSH tunnels, user's request, 21 November 2026):
+/// A saved SSH tunnel (the tunnel manager of the Net menu; user's request, 21 November 2026):
 /// port forwarding through a saved SSH, SFTP or SCP connection, started by hand or with the program.
 /// </summary>
 public sealed class SshTunnel

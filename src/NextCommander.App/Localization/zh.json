@@ -1587,7 +1587,7 @@
   "Settings.Operation.SelectionModeTouchOnly.Description": "点击为选择，长按打开上下文菜单；鼠标操作不变。",
   "Settings.Operation.SelectOnlyTheNameWhen": "重命名时仅选择名称",
   "Settings.Operation.SelectOnlyTheNameWhen.Description": "不选择扩展名。",
-  "Settings.Operation.SelectWithTheRightButton": "用右键选择（Norton Commander 风格）",
+  "Settings.Operation.SelectWithTheRightButton": "用右键选择（经典双面板风格）",
   "Settings.Operation.SelectWithTheRightButton.Description": "右键单击标记文件；按住（0.6 秒）则打开上下文菜单。在 macOS 上，鼠标右键单击（双指、Ctrl+单击）始终打开菜单，标记使用 Cmd+单击。",
   "Settings.Operation.ShowProgressInTheTitle": "在标题中显示进度",
   "Settings.Operation.ShowProgressInTheTitle.Description": "长时间操作期间在窗口标题中显示百分比。",
@@ -3469,10 +3469,10 @@
   "TerminalView.NewerMatch": "较新的匹配项 (Shift+Enter)",
   "TerminalView.NoResults": "无结果",
   "TerminalView.OlderMatch": "较早的匹配项 (Enter)",
-  "TerminalView.TypeHereToo": "也在此输入 (MultiExec)",
-  "TerminalView.MultiExecTip": "同时向多个终端输入：在一个标签页中输入的内容会发送到所有勾选的标签页",
+  "TerminalView.TypeHereToo": "也在此输入 (全部输入)",
+  "TerminalView.TypeInAllTip": "同时向多个终端输入：在一个标签页中输入的内容会发送到所有勾选的标签页",
   "Settings.Misc.Snippets": "已保存的命令（代码片段）",
-  "Settings.Misc.Snippets.Description": "在终端的“代码片段”菜单中单击即可发送到当前终端标签页的命令（开启 MultiExec 时发送到所有勾选的标签页）。",
+  "Settings.Misc.Snippets.Description": "在终端的“代码片段”菜单中单击即可发送到当前终端标签页的命令（开启 全部输入 时发送到所有勾选的标签页）。",
   "SettingsWindow.AddCommand": "添加命令",
   "SettingsWindow.CommandIsEmpty": "命令为空",
   "SettingsWindow.PressEnterAfterIt": "之后按 Enter",
@@ -3560,5 +3560,7 @@
   "SettingsWindow.NotAColorHex": "不是颜色：“{0}”(#RRGGBB)",
   "SettingsWindow.Words": "字词",
   "ConnectionWizard.OrASharedLogin": "或多个连接共享的登录（连接编辑器中的“登录...”）。",
-  "ConnectionWizard.UserOfThisLogin": "用户 {0} 以及此登录的密码（或密钥）。"
+  "ConnectionWizard.UserOfThisLogin": "用户 {0} 以及此登录的密码（或密钥）。",
+  "TerminalView.TypeInAll": "全部输入",
+  "TerminalView.TypeInAllOn": "● 全部输入"
 }

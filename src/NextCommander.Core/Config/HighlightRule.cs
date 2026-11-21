@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 namespace NextCommander.Core.Config;
 
 /// <summary>
-/// Words colored in the terminal's output (MobaXterm's syntax highlighting, user's request, 21 November 2026): whole
+/// Words colored in the terminal's output (user's request, 21 November 2026): whole
 /// words, case ignored, in text the program writes without a color of its own.
 /// </summary>
 public sealed class HighlightRule

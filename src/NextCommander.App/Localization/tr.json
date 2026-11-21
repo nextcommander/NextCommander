@@ -1587,7 +1587,7 @@
   "Settings.Operation.SelectionModeTouchOnly.Description": "Dokunmak işaretler, basılı tutmak bağlam menüsünü açar; fare her zamanki gibi çalışır.",
   "Settings.Operation.SelectOnlyTheNameWhen": "Yeniden adlandırırken yalnızca adı seç",
   "Settings.Operation.SelectOnlyTheNameWhen.Description": "Uzantı seçilmez.",
-  "Settings.Operation.SelectWithTheRightButton": "Sağ tuşla seç (Norton Commander tarzı)",
+  "Settings.Operation.SelectWithTheRightButton": "Sağ tuşla seç (klasik çift panel tarzı)",
   "Settings.Operation.SelectWithTheRightButton.Description": "Sağ tıklama dosyayı işaretler; basılı tutunca (0,6 sn) bağlam menüsü açılır. macOS'ta fareyle sağ tık (iki parmak, Ctrl+tık) her zaman menüyü açar, işaretleme Cmd+tık ile.",
   "Settings.Operation.ShowProgressInTheTitle": "İlerlemeyi başlıkta göster",
   "Settings.Operation.ShowProgressInTheTitle.Description": "Uzun işlerde pencere başlığında yüzde.",
@@ -3469,10 +3469,10 @@
   "TerminalView.NewerMatch": "Daha yeni eşleşme (Shift+Enter)",
   "TerminalView.NoResults": "Sonuç yok",
   "TerminalView.OlderMatch": "Daha eski eşleşme (Enter)",
-  "TerminalView.TypeHereToo": "Buraya da yaz (MultiExec)",
-  "TerminalView.MultiExecTip": "Aynı anda birden çok terminale yaz: bir sekmede yazılan, işaretli tüm sekmelere gider",
+  "TerminalView.TypeHereToo": "Buraya da yaz (Hepsine yaz)",
+  "TerminalView.TypeInAllTip": "Aynı anda birden çok terminale yaz: bir sekmede yazılan, işaretli tüm sekmelere gider",
   "Settings.Misc.Snippets": "Kayıtlı komutlar (snippet'ler)",
-  "Settings.Misc.Snippets.Description": "Terminalin Snippet'ler menüsünden tek tıkla etkin terminal sekmesine gönderilen komutlar (MultiExec açıkken işaretli tüm sekmelere).",
+  "Settings.Misc.Snippets.Description": "Terminalin Snippet'ler menüsünden tek tıkla etkin terminal sekmesine gönderilen komutlar (Hepsine yaz açıkken işaretli tüm sekmelere).",
   "SettingsWindow.AddCommand": "Komut ekle",
   "SettingsWindow.CommandIsEmpty": "Komut boş",
   "SettingsWindow.PressEnterAfterIt": "Ardından Enter'a bas",
@@ -3560,5 +3560,7 @@
   "SettingsWindow.NotAColorHex": "Renk değil: \"{0}\" (#RRGGBB)",
   "SettingsWindow.Words": "Kelimeler",
   "ConnectionWizard.OrASharedLogin": "Ya da birden çok bağlantının paylaştığı bir giriş (bağlantı düzenleyicisinde Girişler...).",
-  "ConnectionWizard.UserOfThisLogin": "Kullanıcı {0} ve bu girişin parolası (ya da anahtarı)."
+  "ConnectionWizard.UserOfThisLogin": "Kullanıcı {0} ve bu girişin parolası (ya da anahtarı).",
+  "TerminalView.TypeInAll": "Hepsine yaz",
+  "TerminalView.TypeInAllOn": "● Hepsine yaz"
 }

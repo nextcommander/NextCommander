@@ -4,7 +4,7 @@ namespace NextCommander.Core.Config;
 public sealed record TerminalScheme(string Id, string Name, string Background, string Foreground);
 
 /// <summary>
-/// A connection's own look in the internal terminal (MobaXterm's per-session terminal settings, user's request,
+/// A connection's own look in the internal terminal (per-session terminal settings, user's request,
 /// 21 November 2026): font, color scheme and the color of its tab, e.g. a production server in red.
 /// </summary>
 public static class TerminalLook
