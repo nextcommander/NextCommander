@@ -113,16 +113,20 @@ public sealed class RemoteDialogsTests : IDisposable
         window.GetVisualDescendants().OfType<TextBox>().First(t => t.PlaceholderText == "Name, server, bucket ...").Text = string.Empty;
 
         // the favorites chip, then the connected one
-        Click(window.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>().First(b => Equals(b.Content, "★ Favorites")));
+        Click(window.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>().First(b => Equals(b.Tag, "★ Favorites")));
         await SettleAsync();
         Assert.Equal(["Work/", "  Prod/", "    prod-web-01"], Names(window));
         calls.Connected.Add(window.Rows[^1].Connection!);
-        Click(window.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>().First(b => Equals(b.Content, "● Connected")));
+        window.RefreshTree(); // the Connected chip shows once something is connected
+        Click(window.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>().First(b => Equals(b.Tag, "● Connected")));
         await SettleAsync();
         Assert.Equal(["Work/", "  Prod/", "    prod-web-01"], Names(window));
-        Click(window.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>().First(b => Equals(b.Content, "FTP")));
+        Click(window.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>().First(b => Equals(b.Tag, "Cloud")));
         await SettleAsync();
-        Assert.Equal(["Partners/", "  EDI"], Names(window));
+        Assert.Equal(["Work/", "  Prod/", "    assets", "Drive"], Names(window));
+        // only the chips with connections: no remote sessions here
+        Assert.DoesNotContain(window.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>(), b => Equals(b.Tag, "Remote"));
+        Assert.True(Shown(window, "5 saved · ● 1 connected"));
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
         {
             Directory.CreateDirectory(dir);
@@ -136,15 +140,17 @@ public sealed class RemoteDialogsTests : IDisposable
         var settings = Sample();
         var (window, calls) = Open(settings);
         await SettleAsync();
-        // the manager opens with its first connection (no page of types any more)
-        Assert.NotNull(window.Current);
-        Assert.False(Shown(window, "Choose the type of the connection"));
+        // the manager opens on Home: recently used, an address to paste
+        Assert.Null(window.Current);
+        Assert.True(Shown(window, "Recently used"));
+        Assert.True(Shown(window, "prod-web-01"));
 
-        // New: the wizard over the manager; its type, then what the type needs
+        // New: the type and details pages in the right side; its type, then what the type needs
         var adding = window.NewConnectionAsync();
         await SettleAsync();
         var wizard = window.Wizard!;
-        Assert.Contains(wizard.GetVisualDescendants().OfType<Button>(), b => b.Content is StackPanel p && p.Children.OfType<StackPanel>().Any(s => s.Children.OfType<TextBlock>().Any(t => t.Text == "Azure Files")));
+        Assert.Same(wizard, window.GetVisualDescendants().OfType<ConnectionWizard>().Single());
+        Assert.Contains(wizard.GetVisualDescendants().OfType<Button>(), b => b.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "Azure Files"));
         // the search over the types: name, description, group
         wizard.SearchTypes("azure");
         Assert.Equal([RemoteProtocol.AzureBlob, RemoteProtocol.AzureFiles], wizard.Shown());
@@ -154,7 +160,7 @@ public sealed class RemoteDialogsTests : IDisposable
         {
             await SettleAsync();
             Directory.CreateDirectory(typesDir);
-            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(wizard)!.SavePng(Path.Combine(typesDir, "connection-wizard-types.png"));
+            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame((Window)TopLevel.GetTopLevel(wizard)!)!.SavePng(Path.Combine(typesDir, "connection-wizard-types.png"));
         }
         wizard.ChooseType(RemoteProtocol.S3);
         await SettleAsync();
@@ -162,44 +168,38 @@ public sealed class RemoteDialogsTests : IDisposable
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } wizardDir)
         {
             Directory.CreateDirectory(wizardDir);
-            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame(wizard)!.SavePng(Path.Combine(wizardDir, "connection-wizard.png"));
+            Avalonia.Headless.HeadlessWindowExtensions.CaptureRenderedFrame((Window)TopLevel.GetTopLevel(wizard)!)!.SavePng(Path.Combine(wizardDir, "connection-wizard.png"));
         }
-        // the title stays above the scrolled fields
-        Assert.DoesNotContain(wizard.GetVisualDescendants().OfType<ScrollViewer>().SelectMany(v => v.GetVisualDescendants()).OfType<TextBlock>(), t => t.Text == "Amazon S3");
-        wizard.Next(); // the user is missing: the details stay
+        Assert.True(Shown(window, "New Amazon S3 connection"));
+        Assert.False(wizard.Finish()); // the user is missing: the details stay
         Assert.Equal(WizardStep.Details, wizard.Step);
         Assert.Equal(["User"], wizard.MarkedFields);
         wizard.GetVisualDescendants().OfType<TextBox>().First(t => t.PlaceholderText == "AKIA...").Text = "key";
         await SettleAsync();
 
-        // the advanced options of the editor: the next step
-        wizard.Next();
+        // the editor's advanced options are folded under More settings on the same page
+        var more = wizard.GetVisualDescendants().OfType<Expander>().Single();
+        Assert.False(more.IsExpanded);
+        more.IsExpanded = true;
         await SettleAsync();
-        Assert.Equal(WizardStep.Advanced, wizard.Step);
         Assert.Contains(wizard.GetVisualDescendants().OfType<TabItem>(), t => Equals(t.Header, "Proxy"));
         Shot(wizard, "connection-wizard-advanced");
         wizard.Connection!.TimeoutSeconds = 77;
 
-        // the summary: folder › name, the server, the login, the changed options
-        wizard.Next();
-        await SettleAsync();
-        Assert.Equal(WizardStep.Summary, wizard.Step);
-        bool InSummary(string text) => wizard.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == text && t.IsEffectivelyVisible);
-        Assert.True(InSummary("Cloud storage") && InSummary("Amazon S3") && InSummary("key") && InSummary("s3.amazonaws.com") && InSummary("77"));
-        Shot(wizard, "connection-wizard-summary");
-        wizard.Back();
-        Assert.Equal(WizardStep.Advanced, wizard.Step);
+        // Change type goes back to the types; the location bar follows
+        Assert.True(Shown(window, "New connection"));
         wizard.Back();
         await SettleAsync();
-        Assert.Equal(WizardStep.Details, wizard.Step);
-        Assert.Equal("key", wizard.Connection.User); // kept
-        wizard.Next();
-        wizard.Next();
-        wizard.Next(); // OK
+        Assert.Equal(WizardStep.Type, wizard.Step);
+        wizard.ChooseType(RemoteProtocol.S3);
+        await SettleAsync();
+        wizard.GetVisualDescendants().OfType<TextBox>().First(t => t.PlaceholderText == "AKIA...").Text = "key";
+        await SettleAsync();
+        Assert.True(wizard.Finish()); // Save
         var created = (await adding)!;
         await SettleAsync();
 
-        // OK: in the folder of its group, shown in the tree and saved
+        // saved: in the folder of its group, shown in the tree
         Assert.Contains(created, settings.Connections);
         Assert.Same(created, window.Current);
         Assert.Equal("Cloud storage", created.Folder);
@@ -220,7 +220,8 @@ public sealed class RemoteDialogsTests : IDisposable
         Assert.Equal([created], window.Result!.Connections);
         Assert.False(window.Result.RightPanel);
         Assert.Contains(created, settings.Connections);
-        Assert.Equal(2, calls.Saves); // OK of the wizard, then closing
+        Assert.Equal(2, calls.Saves); // Save of the new connection, then closing
+        Assert.NotNull(created.LastUsed); // the home page's recently used
     }
 
     [AvaloniaFact]
@@ -259,6 +260,7 @@ public sealed class RemoteDialogsTests : IDisposable
         var (window, _) = Open(settings);
         await SettleAsync();
         var count = settings.Connections.Count;
+        window.Reveal(settings.Connections[0]);
         Assert.NotNull(window.Current); // a saved connection is selected
 
         for (var round = 0; round < 2; round++)
@@ -290,6 +292,7 @@ public sealed class RemoteDialogsTests : IDisposable
         await SettleAsync();
         var host = (Window)TopLevel.GetTopLevel(window)!;
         host.Activate();
+        window.Reveal(settings.Connections[0]);
         window.FocusTree();
         await SettleAsync();
         var first = window.Selected;
@@ -448,6 +451,126 @@ public sealed class RemoteDialogsTests : IDisposable
         await SettleAsync();
         Click(ButtonOf(window, "Connect to all (3)"));
         Assert.Equal(["prod-web-01", "assets", "test-web"], window.Result!.Connections.Select(c => c.Name));
+    }
+
+    [AvaloniaFact]
+    public async Task Home_history_unsaved_changes_and_renaming_in_place()
+    {
+        var settings = Sample();
+        var (window, calls) = Open(settings);
+        await SettleAsync();
+        var web = settings.Connections.First(c => c.Name == "test-web");
+        var edi = settings.Connections.First(c => c.Name == "EDI");
+
+        // pages visited: back and forward go through them; Home is the first
+        window.Reveal(web);
+        await SettleAsync();
+        window.Reveal(edi);
+        await SettleAsync();
+        window.GoBack();
+        await SettleAsync();
+        Assert.Same(web, window.Current);
+        window.GoBack();
+        await SettleAsync();
+        Assert.Null(window.Current);
+        Assert.True(Shown(window, "Recently used"));
+        window.GoForward();
+        await SettleAsync();
+        Assert.Same(web, window.Current);
+
+        // a change: the bar of unsaved changes, the name in the location bar marked; Discard puts it back
+        Assert.False(window.HasUnsavedChanges);
+        window.GetVisualDescendants().OfType<TextBox>().First(t => t.Text == "10.30.1.5").Text = "10.30.1.6";
+        await SettleAsync();
+        Assert.True(window.HasUnsavedChanges);
+        Assert.True(Shown(window, "Unsaved changes"));
+        Assert.True(Shown(window, "test-web •"));
+        Shot(window, "connection-manager-unsaved");
+        Click(ButtonOf(window, "Discard"));
+        await SettleAsync();
+        Assert.Equal("10.30.1.5", web.Host);
+        Assert.False(window.HasUnsavedChanges);
+
+        // saved: the bar goes
+        window.GetVisualDescendants().OfType<TextBox>().First(t => t.Text == "10.30.1.5").Text = "10.30.1.7";
+        await SettleAsync();
+        var saves = calls.Saves;
+        Click(ButtonOf(window, "Save"));
+        await SettleAsync();
+        Assert.Equal(saves + 1, calls.Saves);
+        Assert.False(window.HasUnsavedChanges);
+
+        // the name changes in place of the title (F2), Enter keeps it
+        window.FocusName();
+        await SettleAsync();
+        var name = window.GetVisualDescendants().OfType<TextBox>().First(t => Avalonia.Automation.AutomationProperties.GetName(t) == "Connection name");
+        name.Text = "staging-web";
+        await SettleAsync();
+        Click(ButtonOf(window, "Save name"));
+        await SettleAsync();
+        Assert.Equal("staging-web", web.Name);
+        Assert.True(Shown(window, "staging-web"));
+
+        // the favorite star in the header
+        Click(window.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>().First(b => Equals(b.Content, "★")));
+        Assert.True(web.Favorite);
+    }
+
+    [AvaloniaFact]
+    public async Task Alt_arrows_go_back_and_forward_from_the_keyboard()
+    {
+        var settings = new AppSettings();
+        var web = new RemoteConnection { Name = "web", Protocol = RemoteProtocol.Sftp, Host = "web", User = "u" };
+        settings.Connections.Add(web);
+        var (view, _) = Open(settings);
+        await SettleAsync();
+        var window = (Window)TopLevel.GetTopLevel(view)!;
+        view.Reveal(web);
+        await SettleAsync();
+        Assert.Same(web, view.Current);
+
+        // the keys of the window (the focus in the list): back to the overview, forward to the connection
+        window.KeyPressQwerty(PhysicalKey.ArrowLeft, RawInputModifiers.Alt);
+        await SettleAsync();
+        Assert.Null(view.Current);
+        window.KeyPressQwerty(PhysicalKey.ArrowRight, RawInputModifiers.Alt);
+        await SettleAsync();
+        Assert.Same(web, view.Current);
+
+        // the new connection's details: back to its types, then back to where it was opened
+        var adding = view.NewConnectionAsync();
+        await SettleAsync();
+        view.Wizard!.ChooseType(RemoteProtocol.Ftp);
+        await SettleAsync();
+        window.KeyPressQwerty(PhysicalKey.ArrowLeft, RawInputModifiers.Alt);
+        await SettleAsync();
+        Assert.Equal(WizardStep.Type, view.Wizard!.Step);
+        window.KeyPressQwerty(PhysicalKey.ArrowLeft, RawInputModifiers.Alt);
+        await SettleAsync();
+        Assert.Null(await adding);
+        Assert.Null(view.Wizard);
+        Assert.Same(web, view.Current);
+    }
+
+    [AvaloniaFact]
+    public async Task The_first_start_shows_how_to_begin()
+    {
+        var (window, _) = Open(new AppSettings());
+        await SettleAsync();
+        Assert.True(Shown(window, "Connect to your first server"));
+        Assert.True(Shown(window, "Moving from another program?"));
+        Assert.Contains(window.GetVisualDescendants().OfType<Button>(), b => Equals(b.Tag, "PuTTY"));
+        Shot(window, "connection-manager-first-start");
+        // the address box opens the details of its type
+        var address = window.GetVisualDescendants().OfType<TextBox>().First(t => Avalonia.Automation.AutomationProperties.GetName(t) == "Address");
+        address.Text = "sftp://deploy@web.example.com/var/www";
+        await SettleAsync();
+        Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), t => t.Text?.StartsWith("✓ SFTP connection to web.example.com", StringComparison.Ordinal) == true);
+        Click(ButtonOf(window, "See all types"));
+        await SettleAsync();
+        Assert.NotNull(window.Wizard);
+        Assert.Equal(WizardStep.Type, window.Wizard!.Step);
+        window.Wizard.Close();
     }
 
     [AvaloniaFact]

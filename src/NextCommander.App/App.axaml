@@ -11,6 +11,8 @@
           <SolidColorBrush x:Key="FmFolderBrush" Color="#E0A526" />
           <SolidColorBrush x:Key="FmFileBrush" Color="#7A8794" />
           <SolidColorBrush x:Key="FmPanelHeaderBrush" Color="#E9EDF2" />
+          <SolidColorBrush x:Key="FmDriveBarBrush" Color="#E9EDF2" />
+          <SolidColorBrush x:Key="FmBarLineBrush" Color="#E9EDF2" />
           <SolidColorBrush x:Key="FmActiveAccentBrush" Color="#2F6FDB" />
           <SolidColorBrush x:Key="FmStatusBrush" Color="#F3F5F8" />
           <SolidColorBrush x:Key="FmMenuBarBrush" Color="Transparent" />
@@ -37,6 +39,8 @@
           <SolidColorBrush x:Key="FmFolderBrush" Color="#E0B050" />
           <SolidColorBrush x:Key="FmFileBrush" Color="#B0B8C0" />
           <SolidColorBrush x:Key="FmPanelHeaderBrush" Color="#2B2B2B" />
+          <SolidColorBrush x:Key="FmDriveBarBrush" Color="#2B2B2B" />
+          <SolidColorBrush x:Key="FmBarLineBrush" Color="#2B2B2B" />
           <SolidColorBrush x:Key="FmActiveAccentBrush" Color="#4C9AFF" />
           <SolidColorBrush x:Key="FmStatusBrush" Color="#2B2B2B" />
           <SolidColorBrush x:Key="FmMenuBarBrush" Color="Transparent" />

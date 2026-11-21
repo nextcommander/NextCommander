@@ -137,7 +137,8 @@ public sealed class SharedCredentialTests : IDisposable
         var settings = Settings(out var admin);
         admin.KeyFile = "admin.ppk";
         var wizard = new ConnectionWizard(new ConnectionWizardRequest(settings, (_, _) => Task.FromResult(string.Empty), _ => Task.FromResult<string?>(null)));
-        wizard.Show();
+        var host = new Window { Content = wizard, Width = 1000, Height = 760 };
+        host.Show();
         await SettleAsync();
         wizard.ChooseType(RemoteProtocol.Sftp);
         await SettleAsync();
@@ -168,6 +169,6 @@ public sealed class SharedCredentialTests : IDisposable
         wizard.ChooseType(RemoteProtocol.Ftp);
         await SettleAsync();
         Assert.DoesNotContain(wizard.GetLogicalDescendants().OfType<ComboBox>(), c => Avalonia.Automation.AutomationProperties.GetName(c) == "Login");
-        wizard.Close();
+        host.Close();
     }
 }

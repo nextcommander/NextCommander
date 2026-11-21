@@ -72,7 +72,7 @@ public sealed class ThemeTests : IDisposable
             } : default;
         Assert.Equal(Color.Parse("#1E1E1E"), Resource("SystemAltHighColor"));
         Assert.Equal(Color.Parse("#007ACC"), Resource("SystemAccentColor"));
-        Assert.Equal(Color.Parse("#3C3C3C"), Resource("FmMenuBarBrush"));
+        Assert.Equal(Color.Parse("#1E1E1E"), Resource("FmMenuBarBrush"));
         Assert.Equal(Color.Parse("#094771"), Resource("DataGridRowSelectedBackgroundBrush"));
         Assert.Equal(ThemeVariant.Dark, w.ActualThemeVariant);
 
@@ -133,7 +133,7 @@ public sealed class ThemeTests : IDisposable
             Assert.Equal(ColorTheme.DarkThemeId, vm.Settings.ColorThemeFile);
             Assert.True(vm.IsDarkTheme);
             Assert.Equal(ThemeVariant.Dark, w.ActualThemeVariant);
-            Assert.Equal(Color.Parse("#3C3C3C"), ((ISolidColorBrush)App.Current.Resources["FmMenuBarBrush"]!).Color);
+            Assert.Equal(Color.Parse("#1E1E1E"), ((ISolidColorBrush)App.Current.Resources["FmMenuBarBrush"]!).Color);
 
             await vm.ExecuteAsync("nc_SwitchDarkmode");
             Assert.Equal(string.Empty, vm.Settings.ColorThemeFile);

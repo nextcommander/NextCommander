@@ -269,6 +269,7 @@ public static class MenuIcons
         ["connections.delete"] = new("MiTrash", Red),
         ["connections.import"] = new("MiArrowDown", Blue),
         ["connections.export"] = new("MiArrowUp", Green),
+        ["connections.files"] = new("MiFolderOpen", Yellow),
         ["terminal.log"] = new("MiPencil", Red),
         ["terminal.logstop"] = new("MiX", Red),
         ["terminal.logfolder"] = new("MiFolderOpen", Yellow),
