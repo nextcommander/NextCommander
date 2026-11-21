@@ -465,7 +465,8 @@ intercepting the connection.
   **Logins...** next to it edits them: name, user, password (kept once in the encrypted store) and, for SFTP, SCP
   and SSH, a private key file. The connections take the login's user and key; its password is asked once and then
   used by all of them. Changing the login changes them all; deleting it leaves them with the user and their own
-  password. An exported connections file keeps the user, not the login.
+  password. An exported connections file keeps the user, not the login. The new connection wizard offers the
+  shared logins under **Login** too (when there are any).
 - With a **master password** (*Net > Master password...*), the passwords are encrypted with a key made from it.
   It is asked once per session. Leave the new master password empty to remove it.
 - Without a master password, the passwords are protected with a key tied to your user account on this computer.
