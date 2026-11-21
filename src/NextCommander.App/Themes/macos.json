@@ -28,6 +28,8 @@
     "Menu.DisabledText": "#B0B0B5",              // Disabled menu items
     "ButtonBar.Background": "#E8E6E8",           // Background of the button bar (the window toolbar)
     "Drives.Icon": "#6E6E73",                    // Icons on the drive buttons
+    "Drives.Background": "#F2F1F2",              // Line of the drive box above the panel
+    "Bars.Line": "#F2F1F2",                      // Line under the menu bar, the button bar and the drive buttons
     "Tabs.Background": "#E0DFE0",                // Folder tab strip
     "Tabs.ActiveBackground": "#F6F6F6",          // Active tab
     "Tabs.PassiveLine": "#80007AFF",             // Faint underline of the selected tab in the inactive panel
