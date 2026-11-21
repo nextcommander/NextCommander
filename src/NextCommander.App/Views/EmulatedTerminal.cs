@@ -107,6 +107,15 @@ public sealed class EmulatedTerminal : TerminalTab
 
     internal void ResizeTerminal(int columns, int rows) => _terminal?.Resize(columns, rows);
 
+    /// <summary>Keys and pasted text of the user: to this shell, and with MultiExec to the other tabs.</summary>
+    internal void Type(string text)
+    {
+        Send(text);
+        RaiseTyped(text);
+    }
+
+    public override void Receive(string text) => Send(text);
+
     public override void Restart()
     {
         var old = _terminal;
@@ -706,7 +715,7 @@ internal sealed class TerminalScreen : Control
             _suppressText = mods.HasFlag(KeyModifiers.Control) || mods.HasFlag(KeyModifiers.Alt);
             ClearSelection();
             ScrollToBottom();
-            _owner.Send(sequence);
+            _owner.Type(sequence);
             return;
         }
         base.OnKeyDown(e);
@@ -726,7 +735,7 @@ internal sealed class TerminalScreen : Control
             e.Handled = true;
             ClearSelection();
             ScrollToBottom();
-            _owner.Send(text);
+            _owner.Type(text);
         }
     }
 
@@ -861,6 +870,6 @@ internal sealed class TerminalScreen : Control
         }
         text = text.Replace("\r\n", "\r", StringComparison.Ordinal).Replace('\n', '\r');
         ScrollToBottom();
-        _owner.Send(Vt.BracketedPaste ? "\x1b[200~" + text + "\x1b[201~" : text);
+        _owner.Type(Vt.BracketedPaste ? "\x1b[200~" + text + "\x1b[201~" : text);
     }
 }

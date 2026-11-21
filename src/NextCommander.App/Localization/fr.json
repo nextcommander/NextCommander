@@ -3468,5 +3468,7 @@
   "TerminalView.MatchCase": "Respecter la casse",
   "TerminalView.NewerMatch": "Correspondance plus récente (Maj+Entrée)",
   "TerminalView.NoResults": "Aucun résultat",
-  "TerminalView.OlderMatch": "Correspondance plus ancienne (Entrée)"
+  "TerminalView.OlderMatch": "Correspondance plus ancienne (Entrée)",
+  "TerminalView.TypeHereToo": "Taper ici aussi (MultiExec)",
+  "TerminalView.MultiExecTip": "Taper dans plusieurs terminaux à la fois : ce qui est tapé dans un onglet va à chaque onglet coché"
 }

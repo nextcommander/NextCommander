@@ -3468,5 +3468,7 @@
   "TerminalView.MatchCase": "Büyük/küçük harf duyarlı",
   "TerminalView.NewerMatch": "Daha yeni eşleşme (Shift+Enter)",
   "TerminalView.NoResults": "Sonuç yok",
-  "TerminalView.OlderMatch": "Daha eski eşleşme (Enter)"
+  "TerminalView.OlderMatch": "Daha eski eşleşme (Enter)",
+  "TerminalView.TypeHereToo": "Buraya da yaz (MultiExec)",
+  "TerminalView.MultiExecTip": "Aynı anda birden çok terminale yaz: bir sekmede yazılan, işaretli tüm sekmelere gider"
 }
