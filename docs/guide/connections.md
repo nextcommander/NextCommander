@@ -349,6 +349,11 @@ Tunnels marked **Start with NextCommander** start when the program starts; all t
 stopping and errors (a port already in use, a lost connection) are written to the connection's log.
 
 ### Remote sessions: RDP, VNC, SSH, Telnet, rsh, serial port
+
+A session that opens in the terminal (SSH, Telnet, rsh, serial port) can have its own look, set on the tab with the
+terminal type: **Font** and **Font size** (empty: the terminal's), a **Color scheme** (dark, light, Solarized,
+*Production (dark red)*, green on black; or the terminal's colors) and a **Tab color** (a stripe and a tint on its
+tab), e.g. red for a production server so it is not mistaken for a test one.
 These are sessions on another computer, not folders: choosing one in the connection manager (or *Net > Saved
 connections*, `nc_OpenConnection name`) does not change the panel.
 

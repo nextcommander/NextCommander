@@ -155,6 +155,17 @@ public sealed class EmulatedTerminal : TerminalTab
 
     public override void SetFont(string family, double size) => _screen.SetFont(family, size);
 
+    /// <summary>The connection's colors (null: the terminal's, from the color theme).</summary>
+    public (Color Background, Color Foreground)? Scheme
+    {
+        get => _screen.Scheme;
+        set
+        {
+            _screen.Scheme = value;
+            _screen.InvalidateVisual();
+        }
+    }
+
     public override (int Current, int Count) Find(string text, bool matchCase, int direction) => _screen.Find(text, matchCase, direction);
 
     public override void ClearFind() => _screen.ClearFind();
@@ -199,6 +210,9 @@ internal sealed class TerminalScreen : Control
     private (int Line, int Column)? _selectionEnd;
     private bool _selecting;
     private bool _suppressText;
+    /// <summary>The connection's colors (null: the theme's background and a text color that suits it).</summary>
+    public (Color Background, Color Foreground)? Scheme { get; set; }
+
     private readonly List<(int Line, int Column, int Width)> _matches = [];
     private int _currentMatch = -1;
     private (string Text, bool MatchCase)? _search;
@@ -468,8 +482,8 @@ internal sealed class TerminalScreen : Control
 
     public override void Render(DrawingContext context)
     {
-        var background = DefaultBackground;
-        var foreground = ForegroundFor(background);
+        var background = Scheme?.Background ?? DefaultBackground;
+        var foreground = Scheme?.Foreground ?? ForegroundFor(background);
         context.FillRectangle(new SolidColorBrush(background), new Rect(Bounds.Size));
         var top = TopLine;
         var selection = new SolidColorBrush(Color.FromArgb(0x60, 0x3A, 0x96, 0xDD));
