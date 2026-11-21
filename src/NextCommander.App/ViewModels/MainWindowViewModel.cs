@@ -2518,6 +2518,9 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         SaveSettings();
     }
 
+    /// <summary>The terminal's "Edit saved commands...": the settings at the list of saved commands.</summary>
+    public Task EditTerminalSnippetsAsync() => ShowSettingsAsync("Saved commands");
+
     private async Task ShowSettingsAsync(string? search = null)
     {
         var extras = new List<(string, Func<Task>)>

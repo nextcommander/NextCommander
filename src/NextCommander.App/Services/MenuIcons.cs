@@ -269,6 +269,8 @@ public static class MenuIcons
         ["terminal.log"] = new("MiPencil", Red),
         ["terminal.logstop"] = new("MiX", Red),
         ["terminal.logfolder"] = new("MiFolderOpen", Yellow),
+        ["terminal.snippet"] = new("MiArrowRight", Green),
+        ["terminal.snippets.edit"] = new("MiPencil", Gray),
         ["nc_Plugins"] = new("MiPlug", Purple),
         // Commands
         ["nc_SearchFor"] = new("MiSearch", Blue),

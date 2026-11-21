@@ -225,6 +225,21 @@ public sealed partial class TerminalConsole : TerminalTab
 
     private readonly StringBuilder _received = new();
 
+    /// <summary>A saved command: put on the command line, run when it ends with Enter.</summary>
+    public override void TypeText(string text)
+    {
+        if (text.EndsWith('\r'))
+        {
+            Run(CurrentInput + text.TrimEnd('\r'));
+        }
+        else
+        {
+            CurrentInput += text;
+            _console.CaretIndex = OutputText.Length;
+        }
+        _console.Focus();
+    }
+
     /// <summary>Typed in another tab (MultiExec): whole lines run here; Ctrl+C stops; other keys are left out.</summary>
     public override void Receive(string text)
     {

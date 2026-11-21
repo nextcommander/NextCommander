@@ -3470,5 +3470,14 @@
   "TerminalView.NoResults": "Aucun résultat",
   "TerminalView.OlderMatch": "Correspondance plus ancienne (Entrée)",
   "TerminalView.TypeHereToo": "Taper ici aussi (MultiExec)",
-  "TerminalView.MultiExecTip": "Taper dans plusieurs terminaux à la fois : ce qui est tapé dans un onglet va à chaque onglet coché"
+  "TerminalView.MultiExecTip": "Taper dans plusieurs terminaux à la fois : ce qui est tapé dans un onglet va à chaque onglet coché",
+  "Settings.Misc.Snippets": "Commandes enregistrées (extraits)",
+  "Settings.Misc.Snippets.Description": "Commandes envoyées à l’onglet actif du terminal d’un clic dans le menu Extraits du terminal (avec MultiExec à chaque onglet coché).",
+  "SettingsWindow.AddCommand": "Ajouter une commande",
+  "SettingsWindow.CommandIsEmpty": "La commande est vide",
+  "SettingsWindow.PressEnterAfterIt": "Appuyer sur Entrée ensuite",
+  "TerminalView.Snippets": "Extraits ▾",
+  "TerminalView.SnippetsTip": "Commandes enregistrées : envoyées à cet onglet d’un clic",
+  "TerminalView.EditSavedCommands": "Modifier les commandes enregistrées...",
+  "TerminalView.NoSavedCommandsYet": "Aucune commande enregistrée pour l’instant"
 }

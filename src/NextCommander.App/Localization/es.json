@@ -3470,5 +3470,14 @@
   "TerminalView.NoResults": "Sin resultados",
   "TerminalView.OlderMatch": "Coincidencia más antigua (Intro)",
   "TerminalView.TypeHereToo": "Escribir aquí también (MultiExec)",
-  "TerminalView.MultiExecTip": "Escribir en varios terminales a la vez: lo que se escribe en una pestaña va a todas las pestañas marcadas"
+  "TerminalView.MultiExecTip": "Escribir en varios terminales a la vez: lo que se escribe en una pestaña va a todas las pestañas marcadas",
+  "Settings.Misc.Snippets": "Comandos guardados (fragmentos)",
+  "Settings.Misc.Snippets.Description": "Comandos enviados a la pestaña activa del terminal con un clic en el menú Fragmentos del terminal (con MultiExec a cada pestaña marcada).",
+  "SettingsWindow.AddCommand": "Añadir comando",
+  "SettingsWindow.CommandIsEmpty": "El comando está vacío",
+  "SettingsWindow.PressEnterAfterIt": "Pulsar Intro después",
+  "TerminalView.Snippets": "Fragmentos ▾",
+  "TerminalView.SnippetsTip": "Comandos guardados: se envían a esta pestaña con un clic",
+  "TerminalView.EditSavedCommands": "Editar comandos guardados...",
+  "TerminalView.NoSavedCommandsYet": "Aún no hay comandos guardados"
 }
