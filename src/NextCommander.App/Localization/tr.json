@@ -3498,5 +3498,11 @@
   "SharedLoginsDialog.UsedBy": "Kullanan: {0}",
   "SharedLoginsDialog.UsedBySsh": "SFTP, SCP ve SSH bağlantıları kullanır; diğerleri parolayla girer.",
   "SharedLoginsDialog.UserOrDomain": "kullanıcı ya da ETKİALANI\\kullanıcı",
-  "SharedLoginsDialog.KeyPassphrase": "Anahtar dosyasıyla: onun parolası."
+  "SharedLoginsDialog.KeyPassphrase": "Anahtar dosyasıyla: onun parolası.",
+  "TerminalView.Split": "Böl ▾",
+  "TerminalView.SplitTip": "Yan yana iki ya da dört terminal",
+  "TerminalView.OneTerminal": "Tek terminal",
+  "TerminalView.TwoSideBySide": "Yan yana iki",
+  "TerminalView.TwoAboveEachOther": "Üst üste iki",
+  "TerminalView.Four": "Dört"
 }

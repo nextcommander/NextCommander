@@ -3498,5 +3498,11 @@
   "SharedLoginsDialog.UsedBy": "使用者：{0}",
   "SharedLoginsDialog.UsedBySsh": "由 SFTP、SCP 和 SSH 连接使用；其他连接使用密码登录。",
   "SharedLoginsDialog.UserOrDomain": "用户或 域\\用户",
-  "SharedLoginsDialog.KeyPassphrase": "使用密钥文件时：其密码短语。"
+  "SharedLoginsDialog.KeyPassphrase": "使用密钥文件时：其密码短语。",
+  "TerminalView.Split": "拆分 ▾",
+  "TerminalView.SplitTip": "并排显示两个或四个终端",
+  "TerminalView.OneTerminal": "一个终端",
+  "TerminalView.TwoSideBySide": "左右两个",
+  "TerminalView.TwoAboveEachOther": "上下两个",
+  "TerminalView.Four": "四个"
 }
