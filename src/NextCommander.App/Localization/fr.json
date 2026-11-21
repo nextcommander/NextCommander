@@ -1587,7 +1587,7 @@
   "Settings.Operation.SelectionModeTouchOnly.Description": "Un appui sélectionne, un appui long ouvre le menu contextuel ; la souris fonctionne comme d'habitude.",
   "Settings.Operation.SelectOnlyTheNameWhen": "Sélectionner uniquement le nom lors du renommage",
   "Settings.Operation.SelectOnlyTheNameWhen.Description": "L'extension n'est pas sélectionnée.",
-  "Settings.Operation.SelectWithTheRightButton": "Sélectionner avec le bouton droit (style Norton Commander)",
+  "Settings.Operation.SelectWithTheRightButton": "Sélectionner avec le bouton droit (style classique à deux panneaux)",
   "Settings.Operation.SelectWithTheRightButton.Description": "Un clic droit marque le fichier ; maintenu (0,6 s), il ouvre le menu contextuel. Sous macOS, un clic droit de la souris (deux doigts, Ctrl+clic) ouvre toujours le menu, le marquage se fait avec Cmd+clic.",
   "Settings.Operation.ShowProgressInTheTitle": "Afficher la progression dans le titre",
   "Settings.Operation.ShowProgressInTheTitle.Description": "Pourcentage dans le titre de la fenêtre pendant les opérations longues.",
@@ -3469,10 +3469,10 @@
   "TerminalView.NewerMatch": "Correspondance plus récente (Maj+Entrée)",
   "TerminalView.NoResults": "Aucun résultat",
   "TerminalView.OlderMatch": "Correspondance plus ancienne (Entrée)",
-  "TerminalView.TypeHereToo": "Taper ici aussi (MultiExec)",
-  "TerminalView.MultiExecTip": "Taper dans plusieurs terminaux à la fois : ce qui est tapé dans un onglet va à chaque onglet coché",
+  "TerminalView.TypeHereToo": "Taper ici aussi (Taper dans tous)",
+  "TerminalView.TypeInAllTip": "Taper dans plusieurs terminaux à la fois : ce qui est tapé dans un onglet va à chaque onglet coché",
   "Settings.Misc.Snippets": "Commandes enregistrées (extraits)",
-  "Settings.Misc.Snippets.Description": "Commandes envoyées à l’onglet actif du terminal d’un clic dans le menu Extraits du terminal (avec MultiExec à chaque onglet coché).",
+  "Settings.Misc.Snippets.Description": "Commandes envoyées à l’onglet actif du terminal d’un clic dans le menu Extraits du terminal (avec Taper dans tous à chaque onglet coché).",
   "SettingsWindow.AddCommand": "Ajouter une commande",
   "SettingsWindow.CommandIsEmpty": "La commande est vide",
   "SettingsWindow.PressEnterAfterIt": "Appuyer sur Entrée ensuite",
@@ -3560,5 +3560,7 @@
   "SettingsWindow.NotAColorHex": "Pas une couleur : « {0} » (#RRGGBB)",
   "SettingsWindow.Words": "Mots",
   "ConnectionWizard.OrASharedLogin": "Ou un identifiant partagé par plusieurs connexions (Identifiants... dans l’éditeur de connexions).",
-  "ConnectionWizard.UserOfThisLogin": "Utilisateur {0} et le mot de passe (ou la clé) de cet identifiant."
+  "ConnectionWizard.UserOfThisLogin": "Utilisateur {0} et le mot de passe (ou la clé) de cet identifiant.",
+  "TerminalView.TypeInAll": "Taper dans tous",
+  "TerminalView.TypeInAllOn": "● Taper dans tous"
 }

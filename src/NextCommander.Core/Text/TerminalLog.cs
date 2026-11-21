@@ -4,7 +4,7 @@ using System.Text;
 namespace NextCommander.Core.Text;
 
 /// <summary>
-/// The output of a terminal tab written to a text file (MobaXterm's session logs, user's request, 21 November 2026):
+/// The output of a terminal tab written to a text file (session logs, user's request, 21 November 2026):
 /// plain text without the terminal's escape sequences (colors, cursor movement, titles), line ends as "\n", a header
 /// with the session and the time. Written from any thread; a sequence split between two writes is still removed.
 /// </summary>

@@ -12,7 +12,7 @@ public sealed record PingReply(int Sequence, string Address, long? Milliseconds,
 public sealed record OpenPort(int Port, string Service, long Milliseconds);
 
 /// <summary>
-/// The network tools of the Net menu (MobaXterm's network tools, user's request, 21 November 2026): ping, a TCP port
+/// The network tools of the Net menu (user's request, 21 November 2026): ping, a TCP port
 /// scan and Wake-on-LAN (the magic packet: 6 × 0xFF and the MAC address 16 times, sent as a UDP broadcast).
 /// </summary>
 public static class NetworkTools

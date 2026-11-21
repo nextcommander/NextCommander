@@ -9,7 +9,7 @@ using static NextCommander.App.Tests.UiFixture;
 
 namespace NextCommander.App.Tests;
 
-/// <summary>The output of a terminal tab written to a text file (MobaXterm's session logs).</summary>
+/// <summary>The output of a terminal tab written to a text file.</summary>
 public sealed class TerminalLogTests : IDisposable
 {
     private readonly string _folder = Path.Combine(Path.GetTempPath(), "fm-tlog-" + Guid.NewGuid().ToString("N")[..8]);

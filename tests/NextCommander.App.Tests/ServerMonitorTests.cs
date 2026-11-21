@@ -10,7 +10,7 @@ using static NextCommander.App.Tests.UiFixture;
 
 namespace NextCommander.App.Tests;
 
-/// <summary>The monitor bar of an SSH tab: CPU, memory, disk and network of its server (MobaXterm's remote monitoring).</summary>
+/// <summary>The monitor bar of an SSH tab: CPU, memory, disk and network of its server.</summary>
 public sealed class ServerMonitorTests
 {
     private sealed class QuietTerminal : PseudoTerminal

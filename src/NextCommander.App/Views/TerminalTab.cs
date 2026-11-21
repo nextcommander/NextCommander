@@ -130,18 +130,18 @@ public abstract class TerminalTab : Border
     /// <summary>Ends a search: the matches are no longer marked.</summary>
     public abstract void ClearFind();
 
-    /// <summary>MultiExec: what is typed in another tab is typed here too (while MultiExec is on).</summary>
-    public bool MultiExecIncluded { get; set; } = true;
+    /// <summary>"Type in all": what is typed in another tab is typed here too (while it is on).</summary>
+    public bool TypeInAllIncluded { get; set; } = true;
 
-    /// <summary>The user typed into this tab (keys, a pasted text, a command line): MultiExec passes it on.</summary>
+    /// <summary>The user typed into this tab (keys, a pasted text, a command line): "Type in all" passes it on.</summary>
     internal event Action<TerminalTab, string>? Typed;
 
     protected void RaiseTyped(string text) => Typed?.Invoke(this, text);
 
-    /// <summary>Text typed as by the user (a saved command): goes on to the other tabs with MultiExec; "\r" is Enter.</summary>
+    /// <summary>Text typed as by the user (a saved command): goes on to the other tabs with "Type in all"; "\r" is Enter.</summary>
     public abstract void TypeText(string text);
 
-    /// <summary>Text typed in another tab (MultiExec): keys and pasted text, "\r" ends a line.</summary>
+    /// <summary>Text typed in another tab ("Type in all"): keys and pasted text, "\r" ends a line.</summary>
     public abstract void Receive(string text);
 
     /// <summary>Ctrl+Shift+F in the terminal: the find bar.</summary>

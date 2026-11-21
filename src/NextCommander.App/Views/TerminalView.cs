@@ -32,7 +32,7 @@ public sealed class TerminalView : DockPanel
     private readonly Button _maximize;
     private readonly Button _files;
     private readonly Button _log;
-    private readonly Button _multiExec;
+    private readonly Button _typeInAll;
     private readonly Border _findBar;
     private readonly TextBox _findText = new() { Width = 260, MinHeight = 24, Padding = new Thickness(6, 2), FontSize = 12, PlaceholderText = "Find in the output" };
     private readonly CheckBox _findCase = new() { Content = "Aa", Classes = { "noloc" }, FontSize = 12, MinHeight = 0, VerticalAlignment = VerticalAlignment.Center };
@@ -108,15 +108,15 @@ public sealed class TerminalView : DockPanel
         _monitor.Tag = "monitor";
         _monitor.IsVisible = false;
         buttons.Children.Add(_monitor);
-        // the output of the tab into a text file (MobaXterm's session logs)
+        // the output of the tab into a text file (a session log)
         _log = HeaderButton("Log", "Write the output of this tab to a text file", () => { });
         _log.Tag = "log";
         _log.Click += (_, _) => ShowLogMenu(_log);
         buttons.Children.Add(_log);
-        // MultiExec: what is typed in one tab goes to every tab checked in the tab strip
-        _multiExec = HeaderButton("MultiExec", "Type into several terminals at once: what is typed in one tab goes to every tab checked", () => MultiExec = !MultiExec);
-        _multiExec.Tag = "multiexec";
-        buttons.Children.Add(_multiExec);
+        // "Type in all": what is typed in one tab goes to every tab checked in the tab strip
+        _typeInAll = HeaderButton("Type in all", "Type into several terminals at once: what is typed in one tab goes to every tab checked", () => TypeInAll = !TypeInAll);
+        _typeInAll.Tag = "typeinall";
+        buttons.Children.Add(_typeInAll);
         var snippets = HeaderButton("Snippets ▾", "Saved commands: sent to this tab with a click", () => { });
         snippets.Tag = "snippets";
         snippets.Click += (_, _) => ShowSnippetMenu(snippets);
@@ -198,7 +198,7 @@ public sealed class TerminalView : DockPanel
     /// <summary>"Edit saved commands...": the settings at the list.</summary>
     public event EventHandler? EditSnippetsRequested;
 
-    /// <summary>Sends a saved command to the active tab (with MultiExec to the checked tabs too).</summary>
+    /// <summary>Sends a saved command to the active tab (with "Type in all" to the checked tabs too).</summary>
     public void SendSnippet(Core.Config.TerminalSnippet snippet)
     {
         if (_active is null)
@@ -232,10 +232,10 @@ public sealed class TerminalView : DockPanel
     }
 
     /// <summary>
-    /// MultiExec (MobaXterm): keys, pasted text and command lines typed in a tab are typed in every tab checked in the
+    /// "Type in all": keys, pasted text and command lines typed in a tab are typed in every tab checked in the
     /// tab strip as well; the button is marked and each tab shows its check box while it is on.
     /// </summary>
-    public bool MultiExec
+    public bool TypeInAll
     {
         get => _multi;
         set
@@ -243,18 +243,18 @@ public sealed class TerminalView : DockPanel
             _multi = value;
             if (value)
             {
-                _multiExec.Classes.Add("accent");
+                _typeInAll.Classes.Add("accent");
             }
             else
             {
-                _multiExec.Classes.Remove("accent");
+                _typeInAll.Classes.Remove("accent");
             }
-            _multiExec.Content = value ? "● MultiExec" : "MultiExec";
+            _typeInAll.Content = value ? "● Type in all" : "Type in all";
             RebuildTabs();
         }
     }
 
-    /// <summary>A tab typed: with MultiExec the other checked tabs get the same text.</summary>
+    /// <summary>A tab typed: with "Type in all" the other checked tabs get the same text.</summary>
     private void OnTyped(TerminalTab source, string text)
     {
         if (!_multi)
@@ -263,7 +263,7 @@ public sealed class TerminalView : DockPanel
         }
         foreach (var tab in _consoles.ToList())
         {
-            if (!ReferenceEquals(tab, source) && tab.MultiExecIncluded)
+            if (!ReferenceEquals(tab, source) && tab.TypeInAllIncluded)
             {
                 tab.Receive(text);
             }
@@ -581,7 +581,7 @@ public sealed class TerminalView : DockPanel
         return console;
     }
 
-    /// <summary>A connection's own font, colors and tab color (MobaXterm's per-session look).</summary>
+    /// <summary>A connection's own font, colors and tab color.</summary>
     private static void ApplyLook(TerminalTab console, Core.Config.RemoteConnection connection)
     {
         console.OwnFont = (string.IsNullOrWhiteSpace(connection.TerminalFont) ? null : connection.TerminalFont.Trim(),
@@ -960,10 +960,10 @@ public sealed class TerminalView : DockPanel
             var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
             if (_multi)
             {
-                // MultiExec: whether this tab takes what is typed in the others
-                var include = new CheckBox { IsChecked = console.MultiExecIncluded, MinHeight = 0, MinWidth = 0, Padding = new Thickness(0), Focusable = false, VerticalAlignment = VerticalAlignment.Center };
-                ToolTip.SetTip(include, "Type here too (MultiExec)");
-                include.IsCheckedChanged += (_, _) => target.MultiExecIncluded = include.IsChecked == true;
+                // "Type in all": whether this tab takes what is typed in the others
+                var include = new CheckBox { IsChecked = console.TypeInAllIncluded, MinHeight = 0, MinWidth = 0, Padding = new Thickness(0), Focusable = false, VerticalAlignment = VerticalAlignment.Center };
+                ToolTip.SetTip(include, "Type here too (Type in all)");
+                include.IsCheckedChanged += (_, _) => target.TypeInAllIncluded = include.IsChecked == true;
                 content.Children.Add(include);
             }
             content.Children.Add(text);

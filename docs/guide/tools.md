@@ -286,7 +286,7 @@ open a terminal at the bottom of the window. Press it again to hide it; the shel
   writes them without a color of its own. *Configuration > Misc. > Internal terminal* turns it off and edits the words
   and colors (whole words, case ignored; the first entry that matches wins).
 - **Snippets ▾** lists your saved commands: a click types one into the active tab (with Enter, or left on the line
-  to finish when *Press Enter after it* is off; with MultiExec into every checked tab). *Edit saved commands...*
+  to finish when *Press Enter after it* is off; with *Type in all* into every checked tab). *Edit saved commands...*
   opens the list on the *Misc.* page of the Configuration window (name in the menu, command, Enter).
 - **Monitor** (an SSH tab) shows a bar with its server's CPU, memory and root disk use, the network rates, the load
   and the uptime, read every 3 seconds over a second SSH connection with the session's login (Linux servers: it reads
@@ -295,7 +295,7 @@ open a terminal at the bottom of the window. Press it again to hide it; the shel
   after it (new shells when there are not enough tabs). The active pane is framed and takes the keys and the buttons;
   a click into another pane makes it the active one, and a tab chosen in the tab strip takes the active pane's place.
   *One terminal* goes back.
-- **MultiExec** types into several tabs at once: while it is on (● MultiExec), each tab has a check box, and the
+- **Type in all** types into several tabs at once: while it is on (● Type in all), each tab has a check box, and the
   keys, pasted text and command lines typed in one tab go to every checked tab as well (e.g. the same command on
   several servers). The terminal's own answers stay with their tab; a tab of the line console takes whole lines.
 - **Find** (Ctrl+Shift+F in the terminal) opens a search bar over the output: the matches in the scrollback and on

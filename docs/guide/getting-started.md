@@ -159,7 +159,7 @@ Most operations work on the selected (marked) files, or on the file under the cu
 - **Alt+Num +** selects all files with the same extension as the file under the cursor.
 - **Num /** restores the previous selection.
 - With the mouse: Ctrl+click and Shift+click, or drag in an empty area to draw a selection frame.
-- By default the **right mouse button marks** files (as in Norton Commander); hold it for a moment to open the
+- By default the **right mouse button marks** files (as in classic two-panel file managers); hold it for a moment to open the
   context menu. This can be turned off in *Configuration > Options > Operation*.
 
 The Mark menu also saves and loads selections, copies file names to the clipboard, and compares the two

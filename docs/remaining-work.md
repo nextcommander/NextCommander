@@ -166,9 +166,9 @@ Since 7 November 2026 colors come only from theme files (default: system colors,
 - [x] Remote desktop in a tab (user's request, 18 November 2026): only the panel's drive shared (IMsRdpClientNonScriptable3's DriveCollection, slots from mstscax.dll's type library); the session's end reason from the control's OnDisconnected event (a hand-made IDispatch sink on IMsTscAxEvents; the reason and GetErrorDescription's text; the state is polled only when the events cannot be had); FreeRDP in a tab follows the tab's size (its X11 windows resized, /dynamic-resolution kept). The drive, the events and the reason text were tried with the real control on Windows without a server; the Linux resizing is still to be tried.
 - [x] Telnet (telnet://; user's request, 17 November 2026): a tab of the internal terminal (`TelnetTerminal` on the terminal emulation; ECHO / SGA / BINARY taken, TERMINAL-TYPE xterm and NAWS offered, other options refused). Tested against a server on the loopback; to be tried against a real device.
 
-## Compared with MobaXterm (user's request, 21 November 2026)
+## Session and terminal features (user's request, 21 November 2026)
 
-What MobaXterm's session manager and terminal have that the connection manager lacks, by value. Out of scope: the
+Features of session managers and terminals that the connection manager lacked, by value. Out of scope: the
 built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC link shares), the Cygwin tools.
 
 - [x] The files of an SSH session over SFTP: *Files (SFTP)* in the connection manager and in the title of an SSH tab of
@@ -181,7 +181,7 @@ built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC l
 - [x] Reconnect a remote session that ended: already there (an ended SSH / Telnet tab connects again with Enter).
 - [x] Log a terminal session's output to a file (the terminal's **Log** button, or every tab by the setting; plain text, `Core/Text/TerminalLog`).
 - [x] Find in the terminal's scrollback (Find / Ctrl+Shift+F: marked matches, older / newer, match case).
-- [x] MultiExec: type into several terminal tabs at once (the terminal's MultiExec button, a check box per tab).
+- [x] Type into several terminal tabs at once (the terminal's *Type in all* button, a check box per tab).
 - [x] Saved commands (snippets) sent to the terminal with a click (the terminal's Snippets menu, the list on the Misc. page).
 - [x] Shared credentials: one user / password entry used by several connections (Login / Logins... in the connection editor, `SharedCredential`, the password under `credential:<id>`).
 - [ ] SSH agent forwarding: not possible with SSH.NET 2026.0.0 (checked 21 November 2026): its channel messages know only session, x11, direct-tcpip and forwarded-tcpip, so the server's `auth-agent@openssh.com` channel cannot be accepted, nor can `auth-agent-req@openssh.com` be sent. Needs a change in SSH.NET (or another SSH library).
@@ -230,6 +230,13 @@ built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC l
 - [x] Drive box without "My Documents" (a drive bar shortcut instead); Computer view ordered: drive letters, external disks, phones, the trash; the trash button of the drive bar is an option (Configuration > Layout); system icons for every drive box entry (Windows shell incl. Recycle Bin / This PC / Network / phones by their shell name, Linux icon theme, macOS Finder). Tried on Windows, Linux and macOS, with a phone too (14 November 2026).
 - [x] Trash: the original location of deleted items as a column ("Original location", `TrashColumns`): the trash gets its own view mode by itself unless a view mode of the user matches it.
 - [x] MTP: free space of the phone's storages in the footer (WPD storage capacity, `IVolumeSpaceProvider`); a phone folder shown in a panel is read again every 3 s (ids only) and the panel refreshes when files come or go (Configuration > Refresh: removable drives). To be tried with a real phone.
+
+## Disc images (user's request, 21 November 2026)
+- [ ] ISO files: open an .iso (ISO 9660 with Joliet / Rock Ridge names, UDF for DVD / Blu-ray images) like an archive
+  in a panel: browse, view, copy out, search inside (Alt+F7), compare and checksum; read-only. Packing a folder into
+  a new .iso (Files > Pack) as a later step. To be found out first: SharpCompress has no ISO reader; candidates are
+  DiscUtils (MIT, ISO 9660 / UDF, also VHD / VHDX / VMDK) and 7-Zip's command line (already used for 7z, reads ISO and
+  UDF); mounting through the system (Windows Mount-DiskImage, Linux udisksctl loop-setup, macOS hdiutil) as an option.
 
 ## AI support (ideas, to be evaluated)
 

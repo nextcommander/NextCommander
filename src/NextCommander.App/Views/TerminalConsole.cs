@@ -240,7 +240,7 @@ public sealed partial class TerminalConsole : TerminalTab
         _console.Focus();
     }
 
-    /// <summary>Typed in another tab (MultiExec): whole lines run here; Ctrl+C stops; other keys are left out.</summary>
+    /// <summary>Typed in another tab ("Type in all"): whole lines run here; Ctrl+C stops; other keys are left out.</summary>
     public override void Receive(string text)
     {
         foreach (var c in text)

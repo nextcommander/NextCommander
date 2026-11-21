@@ -1587,7 +1587,7 @@
   "Settings.Operation.SelectionModeTouchOnly.Description": "Tapping selects, holding opens the context menu; the mouse works as usual.",
   "Settings.Operation.SelectOnlyTheNameWhen": "Select only the name when renaming",
   "Settings.Operation.SelectOnlyTheNameWhen.Description": "The extension is not selected.",
-  "Settings.Operation.SelectWithTheRightButton": "Select with the right button (Norton Commander style)",
+  "Settings.Operation.SelectWithTheRightButton": "Select with the right button (classic two-panel style)",
   "Settings.Operation.SelectWithTheRightButton.Description": "Right-clicking marks the file; held (0.6 s) it opens the context menu. On macOS a right click with the mouse (two fingers, Ctrl+click) always opens the menu, marking is Cmd+click.",
   "Settings.Operation.ShowProgressInTheTitle": "Show progress in the title",
   "Settings.Operation.ShowProgressInTheTitle.Description": "Percentage in the window title during long operations.",
@@ -3469,10 +3469,10 @@
   "TerminalView.NewerMatch": "Newer match (Shift+Enter)",
   "TerminalView.NoResults": "No results",
   "TerminalView.OlderMatch": "Older match (Enter)",
-  "TerminalView.TypeHereToo": "Type here too (MultiExec)",
-  "TerminalView.MultiExecTip": "Type into several terminals at once: what is typed in one tab goes to every tab checked",
+  "TerminalView.TypeHereToo": "Type here too (Type in all)",
+  "TerminalView.TypeInAllTip": "Type into several terminals at once: what is typed in one tab goes to every tab checked",
   "Settings.Misc.Snippets": "Saved commands (snippets)",
-  "Settings.Misc.Snippets.Description": "Commands sent to the active terminal tab with a click in the terminal's Snippets menu (with MultiExec to every checked tab).",
+  "Settings.Misc.Snippets.Description": "Commands sent to the active terminal tab with a click in the terminal's Snippets menu (with \"Type in all\" to every checked tab).",
   "SettingsWindow.AddCommand": "Add command",
   "SettingsWindow.CommandIsEmpty": "Command is empty",
   "SettingsWindow.PressEnterAfterIt": "Press Enter after it",
@@ -3560,5 +3560,7 @@
   "SettingsWindow.NotAColorHex": "Not a color: \"{0}\" (#RRGGBB)",
   "SettingsWindow.Words": "Words",
   "ConnectionWizard.OrASharedLogin": "Or a login shared by several connections (Logins... in the connection editor).",
-  "ConnectionWizard.UserOfThisLogin": "User {0} and the password (or key) of this login."
+  "ConnectionWizard.UserOfThisLogin": "User {0} and the password (or key) of this login.",
+  "TerminalView.TypeInAll": "Type in all",
+  "TerminalView.TypeInAllOn": "● Type in all"
 }

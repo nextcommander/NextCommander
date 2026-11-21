@@ -10,7 +10,7 @@ using static NextCommander.App.Tests.UiFixture;
 
 namespace NextCommander.App.Tests;
 
-/// <summary>The SSH tunnel manager (Net > SSH tunnels...; MobaXterm's tunnels).</summary>
+/// <summary>The SSH tunnel manager (Net > SSH tunnels...).</summary>
 public sealed class SshTunnelTests : IDisposable
 {
     private readonly UiFixture _fx = new();

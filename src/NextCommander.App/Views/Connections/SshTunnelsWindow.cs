@@ -12,7 +12,7 @@ using NextCommander.Core.Localization;
 namespace NextCommander.App.Views.Connections;
 
 /// <summary>
-/// SSH tunnels (Net > SSH tunnels...; MobaXterm's tunnel manager, user's request, 21 November 2026): the saved tunnels
+/// SSH tunnels (Net > SSH tunnels...; user's request, 21 November 2026): the saved tunnels
 /// as cards with their state (running, starting, stopped, failed with the reason), Start / Stop, Edit, Delete and
 /// "Start with NextCommander"; New tunnel opens the editor (<see cref="SshTunnelDialog"/>).
 /// </summary>
