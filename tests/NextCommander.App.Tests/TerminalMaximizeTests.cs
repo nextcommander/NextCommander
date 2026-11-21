@@ -90,6 +90,11 @@ public sealed class TerminalMaximizeTests : IDisposable
         Assert.Equal(Views.WorkspacePage.Terminal, w.CurrentPage);
         Assert.True(w.Terminal!.IsMaximized);
         Assert.False(w.FindControl<Grid>("PanelsGrid")!.IsVisible);
+        if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
+        {
+            Directory.CreateDirectory(dir);
+            w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "terminal-page.png"));
+        }
 
         // again: back to the files; once more: its tab again (not a second terminal)
         await vm.ExecuteAsync("nc_ToggleTerminal");
