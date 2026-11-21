@@ -52,7 +52,8 @@ public sealed class SettingsFolderTests : IDisposable
             { "SettingsVersion": 4, "ButtonBar": [ { "Command": "nc_Copy" }, { "Command": "nc_ExecuteTerminal" }, { "Command": "notepad.exe" } ] }
             """);
         var bar = new SettingsStore(Path.Combine(_dir.Root, "c")).Load().ButtonBar.Select(b => b.Command).ToList();
-        Assert.Equal(["nc_Copy", "nc_ExecuteTerminal", "nc_MaximizeTerminal", "notepad.exe", "-", "nc_RemoteConnection", "nc_PluginsMenu", "nc_Config"], bar);
+        // (version 9: the system terminal's button leaves the bar)
+        Assert.Equal(["nc_Copy", "nc_MaximizeTerminal", "notepad.exe", "-", "nc_RemoteConnection", "nc_PluginsMenu", "nc_Config"], bar);
 
         // a bar that has them already keeps its order; the plugins' button goes next to the connection manager
         _dir.Write(Path.Combine("d", "settings.json"), """

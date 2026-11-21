@@ -462,7 +462,7 @@ public sealed class AppSettings
     /// the settings. 6: the saved connections menu next to the connection manager. 7: the connection manager's button
     /// has the saved connections itself; the plugins' button in place of the connections menu. 8: icons on the folder
     /// tabs (a plain folder's too) are on.</summary>
-    public const int CurrentSettingsVersion = 8;
+    public const int CurrentSettingsVersion = 9;
 
     /// <summary>Default changes for files written by older versions.</summary>
     public void Upgrade()
@@ -482,6 +482,12 @@ public sealed class AppSettings
         if (SettingsVersion < 8)
         {
             ShowTabIcons = true; // every tab shows the icon of its place (user's request, 21 November 2026)
+        }
+        if (SettingsVersion < 9)
+        {
+            // the system terminal's button leaves the default bar (user's request, 21 November 2026); the internal
+            // terminal's stays, and a button the user made with parameters of its own stays too
+            ButtonBar.RemoveAll(b => string.Equals(b.Command, "nc_ExecuteTerminal", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(b.Parameters));
         }
         SettingsVersion = CurrentSettingsVersion;
     }

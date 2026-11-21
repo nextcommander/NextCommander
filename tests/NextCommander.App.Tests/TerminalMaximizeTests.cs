@@ -21,7 +21,7 @@ public sealed class TerminalMaximizeTests : IDisposable
         var (w, vm) = await _fx.OpenAsync();
         vm.Settings.TerminalEmulation = false;
         vm.Settings.TerminalTabs = [];
-        await vm.ExecuteAsync("nc_ToggleTerminal");
+        w.ToggleTerminal(); // the command line's button: below the panels
         await SettleAsync();
         var terminal = w.Terminal!;
         var panels = w.FindControl<Grid>("PanelsGrid")!;
@@ -62,17 +62,46 @@ public sealed class TerminalMaximizeTests : IDisposable
         Assert.Equal("□", button.Content);
         Assert.True(terminal.Bounds.Height < w.Bounds.Height * 0.9);
 
-        // closing a maximized terminal brings the panels back
+        // the terminal command on its page: back to the files, the terminal stays in its tab
         await vm.ExecuteAsync("nc_MaximizeTerminal");
         await SettleAsync();
         Assert.False(panels.IsVisible);
         terminal.ActiveConsole!.Focus();
         await vm.ExecuteAsync("nc_ToggleTerminal");
         await SettleAsync();
+        Assert.Equal(Views.WorkspacePage.Files, w.CurrentPage);
         Assert.False(host.IsVisible);
         Assert.True(panels.IsVisible);
-        Assert.False(terminal.IsMaximized);
+        Assert.True(terminal.IsMaximized);
+        Assert.Contains(Views.WorkspacePage.Terminal, w.OpenPages);
         terminal.Stop();
+    }
+
+    [AvaloniaFact]
+    public async Task The_terminal_command_opens_it_as_a_page_with_a_tab()
+    {
+        var (w, vm) = await _fx.OpenAsync();
+        vm.Settings.TerminalEmulation = false;
+        vm.Settings.TerminalTabs = [];
+
+        // the menu and Ctrl+`: a page of its own with a tab (only the command line's button opens it below the panels)
+        await vm.ExecuteAsync("nc_ToggleTerminal");
+        await SettleAsync();
+        Assert.Equal(Views.WorkspacePage.Terminal, w.CurrentPage);
+        Assert.True(w.Terminal!.IsMaximized);
+        Assert.False(w.FindControl<Grid>("PanelsGrid")!.IsVisible);
+
+        // again: back to the files; once more: its tab again (not a second terminal)
+        await vm.ExecuteAsync("nc_ToggleTerminal");
+        await SettleAsync();
+        Assert.Equal(Views.WorkspacePage.Files, w.CurrentPage);
+        Assert.True(w.FindControl<Grid>("PanelsGrid")!.IsVisible);
+        var terminal = w.Terminal;
+        await vm.ExecuteAsync("nc_ToggleTerminal");
+        await SettleAsync();
+        Assert.Equal(Views.WorkspacePage.Terminal, w.CurrentPage);
+        Assert.Same(terminal, w.Terminal);
+        w.Terminal.Stop();
     }
 
     [AvaloniaFact]
@@ -83,8 +112,10 @@ public sealed class TerminalMaximizeTests : IDisposable
         vm.Settings.TerminalTabs = [];
         var bar = w.GetVisualDescendants().OfType<NextCommander.App.Controls.ButtonBarControl>().Single(b => !b.IsVertical);
         var commands = bar.GetVisualDescendants().OfType<Button>().Select(b => (b.Tag as Core.Config.ButtonDefinition)?.Command).ToList();
-        // next to the system terminal; the connection manager, the plugins and the settings at the end
-        Assert.Equal(commands.IndexOf("nc_ExecuteTerminal") + 1, commands.IndexOf("nc_MaximizeTerminal"));
+        // the internal terminal only (the system terminal's button left the default bar); the connection manager, the
+        // plugins and the settings at the end
+        Assert.DoesNotContain("nc_ExecuteTerminal", commands);
+        Assert.Equal(commands.IndexOf("nc_SwitchHidSys") + 1, commands.IndexOf("nc_MaximizeTerminal"));
         Assert.Equal(["nc_RemoteConnection", "nc_PluginsMenu", "nc_Config"], commands[^3..]);
         Assert.True(vm.Settings.ButtonBar[^4].IsSeparator);
 

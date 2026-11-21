@@ -61,7 +61,6 @@ public sealed class ButtonDefinition
         new() { Command = "nc_ShowQuickFilter", Icon = "filter", Tooltip = "Quick filter (Ctrl+S)" },
         Separator(),
         new() { Command = "nc_SwitchHidSys", Icon = "hidden", Tooltip = "Hidden files (Ctrl+H)" },
-        new() { Command = "nc_ExecuteTerminal", Icon = "terminal", Tooltip = "Terminal (Ctrl+Alt+T)" },
         InternalTerminal(),
         new() { Command = "nc_CommandBrowser", Icon = "commands", Tooltip = "Commands and shortcuts" },
         Separator(),
