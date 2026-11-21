@@ -31,6 +31,9 @@ public sealed record ConnectionManagerRequest(
 
     /// <summary>Keeps a secret in the password store (id, value; an empty value removes it).</summary>
     public Func<string, string, Task>? StoreSecret { get; init; }
+
+    /// <summary>Chooses where to save a file (title, suggested name): the export of connections.</summary>
+    public Func<string, string, Task<string?>>? PickSaveFile { get; init; }
 }
 
 /// <summary>The connections to open, and in which panel.</summary>
@@ -247,7 +250,7 @@ public sealed partial class ConnectionManagerView : UserControl
         ToolTip.SetTip(newButton, "New connection (Ctrl+N): the wizard");
         newButton.Click += (_, _) => _ = NewConnectionAsync();
         var folderButton = IconButton("MiFolderOpen", "New folder", () => NewFolder(TargetFolder()));
-        var importButton = IconButton("MiArrowDown", "Import (FileZilla, WinSCP)", ShowImportMenu);
+        var importButton = IconButton("MiArrowDown", "Import and export (FileZilla, WinSCP, PuTTY, MobaXterm, a connections file)", ShowImportMenu);
         // the toolbar: New (the wizard), a folder, Import
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
         actions.Children.AddRange([newButton, folderButton, importButton]);
@@ -858,7 +861,96 @@ public sealed partial class ConnectionManagerView : UserControl
         var menu = new ContextMenu();
         menu.Items.Add(MenuItem("FileZilla (sitemanager.xml)...", "connections.import", () => _ = ImportFileZillaAsync()));
         menu.Items.Add(MenuItem("WinSCP (WinSCP.ini or registry)...", "connections.import", () => _ = ImportWinScpAsync()));
+        menu.Items.Add(MenuItem("PuTTY sessions...", "connections.import", () => _ = ImportPuttyAsync()));
+        menu.Items.Add(MenuItem("MobaXterm sessions (.mxtsessions, MobaXterm.ini)...", "connections.import", () => _ = ImportMobaXtermAsync()));
+        menu.Items.Add(MenuItem("Connections file of NextCommander...", "connections.import", () => _ = ImportFileAsync()));
+        if (_request.PickSaveFile is not null)
+        {
+            menu.Items.Add(new Separator());
+            var folder = Selected?.Folder;
+            menu.Items.Add(MenuItem(folder is { Length: > 0 } ? "Export this folder to a file..." : "Export all connections to a file...", "connections.export",
+                () => _ = ExportAsync(folder ?? string.Empty)));
+        }
         menu.Open(_tree);
+    }
+
+    private async Task ImportPuttyAsync()
+    {
+        try
+        {
+            IReadOnlyList<ImportedConnection> sessions = OperatingSystem.IsWindows()
+                ? ConnectionImport.FromPuttyRegistry()
+                : ConnectionImport.FromPuttyFolder(ConnectionImport.PuttyFolder);
+            await ImportAsync(sessions, "PuTTY");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            ShowProblem(ex.Message);
+        }
+    }
+
+    private async Task ImportMobaXtermAsync()
+    {
+        var file = await _request.PickFile("MobaXterm sessions (.mxtsessions or MobaXterm.ini)");
+        if (file is null)
+        {
+            return;
+        }
+        try
+        {
+            await ImportAsync(ConnectionImport.FromMobaXterm(ConnectionImport.ReadMobaXtermFile(file)), "MobaXterm");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            ShowProblem(ex.Message);
+        }
+    }
+
+    private async Task ImportFileAsync()
+    {
+        if (await _request.PickFile("Connections file of NextCommander") is { } file)
+        {
+            await ImportFileAsync(file);
+        }
+    }
+
+    /// <summary>The connections of an exported file (their folders and colors too); taken names get a number.</summary>
+    public async Task ImportFileAsync(string file)
+    {
+        try
+        {
+            var json = await File.ReadAllTextAsync(file);
+            var imported = ConnectionImport.FromExport(json, _settings);
+            foreach (var folder in ConnectionImport.FoldersOfExport(json).Where(f => _settings.ConnectionFolders.All(o => o.Path != f.Path)))
+            {
+                _settings.ConnectionFolders.Add(folder);
+            }
+            await ImportAsync(imported, Path.GetFileName(file));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException)
+        {
+            ShowProblem(ex.Message);
+        }
+    }
+
+    /// <summary>The connections of a folder ("" all) into a file, without passwords.</summary>
+    public async Task ExportAsync(string folder)
+    {
+        var name = (folder.Length > 0 ? ConnectionFolders.NameOf(folder) : "NextCommander") + " connections.json";
+        if (_request.PickSaveFile is not { } pick || await pick("Export connections", name) is not { } file)
+        {
+            return;
+        }
+        try
+        {
+            await File.WriteAllTextAsync(file, ConnectionImport.Export(_settings, folder));
+            var count = _settings.Connections.Count(c => ConnectionFolders.IsInside(c.Folder, folder));
+            Toast($"{count} connections exported (without passwords)");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            ShowProblem(ex.Message);
+        }
     }
 
     private async Task ImportFileZillaAsync()

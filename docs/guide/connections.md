@@ -65,7 +65,7 @@ turns it off.
 The manager opens as a page of its own with a tab, like the maximized internal terminal: the **Files** tab above it
 goes back to the panels while the manager stays open; ✕, its tab's × or Esc closes it. The connections are on the
 left, in folders; the selected connection or folder is on the right. Above the list is the toolbar: **＋ New**, a new
-folder and Import (FileZilla, WinSCP). The actions of the selected connection are in the bar above it, all in the accent color: *Test*,
+folder and Import / export (FileZilla, WinSCP, PuTTY, MobaXterm, a connections file). The actions of the selected connection are in the bar above it, all in the accent color: *Test*,
 *Duplicate*, *Delete* (for a remote desktop also *Files (SMB)*, for SSH *Files (SFTP)*) on the left, **Save** and **Connect** on the right; for
 a folder *New connection*, *New subfolder*, *Delete* and *Connect to all*. Messages ("Saved", "Moved") show under them.
 The manager opens with its first connection selected; without connections it shows **＋ New** and **Import...**.
@@ -127,6 +127,16 @@ The manager opens with its first connection selected; without connections it sho
 - **Import** (the arrow under the tree) brings in the sites of **FileZilla** (sitemanager.xml) and **WinSCP**
   (WinSCP.ini or its registry key) with their folders, key files, jump hosts (WinSCP tunnels) and saved passwords
   (into the encrypted store; FileZilla's master-password-encrypted ones cannot be read).
+  The same menu imports **PuTTY** sessions (Windows: its registry key; Linux / macOS: `~/.putty/sessions`): SSH,
+  Telnet, rlogin and serial ports with the user, key file, remote command, terminal type and proxy, and
+  **MobaXterm** sessions from an exported `.mxtsessions` file or `MobaXterm.ini`, with their folders: SSH (key file,
+  the first SSH gateway as jump host, proxy, command), SFTP, RDP (drives, printers, clipboard, gateway ...), VNC,
+  Telnet, rsh and FTP. Neither keeps passwords that can be imported; local shells, WSL, X11 and the other MobaXterm
+  kinds are left out.
+- **Export all connections to a file...** (or **Export this folder to a file...** while a folder is selected) writes
+  the connections with their folders to a file for another computer or person: without passwords and client
+  secrets. **Connections file of NextCommander...** imports such a file; a name already taken in the folder gets a
+  number ("web (2)").
 
 For S3 and WebDAV, the **Service** list fills in the server, port, region and start folder of well-known services:
 Amazon S3, Google Cloud Storage, Cloudflare R2, Backblaze B2, Wasabi, DigitalOcean Spaces, Hetzner and MinIO;

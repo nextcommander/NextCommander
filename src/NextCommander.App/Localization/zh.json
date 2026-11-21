@@ -3439,5 +3439,16 @@
   "SshTunnels.SocksOnThisComputer": "本机上的 SOCKS 代理",
   "SshTunnels.ListenOnThisComputer": "在本机上监听",
   "SshTunnels.LeadToLocal": "目标（从本机看）",
-  "SshTunnels.LeadToServer": "目标（从服务器看）"
+  "SshTunnels.LeadToServer": "目标（从服务器看）",
+  "ConnectionManagerView.ImportAndExport": "导入和导出（FileZilla、WinSCP、PuTTY、MobaXterm、连接文件）",
+  "ConnectionManagerView.PuTTYSessions": "PuTTY 会话...",
+  "ConnectionManagerView.MobaXtermSessionsMenu": "MobaXterm 会话（.mxtsessions、MobaXterm.ini）...",
+  "ConnectionManagerView.MobaXtermSessionsPick": "MobaXterm 会话（.mxtsessions 或 MobaXterm.ini）",
+  "ConnectionManagerView.ConnectionsFileMenu": "NextCommander 连接文件...",
+  "ConnectionManagerView.ConnectionsFile": "NextCommander 连接文件",
+  "ConnectionManagerView.ExportThisFolder": "将此文件夹导出到文件...",
+  "ConnectionManagerView.ExportAll": "将所有连接导出到文件...",
+  "ConnectionManagerView.ExportConnections": "导出连接",
+  "ConnectionManagerView.Exported": "已导出 {0} 个连接（不含密码）",
+  "ConnectionImport.NotAConnectionsFile": "这不是 NextCommander 的连接文件。"
 }

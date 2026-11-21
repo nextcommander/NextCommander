@@ -3439,5 +3439,16 @@
   "SshTunnels.SocksOnThisComputer": "SOCKS proxy on this computer",
   "SshTunnels.ListenOnThisComputer": "Listen on this computer",
   "SshTunnels.LeadToLocal": "Lead to (as this computer sees it)",
-  "SshTunnels.LeadToServer": "Lead to (as the server sees it)"
+  "SshTunnels.LeadToServer": "Lead to (as the server sees it)",
+  "ConnectionManagerView.ImportAndExport": "Import and export (FileZilla, WinSCP, PuTTY, MobaXterm, a connections file)",
+  "ConnectionManagerView.PuTTYSessions": "PuTTY sessions...",
+  "ConnectionManagerView.MobaXtermSessionsMenu": "MobaXterm sessions (.mxtsessions, MobaXterm.ini)...",
+  "ConnectionManagerView.MobaXtermSessionsPick": "MobaXterm sessions (.mxtsessions or MobaXterm.ini)",
+  "ConnectionManagerView.ConnectionsFileMenu": "Connections file of NextCommander...",
+  "ConnectionManagerView.ConnectionsFile": "Connections file of NextCommander",
+  "ConnectionManagerView.ExportThisFolder": "Export this folder to a file...",
+  "ConnectionManagerView.ExportAll": "Export all connections to a file...",
+  "ConnectionManagerView.ExportConnections": "Export connections",
+  "ConnectionManagerView.Exported": "{0} connections exported (without passwords)",
+  "ConnectionImport.NotAConnectionsFile": "This is not a connections file of NextCommander."
 }
