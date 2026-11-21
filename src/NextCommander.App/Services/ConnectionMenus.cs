@@ -89,6 +89,18 @@ public static class PluginMenus
     public static List<Control> Items(MainWindowViewModel vm)
     {
         var items = new List<Control>();
+        // the places for the active panel's folder first (e.g. "Git history" while it is in a repository)
+        foreach (var (entry, root) in vm.PluginFolderEntriesHere())
+        {
+            var item = new MenuItem { Header = entry.EntryName, Icon = MenuIcons.Create("nc_Plugins"), Tag = "plugins.folder" };
+            ToolTip.SetTip(item, root.ToString());
+            item.Click += (_, _) => _ = vm.ActivePanel.NavigateAsync(root);
+            items.Add(item);
+        }
+        if (items.Count > 0)
+        {
+            items.Add(new Separator());
+        }
         foreach (var group in vm.PluginEntryPoints.GroupBy(e => e.EntryGroup, StringComparer.CurrentCultureIgnoreCase))
         {
             var menu = new MenuItem { Header = group.Key, Icon = MenuIcons.Create("nc_Plugins"), Classes = { "noloc" }, Tag = "plugins.group" };
@@ -100,6 +112,10 @@ public static class PluginMenus
                 menu.Items.Add(item);
             }
             items.Add(menu);
+        }
+        if (items.Count > 0 && items[^1] is Separator)
+        {
+            items.RemoveAt(items.Count - 1);
         }
         return items;
     }

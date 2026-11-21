@@ -57,6 +57,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Plugins\NextCommander.Plugin.Rclone\NextCommander.Plugin.Rclone.csproj"
                       ReferenceOutputAssembly="false" OutputItemType="NcShippedPlugin" PluginFolder="rclone" />
+    <ProjectReference Include="..\Plugins\NextCommander.Plugin.Git\NextCommander.Plugin.Git.csproj"
+                      ReferenceOutputAssembly="false" OutputItemType="NcShippedPlugin" PluginFolder="git" />
   </ItemGroup>
   <Target Name="NcPluginFiles" DependsOnTargets="ResolveProjectReferences">
     <ItemGroup>

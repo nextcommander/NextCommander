@@ -809,6 +809,35 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     public IReadOnlyList<NextCommander.Core.Plugins.IPluginEntryPoint> PluginEntryPoints =>
         Plugins.SelectMany(p => p.FileSystems).OfType<NextCommander.Core.Plugins.IPluginEntryPoint>().ToList();
 
+    /// <summary>The places the plugins offer for a folder (e.g. "Git history" of a repository).</summary>
+    public IReadOnlyList<NextCommander.Core.Plugins.IPluginFolderEntry> PluginFolderEntries =>
+        Plugins.SelectMany(p => p.FileSystems).OfType<NextCommander.Core.Plugins.IPluginFolderEntry>().ToList();
+
+    /// <summary>The plugins' places for the active panel's folder, with the folder each opens.</summary>
+    public IReadOnlyList<(NextCommander.Core.Plugins.IPluginFolderEntry Entry, VfsPath Root)> PluginFolderEntriesHere()
+    {
+        if (ActivePanel.CurrentPath is not { } folder)
+        {
+            return [];
+        }
+        var here = new List<(NextCommander.Core.Plugins.IPluginFolderEntry, VfsPath)>();
+        foreach (var entry in PluginFolderEntries)
+        {
+            try
+            {
+                if (entry.RootFor(folder) is { } root)
+                {
+                    here.Add((entry, root));
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+            {
+                // a plugin that cannot tell is left out of the menu
+            }
+        }
+        return here;
+    }
+
     /// <summary>Opens a plugin's entry point in the active panel; when it cannot be used now, says why.</summary>
     public async Task OpenPluginEntryAsync(NextCommander.Core.Plugins.IPluginEntryPoint entry)
     {
