@@ -37,6 +37,9 @@ public partial class FilePanelView : UserControl
         ("Rename", "Shift+F6", "nc_RenameOnly"),
         ("Delete", "F8", "nc_Delete"),
         ("Pack...", "Alt+F5", "nc_PackFiles"),
+        // shown only on a disc image the system can mount (.iso)
+        ("Mount disc image", null, "nc_MountImage"),
+        ("Unmount disc image", null, "nc_UnmountImage"),
         ("-", null, string.Empty),
         ("Copy full path", "Ctrl+Shift+C", "nc_CopyFullNamesToClip"),
         ("Add to Hotlist", null, "nc_AddToHotlist"),
@@ -51,6 +54,12 @@ public partial class FilePanelView : UserControl
     private const string TrashOnly = "trash";
 
     private static bool IsTrashOnly(object? tag) => tag is TrashOnly or "nc_RestoreFromTrash" or "nc_EmptyTrash";
+
+    private static bool IsImageOnly(object? tag) => tag is "nc_MountImage" or "nc_UnmountImage";
+
+    /// <summary>The entry under the cursor is a disc image of this computer the system can mount (user's request, 21 November 2026).</summary>
+    private bool CursorIsMountableImage() =>
+        _vm?.CursorItem?.Entry is { IsDirectory: false, Path.IsLocal: true } entry && Platform.DiskImages.CanMount(entry.Name);
 
     private PanelViewModel? _vm;
 
@@ -313,11 +322,16 @@ public partial class FilePanelView : UserControl
         var selected = _vm?.GetSelectedEntries().Count > 0;
         var icons = _vm?.Settings.ShowMenuIcons != false;
         var inTrash = _vm?.CurrentPath?.Scheme == Platform.Trash.TrashFileSystemProvider.TrashScheme;
+        var image = CursorIsMountableImage();
         foreach (var control in menu.Items.OfType<Control>())
         {
             if (IsTrashOnly(control.Tag))
             {
                 control.IsVisible = inTrash;
+            }
+            else if (IsImageOnly(control.Tag))
+            {
+                control.IsVisible = image;
             }
         }
         foreach (var item in menu.Items.OfType<MenuItem>())
@@ -672,9 +686,17 @@ public partial class FilePanelView : UserControl
         var screen = list.PointToScreen(point);
         var icons = vm.Settings.ShowMenuIcons ? Services.ShellMenuIcons.ForScale(TopLevel.GetTopLevel(this)?.RenderScaling ?? 1) : null;
         // the application's items at the top of Explorer's menu (the native menu is not translated by the text hook: done here)
-        IReadOnlyList<Platform.SystemMenuItem> extras = entries.Count > 0 && entries.All(e => e.Path.IsLocal)
-            ? [new(Core.Localization.Localizer.T("Pack..."), "nc_PackFiles", () => _ = RunAsync("nc_PackFiles"))]
-            : [];
+        var extras = new List<Platform.SystemMenuItem>();
+        if (entries.Count > 0 && entries.All(e => e.Path.IsLocal))
+        {
+            extras.Add(new(Core.Localization.Localizer.T("Pack..."), "nc_PackFiles", () => _ = RunAsync("nc_PackFiles")));
+        }
+        if (entries.Count == 1 && CursorIsMountableImage())
+        {
+            // a disc image: mount it (the panel opens its drive) or unmount it
+            extras.Add(new(Core.Localization.Localizer.T("Mount disc image"), "nc_MountImage", () => _ = RunAsync("nc_MountImage")));
+            extras.Add(new(Core.Localization.Localizer.T("Unmount disc image"), "nc_UnmountImage", () => _ = RunAsync("nc_UnmountImage")));
+        }
         if (!vm.Platform.ShowSystemContextMenu(handle.Handle, paths, screen.X, screen.Y, extended: false, icons, extras))
         {
             return false;
