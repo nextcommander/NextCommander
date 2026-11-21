@@ -282,6 +282,9 @@ open a terminal at the bottom of the window. Press it again to hide it; the shel
   clears the screen, **Stop** restarts the shell.
 - **Tabs:** `+` opens another terminal, `▾` lists the installed shells (on Windows cmd, Windows PowerShell,
   PowerShell 7, Git Bash and WSL; elsewhere your shells). `exit` or the tab's `×` closes it.
+- **MultiExec** types into several tabs at once: while it is on (● MultiExec), each tab has a check box, and the
+  keys, pasted text and command lines typed in one tab go to every checked tab as well (e.g. the same command on
+  several servers). The terminal's own answers stay with their tab; a tab of the line console takes whole lines.
 - **Find** (Ctrl+Shift+F in the terminal) opens a search bar over the output: the matches in the scrollback and on
   the screen are marked, the newest is shown first; Enter (↑) goes to older ones, Shift+Enter (↓) to newer ones, round
   at the ends, and the count shows where you are. **Aa** matches the case. Esc closes it.

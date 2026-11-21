@@ -3468,5 +3468,7 @@
   "TerminalView.MatchCase": "区分大小写",
   "TerminalView.NewerMatch": "较新的匹配项 (Shift+Enter)",
   "TerminalView.NoResults": "无结果",
-  "TerminalView.OlderMatch": "较早的匹配项 (Enter)"
+  "TerminalView.OlderMatch": "较早的匹配项 (Enter)",
+  "TerminalView.TypeHereToo": "也在此输入 (MultiExec)",
+  "TerminalView.MultiExecTip": "同时向多个终端输入：在一个标签页中输入的内容会发送到所有勾选的标签页"
 }

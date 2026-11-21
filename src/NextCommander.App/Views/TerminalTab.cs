@@ -124,6 +124,17 @@ public abstract class TerminalTab : Border
     /// <summary>Ends a search: the matches are no longer marked.</summary>
     public abstract void ClearFind();
 
+    /// <summary>MultiExec: what is typed in another tab is typed here too (while MultiExec is on).</summary>
+    public bool MultiExecIncluded { get; set; } = true;
+
+    /// <summary>The user typed into this tab (keys, a pasted text, a command line): MultiExec passes it on.</summary>
+    internal event Action<TerminalTab, string>? Typed;
+
+    protected void RaiseTyped(string text) => Typed?.Invoke(this, text);
+
+    /// <summary>Text typed in another tab (MultiExec): keys and pasted text, "\r" ends a line.</summary>
+    public abstract void Receive(string text);
+
     /// <summary>Ctrl+Shift+F in the terminal: the find bar.</summary>
     public event EventHandler? FindRequested;
 

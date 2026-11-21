@@ -3468,5 +3468,7 @@
   "TerminalView.MatchCase": "Match case",
   "TerminalView.NewerMatch": "Newer match (Shift+Enter)",
   "TerminalView.NoResults": "No results",
-  "TerminalView.OlderMatch": "Older match (Enter)"
+  "TerminalView.OlderMatch": "Older match (Enter)",
+  "TerminalView.TypeHereToo": "Type here too (MultiExec)",
+  "TerminalView.MultiExecTip": "Type into several terminals at once: what is typed in one tab goes to every tab checked"
 }

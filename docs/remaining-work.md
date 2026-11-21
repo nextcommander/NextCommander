@@ -181,7 +181,7 @@ built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC l
 - [x] Reconnect a remote session that ended: already there (an ended SSH / Telnet tab connects again with Enter).
 - [x] Log a terminal session's output to a file (the terminal's **Log** button, or every tab by the setting; plain text, `Core/Text/TerminalLog`).
 - [x] Find in the terminal's scrollback (Find / Ctrl+Shift+F: marked matches, older / newer, match case).
-- [ ] MultiExec: type into several terminal tabs at once.
+- [x] MultiExec: type into several terminal tabs at once (the terminal's MultiExec button, a check box per tab).
 - [ ] Saved commands (snippets) sent to the terminal with a click.
 - [ ] Shared credentials: one user / password entry used by several connections.
 - [ ] SSH agent forwarding (whether SSH.NET can do it is to be found out first).

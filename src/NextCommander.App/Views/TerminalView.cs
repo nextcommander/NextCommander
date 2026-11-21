@@ -27,6 +27,7 @@ public sealed class TerminalView : DockPanel
     private readonly Button _maximize;
     private readonly Button _files;
     private readonly Button _log;
+    private readonly Button _multiExec;
     private readonly Border _findBar;
     private readonly TextBox _findText = new() { Width = 260, MinHeight = 24, Padding = new Thickness(6, 2), FontSize = 12, PlaceholderText = "Find in the output" };
     private readonly CheckBox _findCase = new() { Content = "Aa", Classes = { "noloc" }, FontSize = 12, MinHeight = 0, VerticalAlignment = VerticalAlignment.Center };
@@ -102,6 +103,10 @@ public sealed class TerminalView : DockPanel
         _log.Tag = "log";
         _log.Click += (_, _) => ShowLogMenu(_log);
         buttons.Children.Add(_log);
+        // MultiExec: what is typed in one tab goes to every tab checked in the tab strip
+        _multiExec = HeaderButton("MultiExec", "Type into several terminals at once: what is typed in one tab goes to every tab checked", () => MultiExec = !MultiExec);
+        _multiExec.Tag = "multiexec";
+        buttons.Children.Add(_multiExec);
         buttons.Children.Add(HeaderButton("Find", "Find in the output and the scrollback (Ctrl+Shift+F)", OpenFind));
         buttons.Children.Add(HeaderButton("Panel folder", "Go to the folder of the active panel in the terminal", () => _active?.GoToPanelFolder()));
         buttons.Children.Add(HeaderButton("Clear", "Clear the output (Ctrl+L)", () => _active?.Clear()));
@@ -162,6 +167,47 @@ public sealed class TerminalView : DockPanel
         Children.Add(_findBar);
         Children.Add(_host);
         this[!BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("FmStatusBrush");
+    }
+
+    private bool _multi;
+
+    /// <summary>
+    /// MultiExec (MobaXterm): keys, pasted text and command lines typed in a tab are typed in every tab checked in the
+    /// tab strip as well; the button is marked and each tab shows its check box while it is on.
+    /// </summary>
+    public bool MultiExec
+    {
+        get => _multi;
+        set
+        {
+            _multi = value;
+            if (value)
+            {
+                _multiExec.Classes.Add("accent");
+            }
+            else
+            {
+                _multiExec.Classes.Remove("accent");
+            }
+            _multiExec.Content = value ? "● MultiExec" : "MultiExec";
+            RebuildTabs();
+        }
+    }
+
+    /// <summary>A tab typed: with MultiExec the other checked tabs get the same text.</summary>
+    private void OnTyped(TerminalTab source, string text)
+    {
+        if (!_multi)
+        {
+            return;
+        }
+        foreach (var tab in _consoles.ToList())
+        {
+            if (!ReferenceEquals(tab, source) && tab.MultiExecIncluded)
+            {
+                tab.Receive(text);
+            }
+        }
     }
 
     /// <summary>The find bar is open (tests).</summary>
@@ -436,6 +482,7 @@ public sealed class TerminalView : DockPanel
         console.SetFont(_font.Family, _font.Size);
         console.ShellExited += (_, _) => CloseTab(console); // "exit" closes the tab like in VS Code
         console.FindRequested += (_, _) => OpenFind();
+        console.Typed += OnTyped;
         console.LogChanged += (_, _) =>
         {
             if (ReferenceEquals(console, _active))
@@ -522,6 +569,14 @@ public sealed class TerminalView : DockPanel
                 CloseTab(target);
             };
             var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
+            if (_multi)
+            {
+                // MultiExec: whether this tab takes what is typed in the others
+                var include = new CheckBox { IsChecked = console.MultiExecIncluded, MinHeight = 0, MinWidth = 0, Padding = new Thickness(0), Focusable = false, VerticalAlignment = VerticalAlignment.Center };
+                ToolTip.SetTip(include, "Type here too (MultiExec)");
+                include.IsCheckedChanged += (_, _) => target.MultiExecIncluded = include.IsChecked == true;
+                content.Children.Add(include);
+            }
             content.Children.Add(text);
             content.Children.Add(close);
             var tab = new Button { Content = content, Padding = new Thickness(8, 1, 2, 1), MinHeight = 0, Focusable = false, Classes = { "terminaltab" } };
