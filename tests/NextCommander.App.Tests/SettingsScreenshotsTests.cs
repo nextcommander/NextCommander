@@ -71,13 +71,13 @@ public sealed class SettingsScreenshotsTests : IDisposable
         Assert.Equal(24, bar.SelectedSize);
 
         // "Run as administrator" is the '*' in front of the command
-        bar.Select(bar.Buttons.ToList().FindIndex(b => b.Command == "nc_ExecuteTerminal"));
+        bar.Select(bar.Buttons.ToList().FindIndex(b => b.Command == "nc_CommandBrowser"));
         await SettleAsync();
         Assert.False(bar.Fields.RunAsAdministrator.IsChecked);
         bar.Fields.RunAsAdministrator.IsChecked = true;
         await SettleAsync();
-        Assert.Equal("*nc_ExecuteTerminal", bar.Buttons.Single(b => b.Command.EndsWith("nc_ExecuteTerminal", StringComparison.Ordinal)).Command);
-        bar.Fields.Command.Text = "nc_ExecuteTerminal";
+        Assert.Equal("*nc_CommandBrowser", bar.Buttons.Single(b => b.Command.EndsWith("nc_CommandBrowser", StringComparison.Ordinal)).Command);
+        bar.Fields.Command.Text = "nc_CommandBrowser";
         await SettleAsync();
         Assert.False(bar.Fields.RunAsAdministrator.IsChecked);
 
