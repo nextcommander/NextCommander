@@ -358,6 +358,7 @@ public sealed partial class ConnectionManagerView
         {
             ShowDetail();
         }
+        FocusSelectedRow(); // nothing selected: the search (the row that had the focus keeps no frame)
     }
 
     /// <summary>The location bar: Home › folders › the name (• while unsaved), or Home › New connection › its name.</summary>

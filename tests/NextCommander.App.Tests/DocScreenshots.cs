@@ -640,6 +640,21 @@ public sealed class DocScreenshots
         manager.Reveal(sample.Connections[0]);
         await SettleAsync(8);
         Save(Compose(background, managerHost.CaptureRenderedFrame()!, managerHost.Title ?? string.Empty), "connections.png");
+
+        // its overview (recently used, an address) and the details of a new connection
+        sample.Connections[0].LastUsed = new DateTime(2026, 11, 20, 9, 42, 0);
+        sample.Connections[6].LastUsed = new DateTime(2026, 11, 18, 17, 5, 0);
+        sample.Connections[2].LastUsed = new DateTime(2026, 11, 12, 11, 30, 0);
+        manager.GoHome();
+        await SettleAsync(8);
+        Save(Compose(background, managerHost.CaptureRenderedFrame()!, managerHost.Title ?? string.Empty), "connections-overview.png");
+        var adding = manager.NewConnectionAsync();
+        await SettleAsync(4);
+        manager.Wizard!.ChooseType(RemoteProtocol.Sftp);
+        await SettleAsync(8);
+        Save(Compose(background, managerHost.CaptureRenderedFrame()!, managerHost.Title ?? string.Empty), "connections-new.png");
+        manager.Wizard.Close();
+        await adding;
         managerHost.Close();
 
         // About (neutral folders)

@@ -12,10 +12,11 @@ file operations.
 From top to bottom:
 
 - **Menu bar:** Files, Edit, Mark, Commands, Net, Show, Configuration, Start, and Help on the right.
-- **Button bar:** one-click buttons for common commands (next to the system terminal, the internal terminal opens
-  maximized; at the end, the connection manager and the settings). Right click it to add, change or remove buttons,
-  or use *Configuration > Button bar...*. A second, vertical button bar sits between the two panels.
-- **Page tabs:** while the options or a maximized internal terminal are open next to the file panels, a tab strip
+- **Button bar:** one-click buttons for common commands (the internal terminal, opened as a page with its tab; at the
+  end, the connection manager and the settings). Right click it anywhere (on a button or the empty part) to add,
+  change or remove buttons, or use *Configuration > Button bar...*. A second, vertical button bar sits between the two
+  panels.
+- **Page tabs:** while the options, the connection manager or the internal terminal are open next to the file panels, a tab strip
   shows the pages: the files tab (the folder of the active panel, with the icon of its place: a user folder such as
   Downloads with the system's icon, a drive, a server's product mark, an archive ...), **Options** and **Terminal**.
   A click switches; `nc_SwitchWorkspaceTab` goes to the next page. While another page than the files is shown, the
@@ -266,7 +267,8 @@ folder; Shift+Enter runs it in a terminal window that stays open.
 - Tab completes file and folder names.
 - Ctrl+Enter adds the name under the cursor to the command line, Ctrl+Shift+Enter adds the full path.
 - The arrow at the end of the line (or Alt+F8) lists your last commands.
-- The terminal button at the end opens the [built-in terminal](tools.md#built-in-terminal) (Ctrl+`).
+- The terminal button at the end opens the [built-in terminal](tools.md#built-in-terminal) below the panels (Ctrl+`
+  opens it as a page with its tab).
 
 ## Opening files from outside
 

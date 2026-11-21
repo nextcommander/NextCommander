@@ -66,48 +66,77 @@ turns it off.
 
 ![The connection manager](../screenshots/connections.png)
 
-The manager opens as a page of its own with a tab, like the maximized internal terminal: the **Files** tab above it
-goes back to the panels while the manager stays open; ✕, its tab's × or Esc closes it. The connections are on the
-left, in folders; the selected connection or folder is on the right. Above the list is the toolbar: **＋ New**, a new
-folder and Import / export (FileZilla, WinSCP, PuTTY, MobaXterm, a connections file). The actions of the selected connection are in the bar above it, all in the accent color: *Test*,
-*Duplicate*, *Delete* (for a remote desktop also *Files (SMB)*, for SSH *Files (SFTP)*) on the left, **Save** and **Connect** on the right; for
-a folder *New connection*, *New subfolder*, *Delete* and *Connect to all*. Messages ("Saved", "Moved") show under them.
-The manager opens with its first connection selected; without connections it shows **＋ New** and **Import...**.
+The manager opens as a page of its own with a tab, like the internal terminal: the **Files** tab above it goes back
+to the panels while the manager stays open; ✕, its tab's × or Esc closes it.
+
+**The side** on the left: **＋ New connection** (Ctrl+N) and **⋯** next to it (a new folder, import from another
+program, export), the **search** (Ctrl+F; it looks in names, servers, users and folders) and the **chips** that filter
+the list: *All*, *★ Favorites*, *● Connected* and the four kinds of connections, *Servers*, *Network* (local network),
+*Cloud* (storage and drives) and *Remote* (remote sessions), each with its count; a chip without connections is not
+shown. Under them the **Overview** line, then the folders and connections. Every connection has the tile of its type,
+in the color of its kind, with a green dot while it is connected; its address is under its name. A red **!** marks a
+connection that cannot connect yet (its tooltip says why), a red dot one whose last test failed, ★ a favorite. The
+line at the bottom counts them ("12 saved · ● 2 connected").
+
+**The location bar** above the page: **←** and **→** (Alt+Left, Alt+Right, the mouse's back and forward buttons) go
+through the pages seen, like a browser; the path after them (*Overview* › folders › the connection) leads back to any
+of them with a click; Alt+Home goes to the overview. The keys work wherever the focus is on the manager's page.
+
+![The overview of the connection manager](../screenshots/connections-overview.png)
+
+**The overview** (nothing selected; also the page the manager opens with): the **recently used** connections as cards
+(a click connects; under the name when it was used last) and a box to **connect to an address**. The first time,
+without connections, it shows how to begin instead: an address to paste, the common types (SFTP, FTPS, SMB, Amazon S3,
+OneDrive), *See all types* and **Moving from another program?** with an import button for FileZilla, WinSCP, PuTTY,
+MobaXterm and a connections file.
+
+**A connection** on the right: its tile, its **name** (click it, ✎ or F2 to rename it in place; Enter keeps the new
+name, Esc the old one), its address and its type (or ● Connected). On the right of the header the **★** (favorite), the
+**⋯** menu (rename, duplicate, copy the address, for a remote desktop *Files (SMB)*, for SSH *Files (SFTP)*, forget
+the saved password, delete), **Test** and **Connect** (*Open in panel* while it is connected). Under the header notes
+in colored lines: the result of the last test, a warning for types that send the password as readable text (FTP,
+WebDAV over HTTP, Telnet, rsh), the type's own note. Then the editor's tabs. A change shows **Unsaved changes** at the
+bottom with *Discard* and *Save* (Ctrl+S), and a • after the name in the location bar.
+
+**A folder** on the right: its name (renamed in place too), how many connections and subfolders it has, *New
+connection*, *New subfolder*, *Delete* and *Connect to all*, its color label and its content as cards.
 
 - **Folders** can be nested and have a color label (for example red for production). Drag connections and folders
   to move them: onto a folder (it is highlighted) puts it inside, onto a connection into that one's folder, onto the
   empty space below the tree to the top; a folder cannot go into itself. The move is saved at once. An empty folder
   stays until you delete it.
-- **Search** (Ctrl+F in the window) looks in names, servers, users and folders; the chips above the tree show only
-  favorites, SSH or FTP connections, cloud storage, or the connections that are open now. The dot after a connection
-  is green while it is connected, red when its last test failed.
-- **Keys:** arrows move and open folders, Enter connects (Shift+Enter: in the right panel), F2 renames, Delete deletes
-  (a folder with everything in it; its saved passwords are forgotten), Ctrl+Z puts the last deleted items back,
-  Ctrl+D duplicates, Ctrl+N opens the new connection wizard, Ctrl+S saves. The right click menu has the same, plus favorites,
-  copying the address and forgetting the saved password.
-- **New connection:** **＋ New** (Ctrl+N, the right click menu, *Net > New connection*) opens the **new connection wizard**, a window over the manager in steps (1 Type › 2 Details › 3 Advanced › 4 Summary). The step's title (and on
-  the first step the search) stays at the top; only the fields under it scroll.
-  - **Type:** the cards in their groups. The **search box** above them keeps the types whose name, description or
+- **Keys:** arrows move and open folders (Down from the search goes into the list), Enter connects (Shift+Enter: in
+  the right panel), F2 renames, Delete deletes (a folder with everything in it; its saved passwords are forgotten),
+  Ctrl+Z puts the last deleted items back, Ctrl+D duplicates, Ctrl+N makes a new connection, Ctrl+S saves. The right
+  click menu of the list has the same, plus favorites, copying the address and forgetting the saved password.
+- **New connection:** **＋ New connection** (Ctrl+N, the right click menu, *Net > New connection*, a type card of the
+  overview, an address pasted there) opens the new connection's page in place of the editor, in two steps shown at
+  its top (1 Type › 2 Details; ✓ 1 goes back to the types).
+
+  ![The details of a new SFTP connection](../screenshots/connections-new.png)
+
+  - **Type:** the cards of every type in their groups (*Servers*, *Local network*, *Cloud storage*, *Remote
+    sessions*; the usual ones are marked *Common*). The **search box** keeps the types whose name, description or
     group has all the words typed (`cloud`, `azure`, `windows` ...; Enter chooses the only one left). Next to it an
-    address such as `sftp://user@server:22/folder` can be pasted and Enter pressed (it fills in the type, server,
-    port, user and start folder). *Net > New connection* of a type starts at the details.
-  - **Details:** a **name** is suggested and selected (the type, "SFTP 2" when that is taken, or user@server of an
-    address; the list shows the connection by it, its log is kept under it, and it must not be another connection's
-    name); the **folder** is the group of the type (*Servers*, *Local network*, *Cloud storage*, *Cloud drives*,
-    *Remote sessions*; another folder can be typed, made when new; a folder's *New connection* puts it there). Then
-    only what the type needs: the server and port, the user (required for SSH, the access key id of S3, the storage
-    account of Azure), an optional key file (SFTP / SCP / SSH), the application id of a cloud drive (and Box's
-    client secret), the serial port, an optional start folder. Required fields have a red *; Next and Test mark what
-    is missing. The fields are in cards (Connection, Server or Device, Login) with their captions on the left. The
+    address such as `sftp://user@server:22/folder` can be pasted: under the box it says what it found ("SFTP
+    connection to server — press Enter to continue"), Enter fills in the type, server, port, user and start folder.
+    *Net > New connection* of a type starts at the details.
+  - **Details:** the header names the type (*Change type* goes back). A note says when the details were filled in
+    from an address, when the type sends the password as readable text, and the type's own note. The **name** card
+    comes first: the name is suggested (*Suggested*: user@server when they are known, else the type, "SFTP 2" when
+    that is taken) and follows the details as they are typed until a name of your own is typed; empty, it is saved
+    under the suggestion. The **folder** is the group of the type (another folder can be typed, made when new; a
+    folder's *New connection* puts it there). Then only what the type needs, in the cards *Connection* (or *Device*)
+    and *Login*: the server and port, an optional start folder, the user (required for SSH, the access key id of S3,
+    the storage account of Azure), a shared login when there are some, an optional key file (SFTP / SCP / SSH), the
+    application id of a cloud drive (and Box's client secret), the serial port. Required fields have a red *. The
     password is asked when connecting, as for every connection.
-  - **Advanced:** the editor's own Advanced tab, a remote desktop's Display / Local resources / Experience tabs and
-    the Proxy tab for this connection: timeouts, a jump host, encryption, the proxy ... (all of them can be changed
-    later in the editor too).
-  - **Summary:** everything entered, as the list will hold it: the folders down to the connection and its address,
-    then the server (or device), the login and the advanced options that differ from the type's defaults.
-  - **Next ›** goes on (the details are checked first); **‹ Back** goes one step back (from the details to the
-    types); **Test** connects with these details from any step after the type; **OK** on the summary adds the
-    connection to its folder, shows it in the tree and saves; **Cancel** (Esc) adds nothing.
+  - **More settings** (folded) holds the editor's own Advanced tab, a remote desktop's Display / Local resources /
+    Experience tabs and the Proxy tab: timeouts, a jump host, encryption, the proxy ... (all of them can be changed
+    later in the editor too). It opens by itself when a problem is in it.
+  - The bar at the bottom: **Test connection** (its result shows next to it), **Cancel** (Esc; nothing is added),
+    **Save** (adds the connection to its folder, shows it in the list and saves) and **Save and connect**. Save and
+    Test mark what is missing or wrong at its field first. Alt+Left goes back a step.
 
   Everything else is in the editor on the right, in its tabs:
   - **General:** the server, port and start folder (for FTP also the encryption and passive mode, for S3 the region;
@@ -125,10 +154,10 @@ The manager opens with its first connection selected; without connections it sho
   field that is empty or wrong is framed in red with what is wrong under it (a new connection once you start filling
   it in). *Save*, *Connect* and *Test* refuse such a connection, show the tab of the first problem and put the cursor
   there; in the tree a red **!** marks a connection that cannot connect yet (its tooltip says why).
-- **Test** connects with the settings as they are and lists the start folder; the result shows under the tabs.
-  **Save** writes the connections (closing the window does too; new connections never filled in are dropped).
+- **Test** connects with the settings as they are and lists the start folder; the result shows in a line under the
+  header. **Save** writes the connections (closing the manager does too).
   **Connect** opens the connection; a folder's **Connect to all** opens each of its connections in a tab.
-- **Import** (the arrow under the tree) brings in the sites of **FileZilla** (sitemanager.xml) and **WinSCP**
+- **Import** (**⋯** next to *＋ New connection*, or the first start's buttons) brings in the sites of **FileZilla** (sitemanager.xml) and **WinSCP**
   (WinSCP.ini or its registry key) with their folders, key files, jump hosts (WinSCP tunnels) and saved passwords
   (into the encrypted store; FileZilla's master-password-encrypted ones cannot be read).
   The same menu imports **PuTTY** sessions (Windows: its registry key; Linux / macOS: `~/.putty/sessions`): SSH,
@@ -465,7 +494,7 @@ intercepting the connection.
   **Logins...** next to it edits them: name, user, password (kept once in the encrypted store) and, for SFTP, SCP
   and SSH, a private key file. The connections take the login's user and key; its password is asked once and then
   used by all of them. Changing the login changes them all; deleting it leaves them with the user and their own
-  password. An exported connections file keeps the user, not the login. The new connection wizard offers the
+  password. An exported connections file keeps the user, not the login. The new connection page offers the
   shared logins under **Login** too (when there are any).
 - With a **master password** (*Net > Master password...*), the passwords are encrypted with a key made from it.
   It is asked once per session. Leave the new master password empty to remove it.
