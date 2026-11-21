@@ -271,6 +271,10 @@ public static class MenuIcons
         ["terminal.logfolder"] = new("MiFolderOpen", Yellow),
         ["terminal.snippet"] = new("MiArrowRight", Green),
         ["terminal.snippets.edit"] = new("MiPencil", Gray),
+        ["terminal.split.none"] = new("MiMonitor", Gray),
+        ["terminal.split.columns"] = new("MiColumns", Blue),
+        ["terminal.split.rows"] = new("MiSplitView", Blue),
+        ["terminal.split.four"] = new("MiSplit", Blue),
         ["nc_Plugins"] = new("MiPlug", Purple),
         // Commands
         ["nc_SearchFor"] = new("MiSearch", Blue),

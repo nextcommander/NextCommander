@@ -20,7 +20,9 @@ public sealed class TerminalView : DockPanel
 {
     private readonly List<TerminalTab> _consoles = [];
     private readonly StackPanel _tabStrip = new() { Orientation = Orientation.Horizontal, Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
-    private readonly Panel _host = new();
+    private readonly Grid _host = new();
+    private readonly List<TerminalTab> _panes = [];
+    private TerminalSplit _split;
     private TerminalTab? _active;
     private double? _resizeStartY;
     private double _resizeHeight;
@@ -111,6 +113,10 @@ public sealed class TerminalView : DockPanel
         snippets.Tag = "snippets";
         snippets.Click += (_, _) => ShowSnippetMenu(snippets);
         buttons.Children.Add(snippets);
+        var split = HeaderButton("Split ▾", "Two or four terminals side by side", () => { });
+        split.Tag = "split";
+        split.Click += (_, _) => ShowSplitMenu(split);
+        buttons.Children.Add(split);
         buttons.Children.Add(HeaderButton("Find", "Find in the output and the scrollback (Ctrl+Shift+F)", OpenFind));
         buttons.Children.Add(HeaderButton("Panel folder", "Go to the folder of the active panel in the terminal", () => _active?.GoToPanelFolder()));
         buttons.Children.Add(HeaderButton("Clear", "Clear the output (Ctrl+L)", () => _active?.Clear()));
@@ -518,6 +524,15 @@ public sealed class TerminalView : DockPanel
     public TerminalTab NewTab(TerminalSession.ShellInfo? shell = null, Func<int, int, Services.Terminal.PseudoTerminal>? connect = null,
         Core.Config.RemoteConnection? connection = null)
     {
+        var console = AddConsole(shell, connect, connection);
+        Select(console);
+        TabsChanged?.Invoke(this, EventArgs.Empty);
+        return console;
+    }
+
+    /// <summary>A new tab that is not shown yet (<see cref="NewTab"/> shows it; a split fills its panes with them).</summary>
+    private TerminalTab AddConsole(TerminalSession.ShellInfo? shell, Func<int, int, Services.Terminal.PseudoTerminal>? connect, Core.Config.RemoteConnection? connection)
+    {
         shell ??= TerminalSession.ShellFor(Shell);
         TerminalTab console = connect is not null || (Emulation && Services.Terminal.PseudoTerminal.IsSupported)
             ? new EmulatedTerminal(shell, () => CurrentFolder?.Invoke(), connect) { Connection = connection }
@@ -537,23 +552,176 @@ public sealed class TerminalView : DockPanel
         {
             StartLog(console);
         }
+        // a click into a pane of a split makes it the active one
+        console.GotFocus += (_, _) =>
+        {
+            if (_split != TerminalSplit.None && !ReferenceEquals(console, _active) && _panes.Contains(console))
+            {
+                SetActive(console);
+            }
+        };
         _consoles.Add(console);
+        console.IsVisible = false;
         _host.Children.Add(console);
-        Select(console);
-        TabsChanged?.Invoke(this, EventArgs.Empty);
         return console;
     }
 
-    public void Select(TerminalTab console)
+    // ---------------------------------------------------------------- split
+
+    /// <summary>How the terminal is split (Split menu): one tab, two side by side or one above the other, four.</summary>
+    public TerminalSplit Split
+    {
+        get => _split;
+        set
+        {
+            _split = value;
+            FillPanes(create: true);
+            Arrange();
+            RebuildTabs();
+            _active?.Activate(); // the keys stay with the active pane (new panes start their shells)
+        }
+    }
+
+    /// <summary>The tabs shown in the panes of the split (the active one among them; tests).</summary>
+    public IReadOnlyList<TerminalTab> Panes => _panes;
+
+    private int PaneCount => _split switch { TerminalSplit.Columns or TerminalSplit.Rows => 2, TerminalSplit.Four => 4, _ => 1 };
+
+    /// <summary>
+    /// The panes of the split: the active tab and the ones after it; with <paramref name="create"/> (the split was chosen)
+    /// a new shell where tabs are missing, otherwise (a tab was closed) a pane stays empty.
+    /// </summary>
+    private void FillPanes(bool create = false)
+    {
+        if (_active is null)
+        {
+            _panes.Clear();
+            return;
+        }
+        if (!_panes.Contains(_active))
+        {
+            _panes.Clear();
+            _panes.Add(_active);
+        }
+        while (_panes.Count > PaneCount)
+        {
+            _panes.RemoveAt(_panes.FindLastIndex(p => !ReferenceEquals(p, _active)));
+        }
+        var start = _consoles.IndexOf(_active);
+        for (var i = 1; i < _consoles.Count && _panes.Count < PaneCount; i++)
+        {
+            var next = _consoles[(start + i) % _consoles.Count];
+            if (!_panes.Contains(next))
+            {
+                _panes.Add(next);
+            }
+        }
+        var added = false;
+        while (create && _panes.Count < PaneCount)
+        {
+            var console = AddConsole(null, null, null);
+            _panes.Add(console);
+            console.Activate();
+            added = true;
+        }
+        if (added)
+        {
+            TabsChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>The panes in their cells (the active one framed); without a split only the active tab.</summary>
+    private void Arrange()
+    {
+        _host.RowDefinitions.Clear();
+        _host.ColumnDefinitions.Clear();
+        var split = _split != TerminalSplit.None;
+        if (split)
+        {
+            var columns = _split is TerminalSplit.Columns or TerminalSplit.Four ? 2 : 1;
+            var rows = _split is TerminalSplit.Rows or TerminalSplit.Four ? 2 : 1;
+            for (var i = 0; i < columns; i++)
+            {
+                _host.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+            }
+            for (var i = 0; i < rows; i++)
+            {
+                _host.RowDefinitions.Add(new RowDefinition(GridLength.Star));
+            }
+        }
+        foreach (var console in _consoles)
+        {
+            var pane = split ? _panes.IndexOf(console) : ReferenceEquals(console, _active) ? 0 : -1;
+            console.IsVisible = pane >= 0;
+            if (pane < 0)
+            {
+                continue;
+            }
+            var columns = _split is TerminalSplit.Columns or TerminalSplit.Four ? 2 : 1;
+            Grid.SetColumn(console, split ? pane % columns : 0);
+            Grid.SetRow(console, split ? pane / columns : 0);
+            console.Margin = split ? new Thickness(1) : default;
+            console.BorderThickness = split ? new Thickness(1) : default;
+            if (split)
+            {
+                console[!Border.BorderBrushProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension(
+                    ReferenceEquals(console, _active) ? "SystemControlHighlightAccentBrush" : "SystemControlForegroundBaseLowBrush");
+            }
+        }
+    }
+
+    /// <summary>Another pane of the split becomes the active one (the buttons act on it).</summary>
+    private void SetActive(TerminalTab console)
     {
         _active?.ClearFind();
         _active = console;
         _files.IsVisible = console.Connection?.Protocol == Core.Config.RemoteProtocol.Ssh;
         UpdateLogButton();
-        foreach (var c in _consoles)
+        Arrange();
+        RebuildTabs();
+        FindNext(0);
+    }
+
+    private void ShowSplitMenu(Control anchor)
+    {
+        var flyout = new MenuFlyout();
+        void Item(string text, string icon, TerminalSplit split)
         {
-            c.IsVisible = ReferenceEquals(c, console);
+            var item = new MenuItem { Header = text, Icon = MenuIcons.Create(icon), ToggleType = MenuItemToggleType.Radio, IsChecked = _split == split };
+            item.Click += (_, _) => Split = split;
+            flyout.Items.Add(item);
         }
+        Item("One terminal", "terminal.split.none", TerminalSplit.None);
+        Item("Two side by side", "terminal.split.columns", TerminalSplit.Columns);
+        Item("Two, one above the other", "terminal.split.rows", TerminalSplit.Rows);
+        Item("Four", "terminal.split.four", TerminalSplit.Four);
+        flyout.ShowAt(anchor);
+    }
+
+    public void Select(TerminalTab console)
+    {
+        _active?.ClearFind();
+        if (_split != TerminalSplit.None && !_panes.Contains(console))
+        {
+            // a tab that is not in the split takes the active pane's place
+            var slot = _active is not null ? _panes.IndexOf(_active) : -1;
+            if (slot >= 0)
+            {
+                _panes[slot] = console;
+            }
+            else
+            {
+                _panes.Insert(0, console);
+            }
+        }
+        _active = console;
+        _files.IsVisible = console.Connection?.Protocol == Core.Config.RemoteProtocol.Ssh;
+        UpdateLogButton();
+        if (_split != TerminalSplit.None)
+        {
+            FillPanes();
+        }
+        Arrange();
         RebuildTabs();
         console.Activate();
         FindNext(0); // an open search goes on in this tab
@@ -570,7 +738,14 @@ public sealed class TerminalView : DockPanel
         console.StopLog();
         _consoles.RemoveAt(index);
         _host.Children.Remove(console);
+        var pane = _panes.IndexOf(console);
+        _panes.Remove(console);
         TabsChanged?.Invoke(this, EventArgs.Empty);
+        if (_split != TerminalSplit.None && _consoles.Count < 2)
+        {
+            _split = TerminalSplit.None; // nothing left to split
+            _panes.Clear();
+        }
         if (_consoles.Count == 0)
         {
             _active = null;
@@ -582,10 +757,18 @@ public sealed class TerminalView : DockPanel
         }
         if (ReferenceEquals(_active, console))
         {
-            Select(_consoles[Math.Min(index, _consoles.Count - 1)]);
+            // in a split: another pane becomes the active one, the free pane takes a tab not shown yet
+            var next = _panes.Count > 0 ? _panes[Math.Min(Math.Max(pane, 0), _panes.Count - 1)] : _consoles[Math.Min(index, _consoles.Count - 1)];
+            _active = null;
+            Select(next);
         }
         else
         {
+            if (_split != TerminalSplit.None)
+            {
+                FillPanes();
+            }
+            Arrange();
             RebuildTabs();
         }
     }
@@ -653,6 +836,8 @@ public sealed class TerminalView : DockPanel
         }
         _consoles.Clear();
         _host.Children.Clear();
+        _panes.Clear();
+        _split = TerminalSplit.None;
         _active = null;
         RebuildTabs();
     }
