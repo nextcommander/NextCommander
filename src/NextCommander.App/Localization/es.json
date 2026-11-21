@@ -3562,5 +3562,8 @@
   "ConnectionWizard.OrASharedLogin": "O un inicio de sesión compartido por varias conexiones (Inicios de sesión... en el editor de conexiones).",
   "ConnectionWizard.UserOfThisLogin": "Usuario {0} y la contraseña (o clave) de este inicio de sesión.",
   "TerminalView.TypeInAll": "Escribir en todas",
-  "TerminalView.TypeInAllOn": "● Escribir en todas"
+  "TerminalView.TypeInAllOn": "● Escribir en todas",
+  "ArchiveContainer.ADiscImageIsRead": "{0}: una imagen de disco es de solo lectura.",
+  "DiscImage.NotADiscImage": "No es una imagen de disco (no se encontró un sistema de archivos ISO 9660 ni UDF).",
+  "DiscImage.NotReadable": "No es una imagen de disco legible: {0}"
 }

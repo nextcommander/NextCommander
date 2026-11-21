@@ -37,7 +37,7 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
   checksums, split and combine, and a built-in terminal.
 
 ### Archives
-- Open zip, 7z, rar, tar and other archives like folders; change zip files in place.
+- Open zip, 7z, rar, tar and other archives, and .iso disc images, like folders; change zip files in place.
 - Pack to zip, tar and (with 7-Zip installed) 7z, with passwords; unpack and test archives.
 
 ### Remote and cloud

@@ -3562,5 +3562,8 @@
   "ConnectionWizard.OrASharedLogin": "Or a login shared by several connections (Logins... in the connection editor).",
   "ConnectionWizard.UserOfThisLogin": "User {0} and the password (or key) of this login.",
   "TerminalView.TypeInAll": "Type in all",
-  "TerminalView.TypeInAllOn": "● Type in all"
+  "TerminalView.TypeInAllOn": "● Type in all",
+  "ArchiveContainer.ADiscImageIsRead": "{0}: a disc image is read-only.",
+  "DiscImage.NotADiscImage": "Not a disc image (no ISO 9660 or UDF file system found).",
+  "DiscImage.NotReadable": "Not a readable disc image: {0}"
 }
