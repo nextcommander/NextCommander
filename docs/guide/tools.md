@@ -247,8 +247,14 @@ panel is next to it, *Folder...* scans another folder (chosen in the folder tree
   checksums (*Copy* copies them); **Done** closes it. An **expected checksum** pasted under the preview is compared
   with the result (*Match* names the file; one of another length offers that algorithm); pasted before, it chooses
   the algorithm of its length when only one has it.
-- **Verify checksums:** reads checksum files in the common formats and lists the files that are OK, different or
-  missing.
+- **Verify checksums:** reads the selected checksum files (md5sum / sha256sum, BSD and SFV lines) in a window of its
+  own. On top the **verdict** ("The file is intact", "2 of 12 files have a problem"; the progress while checking,
+  **Check again** or F5) with the algorithm, the checksum file and when it was checked. Below, a row per file, the
+  problems first: **Damaged** (the checksum differs: the expected and the actual one, the different digits marked),
+  **Missing** (listed, not found), **Unreadable** (with the reason, e.g. in use) and **OK**. With more than one file
+  the chips filter by state and a box by name (Ctrl+F). A row's buttons show the file in the panel, copy its checksum
+  or check it again; a click selects rows (Ctrl+click more). The main button selects in the panel the selected rows,
+  else the files with problems, else all of them; **Save report** writes a text file of every result.
 
 ## Split and combine
 

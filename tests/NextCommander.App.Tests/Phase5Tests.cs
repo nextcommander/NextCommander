@@ -138,7 +138,9 @@ public sealed class Phase5Tests : IDisposable
         await vm.Left.RefreshAsync();
         SetCursor(vm.Left, "all.md5");
         await vm.ExecuteAsync("nc_CRCcheck");
-        Assert.Contains(_fx.Dialogs.LastQuickList, i => i.Text == "✔ a.txt");
+        var verify = _fx.Dialogs.LastVerify!.MakeJob();
+        await verify.RunAsync();
+        Assert.Contains(verify.Results, r => r.Name == "a.txt" && r.Status == ChecksumStatus.Ok);
 
         File.WriteAllBytes(_fx.L("big.bin"), Enumerable.Range(0, 5000).Select(i => (byte)i).ToArray());
         await vm.Left.RefreshAsync();

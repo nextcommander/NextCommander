@@ -368,7 +368,23 @@ public enum ChecksumStatus
     ReadError,
 }
 
-public sealed record ChecksumResult(string Name, string Expected, string? Actual, ChecksumStatus Status);
+public sealed record ChecksumResult(string Name, string Expected, string? Actual, ChecksumStatus Status)
+{
+    /// <summary>The file the line names (null: the name leads nowhere).</summary>
+    public VfsPath? Path { get; init; }
+
+    /// <summary>Its size (0 while it is missing).</summary>
+    public long Size { get; init; }
+
+    /// <summary>The algorithm of the checksum file.</summary>
+    public ChecksumKind Kind { get; init; }
+
+    /// <summary>The checksum file the line is from.</summary>
+    public VfsPath? Source { get; init; }
+
+    /// <summary>Why the file could not be read (<see cref="ChecksumStatus.ReadError"/>).</summary>
+    public string? Error { get; init; }
+}
 
 /// <summary>Verifies the files listed in checksum files (names relative to the checksum file).</summary>
 public sealed class VerifyChecksumsJob : FileJob
@@ -387,7 +403,7 @@ public sealed class VerifyChecksumsJob : FileJob
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
-        var work = new List<(ChecksumKind Kind, VfsPath? Path, ChecksumLine Line)>();
+        var work = new List<(ChecksumKind Kind, VfsPath? Path, ChecksumLine Line, VfsPath Source)>();
         foreach (var file in _checksumFiles)
         {
             var kind = Checksums.FromFileName(file.Name);
@@ -409,38 +425,75 @@ public sealed class VerifyChecksumsJob : FileJob
                 {
                     path = path?.Combine(part);
                 }
-                work.Add((kind.Value, path, line));
+                work.Add((kind.Value, path, line, file.Path));
             }
         }
-        var entries = new List<(ChecksumKind, VfsEntry?, ChecksumLine)>();
-        foreach (var (kind, path, line) in work)
+        var entries = new List<(ChecksumKind Kind, VfsPath? Path, VfsEntry? Entry, ChecksumLine Line, VfsPath Source)>();
+        foreach (var (kind, path, line, source) in work)
         {
-            var entry = path is null ? null : await _registry.Resolve(path).GetEntryAsync(path, ct).ConfigureAwait(false);
-            entries.Add((kind, entry, line));
+            var entry = await EntryOfAsync(_registry, path, ct).ConfigureAwait(false);
+            entries.Add((kind, path, entry, line, source));
         }
-        Progress.SetTotals(entries.Sum(e => e.Item2?.Size ?? 0), entries.Count);
-        foreach (var (kind, entry, line) in entries)
+        Progress.SetTotals(entries.Sum(e => e.Entry?.Size ?? 0), entries.Count);
+        foreach (var (kind, path, entry, line, source) in entries)
         {
             await CheckpointAsync(ct).ConfigureAwait(false);
-            if (entry is null || entry.IsDirectory)
+            var result = new ChecksumResult(line.Name, line.Hash, null, ChecksumStatus.Missing) { Path = path, Kind = kind, Source = source };
+            if (entry is not null)
             {
-                Results.Add(new ChecksumResult(line.Name, line.Hash, null, ChecksumStatus.Missing));
-                continue;
+                Progress.BeginItem(entry.Path.ToDisplayString(), entry.Size);
             }
-            Progress.BeginItem(entry.Path.ToDisplayString(), entry.Size);
-            try
+            result = await CheckAsync(_registry, result, entry, n => Progress.AddBytes(n), ct).ConfigureAwait(false);
+            if (result.Status is ChecksumStatus.Ok or ChecksumStatus.Mismatch)
             {
-                await using var stream = await _registry.Resolve(entry.Path).OpenReadAsync(entry.Path, ct).ConfigureAwait(false);
-                var actual = await Checksums.ComputeAsync(stream, kind, n => Progress.AddBytes(n), ct).ConfigureAwait(false);
-                var ok = string.Equals(actual, line.Hash, StringComparison.OrdinalIgnoreCase);
-                Results.Add(new ChecksumResult(line.Name, line.Hash, actual, ok ? ChecksumStatus.Ok : ChecksumStatus.Mismatch));
                 Progress.CompleteFile();
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            else if (entry is not null)
             {
-                Results.Add(new ChecksumResult(line.Name, line.Hash, null, ChecksumStatus.ReadError));
                 Progress.SkipFile(entry.Size);
             }
+            Results.Add(result);
+        }
+    }
+
+    private static async Task<VfsEntry?> EntryOfAsync(ProviderRegistry registry, VfsPath? path, CancellationToken ct)
+    {
+        if (path is null)
+        {
+            return null;
+        }
+        try
+        {
+            return await registry.Resolve(path).GetEntryAsync(path, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Checks one file of a checksum file (again): ok or a different checksum, missing, or unreadable with the reason.
+    /// </summary>
+    public static async Task<ChecksumResult> CheckAsync(ProviderRegistry registry, ChecksumResult result, CancellationToken ct) =>
+        await CheckAsync(registry, result, await EntryOfAsync(registry, result.Path, ct).ConfigureAwait(false), null, ct).ConfigureAwait(false);
+
+    private static async Task<ChecksumResult> CheckAsync(ProviderRegistry registry, ChecksumResult result, VfsEntry? entry, Action<int>? progress, CancellationToken ct)
+    {
+        if (entry is null || entry.IsDirectory)
+        {
+            return result with { Actual = null, Status = ChecksumStatus.Missing, Size = 0, Error = null };
+        }
+        try
+        {
+            await using var stream = await registry.Resolve(entry.Path).OpenReadAsync(entry.Path, ct).ConfigureAwait(false);
+            var actual = await Checksums.ComputeAsync(stream, result.Kind, progress, ct).ConfigureAwait(false);
+            var ok = string.Equals(actual, result.Expected, StringComparison.OrdinalIgnoreCase);
+            return result with { Actual = actual, Status = ok ? ChecksumStatus.Ok : ChecksumStatus.Mismatch, Size = entry.Size, Error = null };
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return result with { Actual = null, Status = ChecksumStatus.ReadError, Size = entry.Size, Error = ex.Message };
         }
     }
 }
