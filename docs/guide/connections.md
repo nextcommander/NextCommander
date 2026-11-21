@@ -451,6 +451,12 @@ intercepting the connection.
 - When you log in for the first time you can choose to save the password. It is saved only after a successful
   login, and asked again if it turns out to be wrong.
 - Saved passwords are stored encrypted in the [settings folder](settings-folder.md).
+- **Shared logins:** several connections can use one login (a domain account, the deploy user of the web servers).
+  In the connection editor, **Login** chooses between the connection's own user and password and a shared login;
+  **Logins...** next to it edits them: name, user, password (kept once in the encrypted store) and, for SFTP, SCP
+  and SSH, a private key file. The connections take the login's user and key; its password is asked once and then
+  used by all of them. Changing the login changes them all; deleting it leaves them with the user and their own
+  password. An exported connections file keeps the user, not the login.
 - With a **master password** (*Net > Master password...*), the passwords are encrypted with a key made from it.
   It is asked once per session. Leave the new master password empty to remove it.
 - Without a master password, the passwords are protected with a key tied to your user account on this computer.
