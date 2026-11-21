@@ -3461,5 +3461,12 @@
   "TerminalView.LoggingTo": "Journalisation dans {0}",
   "TerminalView.OpenTheLogFolder": "Ouvrir le dossier des journaux",
   "TerminalView.StopLogging": "Arrêter la journalisation",
-  "TerminalView.WriteTheOutput": "Écrire la sortie de cet onglet dans un fichier texte"
+  "TerminalView.WriteTheOutput": "Écrire la sortie de cet onglet dans un fichier texte",
+  "TerminalView.CloseTheSearch": "Fermer la recherche (Échap)",
+  "TerminalView.FindInTheOutput": "Rechercher dans la sortie",
+  "TerminalView.FindInTheOutputAndScrollback": "Rechercher dans la sortie et l’historique (Ctrl+Maj+F)",
+  "TerminalView.MatchCase": "Respecter la casse",
+  "TerminalView.NewerMatch": "Correspondance plus récente (Maj+Entrée)",
+  "TerminalView.NoResults": "Aucun résultat",
+  "TerminalView.OlderMatch": "Correspondance plus ancienne (Entrée)"
 }
