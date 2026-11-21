@@ -616,6 +616,12 @@ public sealed class AppSettings
     /// <summary>Internal terminal on a pseudo terminal (ConPTY / pty) with a real terminal screen; off: a simple line console.</summary>
     public bool TerminalEmulation { get; set; } = true;
 
+    /// <summary>Internal terminal: every new tab writes its output to a text file (the Log button does it for one tab).</summary>
+    public bool TerminalLogAll { get; set; }
+
+    /// <summary>Internal terminal: the folder of the log files (empty: logs/terminal in the settings folder).</summary>
+    public string TerminalLogFolder { get; set; } = string.Empty;
+
     /// <summary>Internal terminal: its height as a part of the window (kept between sessions).</summary>
     public double TerminalHeightRatio { get; set; } = 0.45;
 

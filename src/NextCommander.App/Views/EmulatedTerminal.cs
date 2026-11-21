@@ -67,6 +67,7 @@ public sealed class EmulatedTerminal : TerminalTab
                 ? _connect(_screen.Vt.Columns, _screen.Vt.Rows)
                 : PseudoTerminal.Start(Shell.FileName, Shell.TerminalArguments, folder, _screen.Vt.Columns, _screen.Vt.Rows);
             terminal.Output += _screen.Enqueue;
+            terminal.Output += LogOutput;
             terminal.Exited += code =>
             {
                 if (!ReferenceEquals(terminal, _terminal))

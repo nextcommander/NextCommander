@@ -303,6 +303,7 @@ public sealed partial class TerminalConsole : TerminalTab
     /// <summary>Collects output (any thread) and shows it on the UI thread in batches.</summary>
     private void OnOutput(string text)
     {
+        LogOutput(text);
         lock (_pending)
         {
             _pending.Append(text);
