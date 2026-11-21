@@ -779,6 +779,10 @@ public sealed partial class ConnectionManagerView
             });
             return fields;
         }
+        if (SharedCredential.CanUse(c) && SharedLoginChoice(c, fields))
+        {
+            return fields; // the shared login gives the user, the key and the password
+        }
         if (c.Protocol == RemoteProtocol.Rdp)
         {
             User("User (DOMAIN\\user; empty: asked by the client)");
@@ -917,6 +921,65 @@ public sealed partial class ConnectionManagerView
         fields.Add(null);
         fields.Add(Remember("Save password (asked on first connect)"));
         return fields;
+    }
+
+    /// <summary>
+    /// "Login": the connection's own user and password, or one of the shared logins (Logins... edits them). True when a
+    /// shared login is chosen: it replaces the user, key and password fields.
+    /// </summary>
+    private bool SharedLoginChoice(RemoteConnection c, List<Control?> fields)
+    {
+        var logins = _settings.SharedCredentials;
+        var names = new List<string> { Core.Localization.Localizer.T("Own user and password") };
+        names.AddRange(logins.Select(l => l.Name));
+        var current = SharedCredential.Of(c, _settings);
+        var choice = new ComboBox { ItemsSource = names, SelectedIndex = current is null ? 0 : logins.IndexOf(current) + 1, HorizontalAlignment = HorizontalAlignment.Stretch, Classes = { "noloc" } };
+        Avalonia.Automation.AutomationProperties.SetName(choice, "Login");
+        choice.SelectionChanged += (_, _) =>
+        {
+            var chosen = choice.SelectedIndex > 0 ? logins[choice.SelectedIndex - 1] : null;
+            if (ReferenceEquals(chosen, SharedCredential.Of(c, _settings)))
+            {
+                return;
+            }
+            SharedCredential.Use(c, chosen);
+            Changed(c);
+            ShowDetail();
+        };
+        var manage = new Button { Content = "Logins...", Margin = new Thickness(6, 0, 0, 0) };
+        ToolTip.SetTip(manage, "Logins shared by several connections: a user and a password (or key) kept once");
+        manage.Click += async (_, _) => await EditSharedLoginsAsync();
+        var row = new DockPanel();
+        DockPanel.SetDock(manage, Dock.Right);
+        row.Children.AddRange([manage, choice]);
+        fields.Add(Field("Login", row));
+        if (current is null)
+        {
+            return false;
+        }
+        var others = SharedCredential.UsedBy(current, _settings).Count(o => !ReferenceEquals(o, c));
+        var text = Core.Localization.Localizer.T("User {0}, the password (or key) of the login \"{1}\"; {2} other connections use it too.")
+            .Replace("{0}", current.User, StringComparison.Ordinal).Replace("{1}", current.Name, StringComparison.Ordinal)
+            .Replace("{2}", others.ToString(CultureInfo.CurrentCulture), StringComparison.Ordinal);
+        fields.Add(null);
+        fields.Add(new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, Opacity = 0.8, Classes = { "noloc" } });
+        return true;
+    }
+
+    /// <summary>The shared logins dialog; OK gives the connections their logins' users and keys again.</summary>
+    public async Task EditSharedLoginsAsync()
+    {
+        if (TopLevel.GetTopLevel(this) is not Window owner)
+        {
+            return;
+        }
+        var dialog = new SharedLoginsDialog(_settings, _request.HasSecret, _request.StoreSecret, _request.PickFile);
+        await dialog.ShowDialog(owner);
+        if (dialog.Saved)
+        {
+            _request.Save();
+            ShowDetail();
+        }
     }
 
     private Control Advanced(RemoteConnection c)

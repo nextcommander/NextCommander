@@ -2931,14 +2931,14 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             c => _registry.Providers.OfType<NextCommander.Vfs.Remote.IRemoteProvider>().Any(p => PathOf(c) is { } path && p.CanHandle(path) && p.IsConnected(path)),
             c =>
             {
-                Remote?.Secrets.Remove(c.SecretId);
+                Remote?.Secrets.Remove(c.PasswordSecretId);
                 return Task.CompletedTask;
             },
             async (c, password) =>
             {
                 if (Remote?.Secrets is { } secrets)
                 {
-                    await secrets.SetAsync(c.SecretId, password);
+                    await secrets.SetAsync(c.PasswordSecretId, password);
                 }
             },
             _dialogs.PickOpenFileAsync)
@@ -3054,9 +3054,9 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         var inTab = RemoteDesktopRequested is not null && CanEmbedRemoteDesktop() && NextCommander.Core.Net.RemoteDesktop.OpensInTab(connection);
         if (NextCommander.Platform.RemoteDesktopLauncher.TakesPassword || inTab)
         {
-            if (connection.SavePassword && secrets is not null && secrets.Contains(connection.SecretId))
+            if (connection.SavePassword && secrets is not null && secrets.Contains(connection.PasswordSecretId))
             {
-                password = await secrets.GetAsync(connection.SecretId);
+                password = await secrets.GetAsync(connection.PasswordSecretId);
             }
             if (password is null && (connection.SavePassword || NextCommander.Platform.RemoteDesktopLauncher.NeedsPassword || inTab))
             {
@@ -3067,7 +3067,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
                 password = login.Password;
                 if (login.Save && secrets is not null)
                 {
-                    await secrets.SetAsync(connection.SecretId, password);
+                    await secrets.SetAsync(connection.PasswordSecretId, password);
                 }
             }
         }

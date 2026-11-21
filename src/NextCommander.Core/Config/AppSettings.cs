@@ -1208,6 +1208,9 @@ public sealed class AppSettings
     /// <summary>Saved FTP / SFTP connections (passwords live in the encrypted secret store).</summary>
     public List<RemoteConnection> Connections { get; set; } = [];
 
+    /// <summary>Logins shared by several connections (their passwords are in the password store).</summary>
+    public List<SharedCredential> SharedCredentials { get; set; } = [];
+
     /// <summary>Saved SSH tunnels (Net > SSH tunnels...): port forwarding through a saved SSH connection.</summary>
     public List<SshTunnel> SshTunnels { get; set; } = [];
 
