@@ -3511,5 +3511,15 @@
   "TerminalView.Monitor": "Monitor",
   "TerminalView.Reading": "Reading the server's counters...",
   "TerminalView.Up": "Up {0}",
-  "TerminalView.DiskRoot": "Disk /"
+  "TerminalView.DiskRoot": "Disk /",
+  "ConnectionManagerView.ColorScheme": "Color scheme",
+  "ConnectionManagerView.FontSize": "Font size",
+  "ConnectionManagerView.ForExampleRed": "For example red for a production server.",
+  "ConnectionManagerView.TheTerminalsFont": "the terminal's font",
+  "ConnectionManagerView.TheTerminalsSize": "the terminal's size",
+  "TerminalLook.GreenOnBlack": "Green on black",
+  "TerminalLook.LikeTheTerminal": "Like the terminal (color theme)",
+  "TerminalLook.Production": "Production (dark red)",
+  "TerminalLook.SolarizedDark": "Solarized dark",
+  "TerminalLook.SolarizedLight": "Solarized light"
 }

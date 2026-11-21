@@ -457,7 +457,7 @@ public sealed class TerminalView : DockPanel
         _font = (string.IsNullOrWhiteSpace(family) ? NextCommander.Core.Config.AppSettings.DefaultTerminalFont : family, size);
         foreach (var tab in _consoles)
         {
-            tab.SetFont(_font.Family, _font.Size);
+            tab.SetFont(tab.OwnFont.Family ?? _font.Family, tab.OwnFont.Size ?? _font.Size);
         }
     }
 
@@ -548,7 +548,11 @@ public sealed class TerminalView : DockPanel
         TerminalTab console = connect is not null || (Emulation && Services.Terminal.PseudoTerminal.IsSupported)
             ? new EmulatedTerminal(shell, () => CurrentFolder?.Invoke(), connect) { Connection = connection }
             : new TerminalConsole(shell, () => CurrentFolder?.Invoke()) { Connection = connection };
-        console.SetFont(_font.Family, _font.Size);
+        if (connection is not null)
+        {
+            ApplyLook(console, connection);
+        }
+        console.SetFont(console.OwnFont.Family ?? _font.Family, console.OwnFont.Size ?? _font.Size);
         console.ShellExited += (_, _) => CloseTab(console); // "exit" closes the tab like in VS Code
         console.FindRequested += (_, _) => OpenFind();
         console.Typed += OnTyped;
@@ -575,6 +579,19 @@ public sealed class TerminalView : DockPanel
         console.IsVisible = false;
         _host.Children.Add(console);
         return console;
+    }
+
+    /// <summary>A connection's own font, colors and tab color (MobaXterm's per-session look).</summary>
+    private static void ApplyLook(TerminalTab console, Core.Config.RemoteConnection connection)
+    {
+        console.OwnFont = (string.IsNullOrWhiteSpace(connection.TerminalFont) ? null : connection.TerminalFont.Trim(),
+            connection.TerminalFontSize > 0 ? connection.TerminalFontSize : null);
+        console.TabColor = Color.TryParse(connection.TabColor, out _) ? connection.TabColor : null;
+        if (console is EmulatedTerminal emulated && Core.Config.TerminalLook.SchemeOf(connection) is { } scheme
+            && Color.TryParse(scheme.Background, out var background) && Color.TryParse(scheme.Foreground, out var foreground))
+        {
+            emulated.Scheme = (background, foreground);
+        }
     }
 
     // ---------------------------------------------------------------- monitor
@@ -942,7 +959,16 @@ public sealed class TerminalView : DockPanel
             }
             content.Children.Add(text);
             content.Children.Add(close);
+            if (console.TabColor is { } colorText && Color.TryParse(colorText, out var tabColor))
+            {
+                // the connection's tab color: a stripe before the name
+                content.Children.Insert(0, new Border { Width = 4, Height = 14, CornerRadius = new CornerRadius(2), Background = new SolidColorBrush(tabColor), VerticalAlignment = VerticalAlignment.Center });
+            }
             var tab = new Button { Content = content, Padding = new Thickness(8, 1, 2, 1), MinHeight = 0, Focusable = false, Classes = { "terminaltab" } };
+            if (console.TabColor is { } tint && Color.TryParse(tint, out var tintColor))
+            {
+                tab.Background = new SolidColorBrush(Color.FromArgb(active ? (byte)0x50 : (byte)0x28, tintColor.R, tintColor.G, tintColor.B));
+            }
             tab.Classes.Set("active", active);
             tab.Click += (_, _) => Select(target);
             _tabStrip.Children.Add(tab);

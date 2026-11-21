@@ -3511,5 +3511,15 @@
   "TerminalView.Monitor": "监控",
   "TerminalView.Reading": "正在读取服务器计数器...",
   "TerminalView.Up": "已运行 {0}",
-  "TerminalView.DiskRoot": "磁盘 /"
+  "TerminalView.DiskRoot": "磁盘 /",
+  "ConnectionManagerView.ColorScheme": "配色方案",
+  "ConnectionManagerView.FontSize": "字号",
+  "ConnectionManagerView.ForExampleRed": "例如生产服务器用红色。",
+  "ConnectionManagerView.TheTerminalsFont": "终端的字体",
+  "ConnectionManagerView.TheTerminalsSize": "终端的字号",
+  "TerminalLook.GreenOnBlack": "黑底绿字",
+  "TerminalLook.LikeTheTerminal": "与终端相同（颜色主题）",
+  "TerminalLook.Production": "生产（深红）",
+  "TerminalLook.SolarizedDark": "Solarized 深色",
+  "TerminalLook.SolarizedLight": "Solarized 浅色"
 }

@@ -465,6 +465,18 @@ public sealed class RemoteConnection
     /// <summary>Telnet, SSH, rsh: the character set of the session (empty: UTF-8).</summary>
     public string? TerminalEncoding { get; set; }
 
+    /// <summary>Its own terminal font (empty: the terminal's, Configuration > Font).</summary>
+    public string? TerminalFont { get; set; }
+
+    /// <summary>Its own terminal font size (0: the terminal's).</summary>
+    public int TerminalFontSize { get; set; }
+
+    /// <summary>Its color scheme in the terminal (<see cref="TerminalLook.Schemes"/>; empty: the terminal's colors).</summary>
+    public string? TerminalScheme { get; set; }
+
+    /// <summary>The color of its terminal tab (#RRGGBB; empty: none), e.g. red for a production server.</summary>
+    public string? TabColor { get; set; }
+
     /// <summary>SSH: a command typed into the shell when it opens; rsh: the command run instead of a login session (rlogin).</summary>
     public string? RemoteCommand { get; set; }
 

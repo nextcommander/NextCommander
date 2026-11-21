@@ -1298,6 +1298,21 @@ public sealed partial class ConnectionManagerView
         var encodings = Services.Terminal.TelnetTerminal.Encodings;
         fields.Add(Field("Character set", Choice([.. encodings.Select(e => e.Length == 0 ? "UTF-8" : e)],
             Math.Max(0, Array.IndexOf([.. encodings], c.TerminalEncoding ?? string.Empty)), i => c.TerminalEncoding = encodings[i].Length == 0 ? null : encodings[i])));
+        LookFields(c, fields);
+    }
+
+    /// <summary>The connection's own look in the terminal: font, size, color scheme, tab color.</summary>
+    private void LookFields(RemoteConnection c, List<Control?> fields)
+    {
+        fields.Add(null);
+        fields.Add(Field("Font", Text(c.TerminalFont, v => c.TerminalFont = string.IsNullOrWhiteSpace(v) ? null : v.Trim(), Core.Localization.Localizer.T("the terminal's font"))));
+        fields.Add(Field("Font size", Number(c.TerminalFontSize, v => c.TerminalFontSize = Math.Clamp(v, 0, 48), Core.Localization.Localizer.T("the terminal's size"))));
+        var schemes = TerminalLook.Schemes;
+        fields.Add(Field("Color scheme", Choice([.. schemes.Select(s => s.Name)], Math.Max(0, schemes.ToList().FindIndex(s => s.Id == (c.TerminalScheme ?? string.Empty))),
+            i => c.TerminalScheme = schemes[i].Id.Length == 0 ? null : schemes[i].Id)));
+        var colors = TerminalLook.TabColors;
+        fields.Add(Field("Tab color", Choice([.. colors.Select(t => t.Name)], Math.Max(0, colors.ToList().FindIndex(t => string.Equals(t.Color, c.TabColor ?? string.Empty, StringComparison.OrdinalIgnoreCase))),
+            i => c.TabColor = colors[i].Color.Length == 0 ? null : colors[i].Color), Core.Localization.Localizer.T("For example red for a production server.")));
     }
 
     /// <summary>The speeds offered for a serial port.</summary>

@@ -32,6 +32,12 @@ public abstract class TerminalTab : Border
     /// <summary>The connection of a remote session (SSH, Telnet ...); null for a local shell.</summary>
     public Core.Config.RemoteConnection? Connection { get; init; }
 
+    /// <summary>The connection's own font (family and size; null parts: the terminal's).</summary>
+    public (string? Family, double? Size) OwnFont { get; set; }
+
+    /// <summary>The color of the tab (#RRGGBB; null: none).</summary>
+    public string? TabColor { get; set; }
+
     /// <summary>The folder the shell reported last (OSC 7), null when it reports none.</summary>
     public virtual string? WorkingDirectory => null;
 
