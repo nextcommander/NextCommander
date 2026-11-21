@@ -403,6 +403,9 @@ public partial class App : Application
     }
 
     private static string? s_logDirectory;
+
+    /// <summary>The folder of the program's own logs (an operation on today's log finds it in use by the program).</summary>
+    public static string? LogDirectory => s_logDirectory;
     private static bool s_programLogOn;
 
     /// <summary>The program's own log on or off (Configuration > Log file > Program log); nothing is written while off.</summary>

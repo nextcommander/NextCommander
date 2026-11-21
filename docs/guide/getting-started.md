@@ -210,6 +210,19 @@ after this file**, **Background** (a small window with a ring; ⤢ shows the det
 first, the partly copied file is deleted). The speed limit can be changed while it runs. With **Close when done** off
 the window stays at the end with the summary and **Open destination**.
 
+When a file **cannot be done** (copy, move, delete ...) the job pauses and a question opens over the progress window.
+It says where the job is (file 6 of 14), what happened in plain words and what can be done:
+- **The file is in use:** the program that has it open is named (Windows); the program's own log of today is
+  recognized (skip it). **Retry** after closing that program.
+- **You don't have permission:** **Retry as administrator** does it with administrator rights when the job ends
+  (the next denied files join without asking); *Properties* opens the file's properties.
+- **Not enough space** on the target drive, **the network connection was lost** (it retries by itself after a
+  countdown; *Stop retrying*), **the file is not there** (it was moved or deleted meanwhile).
+
+The file with its folder, size and date, and the **technical details** (the operation, the error number and message,
+the time; *Copy details*) are shown too. **Skip**, **Retry** (Alt+R), **Stop the operation** (Esc); with **Do the same
+for the next errors like this**, Skip skips the later errors of the same kind without asking.
+
 The **queue** window (F2 Queue, *Add to queue* in the Copy and Pack dialogs) runs its jobs in the background, in
 their order:
 
