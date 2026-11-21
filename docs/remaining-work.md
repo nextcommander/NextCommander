@@ -183,7 +183,7 @@ built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC l
 - [x] Find in the terminal's scrollback (Find / Ctrl+Shift+F: marked matches, older / newer, match case).
 - [x] MultiExec: type into several terminal tabs at once (the terminal's MultiExec button, a check box per tab).
 - [x] Saved commands (snippets) sent to the terminal with a click (the terminal's Snippets menu, the list on the Misc. page).
-- [ ] Shared credentials: one user / password entry used by several connections.
+- [x] Shared credentials: one user / password entry used by several connections (Login / Logins... in the connection editor, `SharedCredential`, the password under `credential:<id>`).
 - [ ] SSH agent forwarding (whether SSH.NET can do it is to be found out first).
 - [ ] Split terminal: two or four terminals in one tab.
 - [ ] Monitor bar of an SSH server: CPU, memory, disk and network through commands over SSH.

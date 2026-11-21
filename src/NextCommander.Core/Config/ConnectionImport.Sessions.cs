@@ -368,6 +368,7 @@ public static partial class ConnectionImport
                 var copy = c.Clone();
                 copy.SavePassword = false;
                 copy.ClientSecret = null;
+                copy.CredentialId = null; // the shared logins stay on this computer (the user is kept)
                 return copy;
             })],
         };

@@ -298,6 +298,9 @@ public sealed class RemoteConnection
     /// </summary>
     public string? JumpHost { get; set; }
 
+    /// <summary>The shared login the connection uses (<see cref="SharedCredential.Id"/>; null: its own user and password).</summary>
+    public string? CredentialId { get; set; }
+
     /// <summary>FTP: the encoding of file names (empty: UTF-8 when the server supports it, otherwise the system's).</summary>
     public string? FtpEncoding { get; set; }
 
@@ -538,6 +541,9 @@ public sealed class RemoteConnection
 
     /// <summary>Key of the password in the secret store.</summary>
     public string SecretId => $"{Scheme}://{Authority}";
+
+    /// <summary>Where the password is kept: the shared login's (<see cref="CredentialId"/>), else the connection's own.</summary>
+    public string PasswordSecretId => CredentialId is { Length: > 0 } id ? SharedCredential.SecretIdOf(id) : SecretId;
 
     /// <summary>Connection described by a typed path authority ("user@host:21") when nothing is saved for it.</summary>
     public static RemoteConnection FromAuthority(string scheme, string authority)

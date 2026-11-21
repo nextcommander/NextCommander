@@ -97,7 +97,8 @@ public sealed class RemoteSession
 
     private async Task<string?> GetPasswordAsync(RemoteConnection connection, bool retry)
     {
-        if (!retry && Secrets.Contains(connection.SecretId) && await Secrets.GetAsync(connection.SecretId) is { } saved)
+        var secret = connection.PasswordSecretId; // a shared login keeps one password for all its connections
+        if (!retry && Secrets.Contains(secret) && await Secrets.GetAsync(secret) is { } saved)
         {
             return saved;
         }
@@ -119,7 +120,7 @@ public sealed class RemoteSession
             _saveAfterLogin.TryRemove(connection.SecretId, out _);
             if (retry)
             {
-                Secrets.Remove(connection.SecretId); // the saved one was wrong
+                Secrets.Remove(secret); // the saved one was wrong
             }
         }
         return a.Password;
@@ -130,7 +131,7 @@ public sealed class RemoteSession
     {
         if (password is not null && _saveAfterLogin.TryRemove(connection.SecretId, out var pending) && pending == password)
         {
-            await Secrets.SetAsync(connection.SecretId, password);
+            await Secrets.SetAsync(connection.PasswordSecretId, password);
         }
     }
 
