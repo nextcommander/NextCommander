@@ -2941,6 +2941,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             _dialogs.PickOpenFileAsync)
         {
             NewProtocol = newProtocol,
+            PickSaveFile = _dialogs.PickSaveFileAsync,
             HasSecret = id => Remote?.Secrets.Contains(id) == true,
             StoreSecret = async (id, value) =>
             {

@@ -3439,5 +3439,16 @@
   "SshTunnels.SocksOnThisComputer": "Bu bilgisayarda SOCKS proxy",
   "SshTunnels.ListenOnThisComputer": "Bu bilgisayarda dinle",
   "SshTunnels.LeadToLocal": "Hedef (bu bilgisayardan görüldüğü gibi)",
-  "SshTunnels.LeadToServer": "Hedef (sunucudan görüldüğü gibi)"
+  "SshTunnels.LeadToServer": "Hedef (sunucudan görüldüğü gibi)",
+  "ConnectionManagerView.ImportAndExport": "İçe ve dışa aktar (FileZilla, WinSCP, PuTTY, MobaXterm, bağlantı dosyası)",
+  "ConnectionManagerView.PuTTYSessions": "PuTTY oturumları...",
+  "ConnectionManagerView.MobaXtermSessionsMenu": "MobaXterm oturumları (.mxtsessions, MobaXterm.ini)...",
+  "ConnectionManagerView.MobaXtermSessionsPick": "MobaXterm oturumları (.mxtsessions ya da MobaXterm.ini)",
+  "ConnectionManagerView.ConnectionsFileMenu": "NextCommander bağlantı dosyası...",
+  "ConnectionManagerView.ConnectionsFile": "NextCommander bağlantı dosyası",
+  "ConnectionManagerView.ExportThisFolder": "Bu klasörü dosyaya aktar...",
+  "ConnectionManagerView.ExportAll": "Tüm bağlantıları dosyaya aktar...",
+  "ConnectionManagerView.ExportConnections": "Bağlantıları dışa aktar",
+  "ConnectionManagerView.Exported": "{0} bağlantı dışa aktarıldı (parolalar olmadan)",
+  "ConnectionImport.NotAConnectionsFile": "Bu bir NextCommander bağlantı dosyası değil."
 }
