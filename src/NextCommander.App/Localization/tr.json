@@ -3558,5 +3558,7 @@
   "SettingsWindow.AddWords": "Kelime ekle",
   "SettingsWindow.NoWords": "Kelime yok",
   "SettingsWindow.NotAColorHex": "Renk değil: \"{0}\" (#RRGGBB)",
-  "SettingsWindow.Words": "Kelimeler"
+  "SettingsWindow.Words": "Kelimeler",
+  "ConnectionWizard.OrASharedLogin": "Ya da birden çok bağlantının paylaştığı bir giriş (bağlantı düzenleyicisinde Girişler...).",
+  "ConnectionWizard.UserOfThisLogin": "Kullanıcı {0} ve bu girişin parolası (ya da anahtarı)."
 }

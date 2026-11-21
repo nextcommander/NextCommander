@@ -616,7 +616,7 @@ public sealed class ConnectionWizard : Window
     }
 
     /// <summary>The server and login values of the summary: the fields of the details step, as entered.</summary>
-    private static (List<(string, string?)> Server, List<(string, string?)> Login) SummaryOf(RemoteConnection c)
+    private (List<(string, string?)> Server, List<(string, string?)> Login) SummaryOf(RemoteConnection c)
     {
         var server = new List<(string, string?)>();
         var login = new List<(string, string?)>();
@@ -648,12 +648,17 @@ public sealed class ConnectionWizard : Window
                 server.Add(("Region", c.Region));
                 login.Add(("Access key id", c.User));
             }
+            else if (SharedCredential.Of(c, _request.Settings) is { } shared)
+            {
+                login.Add(("Login", shared.Name));
+                login.Add(("User", c.User));
+            }
             else if (c.Protocol != RemoteProtocol.Link)
             {
                 login.Add(("User", c.User));
             }
         }
-        if (IsSsh(c.Protocol))
+        if (IsSsh(c.Protocol) && SharedCredential.Of(c, _request.Settings) is null)
         {
             login.Add(("Private key (optional)", c.KeyFile));
         }
@@ -670,7 +675,8 @@ public sealed class ConnectionWizard : Window
         var fresh = NewOf(c.Protocol);
         string[] shown = [nameof(RemoteConnection.Name), nameof(RemoteConnection.Folder), nameof(RemoteConnection.Host), nameof(RemoteConnection.Port),
             nameof(RemoteConnection.User), nameof(RemoteConnection.KeyFile), nameof(RemoteConnection.InitialPath), nameof(RemoteConnection.Region),
-            nameof(RemoteConnection.ClientId), nameof(RemoteConnection.ClientSecret), nameof(RemoteConnection.Protocol)];
+            nameof(RemoteConnection.ClientId), nameof(RemoteConnection.ClientSecret), nameof(RemoteConnection.Protocol), nameof(RemoteConnection.CredentialId),
+            nameof(RemoteConnection.SavePassword), nameof(RemoteConnection.UseSshAgent)];
         var changed = new List<(string, string?)>();
         var others = 0;
         foreach (var property in typeof(RemoteConnection).GetProperties())
@@ -833,13 +839,17 @@ public sealed class ConnectionWizard : Window
                 server.Add(Field("Region", Text(c.Region, v => c.Region = v.Trim(), "e.g. eu-central-1"), null, "Region", required: false));
                 login.Add(Field("Access key id", Text(c.User, v => c.User = v.Trim(), "AKIA..."), ConnectionField.User, "User", required: true));
             }
+            else if (SharedLogin(c, login))
+            {
+                // a shared login gives the user, the key and the password
+            }
             else if (c.Protocol != RemoteProtocol.Link)
             {
                 login.Add(Field("User", Text(c.User, v => c.User = v.Trim(), IsSsh(c.Protocol) ? "user name" : "empty: anonymous or asked when connecting"),
                     ConnectionField.User, "User", required: IsSsh(c.Protocol)));
             }
         }
-        if (IsSsh(c.Protocol))
+        if (IsSsh(c.Protocol) && SharedCredential.Of(c, _request.Settings) is null)
         {
             var key = Text(c.KeyFile, v => c.KeyFile = Empty(v), "empty: the password or the SSH agent");
             var browse = new Button { Content = "...", Margin = new Thickness(6, 0, 0, 0), Classes = { "tb" } };
@@ -865,6 +875,50 @@ public sealed class ConnectionWizard : Window
     }
 
     private static string? Empty(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+
+    /// <summary>
+    /// "Login": the connection's own user and password, or a shared login (only offered when there are shared logins).
+    /// True when a shared login is chosen: a line names it in place of the user and key fields.
+    /// </summary>
+    private bool SharedLogin(RemoteConnection c, List<Control> login)
+    {
+        var logins = _request.Settings.SharedCredentials;
+        if (!SharedCredential.CanUse(c) || logins.Count == 0)
+        {
+            return false;
+        }
+        var current = SharedCredential.Of(c, _request.Settings);
+        var names = new List<string> { Core.Localization.Localizer.T("Own user and password") };
+        names.AddRange(logins.Select(l => l.Name));
+        var choice = new ComboBox { ItemsSource = names, SelectedIndex = current is null ? 0 : logins.IndexOf(current) + 1, HorizontalAlignment = HorizontalAlignment.Stretch, Classes = { "noloc" } };
+        Avalonia.Automation.AutomationProperties.SetName(choice, "Login");
+        choice.SelectionChanged += (_, _) =>
+        {
+            var chosen = choice.SelectedIndex > 0 ? logins[choice.SelectedIndex - 1] : null;
+            if (ReferenceEquals(chosen, SharedCredential.Of(c, _request.Settings)))
+            {
+                return;
+            }
+            SharedCredential.Use(c, chosen);
+            if (chosen is null)
+            {
+                c.User = string.Empty;
+                c.KeyFile = null;
+            }
+            ShowDetails(c); // the user and key fields come or go
+        };
+        login.Add(Field("Login", choice, null, "Login", required: false, note: current is null ? "Or a login shared by several connections (Logins... in the connection editor)." : null));
+        if (current is null)
+        {
+            return false;
+        }
+        login.Add(new TextBlock
+        {
+            Text = Core.Localization.Localizer.T("User {0} and the password (or key) of this login.").Replace("{0}", current.User, StringComparison.Ordinal),
+            FontSize = 12, Opacity = 0.75, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 4), Classes = { "noloc" },
+        });
+        return true;
+    }
 
     private TextBox Text(string? value, Action<string> set, string placeholder)
     {
