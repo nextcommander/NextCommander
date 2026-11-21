@@ -3504,5 +3504,12 @@
   "TerminalView.OneTerminal": "Ein Terminal",
   "TerminalView.TwoSideBySide": "Zwei nebeneinander",
   "TerminalView.TwoAboveEachOther": "Zwei übereinander",
-  "TerminalView.Four": "Vier"
+  "TerminalView.Four": "Vier",
+  "ServerMonitor.NoCounters": "Keine Zähler auf diesem Server (nur Linux-Server haben /proc).",
+  "TerminalView.MonitorTip": "CPU, Arbeitsspeicher, Festplatte und Netzwerk des Servers dieser SSH-Sitzung, alle paar Sekunden gelesen",
+  "TerminalView.Load": "Last {0} ({1} CPUs)",
+  "TerminalView.Monitor": "Überwachen",
+  "TerminalView.Reading": "Die Zähler des Servers werden gelesen...",
+  "TerminalView.Up": "Läuft seit {0}",
+  "TerminalView.DiskRoot": "Festplatte /"
 }
