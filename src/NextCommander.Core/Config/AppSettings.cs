@@ -622,6 +622,12 @@ public sealed class AppSettings
     /// <summary>Internal terminal: the folder of the log files (empty: logs/terminal in the settings folder).</summary>
     public string TerminalLogFolder { get; set; } = string.Empty;
 
+    /// <summary>Internal terminal: words of the output are colored (<see cref="TerminalHighlightRules"/>).</summary>
+    public bool TerminalHighlight { get; set; } = true;
+
+    /// <summary>Internal terminal: the words colored and their colors (errors red, warnings amber, success green).</summary>
+    public List<HighlightRule> TerminalHighlightRules { get; set; } = HighlightRule.Defaults();
+
     /// <summary>Internal terminal: saved commands sent with a click (the Snippets menu of the terminal).</summary>
     public List<TerminalSnippet> TerminalSnippets { get; set; } = [];
 

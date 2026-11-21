@@ -189,7 +189,7 @@ built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC l
 - [x] Monitor bar of an SSH server: CPU, memory, disk and network through commands over SSH (the terminal's Monitor button; Linux /proc, `ServerStats`; tested with recorded output, to be tried against real servers).
 - [x] A connection's own terminal look: font, color scheme, tab color (a production server in red) (`TerminalLook`, the editor's terminal tab).
 - [x] Network tools: Wake-on-LAN, ping, port scan (Net > Network tools..., `Core/Net/NetworkTools`).
-- [ ] Highlighting words such as "error" / "warning" in the terminal output.
+- [x] Highlighting words such as "error" / "warning" in the terminal output (`HighlightRule`, the list on the Misc. page; the real terminal only, the line console stays plain).
 
 ## Internal terminal
 - [x] Terminal at the bottom of the window via the button at the end of the command line / Ctrl+` (cmd.exe or $SHELL, redirected input/output). Commands are typed after the prompt, inside the output area.

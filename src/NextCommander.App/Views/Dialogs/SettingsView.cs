@@ -1508,6 +1508,12 @@ public sealed class SettingsView : UserControl
                     }
                 }
                 return null;
+            case HighlightRule highlight:
+                if (!highlight.WordList.Any())
+                {
+                    return "No words";
+                }
+                return Color.TryParse(highlight.Color, out _) ? null : $"Not a color: \"{highlight.Color}\" (#RRGGBB)";
             case TerminalSnippet snippet:
                 return string.IsNullOrWhiteSpace(snippet.Command) ? "Command is empty" : null;
             case ColorRule rule:
@@ -1662,6 +1668,21 @@ public sealed class SettingsView : UserControl
     };
 
     /// <summary>Configuration > Misc.: the Start menu.</summary>
+    private static ListEditorOptions<HighlightRule> HighlightOptions() => new()
+    {
+        Create = () => new HighlightRule { Words = "word", Color = "#3E8EED" },
+        Clone = CloneEntry,
+        Summary = r => r.Words,
+        Validate = r => ValidateEntry(r),
+        Swatches = r => [r.Color],
+        AddText = "Add words",
+        Fields =
+        [
+            new("Words", ListFieldKind.Text, r => r.Words, (r, v) => r.Words = v ?? string.Empty) { PlaceholderText = "e.g. error, failed, denied" },
+            new("Color", ListFieldKind.Color, r => r.Color, (r, v) => r.Color = v ?? "#E5484D"),
+        ],
+    };
+
     private static ListEditorOptions<TerminalSnippet> SnippetOptions() => new()
     {
         Create = () => new TerminalSnippet { Name = "New command" },
@@ -2400,6 +2421,12 @@ public sealed class SettingsView : UserControl
                 s => s.TerminalLogAll, (s, v) => s.TerminalLogAll = v),
             Text(misc, "Internal terminal", "Folder of the terminal logs", "Where the log files of the terminal tabs go (empty: logs/terminal in the settings folder).",
                 s => s.TerminalLogFolder, (s, v) => s.TerminalLogFolder = v ?? string.Empty, "logs/terminal in the settings folder"),
+            Bool(misc, "Internal terminal", "Highlight words in the output",
+                "Words such as error, warning or done are colored in text the program writes without a color of its own (the real terminal only).",
+                s => s.TerminalHighlight, (s, v) => s.TerminalHighlight = v),
+            ListItem(misc, "Internal terminal", "Highlighted words",
+                "Each entry: words separated by commas (whole words, case ignored) and their color; the first entry that matches wins.",
+                s => s.TerminalHighlightRules, (s, v) => s.TerminalHighlightRules = v, HighlightOptions()),
             ListItem(misc, "Internal terminal", "Saved commands (snippets)",
                 "Commands sent to the active terminal tab with a click in the terminal's Snippets menu (with MultiExec to every checked tab).",
                 s => s.TerminalSnippets, (s, v) => s.TerminalSnippets = v, SnippetOptions()),
