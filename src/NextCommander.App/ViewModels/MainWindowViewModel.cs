@@ -2847,6 +2847,19 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     /// <summary>nc_SshTunnels: the tunnels window.</summary>
     private void ShowSshTunnels() => _dialogs.ShowSshTunnels(_settings, Tunnels, SaveSettings);
 
+    /// <summary>nc_NetworkTools: the server of the active panel's connection filled in.</summary>
+    private void ShowNetworkTools()
+    {
+        var path = ActivePanel.CurrentPath;
+        string? host = null;
+        if (path is { IsLocal: false } && path.Authority.Length > 0)
+        {
+            var authority = path.Authority[(path.Authority.LastIndexOf('@') + 1)..];
+            host = authority.StartsWith('[') ? authority[1..authority.IndexOf(']')] : authority.Split(':')[0];
+        }
+        _dialogs.ShowNetworkTools(host);
+    }
+
     /// <summary>PC link sharing on this computer (null in tests without it).</summary>
     public LinkService? Link { get; set; }
 

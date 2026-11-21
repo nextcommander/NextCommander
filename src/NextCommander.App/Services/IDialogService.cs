@@ -74,6 +74,9 @@ public interface IDialogService
     /// <summary>The SSH tunnels window (non-modal, one at a time).</summary>
     void ShowSshTunnels(AppSettings settings, TunnelService tunnels, Action save);
 
+    /// <summary>The network tools window (ping, port scan, Wake-on-LAN), the host filled in when known.</summary>
+    void ShowNetworkTools(string? host);
+
     Task<string?> PickSaveFileAsync(string title, string suggestedName);
 
     Task<string?> PickOpenFileAsync(string title);
