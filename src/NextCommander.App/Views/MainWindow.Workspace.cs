@@ -242,7 +242,7 @@ public partial class MainWindow
     {
         "nc_SysInfo", "nc_SyncDirs", "nc_ToggleTerminal", "nc_MaximizeTerminal", "nc_BackgroundTransfers", "nc_ExecuteTerminal",
         "nc_SearchStandalone", "nc_SwitchWorkspaceTab", "nc_Exit", "nc_RemoteConnection", "nc_ConnectionsMenu", "nc_PluginsMenu",
-        "nc_MasterPassword", "nc_LinkShare", "nc_SshTunnels",
+        "nc_MasterPassword", "nc_LinkShare", "nc_SshTunnels", "nc_NetworkTools",
     };
 
     /// <summary>The menu items this window turned off for a page other than the files (turned on again on the files).</summary>

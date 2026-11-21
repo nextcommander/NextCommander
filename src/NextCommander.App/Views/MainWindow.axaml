@@ -152,6 +152,7 @@
                   Command="{Binding RunCommandCommand}" CommandParameter="nc_LinkShare" />
         <Separator />
         <MenuItem Header="SSH tunnels..." Command="{Binding RunCommandCommand}" CommandParameter="nc_SshTunnels" />
+        <MenuItem Header="Network tools..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NetworkTools" />
       </MenuItem>
       <MenuItem Header="_Show">
         <MenuItem Header="Display" Tag="nc_SrcLong">

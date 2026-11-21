@@ -179,6 +179,10 @@ internal sealed class FakeDialogs : IDialogService
 
     public void ShowSshTunnels(AppSettings settings, TunnelService tunnels, Action save) => SshTunnelsShown++;
 
+    public List<string?> NetworkToolsShown { get; } = [];
+
+    public void ShowNetworkTools(string? host) => NetworkToolsShown.Add(host);
+
     public Task<CopyDialogResult?> ShowCopyDialogAsync(bool move, string description, string target, bool verifyDefault, IReadOnlyList<string> suggestions,
         Views.Dialogs.CopyDialogOptions? options = null)
     {

@@ -49,6 +49,10 @@ Supported types:
 - **Master password...**: see [Saved passwords](#saved-passwords-and-the-master-password).
 - **PC link...**, **Share with PC link**: see [PC link](#pc-link).
 - **SSH tunnels...**: see [SSH tunnels](#ssh-tunnels).
+- **Network tools...**: **Ping** (replies with their times and TTL, then sent / received / lost and min / avg / max),
+  **Port scan** (TCP ports of a host: a list such as `22, 80, 8000-8100`, *Common ports* or 1-1024; the open ones with
+  their usual service as they are found) and **Wake-on-LAN** (the magic packet to a MAC address, sent as a broadcast).
+  The server of the active panel's connection is filled in.
 
 In the button bar, the connection manager's button opens the manager while there is no saved connection; once
 there are some it is a drop-down (▾): **Connection manager...** first, then the saved connections grouped by type
