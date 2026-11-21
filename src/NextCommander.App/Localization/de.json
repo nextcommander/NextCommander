@@ -3461,5 +3461,12 @@
   "TerminalView.LoggingTo": "Protokolliert nach {0}",
   "TerminalView.OpenTheLogFolder": "Den Protokollordner öffnen",
   "TerminalView.StopLogging": "Protokollierung beenden",
-  "TerminalView.WriteTheOutput": "Die Ausgabe dieses Tabs in eine Textdatei schreiben"
+  "TerminalView.WriteTheOutput": "Die Ausgabe dieses Tabs in eine Textdatei schreiben",
+  "TerminalView.CloseTheSearch": "Suche schließen (Esc)",
+  "TerminalView.FindInTheOutput": "In der Ausgabe suchen",
+  "TerminalView.FindInTheOutputAndScrollback": "In der Ausgabe und im Verlauf suchen (Strg+Umschalt+F)",
+  "TerminalView.MatchCase": "Groß-/Kleinschreibung beachten",
+  "TerminalView.NewerMatch": "Neuerer Treffer (Umschalt+Eingabe)",
+  "TerminalView.NoResults": "Keine Treffer",
+  "TerminalView.OlderMatch": "Älterer Treffer (Eingabe)"
 }

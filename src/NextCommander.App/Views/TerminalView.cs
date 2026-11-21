@@ -27,6 +27,10 @@ public sealed class TerminalView : DockPanel
     private readonly Button _maximize;
     private readonly Button _files;
     private readonly Button _log;
+    private readonly Border _findBar;
+    private readonly TextBox _findText = new() { Width = 260, MinHeight = 24, Padding = new Thickness(6, 2), FontSize = 12, PlaceholderText = "Find in the output" };
+    private readonly CheckBox _findCase = new() { Content = "Aa", Classes = { "noloc" }, FontSize = 12, MinHeight = 0, VerticalAlignment = VerticalAlignment.Center };
+    private readonly TextBlock _findStatus = new() { FontSize = 12, MinWidth = 80, VerticalAlignment = VerticalAlignment.Center, Opacity = 0.8 };
 
     /// <summary>"Files (SFTP)" of an SSH session: its connection and the shell's folder (null: not known).</summary>
     public event EventHandler<(Core.Config.RemoteConnection Connection, string? Folder)>? FilesRequested;
@@ -98,6 +102,7 @@ public sealed class TerminalView : DockPanel
         _log.Tag = "log";
         _log.Click += (_, _) => ShowLogMenu(_log);
         buttons.Children.Add(_log);
+        buttons.Children.Add(HeaderButton("Find", "Find in the output and the scrollback (Ctrl+Shift+F)", OpenFind));
         buttons.Children.Add(HeaderButton("Panel folder", "Go to the folder of the active panel in the terminal", () => _active?.GoToPanelFolder()));
         buttons.Children.Add(HeaderButton("Clear", "Clear the output (Ctrl+L)", () => _active?.Clear()));
         buttons.Children.Add(HeaderButton("Stop", "Stop the running program and restart the shell (Ctrl+C)", () => _active?.Restart()));
@@ -128,8 +133,85 @@ public sealed class TerminalView : DockPanel
         header.Background = Brushes.Transparent;
         SetDock(header, Dock.Top);
         Children.Add(header);
+
+        // find in the output: Enter goes to older matches, Shift+Enter to newer ones, Esc closes
+        ToolTip.SetTip(_findCase, "Match case");
+        var older = HeaderButton("↑", "Older match (Enter)", () => FindNext(-1));
+        var newer = HeaderButton("↓", "Newer match (Shift+Enter)", () => FindNext(1));
+        var closeFind = HeaderButton("✕", "Close the search (Esc)", CloseFind);
+        Avalonia.Automation.AutomationProperties.SetName(_findText, "Find in the output");
+        _findText.TextChanged += (_, _) => FindNext(0);
+        _findCase.IsCheckedChanged += (_, _) => FindNext(0);
+        _findText.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                FindNext(e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? 1 : -1);
+            }
+            else if (e.Key == Key.Escape)
+            {
+                e.Handled = true;
+                CloseFind();
+            }
+        };
+        var findRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Margin = new Thickness(8, 2, 8, 4) };
+        findRow.Children.AddRange([_findText, _findCase, older, newer, _findStatus, closeFind]);
+        _findBar = new Border { Child = findRow, IsVisible = false };
+        SetDock(_findBar, Dock.Top);
+        Children.Add(_findBar);
         Children.Add(_host);
         this[!BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("FmStatusBrush");
+    }
+
+    /// <summary>The find bar is open (tests).</summary>
+    public bool IsFindOpen => _findBar.IsVisible;
+
+    /// <summary>The text searched for (tests).</summary>
+    public string FindText
+    {
+        get => _findText.Text ?? string.Empty;
+        set
+        {
+            _findText.Text = value;
+            FindNext(0);
+        }
+    }
+
+    /// <summary>"2 of 5", "No results" (tests).</summary>
+    public string FindStatus => _findStatus.Text ?? string.Empty;
+
+    /// <summary>Opens the find bar with the text field focused (Ctrl+Shift+F, the Find button).</summary>
+    public void OpenFind()
+    {
+        _findBar.IsVisible = true;
+        _findText.Focus();
+        _findText.SelectAll();
+        FindNext(0);
+    }
+
+    /// <summary>Closes the find bar: the marks go, the terminal takes the keys again.</summary>
+    public void CloseFind()
+    {
+        _findBar.IsVisible = false;
+        _findStatus.Text = string.Empty;
+        _active?.ClearFind();
+        _active?.Activate();
+    }
+
+    /// <summary>The newest match (0), an older (-1) or a newer one (+1) in the active tab.</summary>
+    public void FindNext(int direction)
+    {
+        if (!_findBar.IsVisible || _active is not { } tab)
+        {
+            return;
+        }
+        var text = FindText;
+        var (current, count) = tab.Find(text, _findCase.IsChecked == true, direction);
+        _findStatus.Text = text.Length == 0 ? string.Empty
+            : count == 0 ? Core.Localization.Localizer.T("No results")
+            : Core.Localization.Localizer.T("{0} of {1}").Replace("{0}", current.ToString(System.Globalization.CultureInfo.CurrentCulture), StringComparison.Ordinal)
+                .Replace("{1}", count.ToString(System.Globalization.CultureInfo.CurrentCulture), StringComparison.Ordinal);
     }
 
     /// <summary>"Open the log folder": the folder of the terminal logs in the active panel.</summary>
@@ -353,6 +435,7 @@ public sealed class TerminalView : DockPanel
             : new TerminalConsole(shell, () => CurrentFolder?.Invoke()) { Connection = connection };
         console.SetFont(_font.Family, _font.Size);
         console.ShellExited += (_, _) => CloseTab(console); // "exit" closes the tab like in VS Code
+        console.FindRequested += (_, _) => OpenFind();
         console.LogChanged += (_, _) =>
         {
             if (ReferenceEquals(console, _active))
@@ -373,6 +456,7 @@ public sealed class TerminalView : DockPanel
 
     public void Select(TerminalTab console)
     {
+        _active?.ClearFind();
         _active = console;
         _files.IsVisible = console.Connection?.Protocol == Core.Config.RemoteProtocol.Ssh;
         UpdateLogButton();
@@ -382,6 +466,7 @@ public sealed class TerminalView : DockPanel
         }
         RebuildTabs();
         console.Activate();
+        FindNext(0); // an open search goes on in this tab
     }
 
     public void CloseTab(TerminalTab console)

@@ -3461,5 +3461,12 @@
   "TerminalView.LoggingTo": "Kaydediliyor: {0}",
   "TerminalView.OpenTheLogFolder": "Kayıt klasörünü aç",
   "TerminalView.StopLogging": "Kaydı durdur",
-  "TerminalView.WriteTheOutput": "Bu sekmenin çıktısını bir metin dosyasına yaz"
+  "TerminalView.WriteTheOutput": "Bu sekmenin çıktısını bir metin dosyasına yaz",
+  "TerminalView.CloseTheSearch": "Aramayı kapat (Esc)",
+  "TerminalView.FindInTheOutput": "Çıktıda bul",
+  "TerminalView.FindInTheOutputAndScrollback": "Çıktıda ve geçmişte bul (Ctrl+Shift+F)",
+  "TerminalView.MatchCase": "Büyük/küçük harf duyarlı",
+  "TerminalView.NewerMatch": "Daha yeni eşleşme (Shift+Enter)",
+  "TerminalView.NoResults": "Sonuç yok",
+  "TerminalView.OlderMatch": "Daha eski eşleşme (Enter)"
 }

@@ -54,6 +54,42 @@ public sealed partial class TerminalConsole : TerminalTab
     /// <summary>Everything shown: output and the command being typed.</summary>
     public override string OutputText => _console.Text ?? string.Empty;
 
+    private int _findAt = -1;
+
+    /// <summary>See <see cref="TerminalTab.Find"/>: the match is selected in the text.</summary>
+    public override (int Current, int Count) Find(string text, bool matchCase, int direction)
+    {
+        var all = OutputText;
+        var comparison = matchCase ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        var matches = new List<int>();
+        if (text.Length > 0)
+        {
+            for (var at = all.IndexOf(text, comparison); at >= 0; at = all.IndexOf(text, at + text.Length, comparison))
+            {
+                matches.Add(at);
+            }
+        }
+        if (matches.Count == 0)
+        {
+            _findAt = -1;
+            return (0, 0);
+        }
+        var index = direction == 0 || _findAt < 0 ? matches.Count - 1
+            : direction < 0 ? matches.FindLastIndex(m => m < _findAt) is >= 0 and var before ? before : matches.Count - 1
+            : matches.FindIndex(m => m > _findAt) is >= 0 and var after ? after : 0;
+        _findAt = matches[index];
+        _console.CaretIndex = _findAt + text.Length; // scrolls to it (moving the caret drops a selection: first)
+        _console.SelectionStart = _findAt;
+        _console.SelectionEnd = _findAt + text.Length;
+        return (index + 1, matches.Count);
+    }
+
+    public override void ClearFind()
+    {
+        _findAt = -1;
+        _console.SelectionStart = _console.SelectionEnd = OutputText.Length;
+    }
+
     /// <summary>Where the command being typed begins (the output ends).</summary>
     public int InputStart { get; private set; }
 
@@ -221,6 +257,10 @@ public sealed partial class TerminalConsole : TerminalTab
         var hasSelection = _console.SelectionStart != _console.SelectionEnd;
         switch (e.Key)
         {
+            case Key.F when mods == (KeyModifiers.Control | KeyModifiers.Shift):
+                e.Handled = true;
+                RequestFind();
+                break;
             case Key.Enter when mods is KeyModifiers.None or KeyModifiers.Shift:
                 e.Handled = true;
                 Submit();
