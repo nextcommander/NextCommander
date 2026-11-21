@@ -50,7 +50,7 @@ public sealed class CommandLineTerminalTests : IDisposable
         var (w, vm) = await _fx.OpenAsync();
         vm.Settings.TerminalEmulation = false; // the line console (the emulated terminal: TerminalEmulationTests)
         vm.Settings.TerminalTabs = [];
-        await vm.ExecuteAsync("nc_ToggleTerminal");
+        w.ToggleTerminal(); // the button at the end of the command line: below the panels
         await SettleAsync();
         var terminal = w.Terminal!;
         Assert.True(w.FindControl<Avalonia.Controls.Border>("TerminalHost")!.IsVisible);

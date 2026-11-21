@@ -162,7 +162,7 @@ public sealed class TerminalEmulationTests : IDisposable
         var (w, vm) = await _fx.OpenAsync();
         vm.Settings.TerminalEmulation = true;
         vm.Settings.TerminalTabs = [];
-        await vm.ExecuteAsync("nc_ToggleTerminal");
+        w.ToggleTerminal(); // below the panels (the command line's button)
         await SettleAsync();
         var terminal = w.Terminal!;
         var tab = Assert.IsType<EmulatedTerminal>(terminal.ActiveConsole);
@@ -209,7 +209,7 @@ public sealed class TerminalEmulationTests : IDisposable
         var shells = Services.TerminalSession.AvailableShells();
         vm.Settings.TerminalTabs = [shells[^1].Name, shells[0].Name, "yok böyle bir kabuk"];
         vm.Settings.TerminalHeightRatio = 0.3;
-        await vm.ExecuteAsync("nc_ToggleTerminal");
+        w.ToggleTerminal(); // below the panels (the command line's button)
         await SettleAsync();
         var terminal = w.Terminal!;
         Assert.Equal([shells[^1].Name, shells[0].Name], terminal.Consoles.Select(c => c.Shell.Name));
@@ -238,7 +238,7 @@ public sealed class TerminalEmulationTests : IDisposable
         Assert.StartsWith("Fixedsys Excelsior", vm.Settings.TerminalFont, StringComparison.Ordinal); // the default
         vm.Settings.TerminalFont = "Consolas";
         vm.Settings.TerminalFontSize = 12;
-        await vm.ExecuteAsync("nc_ToggleTerminal");
+        w.ToggleTerminal(); // below the panels (the command line's button)
         await SettleAsync();
         var tab = Assert.IsType<EmulatedTerminal>(w.Terminal!.ActiveConsole);
         var screen = (TerminalScreen)tab.ScreenControl;

@@ -281,7 +281,7 @@ public partial class MainWindow : Window
         }
         _vm.CommandLineFocusRequested += (_, _) => FocusCommandLine();
         _vm.CommandLineHistoryRequested += (_, _) => ShowCommandHistory();
-        _vm.TerminalToggleRequested += (_, _) => ToggleTerminal();
+        _vm.TerminalToggleRequested += (_, _) => ToggleTerminalPage();
         _vm.TerminalMaximizeRequested += (_, _) => ToggleTerminalMaximized();
         _vm.EditPathRequested += (_, _) => ActiveView.BeginEditPath();
         // Shift+F6: the name is typed in the list of the panel (the dialog only where no name cell can be edited)
@@ -1337,6 +1337,47 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
+    /// nc_ToggleTerminal (the menu, Ctrl+`, buttons): the internal terminal as a page with its own tab; again from that
+    /// page: back to the files (the shells keep running). Only the button at the end of the command line opens it below
+    /// the panels (<see cref="ToggleTerminal"/>; user's request, 21 November 2026). A terminal shown below the panels
+    /// with the focus in it is hidden as before.
+    /// </summary>
+    public void ToggleTerminalPage()
+    {
+        if (_vm is null)
+        {
+            return;
+        }
+        if (IsTerminalMaximizedPage)
+        {
+            SelectPage(_page == WorkspacePage.Terminal ? WorkspacePage.Files : WorkspacePage.Terminal);
+            return;
+        }
+        if (TerminalHost.IsVisible && _terminal is { IsKeyboardFocusWithin: true })
+        {
+            HideTerminal();
+            return;
+        }
+        ShowTerminalPage();
+    }
+
+    /// <summary>The internal terminal as a page with its tab (opened first when it is closed), its active tab focused.</summary>
+    private void ShowTerminalPage()
+    {
+        EnsureTerminal();
+        if (IsTerminalMaximizedPage)
+        {
+            SelectPage(WorkspacePage.Terminal);
+            _terminal!.Activate();
+            return;
+        }
+        ShowTerminal();
+        UpdateLayout();
+        _terminal!.SetMaximized(PanelsGrid.Bounds.Height + TerminalHost.Bounds.Height - TerminalHost.BorderThickness.Top);
+        SelectPage(WorkspacePage.Terminal);
+    }
+
+    /// <summary>
     /// A Telnet, SSH or rsh session in a new tab of the internal terminal (opened first when it is closed). Telnet and
     /// rlogin log in in the terminal, as the server asks; SSH asks for the password and the host key in dialogs first.
     /// </summary>
@@ -1358,12 +1399,7 @@ public partial class MainWindow : Window
             RemoteProtocol.Serial => new Services.Terminal.SerialTerminal(connection, columns, rows),
             _ => (Services.Terminal.PseudoTerminal)new Services.Terminal.TelnetTerminal(connection, columns, rows),
         }, connection);
-        if (IsTerminalMaximizedPage && _page != WorkspacePage.Terminal)
-        {
-            SelectPage(WorkspacePage.Terminal);
-            return;
-        }
-        ShowTerminal();
+        ShowTerminalPage(); // a page with its tab, like nc_ToggleTerminal
     }
 
     /// <summary>The terminal of the window, made the first time.</summary>
