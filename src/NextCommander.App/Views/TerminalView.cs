@@ -20,6 +20,13 @@ public sealed class TerminalView : DockPanel
 {
     private readonly List<TerminalTab> _consoles = [];
     private readonly StackPanel _tabStrip = new() { Orientation = Orientation.Horizontal, Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
+
+    private readonly ScrollViewer _tabScroller = new()
+    {
+        HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Hidden,
+        VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
+        VerticalAlignment = VerticalAlignment.Center,
+    };
     private readonly Grid _host = new();
     private readonly Button _monitor;
     private readonly Border _monitorBar = new() { IsVisible = false, Padding = new Thickness(10, 3), Margin = new Thickness(0, 0, 0, 2) };
@@ -135,14 +142,25 @@ public sealed class TerminalView : DockPanel
         buttons.Children.Add(HeaderButton("✕", "Close the terminal (ends every shell)", () => CloseRequested?.Invoke(this, EventArgs.Empty)));
         SetDock(buttons, Dock.Right);
         header.Children.Add(buttons);
-        var left = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        left.Children.Add(new TextBlock { Text = "TERMINAL", FontSize = 11, FontWeight = FontWeight.SemiBold, VerticalAlignment = VerticalAlignment.Center });
-        left.Children.Add(_tabStrip);
+        // the title, the tabs and the new tab buttons in the room the actions leave: many tabs scroll sideways (the
+        // wheel or the active tab brought into view) instead of running under the actions
+        var left = new DockPanel { ClipToBounds = true, Margin = new Thickness(0, 0, 8, 0) };
+        var title = new TextBlock { Text = "TERMINAL", FontSize = 11, FontWeight = FontWeight.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
         var add = HeaderButton("+", "New terminal (default shell)", () => NewTab());
         var choose = HeaderButton("▾", "New terminal with a chosen shell", () => { });
         choose.Click += (_, _) => ShowShellMenu(choose);
-        left.Children.Add(add);
-        left.Children.Add(choose);
+        var adders = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 2, Margin = new Thickness(6, 0, 0, 0) };
+        adders.Children.AddRange([add, choose]);
+        SetDock(title, Dock.Left);
+        SetDock(adders, Dock.Right);
+        _tabScroller.Content = _tabStrip;
+        _tabScroller.PointerWheelChanged += (_, e) =>
+        {
+            // the wheel scrolls the tabs sideways
+            _tabScroller.Offset = new Vector(Math.Max(0, _tabScroller.Offset.X - (e.Delta.Y * 40)), 0);
+            e.Handled = true;
+        };
+        left.Children.AddRange([title, adders, _tabScroller]);
         header.Children.Add(left);
         // a double click on the title bar maximizes or restores, like a window
         header.DoubleTapped += (_, e) =>
@@ -981,6 +999,11 @@ public sealed class TerminalView : DockPanel
             tab.Classes.Set("active", active);
             tab.Click += (_, _) => Select(target);
             _tabStrip.Children.Add(tab);
+            if (active)
+            {
+                // many tabs scroll: the active one is brought into view once it is laid out
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => tab.BringIntoView(), Avalonia.Threading.DispatcherPriority.Loaded);
+            }
         }
     }
 
