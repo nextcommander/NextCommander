@@ -594,6 +594,15 @@ public sealed class TerminalView : DockPanel
         }
     }
 
+    /// <summary>Draws every tab again (the highlighted words changed).</summary>
+    public void InvalidateTerminals()
+    {
+        foreach (var tab in _consoles.OfType<EmulatedTerminal>())
+        {
+            tab.ScreenControl.InvalidateVisual();
+        }
+    }
+
     // ---------------------------------------------------------------- monitor
 
     /// <summary>Makes the probe that reads a server's counters (the application: an SSH connection with the session's login).</summary>
