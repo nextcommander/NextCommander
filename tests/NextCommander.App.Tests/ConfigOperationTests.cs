@@ -58,6 +58,18 @@ public sealed class ConfigOperationTests : IDisposable
         Assert.False(w.IsInTray);
         Assert.True(w.IsVisible);
         Assert.Equal(Avalonia.Controls.WindowState.Normal, w.WindowState);
+
+        // minimized again and again: one icon, the same one (GNOME showed one more for each before)
+        var icons = Avalonia.Controls.TrayIcon.GetIcons(Avalonia.Application.Current!)!;
+        var icon = Assert.Single(icons);
+        for (var i = 0; i < 3; i++)
+        {
+            w.WindowState = Avalonia.Controls.WindowState.Minimized;
+            Assert.True(w.IsInTray);
+            w.RestoreFromTray();
+        }
+        Assert.Same(icon, Assert.Single(Avalonia.Controls.TrayIcon.GetIcons(Avalonia.Application.Current!)!));
+        Assert.False(icon.IsVisible);
     }
 
     [AvaloniaFact]

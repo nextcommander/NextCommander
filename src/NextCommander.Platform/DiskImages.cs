@@ -36,21 +36,40 @@ public static class DiskImages
             var (exit, output, error) = await Run("hdiutil", ["attach", "-readonly", "-nobrowse", image], cancellationToken).ConfigureAwait(false);
             return MacMountPoint(output) ?? throw Failed(image, exit, error.Length > 0 ? error : output);
         }
+        return await LinuxMountAsync(image, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Linux: a read-only loop device through udisks. A hybrid image (most Linux ISOs) has a partition table, so its
+    /// files are on a partition of the loop device (/dev/loop5p1): the desktop often mounts it by itself, else the
+    /// device and then its partitions are tried.
+    /// </summary>
+    public static async Task<string> LinuxMountAsync(string image, CancellationToken cancellationToken)
+    {
         var setup = await Run("udisksctl", ["loop-setup", "--read-only", "--no-user-interaction", "-f", image], cancellationToken).ConfigureAwait(false);
         var device = LinuxLoopDevice(setup.Output) ?? throw Failed(image, setup.Exit, setup.Error.Length > 0 ? setup.Error : setup.Output);
-        // the desktop often mounts a new loop device by itself; else udisks mounts it
         for (var i = 0; i < 10; i++)
         {
-            if (await LinuxMountPointAsync(device, cancellationToken).ConfigureAwait(false) is { } auto)
+            if (LinuxFolderOf(device) is { } auto)
             {
                 return auto;
             }
             await Task.Delay(200, cancellationToken).ConfigureAwait(false);
         }
-        var mount = await Run("udisksctl", ["mount", "--no-user-interaction", "-b", device], cancellationToken).ConfigureAwait(false);
-        return LinuxMountedAt(mount.Output) ?? await LinuxMountPointAsync(device, cancellationToken).ConfigureAwait(false)
-            ?? throw Failed(image, mount.Exit, mount.Error.Length > 0 ? mount.Error : mount.Output);
+        (int Exit, string Output, string Error) mount = (0, string.Empty, string.Empty);
+        foreach (var candidate in (string[])[device, .. LinuxPartitionsOf(device)])
+        {
+            mount = await Run("udisksctl", ["mount", "--no-user-interaction", "-b", candidate], cancellationToken).ConfigureAwait(false);
+            if (mount.Exit == 0 && (LinuxMountedAt(mount.Output) ?? LinuxFolderOf(device)) is { } folder)
+            {
+                return folder;
+            }
+        }
+        throw Failed(image, mount.Exit, mount.Error.Length > 0 ? mount.Error : mount.Output);
     }
+
+    /// <summary>The folder a loop device (or one of its partitions) is mounted at, or null.</summary>
+    private static string? LinuxFolderOf(string device) => LinuxMountsOf(device) is [var first, ..] ? first.Folder : null;
 
     /// <summary>Unmounts the image (nothing when it is not mounted).</summary>
     public static async Task UnmountAsync(string image, CancellationToken cancellationToken)
@@ -76,19 +95,136 @@ public static class DiskImages
             }
             return;
         }
-        foreach (var device in LinuxLoopDevicesOf((await Run("losetup", ["-j", image], cancellationToken).ConfigureAwait(false)).Output))
+        await LinuxUnmountAsync(image, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Linux: every loop device of the image: its mounted partitions (or itself) unmounted, then the device let go.</summary>
+    public static async Task LinuxUnmountAsync(string image, CancellationToken cancellationToken)
+    {
+        foreach (var device in await LinuxDevicesOfAsync(image, cancellationToken).ConfigureAwait(false))
         {
-            if (await LinuxMountPointAsync(device, cancellationToken).ConfigureAwait(false) is not null)
+            foreach (var (source, _) in LinuxMountsOf(device))
             {
-                var unmount = await Run("udisksctl", ["unmount", "--no-user-interaction", "-b", device], cancellationToken).ConfigureAwait(false);
+                var unmount = await Run("udisksctl", ["unmount", "--no-user-interaction", "-b", source], cancellationToken).ConfigureAwait(false);
                 if (unmount.Exit != 0)
                 {
                     throw Failed(image, unmount.Exit, unmount.Error.Length > 0 ? unmount.Error : unmount.Output, unmount: true);
                 }
             }
-            await Run("udisksctl", ["loop-delete", "--no-user-interaction", "-b", device], cancellationToken).ConfigureAwait(false);
+            var delete = await Run("udisksctl", ["loop-delete", "--no-user-interaction", "-b", device], cancellationToken).ConfigureAwait(false);
+            if (delete.Exit != 0 && LinuxLoops().Any(l => l.Device == device))
+            {
+                throw Failed(image, delete.Exit, delete.Error.Length > 0 ? delete.Error : delete.Output, unmount: true);
+            }
         }
     }
+
+    /// <summary>The loop devices backed by the image: from /sys (no tool needed), else from losetup.</summary>
+    private static async Task<IReadOnlyList<string>> LinuxDevicesOfAsync(string image, CancellationToken cancellationToken)
+    {
+        var full = Path.GetFullPath(image);
+        var devices = LinuxLoops().Where(l => SameFile(l.BackingFile, full)).Select(l => l.Device).ToList();
+        if (devices.Count > 0)
+        {
+            return devices;
+        }
+        try
+        {
+            return LinuxLoopDevicesOf((await Run("losetup", ["-j", image], cancellationToken).ConfigureAwait(false)).Output);
+        }
+        catch (IOException)
+        {
+            return []; // no losetup either
+        }
+    }
+
+    private static bool SameFile(string backing, string image)
+    {
+        var path = backing.EndsWith(" (deleted)", StringComparison.Ordinal) ? backing[..^10] : backing;
+        if (string.Equals(path, image, StringComparison.Ordinal))
+        {
+            return true;
+        }
+        try
+        {
+            // a link to the image (or the image through a link) is the same file
+            return File.Exists(path) && File.Exists(image)
+                && string.Equals(new FileInfo(path).ResolveLinkTarget(true)?.FullName ?? path, new FileInfo(image).ResolveLinkTarget(true)?.FullName ?? image, StringComparison.Ordinal);
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>The loop devices and their backing files (tests replace it): /sys/block/loop*/loop/backing_file.</summary>
+    public static Func<IReadOnlyList<(string Device, string BackingFile)>> LinuxLoops { get; set; } = ReadSysLoops;
+
+    /// <summary>The mounted file systems (tests replace it): /proc/self/mounts.</summary>
+    public static Func<string> LinuxMountTable { get; set; } = () => File.Exists("/proc/self/mounts") ? File.ReadAllText("/proc/self/mounts") : string.Empty;
+
+    /// <summary>The partitions of a loop device (tests replace it): /sys/block/loopN/loopNp*.</summary>
+    public static Func<string, IReadOnlyList<string>> LinuxPartitionsOf { get; set; } = ReadSysPartitions;
+
+    private static List<(string, string)> ReadSysLoops()
+    {
+        var loops = new List<(string, string)>();
+        if (!Directory.Exists("/sys/block"))
+        {
+            return loops;
+        }
+        foreach (var folder in Directory.EnumerateDirectories("/sys/block", "loop*"))
+        {
+            var backing = Path.Combine(folder, "loop", "backing_file");
+            try
+            {
+                if (File.Exists(backing) && File.ReadAllText(backing).Trim() is { Length: > 0 } file)
+                {
+                    loops.Add(("/dev/" + Path.GetFileName(folder), file));
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+        return loops;
+    }
+
+    private static List<string> ReadSysPartitions(string device)
+    {
+        var name = Path.GetFileName(device);
+        var folder = Path.Combine("/sys/block", name);
+        return Directory.Exists(folder)
+            ? [.. Directory.EnumerateDirectories(folder, name + "p*").Select(p => "/dev/" + Path.GetFileName(p)).Order(StringComparer.Ordinal)]
+            : [];
+    }
+
+    /// <summary>Where a loop device or one of its partitions is mounted: (the device, the folder) each.</summary>
+    public static IReadOnlyList<(string Source, string Folder)> LinuxMountsOf(string device) => ParseMounts(LinuxMountTable(), device);
+
+    /// <summary>/proc/self/mounts lines ("source folder type options 0 0", spaces in the folder as \040) of a device and its partitions.</summary>
+    public static IReadOnlyList<(string Source, string Folder)> ParseMounts(string table, string device)
+    {
+        var mounts = new List<(string, string)>();
+        foreach (var line in table.Split('\n'))
+        {
+            var fields = line.Split(' ');
+            if (fields.Length < 2)
+            {
+                continue;
+            }
+            var source = fields[0];
+            if (source == device || (source.StartsWith(device + "p", StringComparison.Ordinal) && source[(device.Length + 1)..].All(char.IsAsciiDigit)))
+            {
+                mounts.Add((source, Unescape(fields[1])));
+            }
+        }
+        return mounts;
+    }
+
+    /// <summary>The octal escapes of /proc/self/mounts (\040 space, \011 tab, \012 newline, \134 backslash).</summary>
+    private static string Unescape(string field) =>
+        Regex.Replace(field, @"\\([0-7]{3})", m => ((char)Convert.ToInt32(m.Groups[1].Value, 8)).ToString(), RegexOptions.None, TimeSpan.FromSeconds(1));
 
     /// <summary>Where the image is mounted now (null: it is not).</summary>
     public static async Task<string?> MountedAtAsync(string image, CancellationToken cancellationToken)
@@ -103,11 +239,17 @@ public static class DiskImages
         {
             return MacMountPointOf(image, (await Run("hdiutil", ["info"], cancellationToken).ConfigureAwait(false)).Output);
         }
-        foreach (var device in LinuxLoopDevicesOf((await Run("losetup", ["-j", image], cancellationToken).ConfigureAwait(false)).Output))
+        return await LinuxMountedAtAsync(image, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Linux: the folder of the image's loop device or of one of its partitions (null: not mounted).</summary>
+    public static async Task<string?> LinuxMountedAtAsync(string image, CancellationToken cancellationToken)
+    {
+        foreach (var device in await LinuxDevicesOfAsync(image, cancellationToken).ConfigureAwait(false))
         {
-            if (await LinuxMountPointAsync(device, cancellationToken).ConfigureAwait(false) is { } mounted)
+            if (LinuxFolderOf(device) is { } folder)
             {
-                return mounted;
+                return folder;
             }
         }
         return null;
@@ -162,12 +304,6 @@ public static class DiskImages
         MacImages(info).FirstOrDefault(i => string.Equals(i.ImagePath, image, StringComparison.Ordinal)).Device;
 
     // ---------------------------------------------------------------- running the tools
-
-    private static async Task<string?> LinuxMountPointAsync(string device, CancellationToken cancellationToken)
-    {
-        var (exit, output, _) = await Run("findmnt", ["-n", "-o", "TARGET", "--source", device], cancellationToken).ConfigureAwait(false);
-        return exit == 0 && output.Split('\n').Select(l => l.Trim()).FirstOrDefault(l => l.Length > 0) is { } target ? target : null;
-    }
 
     private static string Quote(string path) => "'" + path.Replace("'", "''", StringComparison.Ordinal) + "'";
 
