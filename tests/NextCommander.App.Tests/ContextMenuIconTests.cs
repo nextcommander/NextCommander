@@ -40,4 +40,32 @@ public sealed class ContextMenuIconTests : IDisposable
         Assert.True(items.First(i => i.Tag as string == "nc_PasteFromClipboard").IsEnabled);
         list.ContextMenu.Close();
     }
+
+    [AvaloniaFact]
+    public async Task A_disc_image_has_mount_and_unmount_in_the_menu()
+    {
+        File.WriteAllBytes(_fx.L("disc.iso"), new byte[2048]);
+        var (w, vm) = await _fx.OpenAsync();
+        var list = w.GetVisualDescendants().OfType<Control>().First(c => c.ContextMenu?.Items.OfType<MenuItem>().Any(m => m.Tag as string == "nc_Copy") == true);
+        var items = list.ContextMenu!.Items.OfType<MenuItem>().ToList();
+        bool Shown(string command) => items.First(i => i.Tag as string == command).IsVisible;
+
+        // on the image: mount and unmount, with their icons
+        vm.Left.MoveCursorTo(vm.Left.Items.ToList().FindIndex(i => i.FullName == "disc.iso"));
+        list.ContextMenu.Open(list);
+        await SettleAsync(4);
+        Assert.True(Shown("nc_MountImage"));
+        Assert.True(Shown("nc_UnmountImage"));
+        Assert.NotNull(items.First(i => i.Tag as string == "nc_MountImage").Icon);
+        list.ContextMenu.Close();
+        await SettleAsync();
+
+        // on another file: not there
+        vm.Left.MoveCursorTo(vm.Left.Items.ToList().FindIndex(i => i.FullName == "a.txt"));
+        list.ContextMenu.Open(list);
+        await SettleAsync(4);
+        Assert.False(Shown("nc_MountImage"));
+        Assert.False(Shown("nc_UnmountImage"));
+        list.ContextMenu.Close();
+    }
 }
