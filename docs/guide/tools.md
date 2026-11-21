@@ -285,6 +285,10 @@ open a terminal at the bottom of the window. Press it again to hide it; the shel
 - **Snippets ▾** lists your saved commands: a click types one into the active tab (with Enter, or left on the line
   to finish when *Press Enter after it* is off; with MultiExec into every checked tab). *Edit saved commands...*
   opens the list on the *Misc.* page of the Configuration window (name in the menu, command, Enter).
+- **Split ▾** shows two tabs side by side or one above the other, or four (two by two): the active tab and the ones
+  after it (new shells when there are not enough tabs). The active pane is framed and takes the keys and the buttons;
+  a click into another pane makes it the active one, and a tab chosen in the tab strip takes the active pane's place.
+  *One terminal* goes back.
 - **MultiExec** types into several tabs at once: while it is on (● MultiExec), each tab has a check box, and the
   keys, pasted text and command lines typed in one tab go to every checked tab as well (e.g. the same command on
   several servers). The terminal's own answers stay with their tab; a tab of the line console takes whole lines.

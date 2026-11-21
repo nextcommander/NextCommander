@@ -3498,5 +3498,11 @@
   "SharedLoginsDialog.UsedBy": "Usado por: {0}",
   "SharedLoginsDialog.UsedBySsh": "Lo usan las conexiones SFTP, SCP y SSH; las demás inician sesión con la contraseña.",
   "SharedLoginsDialog.UserOrDomain": "usuario o DOMINIO\\usuario",
-  "SharedLoginsDialog.KeyPassphrase": "Con un archivo de clave: su frase de contraseña."
+  "SharedLoginsDialog.KeyPassphrase": "Con un archivo de clave: su frase de contraseña.",
+  "TerminalView.Split": "Dividir ▾",
+  "TerminalView.SplitTip": "Dos o cuatro terminales lado a lado",
+  "TerminalView.OneTerminal": "Un terminal",
+  "TerminalView.TwoSideBySide": "Dos lado a lado",
+  "TerminalView.TwoAboveEachOther": "Dos, uno encima del otro",
+  "TerminalView.Four": "Cuatro"
 }
