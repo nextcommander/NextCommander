@@ -3634,5 +3634,7 @@
   "ConnectionWizard.Connecting": "Connecting ...",
   "ConnectionWizard.DefaultPort": "default {0}",
   "ConnectionManagerView.ChooseAConnectionOrConnect": "Choose a connection on the left, or connect to one right away.",
-  "ConnectionManagerView.ConnectionsFileShort": "Connections file"
+  "ConnectionManagerView.ConnectionsFileShort": "Connections file",
+  "ColorThemes.Drives.Background": "Line of the drive box above the panel",
+  "ColorThemes.Bars.Line": "Line under the menu bar, the button bar and the drive buttons"
 }

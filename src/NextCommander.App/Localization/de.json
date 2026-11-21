@@ -3634,5 +3634,7 @@
   "ConnectionWizard.Connecting": "Verbinden ...",
   "ConnectionWizard.DefaultPort": "Standard {0}",
   "ConnectionManagerView.ChooseAConnectionOrConnect": "Wählen Sie links eine Verbindung oder verbinden Sie sich sofort.",
-  "ConnectionManagerView.ConnectionsFileShort": "Verbindungsdatei"
+  "ConnectionManagerView.ConnectionsFileShort": "Verbindungsdatei",
+  "ColorThemes.Drives.Background": "Zeile des Laufwerksfelds über dem Fenster",
+  "ColorThemes.Bars.Line": "Linie unter der Menüleiste, der Schaltflächenleiste und den Laufwerksschaltflächen"
 }

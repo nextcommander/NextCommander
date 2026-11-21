@@ -3634,5 +3634,7 @@
   "ConnectionWizard.Connecting": "Bağlanıyor ...",
   "ConnectionWizard.DefaultPort": "varsayılan {0}",
   "ConnectionManagerView.ChooseAConnectionOrConnect": "Soldan bir bağlantı seçin ya da hemen bir yere bağlanın.",
-  "ConnectionManagerView.ConnectionsFileShort": "Bağlantı dosyası"
+  "ConnectionManagerView.ConnectionsFileShort": "Bağlantı dosyası",
+  "ColorThemes.Drives.Background": "Panelin üstündeki sürücü kutusu satırı",
+  "ColorThemes.Bars.Line": "Menü çubuğu, düğme çubuğu ve sürücü düğmelerinin altındaki çizgi"
 }

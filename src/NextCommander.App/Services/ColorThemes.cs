@@ -52,6 +52,8 @@ public static class ColorThemes
             "MenuFlyoutSubItemChevronDisabled"),
         new("ButtonBar.Background", "Background of the button bar", "FmToolBarBrush"),
         new("Drives.Icon", "Icons on the drive buttons", "FmDriveIconBrush"),
+        new("Drives.Background", "Line of the drive box above the panel", "FmDriveBarBrush"),
+        new("Bars.Line", "Line under the menu bar, the button bar and the drive buttons", "FmBarLineBrush"),
         new("Tabs.Background", "Folder tab strip", "FmTabStripBrush"),
         new("Tabs.ActiveBackground", "Active tab", "FmTabActiveBrush"),
         new("Tabs.PassiveLine", "Faint underline of the selected tab in the inactive panel", "FmTabPassiveLineBrush"),
@@ -95,6 +97,8 @@ public static class ColorThemes
         ["Menu.HoverText"] = ["Window.Text"],
         ["Menu.GestureText"] = ["Controls.SecondaryText"],
         ["Menu.DisabledText"] = ["Controls.DisabledText"],
+        ["Drives.Background"] = ["Panel.HeaderBackground"],
+        ["Bars.Line"] = ["Panel.HeaderBackground"],
     };
 
     /// <summary>The keys whose color a key takes while a theme leaves it out (the first one the theme has).</summary>

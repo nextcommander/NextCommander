@@ -3634,5 +3634,7 @@
   "ConnectionWizard.Connecting": "Conectando ...",
   "ConnectionWizard.DefaultPort": "predeterminado {0}",
   "ConnectionManagerView.ChooseAConnectionOrConnect": "Elija una conexión a la izquierda o conéctese ahora mismo.",
-  "ConnectionManagerView.ConnectionsFileShort": "Archivo de conexiones"
+  "ConnectionManagerView.ConnectionsFileShort": "Archivo de conexiones",
+  "ColorThemes.Drives.Background": "Línea del cuadro de unidades sobre el panel",
+  "ColorThemes.Bars.Line": "Línea bajo la barra de menús, la barra de botones y los botones de unidades"
 }

@@ -3634,5 +3634,7 @@
   "ConnectionWizard.Connecting": "正在连接 ...",
   "ConnectionWizard.DefaultPort": "默认 {0}",
   "ConnectionManagerView.ChooseAConnectionOrConnect": "在左侧选择一个连接，或立即连接。",
-  "ConnectionManagerView.ConnectionsFileShort": "连接文件"
+  "ConnectionManagerView.ConnectionsFileShort": "连接文件",
+  "ColorThemes.Drives.Background": "面板上方的驱动器框行",
+  "ColorThemes.Bars.Line": "菜单栏、按钮栏和驱动器按钮下方的线条"
 }

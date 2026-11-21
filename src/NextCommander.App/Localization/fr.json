@@ -3634,5 +3634,7 @@
   "ConnectionWizard.Connecting": "Connexion ...",
   "ConnectionWizard.DefaultPort": "par défaut {0}",
   "ConnectionManagerView.ChooseAConnectionOrConnect": "Choisissez une connexion à gauche, ou connectez-vous tout de suite.",
-  "ConnectionManagerView.ConnectionsFileShort": "Fichier de connexions"
+  "ConnectionManagerView.ConnectionsFileShort": "Fichier de connexions",
+  "ColorThemes.Drives.Background": "Ligne de la liste des lecteurs au-dessus du panneau",
+  "ColorThemes.Bars.Line": "Ligne sous la barre de menus, la barre de boutons et les boutons des lecteurs"
 }
