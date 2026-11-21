@@ -779,6 +779,12 @@
     <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource FmFunctionKeyBorderBrush}" />
   </Style>
+  <!-- a key that cannot run now (F3 on ".."): the bar's background stays, only the text fades (user's request, 21 November 2026) -->
+  <Style Selector="Button.fkey:disabled /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FmFunctionKeyBorderBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundDisabled}" />
+  </Style>
   <Style Selector="Button.tool">
     <Setter Property="Padding" Value="8,3" />
     <Setter Property="Margin" Value="1,0" />
