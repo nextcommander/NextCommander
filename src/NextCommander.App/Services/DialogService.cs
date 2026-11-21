@@ -127,9 +127,30 @@ public sealed class DialogService : IDialogService
 
     public async Task<ErrorAction> AskErrorAsync(JobError error)
     {
-        var dialog = new ChoiceDialog<ErrorAction>("Error", $"{error.Item}\n\n{error.Message}",
-            [("Retry", ErrorAction.Retry), ("Skip", ErrorAction.Skip), ("Skip all", ErrorAction.SkipAll), ("Cancel", ErrorAction.Cancel)],
-            cancelValue: ErrorAction.Cancel, defaultIndex: 1, width: 560);
+        // the error explained (user's template, 21 November 2026): the program holding the file, the program's own log,
+        // the log setting and the file's properties
+        var main = RequireOwner() as Views.MainWindow;
+        var vm = main?.DataContext as ViewModels.MainWindowViewModel;
+        var request = new JobErrorRequest(error)
+        {
+            LockedBy = OperatingSystem.IsWindows() ? NextCommander.Platform.Windows.FileLocks.WhoLocks : null,
+            OwnLogFolder = App.LogDirectory,
+            OpenLogSetting = main is null || vm is null ? null : () =>
+            {
+                _ = vm.ExecuteAsync("nc_Config");
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => main.Settings?.SelectPage("Log file"), Avalonia.Threading.DispatcherPriority.Background);
+                return Task.CompletedTask;
+            },
+            ShowProperties = vm is null ? null : async path =>
+            {
+                var local = VfsPath.Local(path);
+                if (await vm.Tools.Registry.Resolve(local).GetEntryAsync(local, CancellationToken.None) is { } entry)
+                {
+                    await ShowPropertiesAsync(entry, null);
+                }
+            },
+        };
+        var dialog = new JobErrorDialog(request);
         await dialog.ShowDialog(DialogOwner());
         return dialog.Result;
     }

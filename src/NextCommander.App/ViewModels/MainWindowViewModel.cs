@@ -4704,13 +4704,13 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         {
             return;
         }
-        await RunElevatedAsync(job.Title, $"Access was denied to {denied.Count} items (e.g. {denied[0]}).\n\nTry again with administrator rights?", request);
+        await RunElevatedAsync(job.Title, $"Access was denied to {denied.Count} items (e.g. {denied[0]}).\n\nTry again with administrator rights?", request, ask: !job.ElevationRequested); // "Retry as administrator" in the error dialog asked already
     }
 
     /// <summary>Asks, then runs <paramref name="request"/> with administrator rights and shows what went wrong; true when it ran.</summary>
-    private async Task<bool> RunElevatedAsync(string title, string question, ElevatedRequest request)
+    private async Task<bool> RunElevatedAsync(string title, string question, ElevatedRequest request, bool ask = true)
     {
-        if (!await _dialogs.ConfirmAsync(title, question, OperatingSystem.IsWindows() ? "Run as administrator" : "Run as root"))
+        if (ask && !await _dialogs.ConfirmAsync(title, question, OperatingSystem.IsWindows() ? "Run as administrator" : "Run as root"))
         {
             return false;
         }
