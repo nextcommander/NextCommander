@@ -3450,5 +3450,16 @@
   "ConnectionManagerView.ExportAll": "将所有连接导出到文件...",
   "ConnectionManagerView.ExportConnections": "导出连接",
   "ConnectionManagerView.Exported": "已导出 {0} 个连接（不含密码）",
-  "ConnectionImport.NotAConnectionsFile": "这不是 NextCommander 的连接文件。"
+  "ConnectionImport.NotAConnectionsFile": "这不是 NextCommander 的连接文件。",
+  "Settings.Misc.LogEveryTab": "记录每个标签页的输出",
+  "Settings.Misc.LogEveryTab.Description": "每个新的终端标签页都会将其显示内容写入文本文件（不含颜色和控制码）。终端的“日志”按钮可对单个标签页执行此操作。",
+  "Settings.Misc.TerminalLogFolder": "终端日志文件夹",
+  "Settings.Misc.TerminalLogFolder.Description": "终端标签页日志文件的位置（留空：设置文件夹中的 logs/terminal）。",
+  "SettingsWindow.LogsTerminalFolder": "设置文件夹中的 logs/terminal",
+  "TerminalView.LogOn": "● 日志",
+  "TerminalView.LogThisTab": "将此标签页记录到文件",
+  "TerminalView.LoggingTo": "正在记录到 {0}",
+  "TerminalView.OpenTheLogFolder": "打开日志文件夹",
+  "TerminalView.StopLogging": "停止记录",
+  "TerminalView.WriteTheOutput": "将此标签页的输出写入文本文件"
 }

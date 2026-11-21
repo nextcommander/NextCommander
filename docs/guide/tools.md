@@ -282,6 +282,12 @@ open a terminal at the bottom of the window. Press it again to hide it; the shel
   clears the screen, **Stop** restarts the shell.
 - **Tabs:** `+` opens another terminal, `▾` lists the installed shells (on Windows cmd, Windows PowerShell,
   PowerShell 7, Git Bash and WSL; elsewhere your shells). `exit` or the tab's `×` closes it.
+- **Log** writes the output of the active tab to a text file from now on (*Log this tab to a file*): plain text
+  without colors and control codes, a line with the session and the time at the start and the end. While a tab is
+  logged the button shows **● Log** in red and its tip names the file; *Stop logging* ends the file, and so does
+  closing the tab. *Open the log folder* shows the folder in the active panel. The files are named after the tab
+  (an SSH / Telnet session after its connection) and the time, in `logs/terminal` of the settings folder or the
+  folder set on the *Misc.* page, which can also log every new tab.
 - Drag its top edge to change its height. The □ button (or a double click on its title, or the internal terminal
   button of the button bar) maximizes it: it becomes a page of its own with a **Terminal** tab next to the files tab,
   and the files tab takes you back to the panels while its shells keep running. The tab's `×` (or ❐) puts it back

@@ -1365,6 +1365,11 @@ public partial class MainWindow : Window
             // the height and the open tabs are kept in the settings
             _terminal.HeightRatioChanged += (_, _) => _vm.Settings.TerminalHeightRatio = Math.Round(_terminal.HeightRatio, 3);
             _terminal.FilesRequested += (_, e) => _ = _vm.OpenSshFilesAsync(e.Connection, e.Folder);
+            _terminal.LogFolderRequested += (_, folder) =>
+            {
+                Directory.CreateDirectory(folder);
+                _ = _vm.ActivePanel.NavigateAsync(NextCommander.Core.Vfs.VfsPath.Local(folder));
+            };
             _terminal.TabsChanged += (_, _) =>
             {
                 // the shells are kept (not the remote sessions); only remote ones open: the shells stay as they were
@@ -1402,6 +1407,8 @@ public partial class MainWindow : Window
     {
         _terminal!.Shell = _vm!.Settings.InternalTerminalShell;
         _terminal.Emulation = _vm.Settings.TerminalEmulation;
+        _terminal.LogAll = _vm.Settings.TerminalLogAll;
+        _terminal.LogFolder = _vm.Settings.TerminalLogFolder;
         _terminal.SetFont(_vm.Settings.TerminalFont, _vm.Settings.TerminalFontSize);
     }
 

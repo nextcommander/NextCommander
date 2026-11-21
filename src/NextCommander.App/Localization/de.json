@@ -3450,5 +3450,16 @@
   "ConnectionManagerView.ExportAll": "Alle Verbindungen in eine Datei exportieren...",
   "ConnectionManagerView.ExportConnections": "Verbindungen exportieren",
   "ConnectionManagerView.Exported": "{0} Verbindungen exportiert (ohne Passwörter)",
-  "ConnectionImport.NotAConnectionsFile": "Dies ist keine Verbindungsdatei von NextCommander."
+  "ConnectionImport.NotAConnectionsFile": "Dies ist keine Verbindungsdatei von NextCommander.",
+  "Settings.Misc.LogEveryTab": "Die Ausgabe jedes Tabs protokollieren",
+  "Settings.Misc.LogEveryTab.Description": "Jeder neue Terminal-Tab schreibt, was er zeigt, in eine Textdatei (ohne Farben und Steuercodes). Die Schaltfläche Protokoll des Terminals tut dies für einen Tab.",
+  "Settings.Misc.TerminalLogFolder": "Ordner der Terminal-Protokolle",
+  "Settings.Misc.TerminalLogFolder.Description": "Wohin die Protokolldateien der Terminal-Tabs geschrieben werden (leer: logs/terminal im Einstellungsordner).",
+  "SettingsWindow.LogsTerminalFolder": "logs/terminal im Einstellungsordner",
+  "TerminalView.LogOn": "● Protokoll",
+  "TerminalView.LogThisTab": "Diesen Tab in eine Datei protokollieren",
+  "TerminalView.LoggingTo": "Protokolliert nach {0}",
+  "TerminalView.OpenTheLogFolder": "Den Protokollordner öffnen",
+  "TerminalView.StopLogging": "Protokollierung beenden",
+  "TerminalView.WriteTheOutput": "Die Ausgabe dieses Tabs in eine Textdatei schreiben"
 }
