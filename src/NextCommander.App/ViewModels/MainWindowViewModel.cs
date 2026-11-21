@@ -412,7 +412,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         "nc_CopyToClipboard", "nc_CutToClipboard", "nc_SetAttrib", "nc_PackFiles", "nc_UnpackFiles", "nc_TestArchive", "nc_CompareFilesByContent",
         "nc_AssociateWith", "nc_MultiRenameFiles", "nc_EditComment", "nc_PrintFile", "nc_SplitFile", "nc_CombineFiles", "nc_UUEncode", "nc_UUDecode",
         "nc_CRCcreate", "nc_CRCcheck", "nc_CopyNamesToClip", "nc_CopyFullNamesToClip", "nc_CopyDetailsToClip", "nc_CopyFullDetailsToClip",
-        "nc_RestoreFromTrash",
+        "nc_RestoreFromTrash", "nc_MountImage", "nc_UnmountImage",
     };
 
     /// <summary>Whether the active panel has files or folders selected (marked ones, or the one under the cursor that is not [..]).</summary>
@@ -1178,6 +1178,8 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         c.Register("nc_PackFiles", "Pack selected files (Alt+F5)", _ => PackAsync());
         c.Register("nc_UnpackFiles", "Unpack selected archives (Alt+F9)", _ => UnpackAsync());
         c.Register("nc_TestArchive", "Test selected archives (Alt+Shift+F9)", _ => TestArchivesAsync());
+        c.Register("nc_MountImage", "Mount the disc image under the cursor and open its drive", _ => MountImageAsync());
+        c.Register("nc_UnmountImage", "Unmount the disc image under the cursor", _ => UnmountImageAsync());
         c.Register("nc_OpenArchive", "Open file under cursor as archive (Ctrl+PgDn)", _ => ActivePanel.OpenAsArchiveAsync());
         c.Register("nc_SearchFor", "Find files (Alt+F7)", _ => FindFilesAsync(null, autoStart: false));
         c.Register("LOADSEARCH", "Open and start saved search (LOADSEARCH name)", p => LoadSearchAsync(p));
@@ -3556,6 +3558,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     {
         ["zip"] = PackFormat.Zip, ["tar"] = PackFormat.Tar, ["tar.gz"] = PackFormat.TarGz, ["tar.bz2"] = PackFormat.TarBz2, ["tar.zst"] = PackFormat.TarZst,
         ["7z"] = PackFormat.SevenZip,
+        ["iso"] = PackFormat.Iso,
     };
 
     /// <summary>Alt+F5: packs the selection into an archive in the other panel (adding to an existing zip goes through the archive VFS).</summary>
@@ -3747,6 +3750,57 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         if (job.State == JobState.Completed)
         {
             await _dialogs.ShowMessageAsync("Test archives", $"Tested {job.TestedFiles} files in {archives.Count} archives: no errors.");
+        }
+    }
+
+    /// <summary>The .iso file under the cursor (a local file the system can mount), else a message says what is needed.</summary>
+    private async Task<string?> ImageUnderCursorAsync(string title)
+    {
+        if (ActivePanel.CursorItem?.Entry is { IsDirectory: false } entry && entry.Path.IsLocal && NextCommander.Platform.DiskImages.CanMount(entry.Name))
+        {
+            return entry.Path.Path;
+        }
+        await _dialogs.ShowMessageAsync(title, "Put the cursor on a disc image (.iso) on this computer.");
+        return null;
+    }
+
+    /// <summary>nc_MountImage: the system mounts the image (read-only); the panel opens its drive (already mounted: goes there).</summary>
+    private async Task MountImageAsync()
+    {
+        if (await ImageUnderCursorAsync("Mount disc image") is not { } image)
+        {
+            return;
+        }
+        try
+        {
+            var folder = await NextCommander.Platform.DiskImages.MountAsync(image, CancellationToken.None);
+            await ActivePanel.NavigateAsync(VfsPath.Local(folder));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or OperationCanceledException)
+        {
+            await _dialogs.ShowMessageAsync("Mount disc image", ex.Message);
+        }
+    }
+
+    /// <summary>nc_UnmountImage: the system unmounts the image; panels on its drive go elsewhere by themselves.</summary>
+    private async Task UnmountImageAsync()
+    {
+        if (await ImageUnderCursorAsync("Unmount disc image") is not { } image)
+        {
+            return;
+        }
+        try
+        {
+            if (await NextCommander.Platform.DiskImages.MountedAtAsync(image, CancellationToken.None) is null)
+            {
+                await _dialogs.ShowMessageAsync("Unmount disc image", "The disc image is not mounted.");
+                return;
+            }
+            await NextCommander.Platform.DiskImages.UnmountAsync(image, CancellationToken.None);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or OperationCanceledException)
+        {
+            await _dialogs.ShowMessageAsync("Unmount disc image", ex.Message);
         }
     }
 

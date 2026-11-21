@@ -24,6 +24,9 @@
           <MenuItem Header="Pack..." InputGesture="Alt+F5" Command="{Binding RunCommandCommand}" CommandParameter="nc_PackFiles" />
           <MenuItem Header="Unpack files..." InputGesture="Alt+F9" Command="{Binding RunCommandCommand}" CommandParameter="nc_UnpackFiles" />
           <MenuItem Header="Test archives" InputGesture="Alt+Shift+F9" Command="{Binding RunCommandCommand}" CommandParameter="nc_TestArchive" />
+          <Separator />
+          <MenuItem Header="Mount disc image" Command="{Binding RunCommandCommand}" CommandParameter="nc_MountImage" />
+          <MenuItem Header="Unmount disc image" Command="{Binding RunCommandCommand}" CommandParameter="nc_UnmountImage" />
         </MenuItem>
         <MenuItem Header="Compare by content..." Command="{Binding RunCommandCommand}" CommandParameter="nc_CompareFilesByContent" />
         <MenuItem Header="Associations" Tag="nc_AssociateWith">

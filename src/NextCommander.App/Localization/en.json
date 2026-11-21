@@ -3565,5 +3565,16 @@
   "TerminalView.TypeInAllOn": "● Type in all",
   "ArchiveContainer.ADiscImageIsRead": "{0}: a disc image is read-only.",
   "DiscImage.NotADiscImage": "Not a disc image (no ISO 9660 or UDF file system found).",
-  "DiscImage.NotReadable": "Not a readable disc image: {0}"
+  "DiscImage.NotReadable": "Not a readable disc image: {0}",
+  "Menu.nc_MountImage": "Mount disc image",
+  "Menu.nc_UnmountImage": "Unmount disc image",
+  "Command.nc_MountImage": "Mount the disc image under the cursor and open its drive",
+  "Command.nc_UnmountImage": "Unmount the disc image under the cursor",
+  "MainWindow.PutTheCursorOnAnImage": "Put the cursor on a disc image (.iso) on this computer.",
+  "MainWindow.TheDiscImageIsNotMounted": "The disc image is not mounted.",
+  "PackDialog.IsoDescription": "A CD / DVD image (ISO 9660 with long names): burned or mounted as a disc; no compression; files up to 4 GB.",
+  "PackDialog.DiscImage": "Disc image",
+  "PackJob.TooLargeForADiscImage": "Too large for a disc image: an ISO 9660 file can be at most 4 GB.",
+  "DiskImages.CouldNotBeUnmounted": "{0} could not be unmounted: {1}",
+  "PackJob.CouldNotBeWritten": "The disc image could not be written: {0}"
 }

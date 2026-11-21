@@ -33,7 +33,7 @@ public sealed class MenuTests : IDisposable
         Assert.Equal(["Change attributes...", "Archive", "Compare by content...", "Associations", "Properties...", "Calculate occupied space...",
             "Multi-Rename Tool...", "Edit comment...", "Print", "Split / combine", "Encode / decode", "Checksum", "Exit"], Headers(w, "_Files"));
         Assert.Equal("View", Headers(w, "_Edit")[0]); // the F key commands in their own menu after Files
-        Assert.Equal(["Pack...", "Unpack files...", "Test archives"], Headers(w, "Archive"));
+        Assert.Equal(["Pack...", "Unpack files...", "Test archives", "Mount disc image", "Unmount disc image"], Headers(w, "Archive"));
         Assert.Equal(["Create checksums (MD5/SHA)...", "Verify checksums"], Headers(w, "Checksum"));
         var mark = Headers(w, "_Mark");
         Assert.Equal(["Select group...", "Unselect group...", "Select all", "Unselect all", "Invert selection", "Select all with the same extension"], mark.Take(6));
