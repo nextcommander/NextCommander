@@ -103,9 +103,28 @@ public static partial class Checksums
         return hasher.HexDigest();
     }
 
-    /// <summary>Line in the file: SFV "name CRC", others md5sum style "hash *name" (binary mode).</summary>
-    public static string FormatLine(ChecksumKind kind, string hash, string name) =>
-        kind == ChecksumKind.Crc32 ? $"{name} {hash.ToUpperInvariant()}" : $"{hash.ToLowerInvariant()} *{name}";
+    /// <summary>
+    /// Line in the file: SFV "name CRC"; the others md5sum style "hash *name" (binary mode, read by sha256sum and most
+    /// tools) or, with <paramref name="bsd"/>, BSD / macOS style "SHA256 (name) = hash".
+    /// </summary>
+    public static string FormatLine(ChecksumKind kind, string hash, string name, bool bsd = false) =>
+        kind == ChecksumKind.Crc32 ? $"{name} {hash.ToUpperInvariant()}"
+        : bsd ? $"{BsdName(kind)} ({name}) = {hash.ToLowerInvariant()}"
+        : $"{hash.ToLowerInvariant()} *{name}";
+
+    /// <summary>The algorithm's name in BSD style lines (as the BSD and macOS tools write it).</summary>
+    public static string BsdName(ChecksumKind kind) => kind switch
+    {
+        ChecksumKind.Md5 => "MD5",
+        ChecksumKind.Sha1 => "SHA1",
+        ChecksumKind.Sha256 => "SHA256",
+        ChecksumKind.Sha384 => "SHA384",
+        ChecksumKind.Sha512 => "SHA512",
+        ChecksumKind.Sha3256 => "SHA3-256",
+        ChecksumKind.Sha3512 => "SHA3-512",
+        ChecksumKind.Blake3 => "BLAKE3",
+        _ => "CRC32",
+    };
 
     /// <summary>Reads md5sum ("hash  name" / "hash *name"), BSD ("SHA256 (name) = hash") and SFV ("name CRC") lines.</summary>
     public static IReadOnlyList<ChecksumLine> Parse(string text, ChecksumKind kind)
@@ -267,6 +286,15 @@ public sealed class CreateChecksumsJob : FileJob
     private readonly ChecksumKind _kind;
     private readonly VfsPath? _singleFile;
 
+    /// <summary>BSD style lines ("SHA256 (name) = hash") instead of "hash *name" (not for CRC32 / SFV).</summary>
+    public bool Bsd { get; init; }
+
+    /// <summary>False: nothing is written, only <see cref="Lines"/> are made (copied to the clipboard).</summary>
+    public bool WriteFiles { get; init; } = true;
+
+    /// <summary>The lines of the checksums, as they are (or would be) written: one per file, in the order read.</summary>
+    public List<string> Lines { get; } = [];
+
     /// <param name="singleFile">Target of the combined file, or null for one checksum file per source file.</param>
     public CreateChecksumsJob(ProviderRegistry registry, IReadOnlyList<VfsEntry> sources, ChecksumKind kind, VfsPath? singleFile)
         : base("Create checksums")
@@ -299,21 +327,28 @@ public sealed class CreateChecksumsJob : FileJob
                 Progress.CompleteFile();
                 if (_singleFile is null)
                 {
-                    var target = file.Path.Parent!.Combine(file.Name + Checksums.Extension(_kind));
-                    await WriteAsync(target, Checksums.FormatLine(_kind, hash, file.Name) + "\n", ct).ConfigureAwait(false);
+                    var line = Checksums.FormatLine(_kind, hash, file.Name, Bsd);
+                    Lines.Add(line);
+                    if (WriteFiles)
+                    {
+                        var target = file.Path.Parent!.Combine(file.Name + Checksums.Extension(_kind));
+                        await WriteAsync(target, line + "\n", ct).ConfigureAwait(false);
+                    }
                 }
             }
         }
         if (_singleFile is not null)
         {
             var baseDir = _singleFile.Parent!;
-            var sb = new StringBuilder();
             foreach (var (file, hash) in Results)
             {
                 var name = file.Path.GetRelativeTo(baseDir) ?? file.Name;
-                sb.Append(Checksums.FormatLine(_kind, hash, _kind == ChecksumKind.Crc32 || OperatingSystem.IsWindows() ? name.Replace('/', '\\') : name)).Append('\n');
+                Lines.Add(Checksums.FormatLine(_kind, hash, _kind == ChecksumKind.Crc32 || OperatingSystem.IsWindows() ? name.Replace('/', '\\') : name, Bsd));
             }
-            await WriteAsync(_singleFile, sb.ToString(), ct).ConfigureAwait(false);
+            if (WriteFiles)
+            {
+                await WriteAsync(_singleFile, string.Concat(Lines.Select(l => l + "\n")), ct).ConfigureAwait(false);
+            }
         }
     }
 

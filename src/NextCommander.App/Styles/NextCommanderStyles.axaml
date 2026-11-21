@@ -681,6 +681,21 @@
   <Style Selector="Button.conncard:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="BorderBrush" Value="{DynamicResource ConnAccent}" />
   </Style>
+  <!-- a chosen card (the checksum dialog's algorithm): the accent frame on its soft tint; its line in the accent color -->
+  <Style Selector="Button.conncard.on">
+    <Setter Property="Background" Value="{DynamicResource ConnAccentSoft}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ConnAccent}" />
+  </Style>
+  <Style Selector="Button.conncard.on:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.conncard.on:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ConnAccentSoft}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ConnAccent}" />
+  </Style>
+  <Style Selector="Button.conncard TextBlock.hint">
+    <Setter Property="Foreground" Value="{DynamicResource ConnText3}" />
+  </Style>
+  <Style Selector="Button.conncard.on TextBlock.hint">
+    <Setter Property="Foreground" Value="{DynamicResource ConnAccent}" />
+  </Style>
   <Style Selector="ToggleButton.connchip">
     <Setter Property="Background" Value="{DynamicResource ConnControl}" />
     <Setter Property="BorderBrush" Value="{DynamicResource ConnStroke2}" />

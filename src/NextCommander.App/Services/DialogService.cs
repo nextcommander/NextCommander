@@ -222,9 +222,9 @@ public sealed class DialogService : IDialogService
         return dialog.Result;
     }
 
-    public async Task<(NextCommander.Core.Tools.ChecksumKind Kind, string? SingleFileName)?> ShowChecksumDialogAsync(string baseName, NextCommander.Core.Tools.ChecksumKind kind)
+    public async Task<NextCommander.Core.Tools.CreateChecksumsJob?> ShowChecksumDialogAsync(ChecksumDialogRequest request)
     {
-        var dialog = new ChecksumDialog(baseName, kind);
+        var dialog = new ChecksumDialog(request);
         await dialog.ShowDialog(RequireOwner());
         return dialog.Result;
     }
