@@ -220,6 +220,43 @@ public sealed partial class TerminalConsole : TerminalTab
             _ = PromptLaterAsync(session);
         }
         session.Send(line);
+        RaiseTyped(line + "\r");
+    }
+
+    private readonly StringBuilder _received = new();
+
+    /// <summary>Typed in another tab (MultiExec): whole lines run here; Ctrl+C stops; other keys are left out.</summary>
+    public override void Receive(string text)
+    {
+        foreach (var c in text)
+        {
+            switch (c)
+            {
+                case '\r':
+                    Run(_received.ToString());
+                    _received.Clear();
+                    break;
+                case '\u0003':
+                    _received.Clear();
+                    Restart();
+                    break;
+                case '\u007f' or '\b':
+                    if (_received.Length > 0)
+                    {
+                        _received.Length--;
+                    }
+                    break;
+                case '\u001b':
+                    _received.Clear(); // arrows, history: no line of this console
+                    break;
+                default:
+                    if (!char.IsControl(c))
+                    {
+                        _received.Append(c);
+                    }
+                    break;
+            }
+        }
     }
 
     /// <summary>Shells without their own prompt: shows the prompt again when the output has been quiet for a moment.</summary>

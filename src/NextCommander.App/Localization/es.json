@@ -3468,5 +3468,7 @@
   "TerminalView.MatchCase": "Coincidir mayúsculas y minúsculas",
   "TerminalView.NewerMatch": "Coincidencia más reciente (Mayús+Intro)",
   "TerminalView.NoResults": "Sin resultados",
-  "TerminalView.OlderMatch": "Coincidencia más antigua (Intro)"
+  "TerminalView.OlderMatch": "Coincidencia más antigua (Intro)",
+  "TerminalView.TypeHereToo": "Escribir aquí también (MultiExec)",
+  "TerminalView.MultiExecTip": "Escribir en varios terminales a la vez: lo que se escribe en una pestaña va a todas las pestañas marcadas"
 }

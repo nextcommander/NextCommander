@@ -3468,5 +3468,7 @@
   "TerminalView.MatchCase": "Groß-/Kleinschreibung beachten",
   "TerminalView.NewerMatch": "Neuerer Treffer (Umschalt+Eingabe)",
   "TerminalView.NoResults": "Keine Treffer",
-  "TerminalView.OlderMatch": "Älterer Treffer (Eingabe)"
+  "TerminalView.OlderMatch": "Älterer Treffer (Eingabe)",
+  "TerminalView.TypeHereToo": "Auch hier tippen (MultiExec)",
+  "TerminalView.MultiExecTip": "In mehrere Terminals gleichzeitig tippen: was in einem Tab getippt wird, geht an jeden markierten Tab"
 }
