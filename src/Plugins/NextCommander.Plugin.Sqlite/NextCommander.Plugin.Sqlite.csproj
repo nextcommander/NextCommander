@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    SQLite databases as a plugin: a database file opens like a folder of its tables (CSV, JSON, schema), and the Lister
+    shows an overview. It uses the system's SQLite (Windows' winsqlite3.dll, Linux' libsqlite3.so.0, macOS'
+    libsqlite3.dylib) through function pointers: no package and no native file to ship. The application builds it and
+    copies it with plugin.json and its languages folder into plugins/sqlite next to the program.
+  -->
+  <PropertyGroup>
+    <RootNamespace>NextCommander.Plugin.Sqlite</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\NextCommander.Core\NextCommander.Core.csproj" Private="false" />
+  </ItemGroup>
+  <!-- plugin.json and languages are taken from this folder by the application's build (not copied here: they would land next to the program too) -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="NextCommander.Core.Tests" />
+  </ItemGroup>
+</Project>

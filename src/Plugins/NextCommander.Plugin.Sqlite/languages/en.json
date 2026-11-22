@@ -1,0 +1,19 @@
+{
+  "Sqlite.Tables": "{0} tables",
+  "Sqlite.Views": "{0} views",
+  "Sqlite.Indexes": "{0} indexes",
+  "Sqlite.Rows": "{0} rows",
+  "Sqlite.NoTables": "The database has no tables.",
+  "Sqlite.View": "View",
+  "Sqlite.Table": "Table",
+  "Sqlite.Column": "Column",
+  "Sqlite.Type": "Type",
+  "Sqlite.Key": "Key",
+  "Sqlite.NotNull": "Not null",
+  "Sqlite.Default": "Default",
+  "Sqlite.PrimaryKey": "Primary key",
+  "Sqlite.FirstRows": "First rows",
+  "Sqlite.BlobBytes": "BLOB, {0} bytes",
+  "Sqlite.IndexesTitle": "Indexes",
+  "Sqlite.ReadOnly": "The database is opened read-only: copy a table out (CSV or JSON) to use its rows."
+}
