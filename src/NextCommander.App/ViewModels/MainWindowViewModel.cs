@@ -536,7 +536,6 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         Controls.ThumbnailListControl.ShowCaptions = !string.IsNullOrWhiteSpace(_settings.ThumbnailFields) || _settings.ThumbnailFieldsByType.Count > 0;
         foreach (var ftp in _registry.Providers.OfType<NextCommander.Vfs.Remote.FtpFileSystemProvider>())
         {
-            ftp.ShowHidden = _settings.FtpShowHidden;
             ftp.RetryAttempts = _settings.FtpRetries;
             ftp.TransferMode = _settings.FtpTransferMode;
             ftp.AsciiMasks = _settings.FtpAsciiMasks;
@@ -2671,7 +2670,6 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ShowToolTips));
         OnPropertyChanged(nameof(ShowSharedDriveBar));
         OnPropertyChanged(nameof(FlatDriveButtons));
-        OnPropertyChanged(nameof(FtpShowHidden));
         OnPropertyChanged(nameof(ShowAdminShares));
         OnPropertyChanged(nameof(Settings));
         OnPropertyChanged(nameof(ShowFunctionKeys));
@@ -2984,7 +2982,8 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             var authority = path.Authority[(path.Authority.LastIndexOf('@') + 1)..];
             host = authority.StartsWith('[') ? authority[1..authority.IndexOf(']')] : authority.Split(':')[0];
         }
-        _dialogs.ShowNetworkTools(host);
+        _dialogs.ShowNetworkTools(new Views.Tools.NetworkToolsRequest(host, _settings, SaveSettings,
+            OpenAddressAsync, url => _platform.OpenWithDefaultApp(url)));
     }
 
     /// <summary>PC link sharing on this computer (null in tests without it).</summary>

@@ -127,13 +127,20 @@
         <MenuItem Header="Duplicate files..." Command="{Binding RunCommandCommand}" CommandParameter="nc_FindDuplicates" />
         <MenuItem Header="Folder sizes..." Command="{Binding RunCommandCommand}" CommandParameter="nc_DiskUsage" />
       </MenuItem>
-      <MenuItem Header="_Net">
+      <!-- Connection (was Net; user's request, 22 November 2026): the PC link, tunnels and network tools right below Disconnect -->
+      <MenuItem Header="Co_nnection">
         <MenuItem Header="Connection manager..." InputGesture="Ctrl+F" Command="{Binding RunCommandCommand}" CommandParameter="nc_RemoteConnection" />
         <MenuItem x:Name="SavedConnectionsMenu" Header="Saved connections">
           <MenuItem Header="(none)" IsEnabled="False" />
         </MenuItem>
         <MenuItem Header="Connect by address..." InputGesture="Ctrl+N" Command="{Binding RunCommandCommand}" CommandParameter="nc_FtpNewConnection" />
         <MenuItem Header="Disconnect" InputGesture="Ctrl+Shift+F" Command="{Binding RunCommandCommand}" CommandParameter="nc_FtpDisconnect" />
+        <Separator />
+        <MenuItem Header="PC link..." Command="{Binding RunCommandCommand}" CommandParameter="nc_LinkConnect" />
+        <MenuItem Header="Share with PC link" ToggleType="CheckBox" IsChecked="{Binding LinkSharing, Mode=OneWay}"
+                  Command="{Binding RunCommandCommand}" CommandParameter="nc_LinkShare" />
+        <MenuItem Header="SSH tunnels..." Command="{Binding RunCommandCommand}" CommandParameter="nc_SshTunnels" />
+        <MenuItem Header="Network tools..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NetworkTools" />
         <Separator />
         <MenuItem Header="Network (machines of the local network)" Command="{Binding RunCommandCommand}" CommandParameter="nc_OpenNetwork" />
         <MenuItem Header="Map network drive..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NetConnect" />
@@ -145,17 +152,8 @@
         <Separator />
         <MenuItem Header="Download from URL..." Command="{Binding RunCommandCommand}" CommandParameter="nc_DownloadUrl" />
         <MenuItem Header="Download the addresses of a list..." Command="{Binding RunCommandCommand}" CommandParameter="nc_FtpDownloadList" />
-        <MenuItem Header="Show hidden files on FTP" ToggleType="CheckBox" IsChecked="{Binding FtpShowHidden, Mode=OneWay}"
-                  Command="{Binding RunCommandCommand}" CommandParameter="nc_FtpHiddenFiles" />
         <Separator />
         <MenuItem Header="Master password..." Command="{Binding RunCommandCommand}" CommandParameter="nc_MasterPassword" />
-        <Separator />
-        <MenuItem Header="PC link..." Command="{Binding RunCommandCommand}" CommandParameter="nc_LinkConnect" />
-        <MenuItem Header="Share with PC link" ToggleType="CheckBox" IsChecked="{Binding LinkSharing, Mode=OneWay}"
-                  Command="{Binding RunCommandCommand}" CommandParameter="nc_LinkShare" />
-        <Separator />
-        <MenuItem Header="SSH tunnels..." Command="{Binding RunCommandCommand}" CommandParameter="nc_SshTunnels" />
-        <MenuItem Header="Network tools..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NetworkTools" />
       </MenuItem>
       <MenuItem Header="_Show">
         <MenuItem Header="Display" Tag="nc_SrcLong">

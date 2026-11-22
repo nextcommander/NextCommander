@@ -1580,6 +1580,7 @@ public sealed partial class ConnectionManagerView
             fields.Add(Field("File name encoding", Choice([.. encodings.Select(e => e.Length == 0 ? Core.Localization.Localizer.T("Automatic (UTF-8 when the server has it)") : e)],
                 Array.IndexOf([.. encodings], c.FtpEncoding ?? string.Empty), i => c.FtpEncoding = encodings[i].Length == 0 ? null : encodings[i])));
             fields.Add(Field("Folder listing", Choice(["Automatic (MLSD when the server has it)", "Always LIST"], (int)c.FtpListing, i => c.FtpListing = (FtpListing)i)));
+            fields.Add(Check("Show hidden files (LIST -a)", c.FtpShowHidden, v => c.FtpShowHidden = v));
             var zones = s_timeOffsets;
             fields.Add(Field("Server time zone", Choice([.. zones.Select(z => z is null ? Core.Localization.Localizer.T("UTC (or as the server tells)") : OffsetText(z.Value))],
                 Math.Max(0, Array.IndexOf(zones, c.FtpTimeOffsetMinutes)), i => c.FtpTimeOffsetMinutes = zones[i]),

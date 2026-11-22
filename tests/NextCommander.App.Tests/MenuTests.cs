@@ -216,7 +216,7 @@ public sealed class MenuTests : IDisposable
     {
         var (w, vm) = await _fx.OpenAsync();
         var top = w.GetLogicalDescendants().OfType<Menu>().First().Items.OfType<MenuItem>().Select(m => (string)m.Header!).ToList();
-        Assert.Equal(["_Files", "_Edit", "_Mark", "_Commands", "_Net", "_Show", "C_onfiguration", "_Start", "_Help"], top);
+        Assert.Equal(["_Files", "_Edit", "_Mark", "_Commands", "Co_nnection", "_Show", "C_onfiguration", "_Start", "_Help"], top);
         // related options in submenus; navigation and tabs (formerly under "Other") on the menu itself
         Assert.Equal(["Display", "Tree", "Quick view panel", "Panels", "File filter", "Sort", "Group by", "What is shown", "Navigation", "Tabs",
             "Reread source"], Headers(w, "_Show"));
@@ -267,10 +267,12 @@ public sealed class MenuTests : IDisposable
     public async Task Network_menu_groups_connections_and_shows_product_marks()
     {
         var (w, vm) = await _fx.OpenAsync();
+        // the Connection menu (was Net): PC link, tunnels and network tools right below Disconnect; hidden FTP files belong to each connection now
         Assert.Equal(["Connection manager...", "Saved connections", "Connect by address...", "Disconnect",
+            "PC link...", "Share with PC link", "SSH tunnels...", "Network tools...",
             "Network (machines of the local network)", "Map network drive...", "Disconnect network drives...", "Share current directory...", "Unshare directory...",
-            "Show admin shares", "Download from URL...", "Download the addresses of a list...", "Show hidden files on FTP", "Master password...", "PC link...", "Share with PC link", "SSH tunnels...", "Network tools..."],
-            Headers(w, "_Net"));
+            "Show admin shares", "Download from URL...", "Download the addresses of a list...", "Master password..."],
+            Headers(w, "Co_nnection"));
         // no "New connection" submenu: the connection manager makes new connections (nc_NewConnection still opens it on a type)
         Assert.DoesNotContain(w.GetLogicalDescendants().OfType<MenuItem>(), m => m.Header as string is "New connection" or "Google Drive...");
 

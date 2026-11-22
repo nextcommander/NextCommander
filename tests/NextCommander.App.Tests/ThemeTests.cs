@@ -85,7 +85,7 @@ public sealed class ThemeTests : IDisposable
         Directory.CreateDirectory(dir);
         await _fx_NavigateBoth(w);
         w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "theme-dark.png"));
-        foreach (var (menu, file) in new[] { ("_Files", "menu-files"), ("_Mark", "menu-mark"), ("_Commands", "menu-commands"), ("_Net", "menu-net"), ("_Show", "menu-show"), ("C_onfiguration", "menu-config") })
+        foreach (var (menu, file) in new[] { ("_Files", "menu-files"), ("_Mark", "menu-mark"), ("_Commands", "menu-commands"), ("Co_nnection", "menu-net"), ("_Show", "menu-show"), ("C_onfiguration", "menu-config") })
         {
             await CaptureMenuAsync(w, menu, Path.Combine(dir, file + "-dark.png"));
         }

@@ -181,7 +181,7 @@ internal sealed class FakeDialogs : IDialogService
 
     public List<string?> NetworkToolsShown { get; } = [];
 
-    public void ShowNetworkTools(string? host) => NetworkToolsShown.Add(host);
+    public void ShowNetworkTools(Views.Tools.NetworkToolsRequest request) => NetworkToolsShown.Add(request.Host);
 
     public Task<CopyDialogResult?> ShowCopyDialogAsync(bool move, string description, string target, bool verifyDefault, IReadOnlyList<string> suggestions,
         Views.Dialogs.CopyDialogOptions? options = null)

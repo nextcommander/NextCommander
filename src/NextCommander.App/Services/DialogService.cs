@@ -403,14 +403,14 @@ public sealed class DialogService : IDialogService
 
     private Views.Tools.NetworkToolsWindow? _networkTools;
 
-    public void ShowNetworkTools(string? host)
+    public void ShowNetworkTools(Views.Tools.NetworkToolsRequest request)
     {
         if (_networkTools is { } open)
         {
             open.Activate();
             return;
         }
-        _networkTools = new Views.Tools.NetworkToolsWindow(host);
+        _networkTools = new Views.Tools.NetworkToolsWindow(request);
         _networkTools.Closed += (_, _) => _networkTools = null;
         if (Owner is { } owner)
         {

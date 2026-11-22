@@ -1275,4 +1275,137 @@
     <Setter Property="HorizontalAlignment" Value="Center" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
+  <!-- Network tools (the user's template, 22 November 2026): page tabs, chips, the stop button, a two-way switch, saved computers -->
+  <Style Selector="Button.nttab">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="14,7" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="FontSize" Value="13.5" />
+    <Setter Property="Foreground" Value="{DynamicResource NcMutedBrush}" />
+  </Style>
+  <Style Selector="Button.nttab:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcMwHoverBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="Button.nttab.on">
+    <Setter Property="Background" Value="{DynamicResource NcAccentSoftBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcAccentBrush}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.nttab.on:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcAccentSoftBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcAccentBrush}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.ntchip">
+    <Setter Property="Height" Value="24" />
+    <Setter Property="MinHeight" Value="24" />
+    <Setter Property="Padding" Value="9,0" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcMwStrongStrokeBrush}" />
+    <Setter Property="Background" Value="{DynamicResource NcMwChipBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcMutedBrush}" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.ntchip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcMutedBrush}" />
+  </Style>
+  <Style Selector="Button.ntchip.on">
+    <Setter Property="Background" Value="{DynamicResource NcAccentSoftBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcAccentBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcAccentBrush}" />
+  </Style>
+  <Style Selector="Button.ntchip.on:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcAccentSoftBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcAccentBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcAccentBrush}" />
+  </Style>
+  <Style Selector="Button.ntstop">
+    <Setter Property="Background" Value="{DynamicResource NcBadBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcBadBrush}" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <Style Selector="Button.ntstop:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcBadBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcBadBrush}" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <Style Selector="Button.ntghost">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="FontSize" Value="12.5" />
+  </Style>
+  <Style Selector="Button.ntghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcMwHoverBrush}" />
+  </Style>
+  <Style Selector="Border.ntsegframe">
+    <Setter Property="Background" Value="{DynamicResource NcMwHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcMwStrokeBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="2" />
+    <Setter Property="Height" Value="34" />
+  </Style>
+  <Style Selector="StackPanel.ntseg > Button">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="14,0" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="VerticalAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource NcMutedBrush}" />
+  </Style>
+  <Style Selector="StackPanel.ntseg > Button.on">
+    <Setter Property="Background" Value="{DynamicResource NcMwChipBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="StackPanel.ntseg > Button.on:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcMwChipBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="StackPanel.ntseg > Button.on /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BoxShadow" Value="{DynamicResource NcMwChipShadow}" />
+  </Style>
+  <Style Selector="Button.ntdevice">
+    <Setter Property="Padding" Value="12,10" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcMwStrokeBrush}" />
+    <Setter Property="Background" Value="{DynamicResource NcMwCardBrush}" />
+  </Style>
+  <Style Selector="Button.ntdevice:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcMwCardBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcMutedBrush}" />
+  </Style>
+  <Style Selector="Button.ntdevice.on">
+    <Setter Property="BorderBrush" Value="{DynamicResource NcAccentBrush}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+  <Style Selector="Button.ntdevice.on:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource NcAccentBrush}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+  <Style Selector="TextBlock.ntmono">
+    <Setter Property="FontFamily" Value="{DynamicResource NcMonoFont}" />
+  </Style>
+  <Style Selector="TextBox.ntmono">
+    <Setter Property="FontFamily" Value="{DynamicResource NcMonoFont}" />
+  </Style>
+  <Style Selector="TextBox.error">
+    <Setter Property="BorderBrush" Value="{DynamicResource NcBadBrush}" />
+  </Style>
+  <Style Selector="TextBox.error:focus /template/ Border#PART_BorderElement">
+    <Setter Property="BorderBrush" Value="{DynamicResource NcBadBrush}" />
+  </Style>
+  <Style Selector="Window.ntwin TextBox">
+    <Setter Property="MinHeight" Value="34" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Window.ntwin ComboBox">
+    <Setter Property="MinHeight" Value="34" />
+  </Style>
 </Styles>
