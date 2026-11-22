@@ -1,0 +1,11 @@
+{
+  "Docker.Containers": "Docker 容器",
+  "Docker.Group": "Docker",
+  "Docker.NotInstalled": "未安装 Docker。请安装 Docker Desktop 或 Docker Engine（或用 FM_DOCKER 指定 docker 程序），然后重新打开。",
+  "Docker.NotRunning": "Docker 未运行：请启动 Docker Desktop（或 docker 服务），然后重试。",
+  "Docker.ContainerStopped": "容器未运行：请启动它（docker start {0}）以处理其文件。",
+  "Docker.NoSuchContainer": "没有此容器：{0}",
+  "Docker.NoShell": "容器中没有 shell (sh)，因此无法列出其文件。",
+  "Docker.MoveBetween": "在容器之间移动需通过复制完成。",
+  "Docker.MadeWithDocker": "容器由 docker 本身创建和删除。"
+}

@@ -1,0 +1,6 @@
+{
+  "Name": "docker",
+  "Assembly": "NextCommander.Plugin.Docker.dll",
+  "Description": "Docker: the files of running containers in a panel (docker://), to view, copy in and out, edit, rename and delete. Uses the installed docker.",
+  "Version": "1.0"
+}

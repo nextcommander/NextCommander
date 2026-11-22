@@ -48,6 +48,7 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
   Google Drive, OneDrive, Dropbox and Box, all in the same panels as local files; ready-made settings for
   well-known S3 and WebDAV services.
 - Web server folder listings (`http://`, `https://`) open like folders; the remotes of an installed rclone too.
+- The files of Docker containers in a panel (through the installed docker).
 - Android phones over ADB (USB debugging) as drives; shortcuts to the local folders of OneDrive, iCloud Drive,
   Dropbox, Google Drive ... and to WSL distributions.
 - Remote desktop (RDP) sessions in a tab of the main window (Windows, Linux) or the system's client (mstsc, Windows
