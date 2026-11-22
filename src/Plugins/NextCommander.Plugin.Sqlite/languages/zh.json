@@ -1,8 +1,8 @@
 {
-  "Sqlite.Tables": "{0} 个表",
-  "Sqlite.Views": "{0} 个视图",
-  "Sqlite.Indexes": "{0} 个索引",
-  "Sqlite.Rows": "{0} 行",
+  "Sqlite.Tables": "表：{0}",
+  "Sqlite.Views": "视图：{0}",
+  "Sqlite.Indexes": "索引：{0}",
+  "Sqlite.Rows": "行数：{0}",
   "Sqlite.NoTables": "数据库中没有表。",
   "Sqlite.View": "视图",
   "Sqlite.Table": "表",
