@@ -122,7 +122,7 @@ public sealed class UserFilesTests : IDisposable
         var plugins = Path.Combine(AppContext.BaseDirectory, "plugins");
 
         // each plugin's languages folder: every shipped language has every key of its en.json and keeps the {0} holes
-        foreach (var plugin in new[] { "git", "rclone", "sqlite" })
+        foreach (var plugin in new[] { "git", "rclone", "sqlite", "docker" })
         {
             var languages = Path.Combine(plugins, plugin, "languages");
             var en = Localizer.ParseFile(File.ReadAllText(Path.Combine(languages, "en.json")));

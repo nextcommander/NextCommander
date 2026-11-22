@@ -15,15 +15,17 @@ A plugin is a .NET assembly that NextCommander loads at start. It can add:
 | An archive format to write | `IPackerPlugin` | A packer in the Pack dialog (Alt+F5). |
 | A viewer | `IViewerPlugin` | The Lister (F3) shows files it wants (key 6). |
 
-The rclone, Git and SQLite support of NextCommander are themselves plugins
+The rclone, Git, SQLite and Docker support of NextCommander are themselves plugins
 ([src/Plugins/NextCommander.Plugin.Rclone](../../src/Plugins/NextCommander.Plugin.Rclone),
 [src/Plugins/NextCommander.Plugin.Git](../../src/Plugins/NextCommander.Plugin.Git),
-[src/Plugins/NextCommander.Plugin.Sqlite](../../src/Plugins/NextCommander.Plugin.Sqlite); see [Git](#git) and
-[SQLite](#sqlite) below), and [tests/SamplePlugin](../../tests/SamplePlugin) is a small example with a column and a
-`hello://` file system.
+[src/Plugins/NextCommander.Plugin.Sqlite](../../src/Plugins/NextCommander.Plugin.Sqlite),
+[src/Plugins/NextCommander.Plugin.Docker](../../src/Plugins/NextCommander.Plugin.Docker); see [Git](#git),
+[SQLite](#sqlite) and [Docker](#docker) below), and [tests/SamplePlugin](../../tests/SamplePlugin) is a small example
+with a column and a `hello://` file system.
 
 - [Git](#git)
 - [SQLite](#sqlite)
+- [Docker](#docker)
 - [Using plugins](#using-plugins)
 - [Writing a plugin](#writing-a-plugin)
 - [File systems](#file-systems)
@@ -64,6 +66,22 @@ The SQLite plugin comes with NextCommander and uses the system's SQLite library:
 - **Read-only:** the database is never changed.
 - **Lister (F3) on a database file:** an overview: the number of tables, views and indexes, then each table with its
   row count, its columns (type, primary key, NOT NULL, default) and its first 10 rows, and the indexes.
+
+## Docker
+
+The Docker plugin comes with NextCommander and uses the installed `docker` command (Docker Desktop or Docker
+Engine; `FM_DOCKER` names another program with the same commands, such as podman). It works with whatever docker
+itself is set to (its current context, `DOCKER_HOST`), so remote engines work too.
+
+- **Docker containers** is listed with the saved connections (Net > Saved connections, and the connections button of
+  the button bar). It opens `docker:///`: the containers, running and stopped, named as in `docker ps`.
+- **A container's files:** Enter on a running container shows its file system from `/`. View (F3), edit (F4), copy
+  in and out, make folders, rename and delete as in any panel; copied files keep their modification time. Changes
+  run as the container's user, and a file written over keeps its owner and rights. ".." from a container's root goes
+  back to the list.
+- **Limits:** a stopped container says how to start it (`docker start <name>`); a container without a shell (`sh`,
+  for example a "distroless" image) cannot be listed. Containers themselves are made, started and removed with
+  docker.
 
 ## Using plugins
 
