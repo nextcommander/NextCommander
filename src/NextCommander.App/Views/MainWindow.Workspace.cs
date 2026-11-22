@@ -229,6 +229,10 @@ public partial class MainWindow
             // the maximized terminal is shown on its own page only (the shells keep running)
             TerminalHost.IsVisible = terminalPage;
         }
+        if (_vm is not null)
+        {
+            _vm.IsFilesPage = _page == WorkspacePage.Files; // the function keys and the command line belong to the panels
+        }
         UpdateWorkspaceTabs();
         ApplyPageAvailability();
         if (terminalPage)
