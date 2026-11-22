@@ -35,7 +35,7 @@ public sealed partial class MainWindowViewModel
     public bool IsDarkTheme => Services.ColorThemes.IsDark;
 
     /// <summary>The command line: hidden while the internal terminal is open (it takes the commands then).</summary>
-    public bool ShowCommandLine => _settings.ShowCommandLine && !IsTerminalOpen;
+    public bool ShowCommandLine => _settings.ShowCommandLine && !IsTerminalOpen && IsFilesPage;
 
     /// <summary>The internal terminal is shown (the window sets it).</summary>
     public bool IsTerminalOpen
@@ -51,6 +51,25 @@ public sealed partial class MainWindowViewModel
     }
 
     private bool _isTerminalOpen;
+
+    /// <summary>
+    /// The files page is shown (the window sets it): the function keys and the command line work on the panels and are
+    /// hidden on the other pages (options, synchronize, the maximized terminal ...; the user's request, 22 November 2026).
+    /// </summary>
+    public bool IsFilesPage
+    {
+        get => _isFilesPage;
+        set
+        {
+            if (SetProperty(ref _isFilesPage, value))
+            {
+                OnPropertyChanged(nameof(ShowCommandLine));
+                OnPropertyChanged(nameof(ShowFunctionKeys));
+            }
+        }
+    }
+
+    private bool _isFilesPage = true;
 
     /// <summary>Main window font (family, size) — the window applies it to its own resources.</summary>
     public (string Family, double Size) MainFont => (_settings.MainFontFamily, _settings.MainFontSize);
@@ -71,7 +90,7 @@ public sealed partial class MainWindowViewModel
     /// <summary>Display > Show help texts (tool tips).</summary>
     public bool ShowToolTips => _settings.ShowToolTips;
 
-    public bool ShowFunctionKeys => _settings.ShowFunctionKeys;
+    public bool ShowFunctionKeys => _settings.ShowFunctionKeys && IsFilesPage;
 
     public bool ShowMenuIcons => _settings.ShowMenuIcons;
 

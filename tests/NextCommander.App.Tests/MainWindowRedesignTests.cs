@@ -6,6 +6,7 @@ using Avalonia.Media;
 using Avalonia.VisualTree;
 using NextCommander.App.Services;
 using NextCommander.App.Views;
+using NextCommander.App.Views.Tools;
 using NextCommander.Platform;
 using static NextCommander.App.Tests.UiFixture;
 
@@ -109,6 +110,25 @@ public sealed class MainWindowRedesignTests
         Assert.True(w.FindControl<Border>("TerminalHost")!.IsVisible);
         Assert.Equal(string.Empty, vm.CommandLineText);
         Assert.Equal("echo nc-terminal", vm.Settings.CommandLineHistory[0]);
+        vm.Dispose();
+    }
+
+    [AvaloniaFact]
+    public async Task Function_keys_and_command_line_show_on_the_files_page_only()
+    {
+        using var fx = new UiFixture();
+        var (w, vm) = await fx.OpenAsync();
+        var keys = w.FindControl<Grid>("FunctionKeys")!;
+        var line = w.FindControl<Grid>("CommandLineRow")!;
+        Assert.True(keys.IsVisible && line.IsVisible);
+        w.ShowSync(new SyncDirsView(vm.Left.CurrentPath!, vm.Right.CurrentPath!, vm.Tools)); // a page of its own
+        await SettleAsync(4);
+        Assert.False(vm.IsFilesPage);
+        Assert.False(keys.IsVisible);
+        Assert.False(line.IsVisible);
+        w.SelectPage(WorkspacePage.Files);
+        await SettleAsync(2);
+        Assert.True(keys.IsVisible && line.IsVisible);
         vm.Dispose();
     }
 
