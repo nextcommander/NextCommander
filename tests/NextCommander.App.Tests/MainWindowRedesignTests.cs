@@ -46,6 +46,7 @@ public sealed class MainWindowRedesignTests
         using var fx = new UiFixture();
         var (w, vm) = await fx.OpenAsync();
         var box = w.FindControl<TextBox>("CommandLine")!;
+        w.Activate(); // the window of an earlier test may still hold the focus
         box.Focus();
         Dispatcher();
         box.Text = "nc_ToggleTer";
@@ -68,6 +69,7 @@ public sealed class MainWindowRedesignTests
         vm.Settings.TerminalEmulation = false;
         vm.Settings.TerminalTabs = [];
         var box = w.FindControl<TextBox>("CommandLine")!;
+        w.Activate(); // the window of an earlier test may still hold the focus
         box.Focus();
         box.Text = "nc_GoToRoot"; // a command of the program stays in the box
         Dispatcher();
@@ -80,12 +82,44 @@ public sealed class MainWindowRedesignTests
     }
 
     [AvaloniaFact]
+    public async Task Enter_runs_a_shell_command_in_the_internal_terminal()
+    {
+        using var fx = new UiFixture();
+        var (w, vm) = await fx.OpenAsync();
+        vm.Settings.TerminalEmulation = false;
+        vm.Settings.TerminalTabs = [];
+        var box = w.FindControl<TextBox>("CommandLine")!;
+        w.Activate(); // the window of an earlier test may still hold the focus
+        box.Focus();
+        // cd stays the panel's
+        box.Text = "cd sub";
+        Dispatcher();
+        Press(w, Key.Enter);
+        await SettleAsync(4);
+        Assert.False(vm.IsTerminalOpen);
+        Assert.EndsWith("sub", vm.Left.CurrentPath!.ToString(), StringComparison.OrdinalIgnoreCase);
+
+        w.Activate(); // the window of an earlier test may still hold the focus
+        box.Focus();
+        box.Text = "echo nc-terminal";
+        Dispatcher();
+        Press(w, Key.Enter);
+        await SettleAsync(6);
+        Assert.True(vm.IsTerminalOpen);
+        Assert.True(w.FindControl<Border>("TerminalHost")!.IsVisible);
+        Assert.Equal(string.Empty, vm.CommandLineText);
+        Assert.Equal("echo nc-terminal", vm.Settings.CommandLineHistory[0]);
+        vm.Dispose();
+    }
+
+    [AvaloniaFact]
     public async Task Typing_in_the_command_line_offers_the_recent_commands()
     {
         using var fx = new UiFixture();
         var (w, vm) = await fx.OpenAsync();
         vm.Settings.CommandLineHistory.InsertRange(0, ["dir /w", "dotnet build", "echo hello"]);
         var box = w.FindControl<TextBox>("CommandLine")!;
+        w.Activate(); // the window of an earlier test may still hold the focus
         box.Focus();
         Dispatcher();
         box.Text = "do";
