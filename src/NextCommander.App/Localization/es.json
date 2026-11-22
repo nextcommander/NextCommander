@@ -1724,7 +1724,7 @@
   "Settings.Zip.ZipCrypto": "ZipCrypto (antiguo, compatible)",
   "Settings.Assoc.InternalAssociationsEnter.Description": "Enter abre estos tipos de archivo con el comando indicado: un programa (con parámetros), un comando nc_, Lister, el editor o el programa del sistema. Shift+Enter: abrir juntos.",
   "Settings.Plugins.InstalledPlugins": "Complementos instalados",
-  "Settings.Plugins.InstalledPlugins.Description": "Los complementos desactivados no se cargan. Surte efecto tras reiniciar.",
+  "Settings.Plugins.LoadThisPlugin": "Cargar este complemento (tras reiniciar)",
   "Settings.Plugins.NoPlugins": "No hay complementos instalados. Un complemento es una carpeta con un plugin.json en la carpeta plugins de la carpeta de configuración o del programa.",
   "Settings.Plugins.NotInstalled": "(no instalado)",
   "Settings.Proxy.Group.Proxy": "Proxy",
