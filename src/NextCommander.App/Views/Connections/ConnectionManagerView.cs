@@ -258,7 +258,9 @@ public sealed partial class ConnectionManagerView : UserControl
         var top = new StackPanel { Spacing = 10, Margin = new Thickness(12, 14, 12, 6) };
         top.Children.AddRange([actions, _search, _chips]);
         _home.PointerPressed += (_, _) => GoHome();
-        var footer = new Border { Child = _count, Padding = new Thickness(12, 8), BorderThickness = new Thickness(0, 1, 0, 0) };
+        // as high as the bottom bar of the pages: one line across the manager
+        _count.VerticalAlignment = VerticalAlignment.Center;
+        var footer = new Border { Child = _count, Padding = new Thickness(12, 0), BorderThickness = new Thickness(0, 1, 0, 0), Height = ConnectionLook.BottomBarHeight };
         footer[!Border.BorderBrushProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("ConnStroke");
         ConnectionLook.Muted(_count, 3);
         var side = new DockPanel();

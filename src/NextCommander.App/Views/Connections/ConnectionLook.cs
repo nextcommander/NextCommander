@@ -266,15 +266,21 @@ internal static class ConnectionLook
         return text;
     }
 
+    /// <summary>
+    /// The height of the bars at the bottom (the page's buttons, the tree's count): the same, so that their lines meet
+    /// in one line across the manager (the user's request, 22 November 2026).
+    /// </summary>
+    public const double BottomBarHeight = 58;
+
     /// <summary>The bar at the bottom of a page (its buttons).</summary>
     public static Border BottomBar(Control left, Control right)
     {
-        var dock = new DockPanel { Margin = new Thickness(32, 12) };
+        var dock = new DockPanel { Margin = new Thickness(32, 8), VerticalAlignment = VerticalAlignment.Center };
         DockPanel.SetDock(right, Dock.Right);
         left.VerticalAlignment = VerticalAlignment.Center;
         right.VerticalAlignment = VerticalAlignment.Center;
         dock.Children.AddRange([right, left]);
-        var bar = new Border { Child = dock, BorderThickness = new Thickness(0, 1, 0, 0) };
+        var bar = new Border { Child = dock, BorderThickness = new Thickness(0, 1, 0, 0), MinHeight = BottomBarHeight };
         bar[!Border.BackgroundProperty] = new DynamicResourceExtension("ConnSide");
         bar[!Border.BorderBrushProperty] = new DynamicResourceExtension("ConnStroke");
         return bar;
