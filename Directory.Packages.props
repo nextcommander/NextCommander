@@ -23,8 +23,21 @@
     <PackageVersion Include="LibVLCSharp.Avalonia" Version="3.10.2" />
     <PackageVersion Include="Avalonia.HtmlRenderer" Version="12.0.0" />
     <PackageVersion Include="SharpZipLib" Version="1.4.2" />
+    <!-- every DiscUtils package on the same version: the disk image plugin and the archive side share DiscUtils.Core -->
     <PackageVersion Include="LTRData.DiscUtils.Iso9660" Version="1.0.90" />
     <PackageVersion Include="LTRData.DiscUtils.Udf" Version="1.0.90" />
+    <PackageVersion Include="LTRData.DiscUtils.Vhd" Version="1.0.90" />
+    <PackageVersion Include="LTRData.DiscUtils.Vhdx" Version="1.0.90" />
+    <PackageVersion Include="LTRData.DiscUtils.Vmdk" Version="1.0.90" />
+    <PackageVersion Include="LTRData.DiscUtils.Vdi" Version="1.0.90" />
+    <PackageVersion Include="LTRData.DiscUtils.Dmg" Version="1.0.90" />
+    <PackageVersion Include="LTRData.DiscUtils.Ntfs" Version="1.0.90" />
+    <PackageVersion Include="LTRData.DiscUtils.Fat" Version="1.0.90" />
+    <PackageVersion Include="LTRData.DiscUtils.Ext" Version="1.0.90" />
+    <PackageVersion Include="LTRData.DiscUtils.Xfs" Version="1.0.90" />
+    <PackageVersion Include="LTRData.DiscUtils.Btrfs" Version="1.0.90" />
+    <PackageVersion Include="LTRData.DiscUtils.HfsPlus" Version="1.0.90" />
+    <PackageVersion Include="LTRData.DiscUtils.Lvm" Version="1.0.90" />
     <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="11.0.0" />
     <PackageVersion Include="System.IO.Ports" Version="11.0.0" />
     <PackageVersion Include="SSH.NET" Version="2026.0.0" />

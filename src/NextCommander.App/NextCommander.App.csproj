@@ -63,6 +63,8 @@
                       ReferenceOutputAssembly="false" OutputItemType="NcShippedPlugin" PluginFolder="sqlite" />
     <ProjectReference Include="..\Plugins\NextCommander.Plugin.Docker\NextCommander.Plugin.Docker.csproj"
                       ReferenceOutputAssembly="false" OutputItemType="NcShippedPlugin" PluginFolder="docker" />
+    <ProjectReference Include="..\Plugins\NextCommander.Plugin.DiskImage\NextCommander.Plugin.DiskImage.csproj"
+                      ReferenceOutputAssembly="false" OutputItemType="NcShippedPlugin" PluginFolder="diskimage" />
   </ItemGroup>
   <Target Name="NcPluginFiles" DependsOnTargets="ResolveProjectReferences">
     <ItemGroup>
@@ -72,12 +74,26 @@
       <_NcPluginFile Include="@(_NcPluginProject->'%(RootDir)%(Directory)plugin.json')" />
       <_NcPluginFile Include="@(NcShippedPlugin->'%(RootDir)%(Directory)%(Filename).pdb')"
                      Condition="Exists('%(RootDir)%(Directory)%(Filename).pdb') and '$(DebugType)' != 'none'" />
+      <!-- the plugin's .deps.json (its own packages are resolved through it) -->
+      <_NcPluginFile Include="@(NcShippedPlugin->'%(RootDir)%(Directory)%(Filename).deps.json')"
+                     Condition="Exists('%(RootDir)%(Directory)%(Filename).deps.json')" />
       <_NcPluginFile Update="@(_NcPluginFile)" RelativePath="plugins\%(PluginFolder)\%(Filename)%(Extension)" />
       <!-- the plugin's own translations: languages/*.json of its source folder -->
       <_NcPluginSourceFolder Include="@(NcShippedPlugin->'%(MSBuildSourceProjectFile)')" />
       <_NcPluginLanguage Include="%(_NcPluginSourceFolder.RootDir)%(_NcPluginSourceFolder.Directory)languages\*.json"
                          PluginFolder="%(_NcPluginSourceFolder.PluginFolder)" />
       <_NcPluginFile Include="@(_NcPluginLanguage)" RelativePath="plugins\%(PluginFolder)\languages\%(Filename)%(Extension)" />
+    </ItemGroup>
+    <!--
+      a plugin's own packages (e.g. DiscUtils): the plugin project gives them through its NcPluginDependencies target
+      (asked, not looked for in its output folder: with "dotnet build -o" every project's output is in one folder)
+    -->
+    <MSBuild Projects="@(_NcPluginProject)" Targets="NcPluginDependencies" SkipNonexistentTargets="true"
+             Properties="NcPluginFolder=%(_NcPluginProject.PluginFolder)" RemoveProperties="TargetFramework;RuntimeIdentifier;SelfContained;PublishSingleFile">
+      <Output TaskParameter="TargetOutputs" ItemName="_NcPluginDependency" />
+    </MSBuild>
+    <ItemGroup>
+      <_NcPluginFile Include="@(_NcPluginDependency)" RelativePath="plugins\%(PluginFolder)\%(Filename)%(Extension)" />
     </ItemGroup>
   </Target>
   <Target Name="NcCopyPlugins" AfterTargets="CopyFilesToOutputDirectory" DependsOnTargets="NcPluginFiles">
