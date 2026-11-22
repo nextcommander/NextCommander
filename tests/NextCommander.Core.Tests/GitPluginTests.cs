@@ -116,7 +116,7 @@ public sealed class GitPluginTests : IDisposable
                 all, registry, CancellationToken.None);
 
         var a = await Values("a.txt");
-        Assert.Equal(("Modified", "First: the files", "Test User"), (a[GitColumns.StatusField], a[GitColumns.SubjectField], a[GitColumns.AuthorField]));
+        Assert.Equal(("Changed", "First: the files", "Test User"), (a[GitColumns.StatusField], a[GitColumns.SubjectField], a[GitColumns.AuthorField]));
         Assert.IsType<DateTime>(a[GitColumns.DateField]);
         Assert.Equal("Untracked", (await Values("c.txt"))[GitColumns.StatusField]);
         Assert.Equal("Ignored", (await Values("build", directory: true))[GitColumns.StatusField]);
@@ -134,12 +134,12 @@ public sealed class GitPluginTests : IDisposable
     public void Status_codes_are_named()
     {
         var status = GitColumns.ParseStatus(" M a.txt\0R  new.txt\0old.txt\0?? c.txt\0!! build/\0UU both.txt\0");
-        Assert.Equal("Modified", GitColumns.StateOf(status, "a.txt", false));
+        Assert.Equal("Changed", GitColumns.StateOf(status, "a.txt", false));
         Assert.Equal("Renamed", GitColumns.StateOf(status, "new.txt", false));
         Assert.False(status.Files.ContainsKey("old.txt"));
         Assert.Equal("Untracked", GitColumns.StateOf(status, "c.txt", false));
         Assert.Equal("Ignored", GitColumns.StateOf(status, "build/out.bin", false));
         Assert.Equal("Conflict", GitColumns.StateOf(status, "both.txt", false));
-        Assert.Equal("Modified (staged)", GitColumns.Describe("M "));
+        Assert.Equal("Changed (staged)", GitColumns.Describe("M "));
     }
 }

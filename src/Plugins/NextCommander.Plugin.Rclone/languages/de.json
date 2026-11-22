@@ -1,0 +1,10 @@
+{
+  "Rclone.Remotes": "rclone-Remotes",
+  "Rclone.NotInstalled": "rclone ist nicht installiert. Von rclone.org/downloads installieren (oder FM_RCLONE auf den Pfad setzen), die Remotes mit \"rclone config\" einrichten und dies erneut öffnen.",
+  "Rclone.RemoteIsRemoved": "rclone: Ein Remote wird mit \"rclone config\" entfernt.",
+  "Rclone.CouldNotBeStarted": "rclone konnte nicht gestartet werden.",
+  "Rclone.FilesAreWrittenInto": "rclone: Dateien werden in ein Remote geschrieben.",
+  "Rclone.IsNotInstalled": "rclone ist nicht installiert (rclone.org/downloads; oder FM_RCLONE auf den Pfad von rclone setzen).",
+  "Rclone.ApiServerDidNotStart": "rclone: Der API-Server ist nicht gestartet.",
+  "Rclone.MovingBetweenRemotes": "Verschieben zwischen Remotes geschieht durch Kopieren."
+}

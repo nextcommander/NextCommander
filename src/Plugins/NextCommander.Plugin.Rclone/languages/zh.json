@@ -1,0 +1,10 @@
+{
+  "Rclone.Remotes": "rclone 远程",
+  "Rclone.NotInstalled": "未安装 rclone。请从 rclone.org/downloads 安装（或将 FM_RCLONE 设为其路径），用“rclone config”设置远程，然后再次打开此项。",
+  "Rclone.RemoteIsRemoved": "rclone：远程通过“rclone config”删除。",
+  "Rclone.CouldNotBeStarted": "无法启动 rclone。",
+  "Rclone.FilesAreWrittenInto": "rclone：文件写入远程中。",
+  "Rclone.IsNotInstalled": "未安装 rclone（rclone.org/downloads；或将 FM_RCLONE 设为 rclone 的路径）。",
+  "Rclone.ApiServerDidNotStart": "rclone：API 服务器未启动。",
+  "Rclone.MovingBetweenRemotes": "在远程之间移动通过复制完成。"
+}
