@@ -15,5 +15,9 @@
   "Sqlite.FirstRows": "Primeras filas",
   "Sqlite.BlobBytes": "BLOB, {0} bytes",
   "Sqlite.IndexesTitle": "Índices",
-  "Sqlite.ReadOnly": "La base de datos se abre solo para lectura: copie una tabla fuera (CSV o JSON) para usar sus filas."
+  "Sqlite.ReadOnly": "La base de datos se abre solo para lectura: copie una tabla fuera (CSV o JSON) para usar sus filas.",
+  "Sqlite.FileNotFound": "No se encontró el archivo: {0}",
+  "Sqlite.Library": "Biblioteca SQLite",
+  "Sqlite.LibraryHelp": "Vacío: FM_SQLITE, luego la del sistema (winsqlite3.dll, libsqlite3.so.0, libsqlite3.dylib). Tiene efecto tras reiniciar.",
+  "Sqlite.PreviewRows": "Filas mostradas de cada tabla (F3)"
 }

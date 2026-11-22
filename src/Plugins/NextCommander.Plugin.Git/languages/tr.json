@@ -20,5 +20,12 @@
   "Git.Changed": "Değişti",
   "Git.Group": "Git",
   "Git.ChangedStaged": "Değişti (hazırlandı)",
-  "Git.CouldNotBeStarted": "git başlatılamadı."
+  "Git.CouldNotBeStarted": "git başlatılamadı.",
+  "Git.ProgramNotFound": "Program bulunamadı: {0}",
+  "Git.GitProgram": "git programı",
+  "Git.GitProgramHelp": "Boş: önce FM_GIT, sonra PATH'teki ve bilinen klasörlerdeki git.",
+  "Git.Refresh": "Git sütunlarını yenileme aralığı (saniye)",
+  "Git.RefreshHelp": "Bir deponun durumu git'e yeniden sorulmadan önce ne kadar kullanılır.",
+  "Git.Commits": "Git geçmişinde listelenen commit sayısı",
+  "Git.CommitsHelp": "commits klasöründe geçerli dalın en yeni commit'leri."
 }

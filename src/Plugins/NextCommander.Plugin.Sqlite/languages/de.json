@@ -15,5 +15,9 @@
   "Sqlite.FirstRows": "Erste Zeilen",
   "Sqlite.BlobBytes": "BLOB, {0} Bytes",
   "Sqlite.IndexesTitle": "Indizes",
-  "Sqlite.ReadOnly": "Die Datenbank ist schreibgeschützt geöffnet: Kopieren Sie eine Tabelle heraus (CSV oder JSON), um ihre Zeilen zu verwenden."
+  "Sqlite.ReadOnly": "Die Datenbank ist schreibgeschützt geöffnet: Kopieren Sie eine Tabelle heraus (CSV oder JSON), um ihre Zeilen zu verwenden.",
+  "Sqlite.FileNotFound": "Die Datei wurde nicht gefunden: {0}",
+  "Sqlite.Library": "SQLite-Bibliothek",
+  "Sqlite.LibraryHelp": "Leer: FM_SQLITE, dann die des Systems (winsqlite3.dll, libsqlite3.so.0, libsqlite3.dylib). Wirkt nach einem Neustart.",
+  "Sqlite.PreviewRows": "Angezeigte Zeilen je Tabelle (F3)"
 }

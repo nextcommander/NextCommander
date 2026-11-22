@@ -7,5 +7,11 @@
   "Docker.NoSuchContainer": "No such container: {0}",
   "Docker.NoShell": "The container has no shell (sh), so its files cannot be listed.",
   "Docker.MoveBetween": "Moving between containers is done by copying.",
-  "Docker.MadeWithDocker": "Containers are made and removed with docker itself."
+  "Docker.MadeWithDocker": "Containers are made and removed with docker itself.",
+  "Docker.ProgramNotFound": "The program was not found: {0}",
+  "Docker.DockerProgram": "docker program",
+  "Docker.DockerProgramHelp": "Empty: FM_DOCKER, then docker on the PATH and in the usual folders. Another program with the same commands (podman) works too.",
+  "Docker.WorkAs": "Work in containers as",
+  "Docker.WorkAsHelp": "The user that lists, reads and writes the files inside a container.",
+  "Docker.OwnUser": "The container's own user"
 }

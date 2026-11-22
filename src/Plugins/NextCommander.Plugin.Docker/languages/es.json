@@ -7,5 +7,11 @@
   "Docker.NoSuchContainer": "No existe el contenedor: {0}",
   "Docker.NoShell": "El contenedor no tiene shell (sh), por lo que no se pueden listar sus archivos.",
   "Docker.MoveBetween": "Mover entre contenedores se hace copiando.",
-  "Docker.MadeWithDocker": "Los contenedores se crean y eliminan con el propio docker."
+  "Docker.MadeWithDocker": "Los contenedores se crean y eliminan con el propio docker.",
+  "Docker.ProgramNotFound": "No se encontró el programa: {0}",
+  "Docker.DockerProgram": "Programa docker",
+  "Docker.DockerProgramHelp": "Vacío: FM_DOCKER, luego docker en el PATH y en las carpetas habituales. También sirve otro programa con los mismos comandos (podman).",
+  "Docker.WorkAs": "Trabajar en los contenedores como",
+  "Docker.WorkAsHelp": "El usuario que lista, lee y escribe los archivos dentro de un contenedor.",
+  "Docker.OwnUser": "El usuario propio del contenedor"
 }

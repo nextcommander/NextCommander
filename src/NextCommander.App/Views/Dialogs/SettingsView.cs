@@ -34,7 +34,7 @@ public sealed record SettingItem(string Page, string Group, string Label, string
 /// </list>
 /// Changes go to a working copy and reach the live settings only with Apply or OK; Cancel drops them.
 /// </summary>
-public sealed class SettingsView : UserControl
+public sealed partial class SettingsView : UserControl
 {
     private static readonly string[] s_pages =
     [
@@ -107,11 +107,18 @@ public sealed class SettingsView : UserControl
         _work = Clone(settings);
         _changed = changed;
         _extras = extraActions;
-        _items = BuildItems();
+        _items = [.. BuildItems(), .. PluginItems()];
         if (s_pages.Contains(settings.SettingsLastPage))
         {
             _page = settings.SettingsLastPage!;
         }
+        // a plugin's "Configure...": its page, scrolled to its group once shown
+        _startGroup = StartAt?.Group;
+        if (StartAt is { Page: var startPage } && s_pages.Contains(startPage))
+        {
+            _page = startPage;
+        }
+        StartAt = null;
         Focusable = true;
         ClipToBounds = true;
 
@@ -248,6 +255,10 @@ public sealed class SettingsView : UserControl
         AttachedToVisualTree -= OnAttached;
         SelectPage(_page);
         Dispatcher.UIThread.Post(() => _search.Focus());
+        if (_startGroup is { } group)
+        {
+            Dispatcher.UIThread.Post(() => ScrollToGroup(group), DispatcherPriority.Background);
+        }
         _ = FindChangedPagesAsync();
     }
 
@@ -296,6 +307,11 @@ public sealed class SettingsView : UserControl
     /// </summary>
     public bool CanApply()
     {
+        if (PluginProblem() is { } problem)
+        {
+            _status.Text = problem;
+            return false;
+        }
         var invalid = _rows.GetVisualDescendants().OfType<Control>().FirstOrDefault(b => b.Classes.Contains(InvalidJsonClass));
         if (invalid is null)
         {
@@ -581,7 +597,9 @@ public sealed class SettingsView : UserControl
         foreach (var group in visible.GroupBy(i => (i.Page, i.Group)))
         {
             var title = searching ? $"{group.Key.Page.Replace("/", " › ", StringComparison.Ordinal)} › {group.Key.Group}" : group.Key.Group;
-            _rows.Children.Add(Section(title, Card(group.ToList()), searching ? group.Key.Page : null));
+            var section = Section(title, Card(group.ToList()), searching ? group.Key.Page : null);
+            section.Tag = group.Key.Group; // ScrollToGroup
+            _rows.Children.Add(section);
         }
         if (!searching && _page == "Misc." && _extras.Count > 0)
         {

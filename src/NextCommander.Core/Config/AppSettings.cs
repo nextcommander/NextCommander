@@ -1213,6 +1213,13 @@ public sealed class AppSettings
     /// <summary>Plugin names not to load.</summary>
     public List<string> DisabledPlugins { get; set; } = [];
 
+    /// <summary>The plugins' own settings: plugin name → setting key → value (edited on the Plugins page; see IConfigurablePlugin).</summary>
+    public Dictionary<string, Dictionary<string, string>> PluginSettings { get; set; } = [];
+
+    /// <summary>The values of one plugin's settings, with their defaults.</summary>
+    public Plugins.IPluginSettingValues PluginValues(string plugin, IReadOnlyList<Plugins.PluginSetting> settings) =>
+        new Plugins.PluginSettingValues(settings, PluginSettings.TryGetValue(plugin, out var values) ? values : null);
+
     /// <summary>Internal associations: what Enter does for a file type (before the system application).</summary>
     public List<FileAssociation> Associations { get; set; } = [];
 

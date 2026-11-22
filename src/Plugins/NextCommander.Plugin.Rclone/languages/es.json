@@ -6,5 +6,11 @@
   "Rclone.FilesAreWrittenInto": "rclone: los archivos se escriben en un remoto.",
   "Rclone.IsNotInstalled": "rclone no está instalado (rclone.org/downloads; o ponga en FM_RCLONE la ruta de rclone).",
   "Rclone.ApiServerDidNotStart": "rclone: el servidor de API no se inició.",
-  "Rclone.MovingBetweenRemotes": "Mover entre remotos se hace copiando."
+  "Rclone.MovingBetweenRemotes": "Mover entre remotos se hace copiando.",
+  "Rclone.ProgramNotFound": "No se encontró el programa: {0}",
+  "Rclone.FileNotFound": "No se encontró el archivo: {0}",
+  "Rclone.RcloneProgram": "Programa rclone",
+  "Rclone.RcloneProgramHelp": "Vacío: FM_RCLONE, luego rclone en el PATH y en las carpetas habituales.",
+  "Rclone.ConfigFile": "Archivo de configuración de rclone",
+  "Rclone.ConfigFileHelp": "El rclone.conf con los remotos. Vacío: el propio de rclone (rclone config file muestra dónde está)."
 }

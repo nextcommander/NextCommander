@@ -21,22 +21,23 @@ public sealed class GitFileSystemProvider : IFileSystemProvider, IPluginFolderEn
     internal const string Commits = "commits";
 
     /// <summary>How many commits of the current branch the commits folder lists.</summary>
-    internal const int CommitCount = 300;
+    internal static int CommitCount { get; set; } = 300;
 
     /// <summary>A slash in a branch or tag name, shown as a fraction slash so the name stays one folder.</summary>
     private const char NameSlash = '⁄';
 
-    private readonly GitTool? _tool;
+    private readonly GitTool? _fixedTool;
+    private readonly bool _installed;
     private readonly ConcurrentDictionary<string, IReadOnlyList<VfsEntry>> _trees = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, (DateTime At, string Hash, DateTime Time)> _refs = new(StringComparer.Ordinal);
 
     /// <summary>The plugin loader's constructor: the installed git.</summary>
-    public GitFileSystemProvider()
-        : this(GitTool.Installed)
-    {
-    }
+    /// <summary>The plugin loader's constructor: the installed git, as the plugin's settings name it now.</summary>
+    public GitFileSystemProvider() => _installed = true;
 
-    public GitFileSystemProvider(GitTool? tool) => _tool = tool;
+    public GitFileSystemProvider(GitTool? tool) => _fixedTool = tool;
+
+    private GitTool? CurrentTool => _installed ? GitTool.Installed : _fixedTool;
 
     public string Scheme => GitScheme;
 
@@ -81,7 +82,7 @@ public sealed class GitFileSystemProvider : IFileSystemProvider, IPluginFolderEn
         _ => throw new DirectoryNotFoundException(folder),
     };
 
-    private GitTool Tool => _tool ?? throw new IOException(GitTool.NotInstalled);
+    private GitTool Tool => CurrentTool ?? throw new IOException(GitTool.NotInstalled);
 
     // ---------------------------------------------------------------- listing
 

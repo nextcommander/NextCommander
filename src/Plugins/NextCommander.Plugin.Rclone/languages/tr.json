@@ -6,5 +6,11 @@
   "Rclone.FilesAreWrittenInto": "rclone: dosyalar bir uzak bağlantıya yazılır.",
   "Rclone.IsNotInstalled": "rclone kurulu değil (rclone.org/downloads; ya da FM_RCLONE'a rclone'un yolunu yazın).",
   "Rclone.ApiServerDidNotStart": "rclone: API sunucusu başlamadı.",
-  "Rclone.MovingBetweenRemotes": "Uzak bağlantılar arasında taşıma kopyalayarak yapılır."
+  "Rclone.MovingBetweenRemotes": "Uzak bağlantılar arasında taşıma kopyalayarak yapılır.",
+  "Rclone.ProgramNotFound": "Program bulunamadı: {0}",
+  "Rclone.FileNotFound": "Dosya bulunamadı: {0}",
+  "Rclone.RcloneProgram": "rclone programı",
+  "Rclone.RcloneProgramHelp": "Boş: önce FM_RCLONE, sonra PATH'teki ve bilinen klasörlerdeki rclone.",
+  "Rclone.ConfigFile": "rclone yapılandırma dosyası",
+  "Rclone.ConfigFileHelp": "Uzak bağlantıları içeren rclone.conf. Boş: rclone'un kendi dosyası (yerini rclone config file gösterir)."
 }

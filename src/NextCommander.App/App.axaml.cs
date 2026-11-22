@@ -241,6 +241,7 @@ public partial class App : Application
             Log.Information("Plugin {Name}: {FileSystems} file systems, {Columns} column providers, {Packers} packers, {Viewers} viewers",
                 plugin.Name, plugin.FileSystems.Count, plugin.Columns.Count, plugin.Packers.Count, plugin.Viewers.Count);
         }
+        vm.ApplyPluginSettings(); // their own settings, before anything uses them
     }
 
     /// <summary>Icon settings: loaders, file list icon size and row height, menu icon size (Configuration > Icons).</summary>

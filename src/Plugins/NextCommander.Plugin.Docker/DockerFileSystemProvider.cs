@@ -14,24 +14,28 @@ namespace NextCommander.Plugin.Docker;
 /// its owner and the container user's rights apply); changes are shell commands. A container must be running; a
 /// stopped one says how to start it. Its entry point "Docker containers" is listed with the saved connections.
 /// </summary>
-public sealed class DockerFileSystemProvider : IFileSystemProvider, IUploadTimeSupport, IPluginEntryPoint, IOriginProvider
+public sealed class DockerFileSystemProvider : IFileSystemProvider, IUploadTimeSupport, IPluginEntryPoint, IOriginProvider, IConfigurablePlugin
 {
     public const string DockerScheme = "docker";
 
     /// <summary>The container list: <c>docker:///</c>.</summary>
     public static VfsPath Root { get; } = VfsPath.Create(DockerScheme, string.Empty, "/");
 
-    private readonly IDockerRunner? _runner;
+    private readonly IDockerRunner? _fixedRunner;
+    private readonly bool _installed;
+
+    /// <summary>The user commands in a container run as (null: the container's own user); the plugin's settings.</summary>
+    internal string? ExecUser { get; set; }
     private readonly ConcurrentDictionary<VfsPath, DateTime> _uploadTimes = new();
 
     /// <summary>The plugin loader's constructor: the installed docker.</summary>
-    public DockerFileSystemProvider()
-        : this(DockerTool.Installed)
-    {
-    }
+    public DockerFileSystemProvider() => _installed = true;
 
     /// <param name="runner">The docker program (null: not installed); a fake one in tests.</param>
-    public DockerFileSystemProvider(IDockerRunner? runner) => _runner = runner;
+    public DockerFileSystemProvider(IDockerRunner? runner) => _fixedRunner = runner;
+
+    /// <summary>The docker in use: for the loader's instance the one the settings name now, else the one given.</summary>
+    private IDockerRunner? CurrentRunner => _installed ? DockerTool.Installed : _fixedRunner;
 
     public string EntryName => "Docker containers";
 
@@ -39,7 +43,7 @@ public sealed class DockerFileSystemProvider : IFileSystemProvider, IUploadTimeS
 
     public VfsPath EntryRoot => Root;
 
-    public string? Unavailable => _runner is null ? NotInstalled : null;
+    public string? Unavailable => CurrentRunner is null ? NotInstalled : null;
 
     internal const string NotInstalled = "Docker is not installed. Install Docker Desktop or Docker Engine (or set FM_DOCKER to the docker program), then open this again.";
 
@@ -53,7 +57,7 @@ public sealed class DockerFileSystemProvider : IFileSystemProvider, IUploadTimeS
         public bool IsRunning => State.Equals("running", StringComparison.OrdinalIgnoreCase);
     }
 
-    private IDockerRunner Runner => _runner ?? throw new IOException(NotInstalled);
+    private IDockerRunner Runner => CurrentRunner ?? throw new IOException(NotInstalled);
 
     // ---------------------------------------------------------------- running docker
 
@@ -100,7 +104,19 @@ public sealed class DockerFileSystemProvider : IFileSystemProvider, IUploadTimeS
 
     /// <summary>A shell command inside the container.</summary>
     private Task<string> ShellAsync(VfsPath path, string command, CancellationToken cancellationToken) =>
-        RunAsync(path, ["exec", path.Authority, "sh", "-c", command], null, cancellationToken);
+        RunAsync(path, Exec(path, "sh", "-c", command), null, cancellationToken);
+
+    /// <summary>"exec [-i] [-u user] container command...": as the user the settings name, else the container's own.</summary>
+    private string[] Exec(VfsPath path, params string[] command) => Exec(path, interactive: false, command);
+
+    private string[] Exec(VfsPath path, bool interactive, params string[] command) =>
+        [
+            "exec",
+            .. interactive ? (string[])["-i"] : [],
+            .. ExecUser is { Length: > 0 } user ? (string[])["-u", user] : [],
+            path.Authority,
+            .. command,
+        ];
 
     // ---------------------------------------------------------------- the containers
 
@@ -204,7 +220,7 @@ public sealed class DockerFileSystemProvider : IFileSystemProvider, IUploadTimeS
         {
             throw new IOException($"Not a file: {path.Path}");
         }
-        return Runner.OpenOutput(["exec", path.Authority, "cat", "--", path.Path]);
+        return Runner.OpenOutput(Exec(path, "cat", "--", path.Path));
     }
 
     /// <summary>
@@ -224,7 +240,7 @@ public sealed class DockerFileSystemProvider : IFileSystemProvider, IUploadTimeS
     private async Task UploadAsync(VfsPath path, Stream data, CancellationToken cancellationToken)
     {
         data.Position = 0;
-        await RunAsync(path, ["exec", "-i", path.Authority, "sh", "-c", "cat > " + Quote(path.Path)], data, cancellationToken).ConfigureAwait(false);
+        await RunAsync(path, Exec(path, interactive: true, "sh", "-c", "cat > " + Quote(path.Path)), data, cancellationToken).ConfigureAwait(false);
         if (_uploadTimes.TryRemove(path, out var time) && time.Year >= 1980)
         {
             await ShellAsync(path, TouchCommand(path.Path, time), cancellationToken).ConfigureAwait(false);
@@ -279,6 +295,37 @@ public sealed class DockerFileSystemProvider : IFileSystemProvider, IUploadTimeS
         path.Authority.Length > 0 && path.Path != "/" && lastWriteTime is { Year: >= 1980 } time
             ? ShellAsync(path, TouchCommand(path.Path, time), cancellationToken)
             : Task.CompletedTask;
+
+    // ---------------------------------------------------------------- settings (Configuration > Plugins > Docker)
+
+    internal const string ProgramKey = "program";
+    internal const string UserKey = "user";
+
+    public string SettingsTitle => "Docker";
+
+    public IReadOnlyList<PluginSetting> Settings { get; } =
+    [
+        new(ProgramKey, PluginSettingKind.Program, "docker program")
+        {
+            Description = "Empty: FM_DOCKER, then docker on the PATH and in the usual folders. Another program with the same commands (podman) works too.",
+            Placeholder = DockerTool.Find() ?? "docker",
+        },
+        new(UserKey, PluginSettingKind.Choice, "Work in containers as")
+        {
+            Description = "The user that lists, reads and writes the files inside a container.",
+            Default = string.Empty,
+            Choices = [(string.Empty, "The container's own user"), ("root", "root")],
+        },
+    ];
+
+    public string? Validate(IPluginSettingValues values) =>
+        values.Get(ProgramKey) is { } program && !File.Exists(program) ? string.Format(System.Globalization.CultureInfo.CurrentCulture, "The program was not found: {0}", program) : null;
+
+    public void Apply(IPluginSettingValues values)
+    {
+        DockerTool.ConfiguredPath = values.Get(ProgramKey);
+        ExecUser = values.Get(UserKey);
+    }
 
     /// <summary>".." from a container's root goes back to the container list, with the cursor on the container.</summary>
     public (VfsPath Folder, string FocusName)? OriginOf(VfsPath root) =>

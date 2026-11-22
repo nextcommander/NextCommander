@@ -3759,5 +3759,7 @@
   "JobErrorDialog.RetryAsAdmin": "Yönetici olarak yeniden dene",
   "JobErrorDialog.Message": "İleti",
   "JobErrorDialog.TechnicalDetails": "Teknik ayrıntılar",
-  "JobErrorDialog.RetryingIn": "{0} sn içinde yeniden denenecek…"
+  "JobErrorDialog.RetryingIn": "{0} sn içinde yeniden denenecek…",
+  "SettingsWindow.Browse": "Gözat...",
+  "SettingsWindow.PluginProblem": "{0} ayarları: {1}"
 }

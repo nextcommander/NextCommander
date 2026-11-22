@@ -14,7 +14,7 @@ namespace NextCommander.Plugin.Sqlite;
 public sealed class SqliteViewer : IViewerPlugin
 {
     /// <summary>The rows shown of each table.</summary>
-    internal const int PreviewRows = 10;
+    internal static int PreviewRows { get; set; } = 10;
 
     /// <summary>A long text or BLOB is cut to this many characters in the preview.</summary>
     private const int CellLimit = 80;

@@ -15,5 +15,9 @@
   "Sqlite.FirstRows": "Premières lignes",
   "Sqlite.BlobBytes": "BLOB, {0} octets",
   "Sqlite.IndexesTitle": "Index",
-  "Sqlite.ReadOnly": "La base de données est ouverte en lecture seule : copiez une table (CSV ou JSON) pour utiliser ses lignes."
+  "Sqlite.ReadOnly": "La base de données est ouverte en lecture seule : copiez une table (CSV ou JSON) pour utiliser ses lignes.",
+  "Sqlite.FileNotFound": "Fichier introuvable : {0}",
+  "Sqlite.Library": "Bibliothèque SQLite",
+  "Sqlite.LibraryHelp": "Vide : FM_SQLITE, puis celle du système (winsqlite3.dll, libsqlite3.so.0, libsqlite3.dylib). Prend effet après un redémarrage.",
+  "Sqlite.PreviewRows": "Lignes affichées de chaque table (F3)"
 }
