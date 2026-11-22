@@ -309,7 +309,7 @@ public static class MenuIcons
         ["nc_RereadSource"] = new("MiRefresh", Green),
         ["nc_CountDirContent"] = new("MiPie", Yellow),
         ["nc_RevealInExplorer"] = new("FmFolderIcon", Yellow, "OvSearch", Blue),
-        ["nc_Config"] = new("MiHammer", Orange),
+        ["nc_Config"] = new("MiGear", Gray),
         ["nc_CommandBrowser"] = new("MiKeyboard", Gray),
         ["nc_AddButton"] = new("FmBarCommands", Blue, "OvPlus", Green),
         ["nc_CheckForUpdates"] = new("MiRefresh", Blue, "OvArrowDown", Green),

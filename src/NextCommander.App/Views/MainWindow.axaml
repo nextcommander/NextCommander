@@ -262,7 +262,7 @@
       <MenuItem Header="C_onfiguration">
         <!-- grouped by type (user's request, 19 November 2026): main settings, look, button bars, commands and lists,
              saving / moving / backups -->
-        <MenuItem Header="Options..." InputGesture="Ctrl+Alt+S" Command="{Binding RunCommandCommand}" CommandParameter="nc_Config" />
+        <MenuItem Header="Settings..." InputGesture="Ctrl+Alt+S" Command="{Binding RunCommandCommand}" CommandParameter="nc_Config" />
         <MenuItem Header="Plugins..." Command="{Binding RunCommandCommand}" CommandParameter="nc_Plugins" />
         <Separator />
         <MenuItem x:Name="ColorThemeMenu" Header="Color theme" Tag="nc_SetColorScheme">
