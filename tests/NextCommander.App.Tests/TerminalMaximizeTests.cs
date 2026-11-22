@@ -26,7 +26,8 @@ public sealed class TerminalMaximizeTests : IDisposable
         var terminal = w.Terminal!;
         var panels = w.FindControl<Grid>("PanelsGrid")!;
         var host = w.FindControl<Border>("TerminalHost")!;
-        var panelsTop = panels.TranslatePoint(new Avalonia.Point(0, 0), w)!.Value.Y;
+        // the top of the panels' area (the panels stand a little below it, their margin)
+        var panelsTop = panels.TranslatePoint(new Avalonia.Point(0, 0), w)!.Value.Y - panels.Margin.Top;
         var normalHeight = terminal.Bounds.Height;
 
         await vm.ExecuteAsync("nc_MaximizeTerminal");

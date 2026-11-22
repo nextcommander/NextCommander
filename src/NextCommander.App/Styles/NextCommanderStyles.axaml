@@ -1067,8 +1067,9 @@
   </Style>
 
   <!-- the drive box's list -->
+  <!-- opaque: the list background of the light theme is transparent, the panel showed through the open list -->
   <Style Selector="Border.mwpopup">
-    <Setter Property="Background" Value="{DynamicResource FmListBackgroundBrush}" />
+    <Setter Property="Background" Value="{DynamicResource NcMwCardBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource NcMwStrongStrokeBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="8" />

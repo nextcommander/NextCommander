@@ -136,8 +136,19 @@ public partial class MainWindow : Window
             baseFolder: () => _vm?.ActivePanel.CurrentPath is { IsLocal: true } here ? here.Path : null,
             settings: () => _vm?.Settings);
         // while typing: the last 20 command lines that fit (Up / Down choose, Tab takes, Enter runs the chosen one)
-        CommandHistoryComplete = Services.HistoryAutoComplete.Attach(CommandLine, () => _vm?.RecentCommandLines(20) ?? [],
-            blocked: () => CommandLineCompletion?.IsOpen == true);
+        // while typing: a command name (nc_ ...) lists the commands with their description, anything else the last 20 command lines
+        CommandHistoryComplete = Services.HistoryAutoComplete.Attach(CommandLine, text =>
+        {
+            if (_vm is null)
+            {
+                return [];
+            }
+            var commands = Services.HistoryAutoComplete.CommandMatches(text,
+                _vm.Commands.All.Select(c => (c.Name, Core.Localization.Localizer.T(c.Description))));
+            return commands.Count > 0 ? commands
+                : [.. Services.HistoryAutoComplete.Matches(text, _vm.RecentCommandLines(20)).Take(Services.HistoryAutoComplete.MaxShown)
+                    .Select(i => new Services.Suggestion(i, null, i))];
+        }, blocked: () => CommandLineCompletion?.IsOpen == true);
         TerminalButton.Click += (_, _) => ToggleTerminal();
         TransfersButton.Click += (_, _) => ToggleTransfers();
         CommandHistoryList.Tapped += (_, _) => TakeCommandFromHistory();
@@ -1374,6 +1385,38 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
+    /// Alt+↑ in the command line (the user's request, 22 November 2026): the internal terminal below the panels, focused
+    /// (as its button at the end of the box). A shell command typed in the box goes with it and runs there (kept in the
+    /// command line history); a command of the program (nc_ ...) stays in the box.
+    /// </summary>
+    public void SwitchCommandLineToTerminal()
+    {
+        if (_vm is null)
+        {
+            return;
+        }
+        var text = _vm.CommandLineText.Trim();
+        EnsureTerminal();
+        if (IsTerminalMaximizedPage)
+        {
+            ShowTerminalPage();
+        }
+        else
+        {
+            ShowTerminal();
+        }
+        if (text.Length == 0 || _vm.Commands.IsCommand(text))
+        {
+            return;
+        }
+        _vm.CommandLineText = string.Empty;
+        _vm.Settings.CommandLineHistory.Remove(text);
+        _vm.Settings.CommandLineHistory.Insert(0, text);
+        // after the shell of a new tab has started
+        Dispatcher.UIThread.Post(() => _terminal?.Run(text), DispatcherPriority.Background);
+    }
+
+    /// <summary>
     /// nc_ToggleTerminal (the menu, Ctrl+`, buttons): the internal terminal as a page with its own tab; again from that
     /// page: back to the files (the shells keep running). Only the button at the end of the command line opens it below
     /// the panels (<see cref="ToggleTerminal"/>; user's request, 21 November 2026). A terminal shown below the panels
@@ -1654,6 +1697,13 @@ public partial class MainWindow : Window
                 _historyIndex = -1;
                 _vm.CommandLineText = string.Empty;
                 ActiveView.FocusList();
+                break;
+            // Alt+↑: the internal terminal below the panels; a command typed in the box runs there
+            case Key.Up when e.KeyModifiers == KeyModifiers.Alt:
+                e.Handled = true;
+                _historyIndex = -1;
+                CommandHistoryComplete.Close();
+                SwitchCommandLineToTerminal();
                 break;
             case Key.Tab when e.KeyModifiers == KeyModifiers.None:
                 e.Handled = true;
