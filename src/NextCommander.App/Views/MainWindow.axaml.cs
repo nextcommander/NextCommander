@@ -1389,6 +1389,19 @@ public partial class MainWindow : Window
     /// (as its button at the end of the box). A shell command typed in the box goes with it and runs there (kept in the
     /// command line history); a command of the program (nc_ ...) stays in the box.
     /// </summary>
+    /// <summary>Whether a command line goes to the internal terminal on Enter: not empty, not a command of the program, not cd / md of the panel.</summary>
+    private bool RunsInTerminal(string commandLine)
+    {
+        var text = commandLine.Trim();
+        if (text.Length == 0 || _vm is null || _vm.Commands.IsCommand(text))
+        {
+            return false;
+        }
+        var verb = text.Split(' ', 2)[0];
+        return !(verb.Equals("cd", StringComparison.OrdinalIgnoreCase) || verb.Equals("md", StringComparison.OrdinalIgnoreCase)
+            || verb.Equals("mkdir", StringComparison.OrdinalIgnoreCase));
+    }
+
     public void SwitchCommandLineToTerminal()
     {
         if (_vm is null)
@@ -1413,7 +1426,7 @@ public partial class MainWindow : Window
         _vm.Settings.CommandLineHistory.Remove(text);
         _vm.Settings.CommandLineHistory.Insert(0, text);
         // after the shell of a new tab has started
-        Dispatcher.UIThread.Post(() => _terminal?.Run(text), DispatcherPriority.Background);
+        Dispatcher.UIThread.Post(() => _terminal?.RunInPanelFolder(text), DispatcherPriority.Background);
     }
 
     /// <summary>
@@ -1686,6 +1699,13 @@ public partial class MainWindow : Window
         var history = _vm.Settings.CommandLineHistory;
         switch (e.Key)
         {
+            // Enter: a shell command runs in the internal terminal (opened below the panels; the user's request, 22 November
+            // 2026); the program's commands (nc_ ...) and cd / md for the panel run as before; Shift+Enter: a console window
+            case Key.Enter when e.KeyModifiers == KeyModifiers.None && RunsInTerminal(_vm.CommandLineText):
+                e.Handled = true;
+                _historyIndex = -1;
+                SwitchCommandLineToTerminal();
+                break;
             case Key.Enter:
                 e.Handled = true;
                 _historyIndex = -1;

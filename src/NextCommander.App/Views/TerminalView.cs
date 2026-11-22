@@ -496,6 +496,13 @@ public sealed class TerminalView : DockPanel
 
     public void Run(string line) => _active?.Run(line);
 
+    /// <summary>Runs a line of the command line in the active panel's folder: a local shell goes there first.</summary>
+    public void RunInPanelFolder(string line)
+    {
+        _active?.GoToPanelFolder();
+        _active?.Run(line);
+    }
+
     internal static string Clean(string text) => TerminalConsole.Clean(text);
 
     private static Button HeaderButton(string text, string tip, Action action)
