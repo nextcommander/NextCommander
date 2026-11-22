@@ -3763,5 +3763,8 @@
   "SettingsWindow.Browse": "Gözat...",
   "SettingsWindow.PluginProblem": "{0} ayarları: {1}",
   "SettingsWindow.NotSet": "Ayarlanmadı",
-  "MainWindow.PasswordNotSavedStoreLocked": "Parola kaydedilemedi: parola deposu kilitli."
+  "MainWindow.PasswordNotSavedStoreLocked": "Parola kaydedilemedi: parola deposu kilitli.",
+  "FilePanel.ChangeDriveTip": "Sürücü değiştir (Alt+F1 / Alt+F2)",
+  "FilePanel.Places": "Konumlar",
+  "MainWindow.CommandLinePlaceholder": "Bir komut yazın — etkin panelin klasöründe çalışır"
 }

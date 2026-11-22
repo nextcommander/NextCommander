@@ -31,6 +31,13 @@ public static class DesignColors
         app.Resources["NcAccentSoftBrush"] = new SolidColorBrush(soft);
         app.Resources["NcFocusRing"] = new BoxShadows(new BoxShadow { Spread = 3, Color = soft });
         app.Resources["NcOnAccentBrush"] = new SolidColorBrush(OnAccent(accent));
+
+        // the main window (the user's template, 22 November 2026): from the theme's panel accent (Panel.ActiveAccent)
+        var panelAccent = app.TryGetResource("FmActiveAccentBrush", variant, out var brush) && brush is ISolidColorBrush solid ? solid.Color : accent;
+        Color Alpha(byte a) => Color.FromArgb(a, panelAccent.R, panelAccent.G, panelAccent.B);
+        app.Resources["NcMwCursorBrush"] = new SolidColorBrush(Alpha(dark ? (byte)0x24 : (byte)0x1F));
+        app.Resources["NcMwCursorLineBrush"] = new SolidColorBrush(Alpha(0x80));
+        app.Resources["NcMwAccentSoftBrush"] = new SolidColorBrush(Alpha(dark ? (byte)0x21 : (byte)0x1A));
     }
 
     /// <summary>White on a dark accent, near black on a light one (relative luminance).</summary>

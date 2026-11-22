@@ -3763,5 +3763,8 @@
   "SettingsWindow.Browse": "浏览...",
   "SettingsWindow.PluginProblem": "{0} 的设置：{1}",
   "SettingsWindow.NotSet": "未设置",
-  "MainWindow.PasswordNotSavedStoreLocked": "无法保存密码：密码存储已锁定。"
+  "MainWindow.PasswordNotSavedStoreLocked": "无法保存密码：密码存储已锁定。",
+  "FilePanel.ChangeDriveTip": "切换驱动器 (Alt+F1 / Alt+F2)",
+  "FilePanel.Places": "位置",
+  "MainWindow.CommandLinePlaceholder": "输入命令 — 在当前面板的文件夹中运行"
 }
