@@ -1724,7 +1724,7 @@
   "Settings.Zip.ZipCrypto": "ZipCrypto (old, compatible)",
   "Settings.Assoc.InternalAssociationsEnter.Description": "Enter opens these file types with the command given: a program (with parameters), a nc_ command, Lister, the editor or the system's program. Shift+Enter: open together.",
   "Settings.Plugins.InstalledPlugins": "Installed plugins",
-  "Settings.Plugins.InstalledPlugins.Description": "Unchecked plugins are not loaded. Takes effect after a restart.",
+  "Settings.Plugins.InstalledPlugins.Description": "Plugins turned off are not loaded. Takes effect after a restart.",
   "Settings.Plugins.NoPlugins": "No plugins are installed. A plugin is a folder with a plugin.json in the plugins folder of the settings folder or of the program.",
   "Settings.Plugins.NotInstalled": "(not installed)",
   "Settings.Proxy.Group.Proxy": "Proxy",

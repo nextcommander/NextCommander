@@ -976,29 +976,33 @@
   <Style Selector="Button.tabclose:pointerover /template/ ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource NcMwPressBrush}" />
   </Style>
-  <!-- new tab: a plus in the accent color on a square button, clearly a button (it was a faint "+") -->
+  <!-- new tab: only the plus in the accent color, no background and no frame (the user's request, 22 November 2026) -->
   <Style Selector="Button.tabadd">
     <Setter Property="Width" Value="26" />
     <Setter Property="Height" Value="24" />
     <Setter Property="Padding" Value="0" />
     <Setter Property="Margin" Value="4,0,0,2" />
-    <Setter Property="CornerRadius" Value="6" />
     <Setter Property="VerticalAlignment" Value="Bottom" />
     <Setter Property="HorizontalContentAlignment" Value="Center" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
-    <Setter Property="Background" Value="{DynamicResource NcMwChipBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource NcMwStrongStrokeBrush}" />
-    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Foreground" Value="{DynamicResource FmActiveAccentBrush}" />
     <Setter Property="Opacity" Value="1" />
   </Style>
-  <Style Selector="Button.tabadd:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource NcMwAccentSoftBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource FmActiveAccentBrush}" />
+  <Style Selector="Button.tabadd:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.tabadd:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Foreground" Value="{DynamicResource FmActiveAccentBrush}" />
   </Style>
-  <Style Selector="Button.tabadd:pressed /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource NcMwPressBrush}" />
+  <!-- under the mouse the plus grows a little -->
+  <Style Selector="Button.tabadd PathIcon">
+    <Setter Property="Width" Value="13" />
+    <Setter Property="Height" Value="13" />
+  </Style>
+  <Style Selector="Button.tabadd:pointerover PathIcon">
+    <Setter Property="Width" Value="15" />
+    <Setter Property="Height" Value="15" />
   </Style>
 
   <!-- the hotlist and history buttons at the end of the path row: icons in a square button -->
