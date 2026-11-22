@@ -1,8 +1,8 @@
 {
-  "Sqlite.Tables": "{0} Tabellen",
-  "Sqlite.Views": "{0} Sichten",
-  "Sqlite.Indexes": "{0} Indizes",
-  "Sqlite.Rows": "{0} Zeilen",
+  "Sqlite.Tables": "Tabellen: {0}",
+  "Sqlite.Views": "Sichten: {0}",
+  "Sqlite.Indexes": "Indizes: {0}",
+  "Sqlite.Rows": "Zeilen: {0}",
   "Sqlite.NoTables": "Die Datenbank hat keine Tabellen.",
   "Sqlite.View": "Sicht",
   "Sqlite.Table": "Tabelle",

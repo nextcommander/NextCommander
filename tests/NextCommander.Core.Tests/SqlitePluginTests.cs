@@ -140,7 +140,7 @@ public sealed class SqlitePluginTests : IDisposable
             Assert.Contains("<h1>shop.sqlite</h1>", html, StringComparison.Ordinal);
             Assert.Contains("<h2>people</h2>", html, StringComparison.Ordinal);
             Assert.Contains("<h2>adults</h2>", html, StringComparison.Ordinal);
-            Assert.Contains("3 rows", html, StringComparison.Ordinal);
+            Assert.Contains("Rows: 3", html, StringComparison.Ordinal);
             Assert.Contains("Primary key", html, StringComparison.Ordinal);
             Assert.Contains("Smith, John", html, StringComparison.Ordinal);
             Assert.Contains("BLOB, 2 bytes", html, StringComparison.Ordinal);
