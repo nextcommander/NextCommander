@@ -61,6 +61,32 @@ public partial class FilePanelView
         var vm = _vm;
         IReadOnlyList<VfsEntry> entries = candidate.Item.IsMarked ? vm.GetSelectedEntries() : [candidate.Item.Entry!];
         var payload = new DragPayload(entries, vm);
+
+        // Windows, local files of one folder: the shell's own data object, as Explorer drags it (some programs, like
+        // Teams, take only that one); the panels of this window take the drop as before (s_activeDrag)
+        if (OperatingSystem.IsWindows() && entries.All(x => x.Path.IsLocal))
+        {
+            s_activeDrag = payload;
+            try
+            {
+                if (NextCommander.Platform.Windows.ShellDrag.Drag([.. entries.Select(x => x.Path.Path)], (int)(DragDropEffects.Copy | DragDropEffects.Move | DragDropEffects.Link)) is { } effect)
+                {
+                    if (effect == (int)DragDropEffects.Move)
+                    {
+                        await vm.RefreshAsync(); // another program moved the files
+                    }
+                    return;
+                }
+            }
+            catch (Exception ex) when (ex is System.Runtime.InteropServices.COMException or InvalidOperationException or EntryPointNotFoundException or DllNotFoundException)
+            {
+                Log.Warning(ex, "Shell drag failed; dragging the program's own way");
+            }
+            finally
+            {
+                s_activeDrag = null;
+            }
+        }
         var data = await FileClipboard.CreateTransferAsync(TopLevel.GetTopLevel(this)?.StorageProvider, entries);
         var marker = new DataTransferItem();
         marker.Set(s_entriesFormat, vm.Name);
