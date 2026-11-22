@@ -139,6 +139,7 @@
         <MenuItem Header="PC link..." Command="{Binding RunCommandCommand}" CommandParameter="nc_LinkConnect" />
         <MenuItem Header="Share with PC link" ToggleType="CheckBox" IsChecked="{Binding LinkSharing, Mode=OneWay}"
                   Command="{Binding RunCommandCommand}" CommandParameter="nc_LinkShare" />
+        <Separator />
         <MenuItem Header="SSH tunnels..." Command="{Binding RunCommandCommand}" CommandParameter="nc_SshTunnels" />
         <MenuItem Header="Network tools..." Command="{Binding RunCommandCommand}" CommandParameter="nc_NetworkTools" />
         <Separator />
