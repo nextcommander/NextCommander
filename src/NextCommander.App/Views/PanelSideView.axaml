@@ -9,7 +9,7 @@
     <Border x:Name="TabStripHost" DockPanel.Dock="Top" IsVisible="{Binding ShowTabStrip}" Background="{DynamicResource FmTabStripBrush}">
       <DockPanel>
         <Button x:Name="NewTabButton" DockPanel.Dock="Right" Classes="tabadd" ToolTip.Tip="New tab (Ctrl+T)" Focusable="False">
-          <PathIcon Data="{StaticResource MiPlus}" Width="12" Height="12" />
+          <PathIcon Data="{StaticResource MiPlus}" />
         </Button>
         <ScrollViewer x:Name="TabScroll" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
           <ItemsControl x:Name="TabStrip" ItemsSource="{Binding Tabs}" Classes.samewidth="{Binding TabsSameWidth}">
