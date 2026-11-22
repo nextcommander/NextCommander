@@ -1,0 +1,10 @@
+{
+  "Rclone.Remotes": "Distants rclone",
+  "Rclone.NotInstalled": "rclone n'est pas installé. Installez-le depuis rclone.org/downloads (ou indiquez son chemin dans FM_RCLONE), configurez vos distants avec « rclone config », puis rouvrez ceci.",
+  "Rclone.RemoteIsRemoved": "rclone : un distant se supprime avec « rclone config ».",
+  "Rclone.CouldNotBeStarted": "Impossible de démarrer rclone.",
+  "Rclone.FilesAreWrittenInto": "rclone : les fichiers sont écrits dans un distant.",
+  "Rclone.IsNotInstalled": "rclone n'est pas installé (rclone.org/downloads ; ou indiquez le chemin de rclone dans FM_RCLONE).",
+  "Rclone.ApiServerDidNotStart": "rclone : le serveur d'API n'a pas démarré.",
+  "Rclone.MovingBetweenRemotes": "Le déplacement entre distants se fait par copie."
+}

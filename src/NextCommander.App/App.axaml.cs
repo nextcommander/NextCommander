@@ -71,6 +71,10 @@ public partial class App : Application
             link.SaveSettings = vm.SaveSettings;
             _ = link.ApplyAsync(); // sharing again when it was on at the last exit
             LoadPlugins(vm, Services.GetRequiredService<ProviderRegistry>(), store, settings);
+            if (NextCommander.App.Services.UiLocalization.PluginDirectories.Count > 0)
+            {
+                NextCommander.App.Services.UiLocalization.Load(settings.Language); // again, with the plugins' translations
+            }
             NextCommander.App.Services.FileIndexService.Apply(settings, store.Directory); // the own file index, in the background
             NextCommander.App.Services.MediaSupport.Positions = new NextCommander.App.Services.MediaPositions(Path.Combine(store.Directory, "media-positions.json"));
             var window = new MainWindow { DataContext = vm };
@@ -230,6 +234,10 @@ public partial class App : Application
                 vm.ColumnValues.Columns.Register(columns);
             }
             NextCommander.Core.Plugins.PluginCatalog.Add(plugin);
+            if (plugin.Error is null)
+            {
+                NextCommander.App.Services.UiLocalization.PluginDirectories.Add(plugin.Folder); // its own translations
+            }
             Log.Information("Plugin {Name}: {FileSystems} file systems, {Columns} column providers, {Packers} packers, {Viewers} viewers",
                 plugin.Name, plugin.FileSystems.Count, plugin.Columns.Count, plugin.Packers.Count, plugin.Viewers.Count);
         }

@@ -179,11 +179,58 @@ public static class UiLocalization
         try
         {
             // en.json: the English text of every key (the texts in the code)
-            return ReadText(Localizer.BaseLanguage) is { } source ? Localizer.FromFiles(language, source, text) : Localizer.FromJson(language, text);
+            if (ReadText(Localizer.BaseLanguage) is not { } source)
+            {
+                return Localizer.FromJson(language, text);
+            }
+            var pairs = Localizer.Join(Localizer.ParseFile(source), Localizer.ParseFile(text));
+            foreach (var (pluginSource, pluginTarget) in PluginFiles(language))
+            {
+                foreach (var (english, translated) in Localizer.Join(Localizer.ParseFile(pluginSource), Localizer.ParseFile(pluginTarget)))
+                {
+                    pairs.TryAdd(english, translated); // the program's own translation of a text wins
+                }
+            }
+            return new Localizer(language, pairs);
         }
         catch (System.Text.Json.JsonException)
         {
             return null;
+        }
+    }
+
+    /// <summary>
+    /// The folders of the loaded plugins: each may bring its own translations in a "languages" folder (en.json with its
+    /// English texts and a file per language, like the program's), joined to the program's when a language is loaded.
+    /// </summary>
+    public static List<string> PluginDirectories { get; } = [];
+
+    /// <summary>The (en.json, language file) texts of the plugins that have the language; a broken file is left out.</summary>
+    private static IEnumerable<(string Source, string Target)> PluginFiles(string language)
+    {
+        foreach (var folder in PluginDirectories)
+        {
+            var languages = Path.Combine(folder, "languages");
+            string source;
+            string target;
+            try
+            {
+                var sourceFile = Path.Combine(languages, Localizer.BaseLanguage + ".json");
+                var targetFile = Path.Combine(languages, language + ".json");
+                if (!File.Exists(sourceFile) || !File.Exists(targetFile))
+                {
+                    continue;
+                }
+                source = File.ReadAllText(sourceFile);
+                target = File.ReadAllText(targetFile);
+                _ = Localizer.ParseFile(source);
+                _ = Localizer.ParseFile(target);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+            {
+                continue;
+            }
+            yield return (source, target);
         }
     }
 
