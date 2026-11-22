@@ -529,7 +529,7 @@ public sealed class PdfView : UserControl, IDisposable
                         return;
                     }
                     var old = page.Image.Source as IDisposable;
-                    page.Image.Source = ToBitmap(bgra, pixels, pixelHeight, scale);
+                    page.Image.Source = ToBitmap(bgra, pixels, pixelHeight);
                     old?.Dispose();
                     page.Drawn = pixels;
                     page.Drawing = 0;
@@ -545,9 +545,15 @@ public sealed class PdfView : UserControl, IDisposable
         }
     }
 
-    private static WriteableBitmap ToBitmap(byte[] bgra, int width, int height, double scale)
+    /// <summary>
+    /// The picture of a page. Always at 96 dpi: the image fills its frame (Stretch.Fill), and a bitmap of another dpi was
+    /// drawn from its top-left part only (the source rectangle taken in device-independent units as pixels), so with a
+    /// screen scale of 150 % the page was cut at the right and the bottom (the user's report, 22 November 2026). The
+    /// pixels are the frame's size times the scale, so the page stays sharp.
+    /// </summary>
+    internal static WriteableBitmap ToBitmap(byte[] bgra, int width, int height)
     {
-        var bitmap = new WriteableBitmap(new PixelSize(width, height), new Vector(96 * scale, 96 * scale), PixelFormat.Bgra8888, AlphaFormat.Opaque);
+        var bitmap = new WriteableBitmap(new PixelSize(width, height), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque);
         using var target = bitmap.Lock();
         for (var row = 0; row < height; row++)
         {
