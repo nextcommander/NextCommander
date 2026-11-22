@@ -126,7 +126,7 @@ public sealed partial class SettingsView : UserControl
         var logo = new Border { Width = 22, Height = 22, CornerRadius = new CornerRadius(6), [!Border.BackgroundProperty] = Resource("SystemControlHighlightAccentBrush") };
         logo.Child = new TextBlock { Text = "NC", FontSize = 10, FontWeight = FontWeight.Bold, Foreground = Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Classes = { "noloc" } };
         var brand = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, Margin = new Thickness(6, 0, 6, 14) };
-        brand.Children.AddRange([logo, new TextBlock { Text = "Options", FontSize = 12.5, Opacity = 0.75, VerticalAlignment = VerticalAlignment.Center }]);
+        brand.Children.AddRange([logo, new TextBlock { Text = "Settings", FontSize = 12.5, Opacity = 0.75, VerticalAlignment = VerticalAlignment.Center }]);
         _search.InnerLeftContent = new Border { Child = DialogLook.Glyph("MiSearch", 14), Margin = new Thickness(10, 0, 2, 0), Opacity = 0.6 };
         _search.InnerRightContent = new Border
         {
@@ -207,7 +207,7 @@ public sealed partial class SettingsView : UserControl
         Grid.SetColumn(main, 1);
         body.Children.Add(main);
         // above: the title bar of every page (the internal terminal's top line, the name, ✕ at the right)
-        var top = PageHeader.Create(Services.MenuIcons.Create("nc_Config"), "Options", "Close (Esc)", Close, out var close);
+        var top = PageHeader.Create(Services.MenuIcons.Create("nc_Config"), "Settings", "Close (Esc)", Close, out var close);
         CloseButton = close;
         var frame = new DockPanel();
         frame.Children.AddRange([top, body]);

@@ -919,7 +919,7 @@
   "Menu.nc_CompareDirs": "比较文件夹",
   "Menu.nc_CompareDirsHideSame": "标记较新的，隐藏相同的",
   "Menu.nc_CompareFilesByContent": "按内容比较...",
-  "Menu.nc_Config": "选项...",
+  "Menu.nc_Config": "设置...",
   "Menu.nc_ConfigDirHotlist": "编辑 Hotlist...",
   "Menu.nc_ConfigStartMenu": "更改开始菜单...",
   "Menu.nc_Copy": "复制",

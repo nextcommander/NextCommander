@@ -386,7 +386,7 @@ public partial class MainWindow
                 RemoteDesktopState.Connected => $"Connected to {desktop.Connection.Host}",
                 _ => "The remote desktop session ended.",
             }, true),
-            WorkspacePage.Options => (MenuIcons.Create("nc_Config") ?? new Panel(), "Options", "Options", false),
+            WorkspacePage.Options => (MenuIcons.Create("nc_Config") ?? new Panel(), "Settings", "Settings", false),
             WorkspacePage.Terminal => (MenuIcons.Create("nc_MaximizeTerminal") ?? new Panel(), "Terminal", "Internal terminal", false),
             WorkspacePage.Sync => (MenuIcons.Create("nc_SyncDirs") ?? new Panel(), "Synchronize", Tools.SyncDirsView.Title, false),
             WorkspacePage.Duplicates => (MenuIcons.Create("nc_FindDuplicates") ?? new Panel(), "Duplicates", Tools.DuplicatesView.Title, false),
