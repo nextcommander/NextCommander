@@ -14,20 +14,24 @@ A plugin is a .NET assembly that NextCommander loads at start. It can add:
 | Columns | `IColumnProvider` | *Show > Display > Custom view modes > Edit view modes...*: the plugin's fields can be added to a view mode. |
 | An archive format to write | `IPackerPlugin` | A packer in the Pack dialog (Alt+F5). |
 | A viewer | `IViewerPlugin` | The Lister (F3) shows files it wants (key 6). |
+| Actions for its entries | `IPluginEntryActions` (on the file system) | At the top of the file list's right click menu (start a container ...). |
+| Settings | `IConfigurablePlugin` | A group on the Plugins page of the configuration; **Configure...** in the plugins window. |
 
-The rclone, Git, SQLite, Docker and virtual disk support of NextCommander are themselves plugins
+The rclone, Git, SQLite, Docker, virtual disk and viewer support of NextCommander are themselves plugins
 ([src/Plugins/NextCommander.Plugin.Rclone](../../src/Plugins/NextCommander.Plugin.Rclone),
 [src/Plugins/NextCommander.Plugin.Git](../../src/Plugins/NextCommander.Plugin.Git),
 [src/Plugins/NextCommander.Plugin.Sqlite](../../src/Plugins/NextCommander.Plugin.Sqlite),
 [src/Plugins/NextCommander.Plugin.Docker](../../src/Plugins/NextCommander.Plugin.Docker),
-[src/Plugins/NextCommander.Plugin.DiskImage](../../src/Plugins/NextCommander.Plugin.DiskImage); see [Git](#git),
-[SQLite](#sqlite), [Docker](#docker) and [Virtual disks](#virtual-disks) below), and
+[src/Plugins/NextCommander.Plugin.DiskImage](../../src/Plugins/NextCommander.Plugin.DiskImage),
+[src/Plugins/NextCommander.Plugin.Viewers](../../src/Plugins/NextCommander.Plugin.Viewers); see [Git](#git),
+[SQLite](#sqlite), [Docker](#docker), [Virtual disks](#virtual-disks) and [Viewers](#viewers) below), and
 [tests/SamplePlugin](../../tests/SamplePlugin) is a small example with a column and a `hello://` file system.
 
 - [Git](#git)
 - [SQLite](#sqlite)
 - [Docker](#docker)
 - [Virtual disks](#virtual-disks)
+- [Viewers](#viewers)
 - [Using plugins](#using-plugins)
 - [Writing a plugin](#writing-a-plugin)
 - [File systems](#file-systems)
@@ -76,14 +80,23 @@ Engine; `FM_DOCKER` names another program with the same commands, such as podman
 itself is set to (its current context, `DOCKER_HOST`), so remote engines work too.
 
 - **Docker containers** is listed with the saved connections (Net > Saved connections, and the connections button of
-  the button bar). It opens `docker:///`: the containers, running and stopped, named as in `docker ps`.
+  the button bar). It opens `docker:///`: the folder **(volumes)** and the containers, running and stopped, named
+  as in `docker ps`.
 - **A container's files:** Enter on a running container shows its file system from `/`. View (F3), edit (F4), copy
   in and out, make folders, rename and delete as in any panel; copied files keep their modification time. Changes
-  run as the container's user, and a file written over keeps its owner and rights. ".." from a container's root goes
-  back to the list.
-- **Limits:** a stopped container says how to start it (`docker start <name>`); a container without a shell (`sh`,
-  for example a "distroless" image) cannot be listed. Containers themselves are made, started and removed with
-  docker.
+  run as the container's user (or root, see the settings), and a file written over keeps its owner and rights.
+  ".." from a container's root goes back to the list.
+- **A stopped container** opens too, read-only: its files come through `docker cp` (view, copy out). Listing a
+  folder copies everything below it from Docker, so a big one (the root of a large image) takes a while. Changing a
+  file says how to start the container.
+- **Start, stop, restart, pause, resume:** the right click menu of a container in the list.
+- **Volumes:** **(volumes)** lists the Docker volumes; a volume opens like a folder and its files can be changed.
+  It is reached through a small helper container that mounts it (`nc-volume-<volume>`, from the image of the
+  settings, `busybox` by default, downloaded the first time); the helpers are removed when NextCommander ends.
+- **Settings** (*Configuration > Plugins > Docker*): the docker program, the user that works in containers, the
+  image for opening volumes.
+- **Limits:** a container without a shell (`sh`, for example a "distroless" image) cannot be listed while it runs
+  (stopped, it can). Containers and volumes themselves are made and removed with docker.
 
 ## Virtual disks
 
@@ -103,6 +116,23 @@ system and without administrator rights.
   disk files of a differencing chain, and each volume with its type, file system, label, size and how full it is.
 - **Mounting** (Windows, `.vhd` / `.vhdx`): *Files > Archive > Mount disc image* lets Windows mount the disk with
   drive letters instead; see [Archives](archives.md).
+
+## Viewers
+
+The viewers plugin comes with NextCommander and adds views to the Lister (F3) and Quick View. They open by
+themselves for their files; key 1 shows the plain text (or 3 the bytes) as before.
+
+| Files | View |
+|---|---|
+| `.csv`, `.tsv`, `.tab` | A table: the separator is found by itself (comma, semicolon, tab, bar), quoted fields and line breaks in them are read, the first row is the header. A click on a column header sorts by it (numbers as numbers); columns can be resized and moved. |
+| `.json`, `.geojson`, `.har`, `.webmanifest`, `.xml`, `.plist`, `.gpx`, `.kml`, `.resx`, `.yaml`, `.yml` | A tree that folds, values colored by kind, the first two levels open. A file that cannot be read says where, then shows its text. Project and code files (`.csproj`, `.xaml`, `.config` ...) and `.svg` stay as they were. |
+| `.eml`, `.msg` (Outlook) | The mail: sender, recipients, date, subject, the attachments, and the body with the mail's own pictures. Pictures from the internet are not loaded (they could tell the sender the mail was read), and scripts are left out. |
+| `.epub` | The book: title, author, publisher, cover, contents and the chapters with their pictures. |
+| `.ipynb` | The notebook: Markdown cells, code with its number and its outputs (text, tables, pictures, errors). |
+| `.cer`, `.crt`, `.der`, `.pem`, `.p7b`, `.pfx`, `.p12` | Each certificate from the leaf to the root: subject, issuer, validity (and whether it is valid now), key, algorithms, fingerprints, uses and alternative names. A `.pfx` with a password says so. Nothing is installed. |
+| `.exe`, `.dll`, `.sys`, `.ocx`, `.scr`, `.cpl`, `.efi` | The version information, architecture, kind (window, console, driver, library; .NET), build time, sections, and who signed it. The signature is shown, not checked; Windows' own files are often signed in a catalog instead. |
+| `.ttf`, `.otf`, `.ttc`, `.woff`, `.woff2` | The font: family, style, weight, glyphs, sample lines at six sizes (with the Turkish letters) and a table of its characters, drawn from the file (nothing is installed). |
+| `.vcf`, `.ics` | Contacts as cards (photo, phones, e-mails, addresses, notes); events in order of time with their place, organizer, attendees and repetition. |
 
 ## Using plugins
 
@@ -144,7 +174,7 @@ a value the plugin cannot use (a program that is not there) is refused with the 
 | Plugin | Settings |
 |---|---|
 | Git | the git program; how often the Git columns read a repository's status; how many commits the history lists |
-| Docker | the docker program (podman works too); the user commands run as inside a container |
+| Docker | the docker program (podman works too); the user commands run as inside a container; the image for opening volumes |
 | rclone | the rclone program; the rclone.conf with the remotes |
 | SQLite | the SQLite library (after a restart); the rows of each table in the F3 overview |
 
@@ -533,7 +563,7 @@ public sealed class HelloSettings : IConfigurablePlugin
 - **Where:** any public class of the plugin with a parameterless constructor, its own settings class or one of
   its file systems, columns, viewers (the same instance is used for both). One `IConfigurablePlugin` per plugin.
 - **Kinds:** `Text`, `Number` (`Min`, `Max`), `Toggle` ("true" / "false"), `Choice` (`Choices`: value and text),
-  `Program` and `File` (with a Browse button), `Folder` (with a folder picker).
+  `Program` and `File` (with a Browse button), `Folder` (with a folder picker), `Secret` (typed hidden, kept in the password store; see below).
 - **Values** are texts: `values.Get(key)` gives the value or the setting's `Default` (null when empty);
   `GetBool` and `GetNumber` read them as such. A value equal to the default is not stored.
 - **Applying:** `Apply` runs when the plugin is loaded (before anything uses it) and after every Apply / OK of the
@@ -544,7 +574,28 @@ public sealed class HelloSettings : IConfigurablePlugin
   the plugin's `languages` folder like its other texts. Prefer patterns with a fixed start ("The program was not
   found: {0}") to ones that are only a hole and a word ("{0} rows"): a pattern matches whole texts anywhere in
   the program.
-- **No secrets** in settings: they are stored as plain text in the settings file.
+- **Secrets** (a password, a token, a key): use `PluginSettingKind.Secret`. It is typed hidden and kept in the
+  program's password store (with the master password when there is one), never in the settings file; the field
+  shows whether one is saved and has a **Forget** button. Ask for it with `await values.GetSecretAsync(key)` when
+  it is needed (connecting ...), not in `Apply`: a locked store asks for the master password. Keep the values
+  object `Apply` gets. Other kinds are stored as plain text.
+
+## Actions in the file list menu
+
+A file system plugin can offer actions for its own entries (start a container, refresh a remote ...): they are at
+the top of the file list's right click menu while the cursor is on such an entry.
+
+```csharp
+public IReadOnlyList<PluginAction> ActionsFor(VfsEntry entry) =>
+    IsContainer(entry)
+        ? [new("Start the container", PluginActionIcon.Start, async ct => { await StartAsync(entry, ct); return null; })]
+        : [];
+```
+
+`ActionsFor` is called when the menu opens: keep it cheap (no network). `RunAsync` returns a message to show, or
+null; an `IOException` is shown as the message; the folder is read again afterwards. The icon is one of
+`PluginActionIcon` (Start, Stop, Restart, Pause, Delete, Refresh, Info, Other), drawn through the icon pack. The
+name is English; its translation goes into the plugin's languages folder.
 
 ## Translations
 
