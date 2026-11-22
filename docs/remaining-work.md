@@ -241,6 +241,21 @@ built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC l
   Linux udisks, macOS hdiutil; `Platform/DiskImages`). Tried on Windows with a real mount (`FM_TEST_MOUNT=1`); the
   Linux and macOS commands are tested with recorded output, to be tried on those systems.
 - [x] Other images DiscUtils reads: VHD / VHDX / VMDK / VDI / DMG as the disk image plugin (read-only, 22 November 2026); Windows mounts .vhd / .vhdx.
+- [ ] Disk image plugin and Windows mounting of .vhd / .vhdx (consent dialog, drive letters) to be tried with real
+  virtual machine disks; tested with disks made by DiscUtils.
+
+## Shipped plugins (22 November 2026)
+- [x] Plugin settings drawn by the program (`IConfigurablePlugin`): **Configure...** in the plugins window tried by
+  the user on Windows (22 November 2026).
+- [ ] Secret settings (`PluginSettingKind.Secret`, password store): no shipped plugin uses one yet; tested only.
+- [x] Docker: volumes tried by the user on Windows (22 November 2026). Containers, files in and out, a stopped
+  container (read-only through docker cp) and the container menu are tested against a real Docker (`FM_TEST_DOCKER=1`).
+- [ ] Docker: the container menu (start / stop / restart / pause / resume) and a stopped container in the app, to be
+  tried by the user.
+- [x] Viewers: CSV / TSV table, JSON tree and programs (.exe / .dll) tried by the user on Windows (22 November 2026).
+- [ ] Viewers still to be tried in the app: XML / YAML trees, .eml / .msg (a real Outlook message), .epub, .ipynb,
+  certificates, fonts, .vcf / .ics. Tested with files made in the tests.
+- [ ] SQLite plugin to be tried in the app with real databases (Enter, F3, copying a table out as CSV / JSON).
 
 ## AI support (ideas, to be evaluated)
 
