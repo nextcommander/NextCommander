@@ -37,6 +37,9 @@ public static class DesignColors
         Color Alpha(byte a) => Color.FromArgb(a, panelAccent.R, panelAccent.G, panelAccent.B);
         app.Resources["NcMwCursorBrush"] = new SolidColorBrush(Alpha(dark ? (byte)0x24 : (byte)0x1F));
         app.Resources["NcMwCursorLineBrush"] = new SolidColorBrush(Alpha(0x80));
+        // the cursor of the inactive panel: the same color, faded
+        app.Resources["NcMwCursorInactiveBrush"] = new SolidColorBrush(Alpha(dark ? (byte)0x14 : (byte)0x10));
+        app.Resources["NcMwCursorInactiveLineBrush"] = new SolidColorBrush(Alpha(0x40));
         app.Resources["NcMwAccentSoftBrush"] = new SolidColorBrush(Alpha(dark ? (byte)0x21 : (byte)0x1A));
     }
 
