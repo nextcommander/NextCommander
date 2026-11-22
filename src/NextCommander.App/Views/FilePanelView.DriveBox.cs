@@ -32,6 +32,26 @@ public partial class FilePanelView
         // the frame cuts square, which left their corners standing out of the line
         FrameContent.SizeChanged += (_, e) =>
             FrameContent.Clip = new RectangleGeometry(new Rect(e.NewSize), 7, 7);
+        // the hotlist and the folder history at the end of the path row, as icons (the user's request, 22 November 2026)
+        foreach (var (button, command) in new[] { (PathBar.HotlistButton, "nc_DirectoryHotlist"), (PathBar.HistoryButton, "nc_DirectoryHistory") })
+        {
+            ((Panel)button.Parent!).Children.Remove(button);
+            button.Classes.Add("pathend");
+            button.Tag = command;
+            PathEndButtons.Children.Add(button);
+        }
+        void SetPathEndIcons()
+        {
+            foreach (var button in PathEndButtons.Children.OfType<Button>())
+            {
+                button.Content = button.Tag is string command && Services.MenuIcons.Create(command) is { } icon
+                    ? new Viewbox { Width = 16, Height = 16, Child = icon }
+                    : Equals(button.Tag, "nc_DirectoryHotlist") ? "*" : "▾";
+            }
+        }
+        SetPathEndIcons();
+        AttachedToVisualTree += (_, _) => SetPathEndIcons(); // the icon pack may have changed
+
         DriveBox.Click += (_, _) =>
         {
             Activated?.Invoke(this, EventArgs.Empty);
