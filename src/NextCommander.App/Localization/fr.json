@@ -3763,5 +3763,8 @@
   "SettingsWindow.Browse": "Parcourir...",
   "SettingsWindow.PluginProblem": "Paramètres de {0} : {1}",
   "SettingsWindow.NotSet": "Non défini",
-  "MainWindow.PasswordNotSavedStoreLocked": "Le mot de passe n\u0027a pas pu être enregistré : le coffre des mots de passe est verrouillé."
+  "MainWindow.PasswordNotSavedStoreLocked": "Le mot de passe n\u0027a pas pu être enregistré : le coffre des mots de passe est verrouillé.",
+  "FilePanel.ChangeDriveTip": "Changer de lecteur (Alt+F1 / Alt+F2)",
+  "FilePanel.Places": "Emplacements",
+  "MainWindow.CommandLinePlaceholder": "Saisissez une commande — elle s'exécute dans le dossier du panneau actif"
 }

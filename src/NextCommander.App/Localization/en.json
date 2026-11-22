@@ -3763,5 +3763,8 @@
   "SettingsWindow.Browse": "Browse...",
   "SettingsWindow.PluginProblem": "Settings of {0}: {1}",
   "SettingsWindow.NotSet": "Not set",
-  "MainWindow.PasswordNotSavedStoreLocked": "The password could not be saved: the password store is locked."
+  "MainWindow.PasswordNotSavedStoreLocked": "The password could not be saved: the password store is locked.",
+  "FilePanel.ChangeDriveTip": "Change drive (Alt+F1 / Alt+F2)",
+  "FilePanel.Places": "Places",
+  "MainWindow.CommandLinePlaceholder": "Type a command — runs in the active panel's folder"
 }

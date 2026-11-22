@@ -20,8 +20,11 @@
               <DataTemplate x:DataType="vm:PanelViewModel">
                 <Button Classes="tab" Classes.current="{Binding IsCurrentTab}" Classes.focused="{Binding IsActive}"
                         Tag="{Binding}" Focusable="False" ToolTip.Tip="{Binding PathText}">
-                  <Border Background="{Binding TabBrush}" Margin="-10,-3" Padding="10,3" CornerRadius="2">
-                  <StackPanel Orientation="Horizontal" Spacing="4">
+                  <Panel>
+                  <!-- the tab's own color (Tabs > color) fills it -->
+                  <Border Background="{Binding TabBrush}" Margin="-10,0,-6,0" CornerRadius="5,5,0,0" />
+                  <Border Classes="tabline" />
+                  <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <Panel IsVisible="{Binding ShowTabIcon}" Width="12" Height="12" VerticalAlignment="Center">
                       <PathIcon Classes="tabicon" Data="{StaticResource MiFolderOpen}" Foreground="{DynamicResource FmFolderBrush}">
                         <PathIcon.IsVisible>
@@ -50,7 +53,7 @@
                       </Button.IsVisible>
                     </Button>
                   </StackPanel>
-                  </Border>
+                  </Panel>
                 </Button>
               </DataTemplate>
             </ItemsControl.ItemTemplate>

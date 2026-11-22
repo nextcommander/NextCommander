@@ -17,6 +17,15 @@
       <SolidColorBrush x:Key="NcBadBrush" Color="#C4302B" />
       <SolidColorBrush x:Key="NcBadSoftBrush" Color="#1AC4302B" />
       <BoxShadows x:Key="NcBadRing">0 0 0 3 #1AC4302B</BoxShadows>
+      <!-- the main window (the user's template, 22 November 2026): lines, hover, press, the raised chip -->
+      <SolidColorBrush x:Key="NcMwStrokeBrush" Color="#13000000" />
+      <SolidColorBrush x:Key="NcMwStrongStrokeBrush" Color="#24000000" />
+      <SolidColorBrush x:Key="NcMwHoverBrush" Color="#0A000000" />
+      <SolidColorBrush x:Key="NcMwPressBrush" Color="#14000000" />
+      <SolidColorBrush x:Key="NcMwChipBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="NcMwCardBrush" Color="#FBFBFB" />
+      <BoxShadows x:Key="NcMwChipShadow">0 1 2 0 #1F000000</BoxShadows>
+      <BoxShadows x:Key="NcMwPopupShadow">0 12 36 0 #2E000000</BoxShadows>
     </ResourceDictionary>
     <ResourceDictionary x:Key="Dark">
       <SolidColorBrush x:Key="NcAccentHoverBrush" Color="{DynamicResource SystemAccentColorLight1}" />
@@ -27,6 +36,14 @@
       <SolidColorBrush x:Key="NcBadBrush" Color="#FF6B6B" />
       <SolidColorBrush x:Key="NcBadSoftBrush" Color="#24FF6B6B" />
       <BoxShadows x:Key="NcBadRing">0 0 0 3 #24FF6B6B</BoxShadows>
+      <SolidColorBrush x:Key="NcMwStrokeBrush" Color="#12FFFFFF" />
+      <SolidColorBrush x:Key="NcMwStrongStrokeBrush" Color="#21FFFFFF" />
+      <SolidColorBrush x:Key="NcMwHoverBrush" Color="#0DFFFFFF" />
+      <SolidColorBrush x:Key="NcMwPressBrush" Color="#17FFFFFF" />
+      <SolidColorBrush x:Key="NcMwChipBrush" Color="#2F2F2F" />
+      <SolidColorBrush x:Key="NcMwCardBrush" Color="#262626" />
+      <BoxShadows x:Key="NcMwChipShadow">0 1 2 0 #4D000000</BoxShadows>
+      <BoxShadows x:Key="NcMwPopupShadow">0 12 36 0 #99000000</BoxShadows>
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
 

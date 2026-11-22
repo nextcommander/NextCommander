@@ -8,10 +8,10 @@
              x:Class="NextCommander.App.Views.FilePanelView"
              x:DataType="vm:PanelViewModel">
   <Border Classes="panelframe" Classes.active="{Binding IsActive}">
-    <DockPanel>
-      <!-- Layout: drive buttons / drive box + free space + \ .. / tabs / path line -->
-      <!-- Drive buttons; the folder shortcuts (Configuration > Layout) sit at the right end, icons only, after a separator -->
-      <Border DockPanel.Dock="Top" IsVisible="{Binding ShowDriveButtons}" Background="{DynamicResource FmToolBarBrush}" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource FmBarLineBrush}">
+    <DockPanel x:Name="FrameContent">
+      <!-- Layout (the user's template, 22 November 2026): drive chips / tabs / path row with the drive box and the free space -->
+      <!-- Drive chips; the folder shortcuts (Configuration > Layout) sit at the right end, icons only, after a separator -->
+      <Border DockPanel.Dock="Top" Classes="mwbar" IsVisible="{Binding ShowDriveButtons}" BorderThickness="0,0,0,1" Padding="6,5">
       <DockPanel>
         <ItemsControl x:Name="ShortcutButtons" DockPanel.Dock="Right" ItemsSource="{Binding FolderShortcutItems}" Classes.raised="{Binding !FlatDriveButtons}">
           <ItemsControl.ItemsPanel>
@@ -46,12 +46,17 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="p:DriveItem">
               <Button Classes="drivebtn" Classes.special="{Binding IsSpecial}" Tag="{Binding}" Focusable="False" ToolTip.Tip="{Binding ToolTipText}">
-                <StackPanel Orientation="Horizontal" Spacing="3">
-                  <Panel>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <Panel VerticalAlignment="Center">
                     <PathIcon Classes="driveicon" Data="{Binding Kind, Converter={x:Static icons:DriveIconConverter.Glyph}}" IsVisible="{Binding Converter={x:Static icons:DriveIconConverter.Missing}}" />
                     <Image Classes="driveimage" Source="{Binding Converter={x:Static icons:DriveIconConverter.Instance}}" />
                   </Panel>
                   <TextBlock Text="{Binding ShortName}" Classes="noloc" VerticalAlignment="Center" IsVisible="{Binding !IsSpecial}" />
+                  <!-- how full the drive is -->
+                  <Border Classes="usage" Classes.low="{Binding Converter={x:Static icons:DriveUsage.IsLow}}" Width="26"
+                          IsVisible="{Binding Converter={x:Static icons:DriveUsage.HasSize}}">
+                    <Border Width="{Binding Converter={x:Static icons:DriveUsage.ChipWidth}}" />
+                  </Border>
                 </StackPanel>
               </Button>
             </DataTemplate>
@@ -59,71 +64,46 @@
         </ItemsControl>
       </DockPanel>
       </Border>
-      <DockPanel DockPanel.Dock="Top" Background="{DynamicResource FmDriveBarBrush}" IsVisible="{Binding ShowDriveCombo}">
-        <Button x:Name="ParentButton" DockPanel.Dock="Right" Classes="pathbtn" Content=".." Focusable="False" ToolTip.Tip="Parent folder (Backspace)" />
-        <Button x:Name="RootButton" DockPanel.Dock="Right" Classes="pathbtn" Content="\" Focusable="False" ToolTip.Tip="Root folder (Ctrl+\)" />
-        <ComboBox x:Name="DriveCombo" DockPanel.Dock="Left" ItemsSource="{Binding DriveChoices}" SelectedItem="{Binding SelectedDrive, Mode=OneWay}" Classes.labels="{Binding ShowDriveLabels}"
-                  MinWidth="64" MaxWidth="220" Margin="2,1" FontSize="12" Focusable="False">
-          <ComboBox.ItemTemplate>
-            <DataTemplate x:DataType="p:DriveItem">
-              <StackPanel Orientation="Horizontal" Spacing="4">
-                <Panel>
-                  <PathIcon Classes="driveicon" Data="{Binding Kind, Converter={x:Static icons:DriveIconConverter.Glyph}}" IsVisible="{Binding Converter={x:Static icons:DriveIconConverter.Missing}}" />
-                  <Image Width="16" Height="16" Source="{Binding Converter={x:Static icons:DriveIconConverter.Instance}}" />
-                </Panel>
-                <TextBlock Text="{Binding ShortName}" Classes="noloc" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding LabelText}" Classes="drivelabel noloc" VerticalAlignment="Center" />
-              </StackPanel>
-            </DataTemplate>
-          </ComboBox.ItemTemplate>
-          <!-- The open list: two columns (letter / label) with Computer, Network and the trash below the drives -->
-          <ComboBox.Styles>
-            <Style Selector="ComboBoxItem">
-              <Setter Property="ContentTemplate">
-                <DataTemplate x:DataType="p:DriveItem">
-                  <Grid ColumnDefinitions="22,28,*" MinWidth="240">
-                    <Panel VerticalAlignment="Center">
-                      <PathIcon Classes="driveicon" Data="{Binding Kind, Converter={x:Static icons:DriveIconConverter.Glyph}}" IsVisible="{Binding Converter={x:Static icons:DriveIconConverter.Missing}}" />
-                      <Image Width="16" Height="16" Source="{Binding Converter={x:Static icons:DriveIconConverter.Instance}}" />
-                    </Panel>
-                    <TextBlock Grid.Column="1" Text="{Binding ShortName}" Classes="noloc" VerticalAlignment="Center" FontWeight="SemiBold" />
-                    <!-- the drive's label (not translated), or what it is ("Local Disk", translated) -->
-                    <TextBlock Grid.Column="2" Text="{Binding Label}" Classes="noloc" VerticalAlignment="Center" Opacity="0.75">
-                      <TextBlock.IsVisible>
-                        <MultiBinding Converter="{x:Static BoolConverters.And}">
-                          <Binding Path="!IsSpecial" />
-                          <Binding Path="HasLabel" />
-                        </MultiBinding>
-                      </TextBlock.IsVisible>
-                    </TextBlock>
-                    <TextBlock Grid.Column="2" Text="{Binding KindText}" VerticalAlignment="Center" Opacity="0.75">
-                      <TextBlock.IsVisible>
-                        <MultiBinding Converter="{x:Static BoolConverters.And}">
-                          <Binding Path="!IsSpecial" />
-                          <Binding Path="!HasLabel" />
-                        </MultiBinding>
-                      </TextBlock.IsVisible>
-                    </TextBlock>
-                    <TextBlock Grid.Column="2" Text="{Binding Label}" VerticalAlignment="Center" IsVisible="{Binding IsSpecial}" />
-                  </Grid>
-                </DataTemplate>
-              </Setter>
-            </Style>
-          </ComboBox.Styles>
-        </ComboBox>
-        <TextBlock Text="{Binding FreeSpaceText}" VerticalAlignment="Center"
-                   Margin="6,0" FontSize="12" Opacity="0.8" TextTrimming="CharacterEllipsis" />
-      </DockPanel>
 
       <!-- The side's tab strip is placed here (PanelSideView) -->
       <Border x:Name="TabSlot" DockPanel.Dock="Top" />
 
-      <!-- Path line (click empty space or Alt+D to type a path) -->
-      <views:PathBarView x:Name="PathBar" DockPanel.Dock="Top" IsVisible="{Binding ShowPathLine}" />
+      <!-- Path row: the drive box (Alt+F1 / Alt+F2), the path (click empty space or Alt+D to type one), the free space -->
+      <Border DockPanel.Dock="Top" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource NcMwStrokeBrush}" Padding="8,5" MinHeight="38"
+              IsVisible="{Binding ShowPathRow}">
+        <DockPanel>
+          <Button x:Name="DriveBox" DockPanel.Dock="Left" Classes="drivebox" Focusable="False" Margin="0,0,8,0" IsVisible="{Binding ShowDriveCombo}"
+                  ToolTip.Tip="Change drive (Alt+F1 / Alt+F2)">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Panel VerticalAlignment="Center">
+                <PathIcon Classes="driveicon" Data="{Binding SelectedDrive.Kind, Converter={x:Static icons:DriveIconConverter.Glyph}, FallbackValue={x:Null}}"
+                          IsVisible="{Binding SelectedDrive, Converter={x:Static icons:DriveIconConverter.Missing}}" />
+                <Image Width="16" Height="16" Source="{Binding SelectedDrive, Converter={x:Static icons:DriveIconConverter.Instance}}" />
+              </Panel>
+              <TextBlock Classes="noloc" Text="{Binding SelectedDrive.Name, FallbackValue=''}" VerticalAlignment="Center" />
+              <PathIcon Width="10" Height="10" Data="M2,5 L8,11 L14,5 Z" Opacity="0.55" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Popup x:Name="DrivePopup" DockPanel.Dock="Left" PlacementTarget="{Binding #DriveBox}" Placement="BottomEdgeAlignedLeft" IsLightDismissEnabled="True"
+                 HorizontalOffset="-8">
+            <Border Classes="mwpopup" Width="320">
+              <ListBox x:Name="DriveList" Classes="drivelist" MaxHeight="520" />
+            </Border>
+          </Popup>
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6" Margin="8,0,0,0" IsVisible="{Binding HasSpace}"
+                      ToolTip.Tip="{Binding FreeSpaceText}">
+            <Border Classes="usage" Classes.low="{Binding SpaceIsLow}" Width="56" Height="5">
+              <Border Width="{Binding UsedFraction, Converter={x:Static icons:DriveUsage.PathWidth}}" />
+            </Border>
+            <TextBlock Classes="freetext" Text="{Binding FreeShortText}" />
+          </StackPanel>
+          <views:PathBarView x:Name="PathBar" IsVisible="{Binding ShowPathLine}" />
+        </DockPanel>
+      </Border>
 
       <!-- Status line -->
-      <Border DockPanel.Dock="Bottom" Background="{DynamicResource FmStatusBrush}" IsVisible="{Binding ShowStatusBar}">
-        <TextBlock Text="{Binding StatusText}" Margin="6,3" FontSize="12" TextTrimming="CharacterEllipsis" />
+      <Border DockPanel.Dock="Bottom" Classes="mwstatus" IsVisible="{Binding ShowStatusBar}">
+        <TextBlock Text="{Binding StatusText}" Margin="10,5" TextTrimming="CharacterEllipsis" />
       </Border>
 
       <!-- Quick search / quick filter -->

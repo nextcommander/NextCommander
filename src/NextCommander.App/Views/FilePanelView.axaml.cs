@@ -121,16 +121,7 @@ public partial class FilePanelView : UserControl
 
         PathBar.Activated += (_, _) => Activated?.Invoke(this, EventArgs.Empty);
         PathBar.Done += (_, _) => FocusList();
-        DriveCombo.DropDownClosed += (_, _) => FocusList();
-        // Only a drive picked in the open list changes the drive (the box also selects by itself when its list changes).
-        DriveCombo.SelectionChanged += (_, _) =>
-        {
-            if (DriveCombo.IsDropDownOpen && DriveCombo.SelectedItem is Platform.DriveItem drive && _vm is not null
-                && !ReferenceEquals(drive, _vm.SelectedDrive) && !string.Equals(drive.RootPath, _vm.SelectedDrive?.RootPath, StringComparison.OrdinalIgnoreCase))
-            {
-                _ = _vm.ChangeDriveAsync(drive);
-            }
-        };
+        InitializeDriveBox();
         foreach (var bar in new Control[] { DriveButtons, ShortcutButtons })
         bar.AddHandler(Button.ClickEvent, (_, e) =>
         {
@@ -143,13 +134,10 @@ public partial class FilePanelView : UserControl
         });
         DriveBarMarks.Watch(DriveButtons);
         DriveBarMarks.Watch(ShortcutButtons);
-        foreach (var bar in new Control[] { DriveButtons, ShortcutButtons, DriveCombo })
+        foreach (var bar in new Control[] { DriveButtons, ShortcutButtons })
         {
-            // the drive box's open list lives in a popup: its events reach the box through the logical tree
             bar.AddHandler(ContextRequestedEvent, OnDriveContextRequested, RoutingStrategies.Bubble, handledEventsToo: true);
         }
-        RootButton.Click += async (_, _) => await RunAsync("nc_GoToRoot");
-        ParentButton.Click += async (_, _) => await RunAsync("nc_GoToParent");
 
         InitializeDragDrop();
         InitializeQuickSearch();
@@ -437,8 +425,7 @@ public partial class FilePanelView : UserControl
 
     private void OnDriveMenuRequested(object? sender, EventArgs e)
     {
-        _vm?.RefreshDrives();
-        DriveCombo.IsDropDownOpen = true;
+        OpenDriveBox();
     }
 
     private void OnSortChanged(object? sender, EventArgs e) => UpdateHeaders();
@@ -749,9 +736,9 @@ public partial class FilePanelView : UserControl
         e.Handled = true;
         var at = e.TryGetPosition(source, out var point) ? point : new Point(source.Bounds.Width / 2, source.Bounds.Height / 2);
         var screen = source.PointToScreen(at);
-        var fromDropDown = DriveCombo.IsDropDownOpen;
-        DriveCombo.IsDropDownOpen = false; // the menu replaces the list
-        ShowDriveMenu(fromDropDown || !source.IsAttachedToVisualTree() ? DriveCombo : source, drive, screen);
+        var fromDropDown = DrivePopup.IsOpen;
+        DrivePopup.IsOpen = false; // the menu replaces the list
+        ShowDriveMenu(fromDropDown || !source.IsAttachedToVisualTree() ? DriveBox : source, drive, screen);
     }
 
     /// <summary>The path the system's menu of a drive box entry is made for (Windows shell names for Computer, Network, Recycle Bin, phones); null for none.</summary>
