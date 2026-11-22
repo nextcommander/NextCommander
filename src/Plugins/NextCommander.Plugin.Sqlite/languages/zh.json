@@ -1,0 +1,19 @@
+{
+  "Sqlite.Tables": "{0} 个表",
+  "Sqlite.Views": "{0} 个视图",
+  "Sqlite.Indexes": "{0} 个索引",
+  "Sqlite.Rows": "{0} 行",
+  "Sqlite.NoTables": "数据库中没有表。",
+  "Sqlite.View": "视图",
+  "Sqlite.Table": "表",
+  "Sqlite.Column": "列",
+  "Sqlite.Type": "类型",
+  "Sqlite.Key": "键",
+  "Sqlite.NotNull": "非空",
+  "Sqlite.Default": "默认值",
+  "Sqlite.PrimaryKey": "主键",
+  "Sqlite.FirstRows": "前几行",
+  "Sqlite.BlobBytes": "BLOB，{0} 字节",
+  "Sqlite.IndexesTitle": "索引",
+  "Sqlite.ReadOnly": "数据库以只读方式打开：请将表复制出来（CSV 或 JSON）以使用其中的行。"
+}

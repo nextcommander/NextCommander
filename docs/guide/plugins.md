@@ -15,12 +15,15 @@ A plugin is a .NET assembly that NextCommander loads at start. It can add:
 | An archive format to write | `IPackerPlugin` | A packer in the Pack dialog (Alt+F5). |
 | A viewer | `IViewerPlugin` | The Lister (F3) shows files it wants (key 6). |
 
-The rclone and the Git support of NextCommander are themselves plugins
+The rclone, Git and SQLite support of NextCommander are themselves plugins
 ([src/Plugins/NextCommander.Plugin.Rclone](../../src/Plugins/NextCommander.Plugin.Rclone),
-[src/Plugins/NextCommander.Plugin.Git](../../src/Plugins/NextCommander.Plugin.Git); see [Git](#git) below), and
-[tests/SamplePlugin](../../tests/SamplePlugin) is a small example with a column and a `hello://` file system.
+[src/Plugins/NextCommander.Plugin.Git](../../src/Plugins/NextCommander.Plugin.Git),
+[src/Plugins/NextCommander.Plugin.Sqlite](../../src/Plugins/NextCommander.Plugin.Sqlite); see [Git](#git) and
+[SQLite](#sqlite) below), and [tests/SamplePlugin](../../tests/SamplePlugin) is a small example with a column and a
+`hello://` file system.
 
 - [Git](#git)
+- [SQLite](#sqlite)
 - [Using plugins](#using-plugins)
 - [Writing a plugin](#writing-a-plugin)
 - [File systems](#file-systems)
@@ -45,6 +48,22 @@ The Git plugin comes with NextCommander and uses the installed `git` (git-scm.co
   folder), *Commit author*, *Commit date* and *Commit*. Add them to a view mode (*Show > Display > Custom view modes >
   Edit view modes...*). They are filled in the background: one `git status` per repository every few seconds and one
   `git log` per folder.
+
+## SQLite
+
+The SQLite plugin comes with NextCommander and uses the system's SQLite library: `winsqlite3.dll` on Windows,
+`libsqlite3.so.0` on Linux (package *libsqlite3-0* / *sqlite-libs*, nearly always there), `libsqlite3.dylib` on macOS;
+`FM_SQLITE` names another library. Nothing is installed with it.
+
+- **A database as a folder:** Enter opens a `.sqlite`, `.sqlite3`, `.db3` or `.sdb` file, and a `.db` file when it is
+  a SQLite database (Windows' `Thumbs.db` is not); Ctrl+PgDn opens any file that is one. The database shows a folder
+  per table and view and `schema.sql` (the statements that make the whole database). A table's folder holds
+  `<table>.csv` (UTF-8, a header line; Excel opens it), `<table>.json` (an array of objects; BLOBs as base64) and its
+  own `schema.sql` with its indexes and triggers. Copying a CSV or JSON out exports the table; F3 views it. A slash in
+  a table's name is shown as `⁄`. ".." from the root goes back to the database file.
+- **Read-only:** the database is never changed.
+- **Lister (F3) on a database file:** an overview: the number of tables, views and indexes, then each table with its
+  row count, its columns (type, primary key, NOT NULL, default) and its first 10 rows, and the indexes.
 
 ## Using plugins
 

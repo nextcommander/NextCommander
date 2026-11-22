@@ -1,0 +1,19 @@
+{
+  "Sqlite.Tables": "{0} tablas",
+  "Sqlite.Views": "{0} vistas",
+  "Sqlite.Indexes": "{0} índices",
+  "Sqlite.Rows": "{0} filas",
+  "Sqlite.NoTables": "La base de datos no tiene tablas.",
+  "Sqlite.View": "Vista",
+  "Sqlite.Table": "Tabla",
+  "Sqlite.Column": "Columna",
+  "Sqlite.Type": "Tipo",
+  "Sqlite.Key": "Clave",
+  "Sqlite.NotNull": "No nulo",
+  "Sqlite.Default": "Predeterminado",
+  "Sqlite.PrimaryKey": "Clave primaria",
+  "Sqlite.FirstRows": "Primeras filas",
+  "Sqlite.BlobBytes": "BLOB, {0} bytes",
+  "Sqlite.IndexesTitle": "Índices",
+  "Sqlite.ReadOnly": "La base de datos se abre solo para lectura: copie una tabla fuera (CSV o JSON) para usar sus filas."
+}
