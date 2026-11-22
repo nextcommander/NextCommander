@@ -183,7 +183,8 @@ public sealed class GitColumns : IColumnProvider
         "DD" or "AU" or "UD" or "UA" or "DU" or "AA" or "UU" => "Conflict",
         _ => (code[0] != ' ' ? code[0] : code[1]) switch
         {
-            'M' => code[0] != ' ' && code[1] == ' ' ? "Modified (staged)" : "Modified",
+            // "Changed", not "Modified": that is the date column of the application too (one text, one translation)
+            'M' => code[0] != ' ' && code[1] == ' ' ? "Changed (staged)" : "Changed",
             'A' => "Added",
             'D' => "Deleted",
             'R' => "Renamed",

@@ -116,6 +116,53 @@ public sealed class UserFilesTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void The_shipped_plugins_bring_their_own_translations()
+    {
+        UiLocalization.UserDirectory = null;
+        var plugins = Path.Combine(AppContext.BaseDirectory, "plugins");
+
+        // each plugin's languages folder: every shipped language has every key of its en.json and keeps the {0} holes
+        foreach (var plugin in new[] { "git", "rclone" })
+        {
+            var languages = Path.Combine(plugins, plugin, "languages");
+            var en = Localizer.ParseFile(File.ReadAllText(Path.Combine(languages, "en.json")));
+            Assert.NotEmpty(en);
+            foreach (var code in new[] { "tr", "de", "es", "fr", "zh" })
+            {
+                var file = Localizer.ParseFile(File.ReadAllText(Path.Combine(languages, code + ".json")));
+                Assert.Empty(file.Keys.Except(en.Keys));
+                Assert.Empty(en.Keys.Except(file.Keys));
+                foreach (var (key, english) in en)
+                {
+                    foreach (System.Text.RegularExpressions.Match hole in System.Text.RegularExpressions.Regex.Matches(english, @"\{\d+(:[^}]*)?\}"))
+                    {
+                        Assert.True(file[key].Contains(hole.Value, StringComparison.Ordinal), $"{plugin}/{code}.json {key}: {hole.Value} is missing");
+                    }
+                }
+            }
+        }
+
+        // not in the program's files any more: a language read without the plugin leaves its texts in English
+        Assert.Equal("Git history", UiLocalization.Read("tr")!.Translate("Git history"));
+
+        // joined when the language is read with the loaded plugins; the program's own translation of a text wins
+        UiLocalization.PluginDirectories.AddRange([Path.Combine(plugins, "git"), Path.Combine(plugins, "rclone")]);
+        try
+        {
+            var tr = UiLocalization.Read("tr")!;
+            Assert.Equal("Git geçmişi", tr.Translate("Git history"));
+            Assert.Equal("İçinde değişiklik var", tr.Translate("Changes inside"));
+            Assert.Equal("Değişti (hazırlandı)", tr.Translate("Changed (staged)"));
+            Assert.Equal("rclone uzak bağlantıları", tr.Translate("rclone remotes"));
+            Assert.Equal("Kopyala", tr.Translate("Copy")); // the program's texts as before
+        }
+        finally
+        {
+            UiLocalization.PluginDirectories.Clear();
+        }
+    }
+
+    [AvaloniaFact]
     public void Language_files_from_the_program_and_settings_folders()
     {
         // shipped: en.json lists every text of the code (template for new languages), tr.json translates every key

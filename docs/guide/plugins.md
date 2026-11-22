@@ -27,6 +27,7 @@ The rclone and the Git support of NextCommander are themselves plugins
 - [Places in the Plugins menu](#places-in-the-plugins-menu)
 - [Columns](#columns)
 - [Packers and viewers](#packers-and-viewers)
+- [Translations](#translations)
 - [Testing and finding problems](#testing-and-finding-problems)
 - [Shipping a plugin with NextCommander](#shipping-a-plugin-with-nextcommander)
 
@@ -39,7 +40,7 @@ The Git plugin comes with NextCommander and uses the installed `git` (git-scm.co
   newest 300 of the current branch, named `2026-11-21 23.40 1a2b3c4 subject`). Each holds the files as they are there:
   view an old version with F3, compare it with today's file, or copy it out. A slash in a branch name is shown as `⁄`
   (`feature⁄login`), so the branch stays one folder. ".." from the history's root goes back to the repository.
-- **Columns:** *Git status* (Modified, Modified (staged), Added, Deleted, Renamed, Untracked, Ignored, Conflict;
+- **Columns:** *Git status* (Changed, Changed (staged), Added, Deleted, Renamed, Untracked, Ignored, Conflict;
   a folder: *Changes inside* or *Ignored*), *Last commit* (the subject of the last commit that changed the file or
   folder), *Commit author*, *Commit date* and *Commit*. Add them to a view mode (*Show > Display > Custom view modes >
   Edit view modes...*). They are filled in the background: one `git status` per repository every few seconds and one
@@ -423,6 +424,30 @@ references Avalonia: use the same Avalonia version as NextCommander (`Directory.
 (`Private="false"`); the program's copy is used. The first viewer whose `CanView` says yes gets the file; the Lister
 opens it in its plugin mode (key 6).
 
+## Translations
+
+A plugin brings its own translations in a `languages` folder next to its assembly, in the same form as the program's
+language files ([Languages](languages.md)): `en.json` maps a key to each English text of the plugin, and every other
+language file maps the same keys to its translations.
+
+```text
+plugins/hello/
+  Hello.Plugin.dll
+  plugin.json
+  languages/
+    en.json     { "Hello.Places": "Hello places", "Hello.NotFound": "Not found: {0}" }
+    tr.json     { "Hello.Places": "Hello yerleri", "Hello.NotFound": "Bulunamadı: {0}" }
+```
+
+- Write the texts in the code in English, as they are in `en.json`; nothing else is needed in the code. What the
+  program shows (menu entries, column names, messages of exceptions) is translated through these files. A text the
+  plugin translates itself, e.g. a column's value, uses `NextCommander.Core.Localization.Localizer.T("Text")`.
+- `{0}`, `{1}` stand for the parts that change (a name, a number); every translation keeps them.
+- When a language is loaded, the files of the plugins that are turned on are joined to the program's. When the program
+  has the same English text, its own translation is used, so a text of the plugin that means something else needs
+  English of its own (the Git plugin says *Changed*, since *Modified* is the program's date column).
+- A plugin without a file for a language shows its texts in English in that language.
+
 ## Testing and finding problems
 
 - **Unit tests:** create your classes directly in a test project and call them; the file system interface needs no
@@ -465,6 +490,7 @@ Plugins that come with the program live in `src/Plugins/<Project>` and are built
    The application does not reference the assembly. The build copies it with the `plugin.json` of the project
    folder to `plugins/hello` next to the program, in the build output and in the publish folder (outside the single
    file), so the zip, the setup and the Linux and macOS packages contain it.
-3. Texts the user sees (`EntryName`, `Unavailable`, error messages) are written in English; add them to the
-   language files like the program's own texts ([Languages](languages.md)) so that they are translated.
+3. Texts the user sees (`EntryName`, `Unavailable`, error messages) are written in English; put their
+   translations into the plugin's own `languages` folder (see [Translations](#translations)), with a file for every
+   language the program ships (en, tr, de, es, fr, zh). The build copies the folder to `plugins/hello/languages`.
 4. Add tests to `tests/NextCommander.Core.Tests` (reference the plugin project there).

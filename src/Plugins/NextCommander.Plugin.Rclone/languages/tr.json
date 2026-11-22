@@ -1,0 +1,10 @@
+{
+  "Rclone.Remotes": "rclone uzak bağlantıları",
+  "Rclone.NotInstalled": "rclone kurulu değil. rclone.org/downloads adresinden kurun (ya da FM_RCLONE'a yolunu yazın), uzak bağlantılarınızı \"rclone config\" ile kurun, sonra bunu yeniden açın.",
+  "Rclone.RemoteIsRemoved": "rclone: bir uzak bağlantı \"rclone config\" ile kaldırılır.",
+  "Rclone.CouldNotBeStarted": "rclone başlatılamadı.",
+  "Rclone.FilesAreWrittenInto": "rclone: dosyalar bir uzak bağlantıya yazılır.",
+  "Rclone.IsNotInstalled": "rclone kurulu değil (rclone.org/downloads; ya da FM_RCLONE'a rclone'un yolunu yazın).",
+  "Rclone.ApiServerDidNotStart": "rclone: API sunucusu başlamadı.",
+  "Rclone.MovingBetweenRemotes": "Uzak bağlantılar arasında taşıma kopyalayarak yapılır."
+}

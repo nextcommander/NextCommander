@@ -164,6 +164,13 @@ def main():
     if os.path.exists(os.path.join(loc, "en.json")):
         en = json.load(open(os.path.join(loc, "en.json"), encoding="utf-8"))
     known = set(en.values())
+    # the plugins' texts are in their own languages/en.json (src/Plugins/<plugin>/languages)
+    plugins = os.path.join(SRC, "Plugins")
+    if os.path.isdir(plugins):
+        for plugin in os.listdir(plugins):
+            plugin_en = os.path.join(plugins, plugin, "languages", "en.json")
+            if os.path.exists(plugin_en):
+                known |= set(json.load(open(plugin_en, encoding="utf-8")).values())
     texts = [k for k in found if k not in known and k.strip() not in known and not TURKISH.search(k)]
     turkish = {t: sorted(found[t]) for t in found if TURKISH.search(t)}
     occurrences = l10n_keys.scan_occurrences()
