@@ -3761,5 +3761,7 @@
   "JobErrorDialog.TechnicalDetails": "技术详细信息",
   "JobErrorDialog.RetryingIn": "{0} 秒后重试…",
   "SettingsWindow.Browse": "浏览...",
-  "SettingsWindow.PluginProblem": "{0} 的设置：{1}"
+  "SettingsWindow.PluginProblem": "{0} 的设置：{1}",
+  "SettingsWindow.NotSet": "未设置",
+  "MainWindow.PasswordNotSavedStoreLocked": "无法保存密码：密码存储已锁定。"
 }

@@ -151,6 +151,41 @@ public static class TestDocuments
         var miniFatBytes = miniFat.SelectMany(BitConverter.GetBytes).ToArray();
         var miniFatStart = miniFat.Count > 0 ? Chain(miniFatBytes) : end;
         var directory = new MemoryStream();
+        // a name "storage/stream" puts the stream into a storage (an Outlook message's attachments); siblings are linked
+        // to the right, which the reader walks like any red-black tree
+        var entries = new List<(string Name, byte Type, uint Start, long Size, int Right, int Child)> { ("Root Entry", 5, miniStreamStart, mini.Length, -1, -1) };
+        int Place(IEnumerable<(string Path, byte[] Data)> level, string prefix)
+        {
+            var groups = level.GroupBy(s => s.Path.Split('/')[0]).ToList();
+            var first = entries.Count;
+            var indexes = new List<int>();
+            foreach (var group in groups)
+            {
+                indexes.Add(entries.Count);
+                var single = group.Count() == 1 && !group.First().Path.Contains('/', StringComparison.Ordinal);
+                if (single)
+                {
+                    var (path, data) = group.First();
+                    var full = prefix + path;
+                    entries.Add((path, 2, data.Length >= 4096 ? bigStart[full] : miniStart[full], data.Length, -1, -1));
+                }
+                else
+                {
+                    entries.Add((group.Key, 1, 0, 0, -1, -1));
+                }
+            }
+            for (var i = 0; i < groups.Count; i++)
+            {
+                var entry = entries[indexes[i]];
+                var child = entry.Type == 1
+                    ? Place(groups[i].Select(s => (s.Path[(s.Path.IndexOf('/') + 1)..], s.Data)), prefix + groups[i].Key + "/")
+                    : -1;
+                entries[indexes[i]] = entry with { Right = i + 1 < indexes.Count ? indexes[i + 1] : -1, Child = child };
+            }
+            return groups.Count > 0 ? first : -1;
+        }
+        var top = Place(streams, string.Empty);
+        entries[0] = entries[0] with { Child = top };
         void Entry(string name, byte type, uint start, long size, int right, int child)
         {
             var entry = new byte[128];
@@ -166,11 +201,9 @@ public static class TestDocuments
             BitConverter.GetBytes((uint)size).CopyTo(entry, 120);
             directory.Write(entry);
         }
-        Entry("Root Entry", 5, miniStreamStart, mini.Length, -1, streams.Length > 0 ? 1 : -1);
-        for (var i = 0; i < streams.Length; i++)
+        foreach (var (name, type, start, size, right, child) in entries)
         {
-            var (name, data) = streams[i];
-            Entry(name, 2, data.Length >= 4096 ? bigStart[name] : miniStart[name], data.Length, i + 2 <= streams.Length ? i + 2 : -1, -1);
+            Entry(name, type, start, size, right, child);
         }
         while (directory.Length % sector != 0)
         {

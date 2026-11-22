@@ -13,5 +13,14 @@
   "Docker.DockerProgramHelp": "Boş: önce FM_DOCKER, sonra PATH'teki ve bilinen klasörlerdeki docker. Aynı komutları anlayan başka bir program (podman) da olur.",
   "Docker.WorkAs": "Konteynerlerde şu kullanıcıyla çalış",
   "Docker.WorkAsHelp": "Konteynerin içindeki dosyaları listeleyen, okuyan ve yazan kullanıcı.",
-  "Docker.OwnUser": "Konteynerin kendi kullanıcısı"
+  "Docker.OwnUser": "Konteynerin kendi kullanıcısı",
+  "Docker.StartContainer": "Konteyneri başlat",
+  "Docker.StopContainer": "Konteyneri durdur",
+  "Docker.RestartContainer": "Konteyneri yeniden başlat",
+  "Docker.PauseContainer": "Konteyneri duraklat",
+  "Docker.ResumeContainer": "Konteyneri sürdür",
+  "Docker.HelperImage": "Volume açmak için imaj",
+  "Docker.HelperImageHelp": "Bir volume, onu bağlayan küçük bir konteyner üzerinden açılır; imajında sh, ls, stat ve sleep bulunmalı (ilk seferde indirilir).",
+  "Docker.VolumeNotOpened": "Volume açılamadı: {0} imajından yardımcı konteyner oluşturulamadı ({1}).",
+  "Docker.TooManyLinks": "Çok fazla bağlantı: {0}"
 }

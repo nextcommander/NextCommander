@@ -65,6 +65,8 @@
                       ReferenceOutputAssembly="false" OutputItemType="NcShippedPlugin" PluginFolder="docker" />
     <ProjectReference Include="..\Plugins\NextCommander.Plugin.DiskImage\NextCommander.Plugin.DiskImage.csproj"
                       ReferenceOutputAssembly="false" OutputItemType="NcShippedPlugin" PluginFolder="diskimage" />
+    <ProjectReference Include="..\Plugins\NextCommander.Plugin.Viewers\NextCommander.Plugin.Viewers.csproj"
+                      ReferenceOutputAssembly="false" OutputItemType="NcShippedPlugin" PluginFolder="viewers" />
   </ItemGroup>
   <Target Name="NcPluginFiles" DependsOnTargets="ResolveProjectReferences">
     <ItemGroup>

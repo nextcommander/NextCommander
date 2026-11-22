@@ -13,7 +13,7 @@ public sealed class ShippedPluginsTests
     public async Task Every_shipped_plugin_loads_with_its_own_packages()
     {
         var plugins = PluginLoader.LoadAll([Path.Combine(AppContext.BaseDirectory, "plugins")]);
-        foreach (var name in new[] { "git", "rclone", "sqlite", "docker", "diskimage" })
+        foreach (var name in new[] { "git", "rclone", "sqlite", "docker", "diskimage", "viewers" })
         {
             var plugin = Assert.Single(plugins, p => p.Name == name);
             Assert.True(plugin.Error is null, $"{name}: {plugin.Error}");
@@ -25,6 +25,7 @@ public sealed class ShippedPluginsTests
             Assert.Equal(title, Assert.Single(plugins.Single(p => p.Name == name).Configurables).SettingsTitle);
         }
         Assert.Empty(plugins.Single(p => p.Name == "diskimage").Configurables);
+        Assert.Equal(9, plugins.Single(p => p.Name == "viewers").Viewers.Count);
 
         // the disk image plugin reaches DiscUtils (from its folder): a file that is no disk is said to be one it cannot read
         var disks = Assert.Single(plugins.Single(p => p.Name == "diskimage").FileSystems, f => f.Scheme == "vdisk");

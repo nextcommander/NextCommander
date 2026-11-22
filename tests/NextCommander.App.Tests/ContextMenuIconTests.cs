@@ -68,4 +68,85 @@ public sealed class ContextMenuIconTests : IDisposable
         Assert.False(Shown("nc_UnmountImage"));
         list.ContextMenu.Close();
     }
+
+    /// <summary>A plugin's file system with an action for one of its entries (like starting a Docker container).</summary>
+    private sealed class ActionsProvider : NextCommander.Core.Vfs.IFileSystemProvider, NextCommander.Core.Plugins.IPluginEntryActions
+    {
+        public int Runs { get; private set; }
+
+        public int Lists { get; private set; }
+
+        public string Scheme => "acts";
+
+        public NextCommander.Core.Vfs.ProviderCapabilities Capabilities => NextCommander.Core.Vfs.ProviderCapabilities.Read;
+
+        private static NextCommander.Core.Vfs.VfsEntry Entry(string name) =>
+            new() { Name = name, Path = NextCommander.Core.Vfs.VfsPath.Create("acts", "box", "/" + name), IsDirectory = true };
+
+        public Task<IReadOnlyList<NextCommander.Core.Vfs.VfsEntry>> ListAsync(NextCommander.Core.Vfs.VfsPath directory, CancellationToken cancellationToken)
+        {
+            Lists++;
+            return Task.FromResult<IReadOnlyList<NextCommander.Core.Vfs.VfsEntry>>([Entry("one"), Entry("two")]);
+        }
+
+        public Task<NextCommander.Core.Vfs.VfsEntry?> GetEntryAsync(NextCommander.Core.Vfs.VfsPath path, CancellationToken cancellationToken) =>
+            Task.FromResult<NextCommander.Core.Vfs.VfsEntry?>(path.Path == "/" ? new() { Name = "box", Path = path, IsDirectory = true } : Entry(path.Name));
+
+        public IReadOnlyList<NextCommander.Core.Plugins.PluginAction> ActionsFor(NextCommander.Core.Vfs.VfsEntry entry) =>
+            entry.Name == "one"
+                ? [new("Start the box", NextCommander.Core.Plugins.PluginActionIcon.Start, _ =>
+                {
+                    Runs++;
+                    return Task.FromResult<string?>(null);
+                })]
+                : [];
+
+        public Task<Stream> OpenReadAsync(NextCommander.Core.Vfs.VfsPath path, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<Stream> OpenWriteAsync(NextCommander.Core.Vfs.VfsPath path, bool overwrite, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task CreateDirectoryAsync(NextCommander.Core.Vfs.VfsPath path, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task DeleteAsync(NextCommander.Core.Vfs.VfsPath path, bool recursive, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task MoveAsync(NextCommander.Core.Vfs.VfsPath source, NextCommander.Core.Vfs.VfsPath destination, bool overwrite, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task SetTimesAsync(NextCommander.Core.Vfs.VfsPath path, DateTime? creationTime, DateTime? lastWriteTime, CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+    }
+
+    [AvaloniaFact]
+    public async Task A_plugin_puts_its_actions_for_an_entry_into_the_menu()
+    {
+        var (w, vm) = await _fx.OpenAsync();
+        var provider = new ActionsProvider();
+        vm.Tools.Registry.Register(provider);
+        await vm.Left.NavigateAsync(NextCommander.Core.Vfs.VfsPath.Create("acts", "box", "/"));
+        await SettleAsync(3);
+        var list = w.GetVisualDescendants().OfType<Control>().First(c => c.ContextMenu?.Items.OfType<MenuItem>().Any(m => m.Tag as string == "nc_Copy") == true);
+
+        // on "one": its action at the top, with its icon; a click runs it and reads the folder again
+        vm.Left.MoveCursorTo(vm.Left.Items.ToList().FindIndex(i => i.FullName == "one"));
+        list.ContextMenu!.Open(list);
+        await SettleAsync(4);
+        var first = list.ContextMenu.Items.OfType<MenuItem>().First();
+        Assert.Equal("Start the box", first.Header);
+        Assert.NotNull(first.Icon);
+        Assert.IsType<Separator>(list.ContextMenu.Items[1]);
+        var lists = provider.Lists;
+        first.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
+        list.ContextMenu.Close();
+        await SettleAsync(4);
+        Assert.Equal(1, provider.Runs);
+        Assert.True(provider.Lists > lists);
+
+        // on "two": none (and the earlier ones are gone)
+        vm.Left.MoveCursorTo(vm.Left.Items.ToList().FindIndex(i => i.FullName == "two"));
+        list.ContextMenu.Open(list);
+        await SettleAsync(4);
+        Assert.DoesNotContain(list.ContextMenu.Items.OfType<MenuItem>(), i => i.Tag is NextCommander.Core.Plugins.PluginAction);
+        Assert.Equal("nc_Open", list.ContextMenu.Items.OfType<MenuItem>().First().Tag);
+        list.ContextMenu.Close();
+    }
 }

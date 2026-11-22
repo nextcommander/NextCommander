@@ -33,6 +33,24 @@ public sealed class PluginSettingsTests
     }
 
     [Fact]
+    public async Task Secrets_come_from_the_password_store_only_for_secret_settings()
+    {
+        PluginSetting[] settings = [new("token", PluginSettingKind.Secret, "Token"), new("name", PluginSettingKind.Text, "Name")];
+        var asked = new List<string>();
+        var app = new AppSettings();
+        var values = app.PluginValues("sample", settings, key =>
+        {
+            asked.Add(key);
+            return Task.FromResult<string?>("from the store");
+        });
+        Assert.Equal("from the store", await values.GetSecretAsync("token"));
+        Assert.Null(await values.GetSecretAsync("name")); // not a secret: never looked up
+        Assert.Equal(["token"], asked);
+        Assert.Null(await app.PluginValues("sample", settings).GetSecretAsync("token")); // no store
+        Assert.Equal("plugin:sample:token", PluginSettingValues.SecretId("sample", "token"));
+    }
+
+    [Fact]
     public void Git_and_sqlite_take_their_settings()
     {
         var git = new GitSettings();

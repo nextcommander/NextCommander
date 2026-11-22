@@ -51,7 +51,8 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
   Google Drive, OneDrive, Dropbox and Box, all in the same panels as local files; ready-made settings for
   well-known S3 and WebDAV services.
 - Web server folder listings (`http://`, `https://`) open like folders; the remotes of an installed rclone too.
-- The files of Docker containers in a panel (through the installed docker).
+- The files of Docker containers and volumes in a panel (through the installed docker), stopped containers read-only;
+  start, stop and restart containers from the right click menu.
 - Android phones over ADB (USB debugging) as drives; shortcuts to the local folders of OneDrive, iCloud Drive,
   Dropbox, Google Drive ... and to WSL distributions.
 - Remote desktop (RDP) sessions in a tab of the main window (Windows, Linux) or the system's client (mstsc, Windows
@@ -61,6 +62,8 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
   (or the network), encrypted, paired once with a code shown on both screens.
 - Quick View and the Lister preview documents: PDF pages, Word / Excel / PowerPoint and OpenDocument files without
   Office, HTML, Markdown, RTF; other documents (doc, xls, ppt, Visio ...) through LibreOffice when it is installed.
+  CSV as a sortable table; JSON, XML and YAML as a tree; e-mails (.eml, .msg), e-books, Jupyter notebooks,
+  certificates, programs (version, signer), fonts, contacts and calendars.
 - A connection manager with the options of each type (keep-alive, pinned keys, TLS versions, S3 storage classes,
   RDP screen and redirections, Telnet keys ...), saved passwords protected by an optional master password, and a
   view of the machines on your local network.

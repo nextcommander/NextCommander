@@ -21,6 +21,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\NextCommander.App\NextCommander.App.csproj" />
+    <!-- the viewers plugin's parts, tested directly (it is also loaded from plugins/viewers like the program does) -->
+    <ProjectReference Include="..\..\src\Plugins\NextCommander.Plugin.Viewers\NextCommander.Plugin.Viewers.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\Shared\TestDocuments.cs" Link="Shared\TestDocuments.cs" />

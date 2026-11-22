@@ -13,5 +13,14 @@
   "Docker.DockerProgramHelp": "Vide : FM_DOCKER, puis docker dans le PATH et dans les dossiers habituels. Un autre programme avec les mêmes commandes (podman) convient aussi.",
   "Docker.WorkAs": "Travailler dans les conteneurs en tant que",
   "Docker.WorkAsHelp": "L'utilisateur qui liste, lit et écrit les fichiers dans un conteneur.",
-  "Docker.OwnUser": "L'utilisateur propre du conteneur"
+  "Docker.OwnUser": "L'utilisateur propre du conteneur",
+  "Docker.StartContainer": "Démarrer le conteneur",
+  "Docker.StopContainer": "Arrêter le conteneur",
+  "Docker.RestartContainer": "Redémarrer le conteneur",
+  "Docker.PauseContainer": "Mettre le conteneur en pause",
+  "Docker.ResumeContainer": "Reprendre le conteneur",
+  "Docker.HelperImage": "Image pour ouvrir les volumes",
+  "Docker.HelperImageHelp": "Un volume est ouvert par un petit conteneur qui le monte ; son image doit contenir sh, ls, stat et sleep (téléchargée la première fois).",
+  "Docker.VolumeNotOpened": "Le volume n'a pas pu être ouvert : aucun conteneur auxiliaire depuis l'image {0} ({1}).",
+  "Docker.TooManyLinks": "Trop de liens : {0}"
 }

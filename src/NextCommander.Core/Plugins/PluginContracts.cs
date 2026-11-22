@@ -83,6 +83,33 @@ public interface IPluginFolderEntry
     Vfs.VfsPath? RootFor(Vfs.VfsPath folder);
 }
 
+/// <summary>The icon of a plugin's action in the file list menu (drawn through the icon pack).</summary>
+public enum PluginActionIcon
+{
+    Other,
+    Start,
+    Stop,
+    Restart,
+    Pause,
+    Delete,
+    Refresh,
+    Info,
+}
+
+/// <summary>
+/// Something a plugin can do with an entry of its file system (start a container ...), shown in the file list's right
+/// click menu. <paramref name="RunAsync"/> gives a message to show (or null); the folder is read again afterwards.
+/// The name is English; its translation goes into the plugin's languages folder.
+/// </summary>
+public sealed record PluginAction(string Name, PluginActionIcon Icon, Func<CancellationToken, Task<string?>> RunAsync);
+
+/// <summary>A file system plugin's actions for an entry of its own (implemented by its <see cref="Vfs.IFileSystemProvider"/>).</summary>
+public interface IPluginEntryActions
+{
+    /// <summary>The actions for <paramref name="entry"/> now (cheap: called when the menu opens); empty when there are none.</summary>
+    IReadOnlyList<PluginAction> ActionsFor(Vfs.VfsEntry entry);
+}
+
 /// <summary>Packer and viewer plugins loaded in this process (file systems and columns have their own registries).</summary>
 public static class PluginCatalog
 {
