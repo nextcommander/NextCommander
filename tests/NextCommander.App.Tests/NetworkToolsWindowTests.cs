@@ -3,11 +3,13 @@ using System.Net.Sockets;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using NextCommander.App.Views.Tools;
+using NextCommander.Core.Config;
+using NextCommander.Core.Net;
 using static NextCommander.App.Tests.UiFixture;
 
 namespace NextCommander.App.Tests;
 
-/// <summary>Net > Network tools: ping, port scan, Wake-on-LAN.</summary>
+/// <summary>Connection > Network tools: ping, port scan, Wake-on-LAN (the look of the user's template).</summary>
 public sealed class NetworkToolsWindowTests : IDisposable
 {
     private readonly UiFixture _fx = new();
@@ -17,48 +19,96 @@ public sealed class NetworkToolsWindowTests : IDisposable
     [AvaloniaFact]
     public async Task Ping_scan_and_wake_show_their_results()
     {
-        var window = new NetworkToolsWindow("127.0.0.1");
+        var settings = new AppSettings();
+        var saved = 0;
+        var window = new NetworkToolsWindow(new NetworkToolsRequest("127.0.0.1", settings, () => saved++));
         window.Show();
         await SettleAsync();
+        var shots = Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR");
+        void Shot(string name)
+        {
+            if (shots is { Length: > 0 })
+            {
+                Directory.CreateDirectory(shots);
+                window.CaptureRenderedFrame()!.SavePng(Path.Combine(shots, name));
+            }
+        }
+        Shot("network-tools-empty.png");
 
         window.SetPing("127.0.0.1", 2);
         await window.PingAsync(TimeSpan.FromMilliseconds(10));
-        Assert.Equal(2, window.PingLines.Count);
-        Assert.All(window.PingLines, l => Assert.StartsWith("Reply from 127.0.0.1", l, StringComparison.Ordinal));
-        Assert.StartsWith("Sent 2, received 2, lost 0%", window.PingSummary, StringComparison.Ordinal);
+        Assert.Equal(2, window.PingReplies.Count);
+        Assert.All(window.PingReplies, r => Assert.NotNull(r.Milliseconds));
+        Assert.Equal("127.0.0.1 is reachable", window.Verdict);
+        Assert.Equal(["127.0.0.1"], settings.NetworkToolHosts); // a recent computer, saved
+        Assert.True(saved > 0);
+        await SettleAsync();
+        Shot("network-tools-ping.png");
+
+        // a name that is not known (some networks' DNS answers every name: then this part is left out)
+        bool resolves;
+        try
+        {
+            resolves = (await Dns.GetHostAddressesAsync("no-such-host.invalid")).Length > 0;
+        }
+        catch (SocketException)
+        {
+            resolves = false;
+        }
+        if (!resolves)
+        {
+            window.SetPing("no-such-host.invalid", 1);
+            await window.PingAsync(TimeSpan.FromMilliseconds(10));
+            Assert.Equal("no-such-host.invalid wasn't found", window.Verdict);
+        }
 
         using var listener = new TcpListener(IPAddress.Loopback, 0);
         listener.Start();
         var open = ((IPEndPoint)listener.LocalEndpoint).Port;
+        using var refused = new TcpListener(IPAddress.Loopback, 0);
+        refused.Start();
+        var closed = ((IPEndPoint)refused.LocalEndpoint).Port;
+        refused.Stop(); // nothing listens there any more: closed
         window.ShowPage(1);
-        window.SetScan("127.0.0.1", $"{open}, 1", 1000);
+        window.SetScan("127.0.0.1", $"{open}, {closed}", 1000);
         await window.ScanAsync();
-        Assert.Single(window.ScanLines);
-        Assert.Contains(open.ToString(System.Globalization.CultureInfo.InvariantCulture), window.ScanLines[0], StringComparison.Ordinal);
-        Assert.Equal("1 open of 2 ports", window.ScanSummary);
+        Assert.Equal(PortState.Open, Assert.Single(window.ScanResults, r => r.Port == open).State);
+        // closed (refused) or, on Windows, filtered: it retries a refused connection longer than the wait
+        Assert.NotEqual(PortState.Open, Assert.Single(window.ScanResults, r => r.Port == closed).State);
+        Assert.Equal("1 open port on 127.0.0.1", window.Verdict);
+        await SettleAsync();
+        Shot("network-tools-scan.png");
         window.SetScan("127.0.0.1", "22, ssh", 1000);
-        await window.ScanAsync();
-        Assert.Equal("Not a port or range: ssh", window.ScanSummary);
-        if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } shots)
-        {
-            Directory.CreateDirectory(shots);
-            window.SetScan("127.0.0.1", $"{open}, 1", 1000);
-            await window.ScanAsync();
-            await SettleAsync();
-            window.CaptureRenderedFrame()!.SavePng(Path.Combine(shots, "network-tools.png"));
-        }
+        Assert.Equal("\"ssh\" isn't a port or range (1–65535).", window.PortsNote);
 
         using var receiver = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
         var port = ((IPEndPoint)receiver.Client.LocalEndPoint!).Port;
         window.ShowPage(2);
-        window.SetWake("00:11:22:33:44:5", "127.0.0.1", port);
+        window.SetWake("00-11-22-33-44-55", "127.0.0.1", port);
         await window.WakeAsync();
-        Assert.StartsWith("Not a MAC address", window.WakeStatus, StringComparison.Ordinal);
-        window.SetWake("00:11:22:33:44:55", "127.0.0.1", port);
-        await window.WakeAsync();
-        Assert.Equal("Magic packet sent to 00:11:22:33:44:55.", window.WakeStatus);
+        Assert.Equal("Magic packet sent to 00:11:22:33:44:55", window.Verdict);
         Assert.Equal(102, (await receiver.ReceiveAsync().WaitAsync(TimeSpan.FromSeconds(5))).Buffer.Length);
+        // saved: it shows among the saved computers
+        window.SaveWakeDevice();
+        var device = Assert.Single(settings.WakeDevices);
+        Assert.Equal("00:11:22:33:44:55", device.Mac);
+        Assert.Equal(port, device.Port);
+        await SettleAsync();
+        Shot("network-tools-wake.png");
         window.Close();
+    }
+
+    [AvaloniaFact]
+    public void Mac_addresses_and_host_names_are_checked()
+    {
+        Assert.Equal("A4:BB:6D:12:3F:90", NetworkTools.FormatMac("a4bb.6d12.3f90"));
+        Assert.Equal("A4:BB:6", NetworkTools.FormatMac("a4-bb-6"));
+        Assert.True(NetworkTools.IsHostName("nas"));
+        Assert.True(NetworkTools.IsHostName("192.168.1.20"));
+        Assert.True(NetworkTools.IsHostName("::1"));
+        Assert.False(NetworkTools.IsHostName("bad host"));
+        Assert.False(NetworkTools.IsHostName("a..b"));
+        Assert.Contains(NetworkTools.BroadcastTargets(), t => t.Address == "255.255.255.255");
     }
 
     [AvaloniaFact]

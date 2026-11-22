@@ -2263,7 +2263,6 @@ public sealed partial class SettingsView : UserControl
             Choice(quick, "Quick search", "Quick search matching", null, [("From start", Core.Matching.QuickMatchMode.Prefix), ("Anywhere", Core.Matching.QuickMatchMode.Anywhere),
                 ("Fuzzy", Core.Matching.QuickMatchMode.Fuzzy)], s => s.QuickSearchMode, (s, v) => s.QuickSearchMode = v),
 
-            Bool(ftp, "FTP", "Show hidden files on FTP", "LIST -a.", s => s.FtpShowHidden, (s, v) => s.FtpShowHidden = v),
             Bool(ftp, "FTP", "Use passive mode for new connections", "The default of the passive mode option of a new FTP / FTPS connection.",
                 s => s.FtpPassiveDefault, (s, v) => s.FtpPassiveDefault = v),
             Number(ftp, "FTP", "Retries when the server is busy", "How often a command is tried again after a dropped connection or a busy server (applies to new connections).",

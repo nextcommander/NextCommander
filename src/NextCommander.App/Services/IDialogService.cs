@@ -75,7 +75,7 @@ public interface IDialogService
     void ShowSshTunnels(AppSettings settings, TunnelService tunnels, Action save);
 
     /// <summary>The network tools window (ping, port scan, Wake-on-LAN), the host filled in when known.</summary>
-    void ShowNetworkTools(string? host);
+    void ShowNetworkTools(Views.Tools.NetworkToolsRequest request);
 
     Task<string?> PickSaveFileAsync(string title, string suggestedName);
 

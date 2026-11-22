@@ -461,8 +461,9 @@ public sealed class AppSettings
     /// 4: the "koyu" theme file is "dark" now. 5: the button bar got the internal terminal, the connection manager and
     /// the settings. 6: the saved connections menu next to the connection manager. 7: the connection manager's button
     /// has the saved connections itself; the plugins' button in place of the connections menu. 8: icons on the folder
-    /// tabs (a plain folder's too) are on.</summary>
-    public const int CurrentSettingsVersion = 9;
+    /// tabs (a plain folder's too) are on. 9: no system terminal button. 10: "show hidden files on FTP" belongs to each
+    /// FTP connection.</summary>
+    public const int CurrentSettingsVersion = 10;
 
     /// <summary>Default changes for files written by older versions.</summary>
     public void Upgrade()
@@ -489,6 +490,15 @@ public sealed class AppSettings
             // terminal's stays, and a button the user made with parameters of its own stays too
             ButtonBar.RemoveAll(b => string.Equals(b.Command, "nc_ExecuteTerminal", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(b.Parameters));
         }
+        if (SettingsVersion < 10 && FtpShowHidden == false)
+        {
+            // the program-wide setting was off: so is each FTP connection's
+            foreach (var connection in Connections.Where(c => c.Protocol is RemoteProtocol.Ftp or RemoteProtocol.FtpsExplicit or RemoteProtocol.FtpsImplicit))
+            {
+                connection.FtpShowHidden = false;
+            }
+        }
+        FtpShowHidden = null;
         SettingsVersion = CurrentSettingsVersion;
     }
 
@@ -1050,8 +1060,19 @@ public sealed class AppSettings
     /// <summary>Panels above each other instead of side by side (Show > Vertical arrangement).</summary>
     public bool VerticalPanels { get; set; }
 
-    /// <summary>List hidden files on FTP servers (LIST -a).</summary>
-    public bool FtpShowHidden { get; set; } = true;
+    /// <summary>Network tools: the computers pinged or scanned last (newest first, at most 8), offered as chips.</summary>
+    public List<string> NetworkToolHosts { get; set; } = [];
+
+    /// <summary>Network tools: the computers saved for Wake-on-LAN.</summary>
+    public List<WakeDevice> WakeDevices { get; set; } = [];
+
+    /// <summary>
+    /// The program-wide "show hidden files on FTP" of settings before version 10: each FTP connection has its own now
+    /// (<see cref="RemoteConnection.FtpShowHidden"/>, its Advanced tab; user's request, 22 November 2026). Read only to
+    /// carry an "off" over to the connections; not written again.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public bool? FtpShowHidden { get; set; }
 
     /// <summary>Last mask of Show > Custom (Ctrl+F12).</summary>
     public string? LastTypeFilter { get; set; }

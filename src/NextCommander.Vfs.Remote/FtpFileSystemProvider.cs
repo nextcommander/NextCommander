@@ -13,9 +13,6 @@ namespace NextCommander.Vfs.Remote;
 /// </summary>
 public sealed class FtpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBase<AsyncFtpClient>(hooks)
 {
-    /// <summary>List hidden files too (LIST -a); Net > FTP show hidden files.</summary>
-    public bool ShowHidden { get; set; } = true;
-
     /// <summary>How often a command is retried (Configuration > FTP).</summary>
     public int RetryAttempts { get; set; } = 1;
 
@@ -271,7 +268,8 @@ public sealed class FtpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBas
     public override Task<IReadOnlyList<VfsEntry>> ListAsync(VfsPath directory, CancellationToken cancellationToken) =>
         UseAsync<IReadOnlyList<VfsEntry>>(directory, async client =>
         {
-            var options = (ShowHidden ? FtpListOption.AllFiles : FtpListOption.Auto) | (s_forceList.TryGetValue(client, out _) ? FtpListOption.ForceList : 0);
+            // hidden files (LIST -a) as the connection says
+            var options = (ConnectionOf(directory).FtpShowHidden ? FtpListOption.AllFiles : FtpListOption.Auto) | (s_forceList.TryGetValue(client, out _) ? FtpListOption.ForceList : 0);
             var items = await client.GetListing(directory.Path, options, cancellationToken).ConfigureAwait(false);
             var result = new List<VfsEntry>(items.Length);
             foreach (var item in items)
