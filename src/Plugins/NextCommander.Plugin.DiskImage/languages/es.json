@@ -1,0 +1,19 @@
+{
+  "DiskImage.VirtualDisk": "Disco virtual",
+  "DiskImage.OnlyLocal": "Los discos virtuales solo se muestran cuando están en este equipo.",
+  "DiskImage.DiskSize": "Tamaño del disco: {0}",
+  "DiskImage.FileSize": "Tamaño del archivo: {0}",
+  "DiskImage.NoPartitionTable": "Sin tabla de particiones",
+  "DiskImage.DifferencingChain": "Cadena de discos diferenciales",
+  "DiskImage.Volumes": "Volúmenes",
+  "DiskImage.NoVolumes": "El disco no tiene volúmenes.",
+  "DiskImage.Label": "Etiqueta",
+  "DiskImage.Type": "Tipo",
+  "DiskImage.FileSystem": "Sistema de archivos",
+  "DiskImage.Size": "Tamaño",
+  "DiskImage.Used": "Usado",
+  "DiskImage.CannotBeRead": "No se puede leer",
+  "DiskImage.Unreadable": "No se puede leer el sistema de archivos de esta partición (cifrado con BitLocker o LUKS, APFS, ReFS o sin formatear).",
+  "DiskImage.ReadOnly": "Los discos virtuales se abren solo para lectura: copie los archivos fuera para modificarlos.",
+  "DiskImage.NotReadable": "{0}: no es un disco virtual legible ({1})"
+}

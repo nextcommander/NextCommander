@@ -1,0 +1,19 @@
+{
+  "DiskImage.VirtualDisk": "Sanal disk",
+  "DiskImage.OnlyLocal": "Sanal diskler yalnızca bu bilgisayardayken gösterilir.",
+  "DiskImage.DiskSize": "Disk boyutu: {0}",
+  "DiskImage.FileSize": "Dosyanın boyutu: {0}",
+  "DiskImage.NoPartitionTable": "Bölüm tablosu yok",
+  "DiskImage.DifferencingChain": "Fark diski zinciri",
+  "DiskImage.Volumes": "Birimler",
+  "DiskImage.NoVolumes": "Diskte birim yok.",
+  "DiskImage.Label": "Etiket",
+  "DiskImage.Type": "Tür",
+  "DiskImage.FileSystem": "Dosya sistemi",
+  "DiskImage.Size": "Boyut",
+  "DiskImage.Used": "Kullanılan",
+  "DiskImage.CannotBeRead": "Okunamıyor",
+  "DiskImage.Unreadable": "Bu bölümün dosya sistemi okunamıyor (BitLocker veya LUKS ile şifreli, APFS, ReFS ya da biçimlendirilmemiş).",
+  "DiskImage.ReadOnly": "Sanal diskler salt okunur açılır: değiştirmek için dosyaları dışarı kopyalayın.",
+  "DiskImage.NotReadable": "{0}: okunabilir bir sanal disk değil ({1})"
+}

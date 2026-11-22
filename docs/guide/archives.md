@@ -41,6 +41,12 @@ mounted image is an ordinary drive: every program can open its files and an inst
 Mount-DiskImage (no administrator rights needed), Linux with udisks (a loop device under /media or /run/media),
 macOS with hdiutil (under /Volumes).
 
+On Windows the same commands mount a virtual disk (`.vhd`, `.vhdx`), read-only, with a drive letter for each of
+its volumes Windows can read. Windows does that only for an administrator: without administrator rights the
+system's consent dialog asks first. A disk without such a volume (Linux partitions ...) is let go again; open it
+with Enter instead (the disk image plugin, see [Plugins](plugins.md#virtual-disks)), which reads the files of every
+virtual disk on every system.
+
 ## Opening an archive
 
 - Press **Enter** on an archive to go inside. **Backspace** leaves it, with the cursor on the archive file.

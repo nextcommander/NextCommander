@@ -1,0 +1,19 @@
+{
+  "DiskImage.VirtualDisk": "Virtueller Datenträger",
+  "DiskImage.OnlyLocal": "Virtuelle Datenträger werden nur angezeigt, wenn sie auf diesem Computer liegen.",
+  "DiskImage.DiskSize": "Datenträgergröße: {0}",
+  "DiskImage.FileSize": "Größe der Datei: {0}",
+  "DiskImage.NoPartitionTable": "Keine Partitionstabelle",
+  "DiskImage.DifferencingChain": "Differenzierungskette",
+  "DiskImage.Volumes": "Volumes",
+  "DiskImage.NoVolumes": "Der Datenträger hat keine Volumes.",
+  "DiskImage.Label": "Bezeichnung",
+  "DiskImage.Type": "Typ",
+  "DiskImage.FileSystem": "Dateisystem",
+  "DiskImage.Size": "Größe",
+  "DiskImage.Used": "Belegt",
+  "DiskImage.CannotBeRead": "Nicht lesbar",
+  "DiskImage.Unreadable": "Das Dateisystem dieser Partition kann nicht gelesen werden (mit BitLocker oder LUKS verschlüsselt, APFS, ReFS oder nicht formatiert).",
+  "DiskImage.ReadOnly": "Virtuelle Datenträger werden schreibgeschützt geöffnet: Kopieren Sie die Dateien heraus, um sie zu ändern.",
+  "DiskImage.NotReadable": "{0}: kein lesbarer virtueller Datenträger ({1})"
+}

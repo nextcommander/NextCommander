@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Virtual disks as a plugin: .vhd, .vhdx, .vmdk, .vdi and .dmg open like folders of their partitions and files
+    (read-only), and the Lister shows an overview. Read with DiscUtils (MIT). The application builds it and copies it,
+    its DiscUtils assemblies (DiscUtils*.dll and the .deps.json), plugin.json and its languages folder into
+    plugins/diskimage next to the program.
+  -->
+  <PropertyGroup>
+    <RootNamespace>NextCommander.Plugin.DiskImage</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <!-- the DiscUtils assemblies next to the plugin's (the application copies DiscUtils*.dll from here) -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- the application's Core and its packages are shared: none of them is copied next to the plugin -->
+    <ProjectReference Include="..\..\NextCommander.Core\NextCommander.Core.csproj" Private="false" ExcludeAssets="runtime;native" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="LTRData.DiscUtils.Vhd" />
+    <PackageReference Include="LTRData.DiscUtils.Vhdx" />
+    <PackageReference Include="LTRData.DiscUtils.Vmdk" />
+    <PackageReference Include="LTRData.DiscUtils.Vdi" />
+    <PackageReference Include="LTRData.DiscUtils.Dmg" />
+    <PackageReference Include="LTRData.DiscUtils.Ntfs" />
+    <PackageReference Include="LTRData.DiscUtils.Fat" />
+    <PackageReference Include="LTRData.DiscUtils.Ext" />
+    <PackageReference Include="LTRData.DiscUtils.Xfs" />
+    <PackageReference Include="LTRData.DiscUtils.Btrfs" />
+    <PackageReference Include="LTRData.DiscUtils.HfsPlus" />
+    <PackageReference Include="LTRData.DiscUtils.Lvm" />
+  </ItemGroup>
+  <!-- the packages the application ships next to the plugin (its NcPluginFiles target asks for them) -->
+  <Target Name="NcPluginDependencies" DependsOnTargets="ResolveReferences" Returns="@(_NcPluginDependency)">
+    <ItemGroup>
+      <_NcPluginDependency Include="@(ReferenceCopyLocalPaths)" Condition="'%(Extension)' == '.dll'" PluginFolder="$(NcPluginFolder)" />
+    </ItemGroup>
+  </Target>
+  <!-- plugin.json and languages are taken from this folder by the application's build (not copied here: they would land next to the program too) -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="NextCommander.Core.Tests" />
+  </ItemGroup>
+</Project>

@@ -3790,14 +3790,14 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>The .iso file under the cursor (a local file the system can mount), else a message says what is needed.</summary>
+    /// <summary>The .iso (Windows: also .vhd / .vhdx) file under the cursor (a local file the system can mount), else a message says what is needed.</summary>
     private async Task<string?> ImageUnderCursorAsync(string title)
     {
         if (ActivePanel.CursorItem?.Entry is { IsDirectory: false } entry && entry.Path.IsLocal && NextCommander.Platform.DiskImages.CanMount(entry.Name))
         {
             return entry.Path.Path;
         }
-        await _dialogs.ShowMessageAsync(title, "Put the cursor on a disc image (.iso) on this computer.");
+        await _dialogs.ShowMessageAsync(title, "Put the cursor on a disc image (.iso; on Windows also a virtual disk .vhd / .vhdx) on this computer.");
         return null;
     }
 
@@ -3828,7 +3828,9 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         }
         try
         {
-            if (await NextCommander.Platform.DiskImages.MountedAtAsync(image, CancellationToken.None) is null)
+            // (a virtual disk mounted by an administrator is not seen without administrator rights: the elevated unmount just runs)
+            if (!NextCommander.Platform.DiskImages.NeedsElevation(image)
+                && await NextCommander.Platform.DiskImages.MountedAtAsync(image, CancellationToken.None) is null)
             {
                 await _dialogs.ShowMessageAsync("Unmount disc image", "The disc image is not mounted.");
                 return;

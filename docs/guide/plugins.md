@@ -15,17 +15,19 @@ A plugin is a .NET assembly that NextCommander loads at start. It can add:
 | An archive format to write | `IPackerPlugin` | A packer in the Pack dialog (Alt+F5). |
 | A viewer | `IViewerPlugin` | The Lister (F3) shows files it wants (key 6). |
 
-The rclone, Git, SQLite and Docker support of NextCommander are themselves plugins
+The rclone, Git, SQLite, Docker and virtual disk support of NextCommander are themselves plugins
 ([src/Plugins/NextCommander.Plugin.Rclone](../../src/Plugins/NextCommander.Plugin.Rclone),
 [src/Plugins/NextCommander.Plugin.Git](../../src/Plugins/NextCommander.Plugin.Git),
 [src/Plugins/NextCommander.Plugin.Sqlite](../../src/Plugins/NextCommander.Plugin.Sqlite),
-[src/Plugins/NextCommander.Plugin.Docker](../../src/Plugins/NextCommander.Plugin.Docker); see [Git](#git),
-[SQLite](#sqlite) and [Docker](#docker) below), and [tests/SamplePlugin](../../tests/SamplePlugin) is a small example
-with a column and a `hello://` file system.
+[src/Plugins/NextCommander.Plugin.Docker](../../src/Plugins/NextCommander.Plugin.Docker),
+[src/Plugins/NextCommander.Plugin.DiskImage](../../src/Plugins/NextCommander.Plugin.DiskImage); see [Git](#git),
+[SQLite](#sqlite), [Docker](#docker) and [Virtual disks](#virtual-disks) below), and
+[tests/SamplePlugin](../../tests/SamplePlugin) is a small example with a column and a `hello://` file system.
 
 - [Git](#git)
 - [SQLite](#sqlite)
 - [Docker](#docker)
+- [Virtual disks](#virtual-disks)
 - [Using plugins](#using-plugins)
 - [Writing a plugin](#writing-a-plugin)
 - [File systems](#file-systems)
@@ -82,6 +84,25 @@ itself is set to (its current context, `DOCKER_HOST`), so remote engines work to
 - **Limits:** a stopped container says how to start it (`docker start <name>`); a container without a shell (`sh`,
   for example a "distroless" image) cannot be listed. Containers themselves are made, started and removed with
   docker.
+
+## Virtual disks
+
+The disk image plugin comes with NextCommander and reads virtual machine disks itself (with DiscUtils), on every
+system and without administrator rights.
+
+- **A disk as a folder:** Enter opens a `.vhd` / `.vhdx` (Hyper-V, Virtual PC), `.vmdk` (VMware: one file, split
+  or with snapshots), `.vdi` (VirtualBox) or `.dmg` (macOS, HFS+) on this computer. A disk with several volumes
+  shows a folder for each, named by number, label, file system and size (`1 System (NTFS, 500 MB)`); a disk with
+  one volume shows its files directly. View (F3), copy out, search (Alt+F7), compare and count folder sizes as in
+  any folder. ".." from the root goes back to the disk file.
+- **File systems:** NTFS, FAT / exFAT, ext2/3/4, XFS, Btrfs, HFS+, and LVM logical volumes. A volume encrypted with
+  BitLocker or LUKS, APFS, ReFS or an unformatted one is listed, and says so when opened.
+- **Differencing disks and snapshots** read through their parent disks, which are found next to them.
+- **Read-only:** the disk is never changed; copy the files out to change them.
+- **Lister (F3) on a disk file:** the format, the disk's size and the file's, the partition table (GPT / MBR), the
+  disk files of a differencing chain, and each volume with its type, file system, label, size and how full it is.
+- **Mounting** (Windows, `.vhd` / `.vhdx`): *Files > Archive > Mount disc image* lets Windows mount the disk with
+  drive letters instead; see [Archives](archives.md).
 
 ## Using plugins
 
@@ -530,4 +551,8 @@ Plugins that come with the program live in `src/Plugins/<Project>` and are built
 3. Texts the user sees (`EntryName`, `Unavailable`, error messages) are written in English; put their
    translations into the plugin's own `languages` folder (see [Translations](#translations)), with a file for every
    language the program ships (en, tr, de, es, fr, zh). The build copies the folder to `plugins/hello/languages`.
+   A plugin with packages of its own (like the disk image plugin with DiscUtils) sets
+   `CopyLocalLockFileAssemblies`, references the Core with `ExcludeAssets="runtime;native"` (the program's packages
+   are shared, not copied) and has a target `NcPluginDependencies` returning its `ReferenceCopyLocalPaths`: the
+   build puts those assemblies and the plugin's `.deps.json` into its folder, where its load context finds them.
 4. Add tests to `tests/NextCommander.Core.Tests` (reference the plugin project there).

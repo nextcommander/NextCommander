@@ -1,0 +1,19 @@
+{
+  "DiskImage.VirtualDisk": "Virtual disk",
+  "DiskImage.OnlyLocal": "Virtual disks are shown only when they are on this computer.",
+  "DiskImage.DiskSize": "Disk size: {0}",
+  "DiskImage.FileSize": "Size of the file: {0}",
+  "DiskImage.NoPartitionTable": "No partition table",
+  "DiskImage.DifferencingChain": "Differencing chain",
+  "DiskImage.Volumes": "Volumes",
+  "DiskImage.NoVolumes": "The disk has no volumes.",
+  "DiskImage.Label": "Label",
+  "DiskImage.Type": "Type",
+  "DiskImage.FileSystem": "File system",
+  "DiskImage.Size": "Size",
+  "DiskImage.Used": "Used",
+  "DiskImage.CannotBeRead": "Cannot be read",
+  "DiskImage.Unreadable": "The file system of this partition cannot be read (encrypted with BitLocker or LUKS, APFS, ReFS, or not formatted).",
+  "DiskImage.ReadOnly": "Virtual disks are opened read-only: copy the files out to change them.",
+  "DiskImage.NotReadable": "{0}: not a readable virtual disk ({1})"
+}
