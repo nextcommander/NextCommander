@@ -20,5 +20,12 @@
   "Git.Changed": "Modifié",
   "Git.Group": "Git",
   "Git.ChangedStaged": "Modifié (indexé)",
-  "Git.CouldNotBeStarted": "git n'a pas pu être démarré."
+  "Git.CouldNotBeStarted": "git n'a pas pu être démarré.",
+  "Git.ProgramNotFound": "Programme introuvable : {0}",
+  "Git.GitProgram": "Programme git",
+  "Git.GitProgramHelp": "Vide : FM_GIT, puis git dans le PATH et dans les dossiers habituels.",
+  "Git.Refresh": "Actualiser les colonnes Git toutes les (secondes)",
+  "Git.RefreshHelp": "Durée pendant laquelle l'état d'un dépôt est utilisé avant de redemander à git.",
+  "Git.Commits": "Commits listés dans l'historique Git",
+  "Git.CommitsHelp": "Les commits les plus récents de la branche courante dans le dossier commits."
 }

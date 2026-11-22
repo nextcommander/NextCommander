@@ -3759,5 +3759,7 @@
   "JobErrorDialog.RetryAsAdmin": "Retry as administrator",
   "JobErrorDialog.Message": "Message",
   "JobErrorDialog.TechnicalDetails": "Technical details",
-  "JobErrorDialog.RetryingIn": "Retrying in {0} s…"
+  "JobErrorDialog.RetryingIn": "Retrying in {0} s…",
+  "SettingsWindow.Browse": "Browse...",
+  "SettingsWindow.PluginProblem": "Settings of {0}: {1}"
 }

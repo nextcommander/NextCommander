@@ -21,14 +21,15 @@ namespace NextCommander.Plugin.Rclone;
 /// Shipped as a plugin (plugins/rclone next to the program); its entry point "rclone remotes" is listed with the
 /// saved connections.
 /// </summary>
-public sealed class RcloneFileSystemProvider : IFileSystemProvider, IUploadTimeSupport, IPluginEntryPoint, IDisposable
+public sealed class RcloneFileSystemProvider : IFileSystemProvider, IUploadTimeSupport, IPluginEntryPoint, IConfigurablePlugin, IDisposable
 {
     public const string RcloneScheme = "rclone";
 
     /// <summary>The remote list: <c>rclone:///</c>.</summary>
     public static VfsPath Root { get; } = VfsPath.Create(RcloneScheme, string.Empty, "/");
 
-    private readonly string? _tool;
+    private string? _tool;
+    private string? _configFile;
     private readonly SemaphoreSlim _startLock = new(1, 1);
     private readonly ConcurrentDictionary<VfsPath, DateTime> _uploadTimes = new();
     private Process? _daemon;
@@ -128,6 +129,12 @@ public sealed class RcloneFileSystemProvider : IFileSystemProvider, IUploadTimeS
             foreach (var argument in new[] { "rcd", "--rc-addr", "127.0.0.1:" + port.ToString(CultureInfo.InvariantCulture) })
             {
                 info.ArgumentList.Add(argument);
+            }
+            if (_configFile is { Length: > 0 } config)
+            {
+                // another rclone.conf than rclone's own default
+                info.ArgumentList.Add("--config");
+                info.ArgumentList.Add(config);
             }
             // the credentials go by environment (not visible in the process list)
             info.Environment["RCLONE_RC_USER"] = user;
@@ -448,6 +455,13 @@ public sealed class RcloneFileSystemProvider : IFileSystemProvider, IUploadTimeS
 
     public void Dispose()
     {
+        StopServer();
+        _startLock.Dispose();
+    }
+
+    /// <summary>Ends our own API server (started again with the next call).</summary>
+    private void StopServer()
+    {
         _http?.Dispose();
         _http = null;
         if (_daemon is { } daemon)
@@ -455,6 +469,58 @@ public sealed class RcloneFileSystemProvider : IFileSystemProvider, IUploadTimeS
             _daemon = null;
             Stop(daemon); // our own API server, started for this run
         }
-        _startLock.Dispose();
+    }
+
+    // ---------------------------------------------------------------- settings (Configuration > Plugins > rclone)
+
+    internal const string ProgramKey = "program";
+    internal const string ConfigKey = "config";
+
+    public string SettingsTitle => "rclone";
+
+    public IReadOnlyList<PluginSetting> Settings { get; } =
+    [
+        new(ProgramKey, PluginSettingKind.Program, "rclone program")
+        {
+            Description = "Empty: FM_RCLONE, then rclone on the PATH and in the usual folders.",
+            Placeholder = FindTool() ?? "rclone",
+        },
+        new(ConfigKey, PluginSettingKind.File, "rclone configuration file")
+        {
+            Description = "The rclone.conf with the remotes. Empty: rclone's own (rclone config file shows where it is).",
+        },
+    ];
+
+    public string? Validate(IPluginSettingValues values)
+    {
+        if (values.Get(ProgramKey) is { } program && !File.Exists(program))
+        {
+            return string.Format(CultureInfo.CurrentCulture, "The program was not found: {0}", program);
+        }
+        return values.Get(ConfigKey) is { } config && !File.Exists(config)
+            ? string.Format(CultureInfo.CurrentCulture, "The file was not found: {0}", config)
+            : null;
+    }
+
+    /// <summary>A new program or configuration file: the API server starts again with them on the next call.</summary>
+    public void Apply(IPluginSettingValues values)
+    {
+        var tool = values.Get(ProgramKey) is { } program && File.Exists(program) ? program : FindTool();
+        var config = values.Get(ConfigKey);
+        if (tool == _tool && config == _configFile)
+        {
+            return;
+        }
+        _startLock.Wait();
+        try
+        {
+            _tool = tool;
+            _configFile = config;
+            StopServer();
+        }
+        finally
+        {
+            _startLock.Release();
+        }
     }
 }

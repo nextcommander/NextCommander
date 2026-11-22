@@ -115,6 +115,38 @@ public sealed class DockerPluginTests
     }
 
     [Fact]
+    public async Task The_settings_choose_the_user_commands_run_as()
+    {
+        var docker = new FakeDocker();
+        docker.Reply(a => a[^1].StartsWith("f='/a.txt'", StringComparison.Ordinal), "0/3/1763800000/regular file/a.txt\n");
+        var provider = new DockerFileSystemProvider(docker);
+        Assert.Equal("Docker", provider.SettingsTitle);
+        var file = VfsPath.Create("docker", "web", "/a.txt");
+        try
+        {
+            provider.Apply(new NextCommander.Core.Plugins.PluginSettingValues(provider.Settings, new Dictionary<string, string> { ["user"] = "root" }));
+            await (await provider.OpenReadAsync(file, CancellationToken.None)).DisposeAsync();
+            Assert.Equal(["exec", "-u", "root", "web", "cat", "--", "/a.txt"], docker.Calls[^1].Arguments);
+            await using (var write = await provider.OpenWriteAsync(VfsPath.Create("docker", "web", "/b.txt"), overwrite: false, CancellationToken.None))
+            {
+                await write.WriteAsync("x"u8.ToArray());
+            }
+            Assert.Contains(docker.Calls, c => c.Arguments is ["exec", "-i", "-u", "root", "web", "sh", "-c", "cat > '/b.txt'"]);
+
+            // the default: the container's own user; a program that is not there is refused
+            provider.Apply(new NextCommander.Core.Plugins.PluginSettingValues(provider.Settings, null));
+            await (await provider.OpenReadAsync(file, CancellationToken.None)).DisposeAsync();
+            Assert.Equal(["exec", "web", "cat", "--", "/a.txt"], docker.Calls[^1].Arguments);
+            Assert.NotNull(provider.Validate(new NextCommander.Core.Plugins.PluginSettingValues(provider.Settings,
+                new Dictionary<string, string> { ["program"] = Path.Combine(Path.GetTempPath(), "no-docker.exe") })));
+        }
+        finally
+        {
+            DockerTool.ConfiguredPath = null;
+        }
+    }
+
+    [Fact]
     public void Docker_errors_say_what_to_do()
     {
         var path = VfsPath.Create("docker", "web", "/app");

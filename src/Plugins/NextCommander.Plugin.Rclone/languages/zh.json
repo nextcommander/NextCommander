@@ -6,5 +6,11 @@
   "Rclone.FilesAreWrittenInto": "rclone：文件写入远程中。",
   "Rclone.IsNotInstalled": "未安装 rclone（rclone.org/downloads；或将 FM_RCLONE 设为 rclone 的路径）。",
   "Rclone.ApiServerDidNotStart": "rclone：API 服务器未启动。",
-  "Rclone.MovingBetweenRemotes": "在远程之间移动通过复制完成。"
+  "Rclone.MovingBetweenRemotes": "在远程之间移动通过复制完成。",
+  "Rclone.ProgramNotFound": "找不到程序：{0}",
+  "Rclone.FileNotFound": "找不到文件：{0}",
+  "Rclone.RcloneProgram": "rclone 程序",
+  "Rclone.RcloneProgramHelp": "留空：先用 FM_RCLONE，再查找 PATH 和常用文件夹中的 rclone。",
+  "Rclone.ConfigFile": "rclone 配置文件",
+  "Rclone.ConfigFileHelp": "包含远程配置的 rclone.conf。留空：使用 rclone 自己的（rclone config file 可显示其位置）。"
 }

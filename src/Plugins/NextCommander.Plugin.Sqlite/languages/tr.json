@@ -15,5 +15,9 @@
   "Sqlite.FirstRows": "İlk satırlar",
   "Sqlite.BlobBytes": "BLOB, {0} bayt",
   "Sqlite.IndexesTitle": "Dizinler",
-  "Sqlite.ReadOnly": "Veritabanı salt okunur açıldı: satırlarını kullanmak için bir tabloyu dışarı kopyalayın (CSV veya JSON)."
+  "Sqlite.ReadOnly": "Veritabanı salt okunur açıldı: satırlarını kullanmak için bir tabloyu dışarı kopyalayın (CSV veya JSON).",
+  "Sqlite.FileNotFound": "Dosya bulunamadı: {0}",
+  "Sqlite.Library": "SQLite kitaplığı",
+  "Sqlite.LibraryHelp": "Boş: önce FM_SQLITE, sonra sistemin kitaplığı (winsqlite3.dll, libsqlite3.so.0, libsqlite3.dylib). Yeniden başlatınca geçerli olur.",
+  "Sqlite.PreviewRows": "Her tablodan gösterilen satır (F3)"
 }

@@ -22,21 +22,23 @@ public sealed class GitColumns : IColumnProvider
     /// <summary>How many commits one folder's "git log" reads for its rows; older files are looked up one by one.</summary>
     internal const int LogDepth = 2000;
 
-    private static readonly TimeSpan s_fresh = TimeSpan.FromSeconds(3);
+    /// <summary>How long a repository's status and HEAD are used before they are read again (the plugin's settings).</summary>
+    internal static TimeSpan Fresh { get; set; } = TimeSpan.FromSeconds(3);
 
-    private readonly GitTool? _tool;
+    private readonly GitTool? _fixedTool;
+    private readonly bool _installed;
     private readonly ConcurrentDictionary<string, string?> _repositories = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, Lazy<Task<(DateTime At, Status Status)>>> _status = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, Lazy<Task<(DateTime At, string Hash)>>> _heads = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, Lazy<Task<Dictionary<string, Commit>>>> _logs = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, Lazy<Task<Commit?>>> _single = new(StringComparer.OrdinalIgnoreCase);
 
-    public GitColumns()
-        : this(GitTool.Installed)
-    {
-    }
+    /// <summary>The plugin loader's constructor: the installed git, as the plugin's settings name it now.</summary>
+    public GitColumns() => _installed = true;
 
-    public GitColumns(GitTool? tool) => _tool = tool;
+    public GitColumns(GitTool? tool) => _fixedTool = tool;
+
+    private GitTool? CurrentTool => _installed ? GitTool.Installed : _fixedTool;
 
     public string Id => "git";
 
@@ -51,7 +53,7 @@ public sealed class GitColumns : IColumnProvider
         new(HashField, "Commit"),
     ];
 
-    public bool Supports(VfsEntry entry) => _tool is not null && entry.Path.IsLocal;
+    public bool Supports(VfsEntry entry) => CurrentTool is not null && entry.Path.IsLocal;
 
     /// <summary>The last commit that touched a path.</summary>
     internal sealed record Commit(string Hash, string Author, DateTime Time, string Subject);
@@ -63,7 +65,7 @@ public sealed class GitColumns : IColumnProvider
         CancellationToken cancellationToken)
     {
         var values = new Dictionary<string, object?>();
-        if (_tool is null || entry.Path.Path is not { Length: > 0 } full || Path.GetDirectoryName(full) is not { } folder || RepositoryOf(folder) is not { } repository)
+        if (CurrentTool is null || entry.Path.Path is not { Length: > 0 } full || Path.GetDirectoryName(full) is not { } folder || RepositoryOf(folder) is not { } repository)
         {
             return values;
         }
@@ -118,7 +120,7 @@ public sealed class GitColumns : IColumnProvider
                 throw;
             }
             var (at, status) = read;
-            if (DateTime.UtcNow - at < s_fresh)
+            if (DateTime.UtcNow - at < Fresh)
             {
                 return status;
             }
@@ -128,7 +130,7 @@ public sealed class GitColumns : IColumnProvider
 
     private async Task<(DateTime, Status)> ReadStatusAsync(string repository)
     {
-        var text = await _tool!.RunAsync(repository, ["status", "--porcelain=v1", "-z", "--untracked-files=all", "--ignored=matching"], CancellationToken.None).ConfigureAwait(false);
+        var text = await CurrentTool!.RunAsync(repository, ["status", "--porcelain=v1", "-z", "--untracked-files=all", "--ignored=matching"], CancellationToken.None).ConfigureAwait(false);
         return (DateTime.UtcNow, ParseStatus(text));
     }
 
@@ -201,7 +203,7 @@ public sealed class GitColumns : IColumnProvider
         while (true)
         {
             var lazy = _heads.GetOrAdd(repository, r => new Lazy<Task<(DateTime, string)>>(async () =>
-                (DateTime.UtcNow, (await _tool!.RunAsync(r, ["rev-parse", "HEAD"], CancellationToken.None).ConfigureAwait(false)).Trim())));
+                (DateTime.UtcNow, (await CurrentTool!.RunAsync(r, ["rev-parse", "HEAD"], CancellationToken.None).ConfigureAwait(false)).Trim())));
             (DateTime At, string Hash) read;
             try
             {
@@ -213,7 +215,7 @@ public sealed class GitColumns : IColumnProvider
                 throw;
             }
             var (at, hash) = read;
-            if (DateTime.UtcNow - at < s_fresh)
+            if (DateTime.UtcNow - at < Fresh)
             {
                 return hash;
             }
@@ -237,7 +239,7 @@ public sealed class GitColumns : IColumnProvider
         // older than the folder's log reaches (or never committed: null)
         var single = _single.GetOrAdd(repository + "\n" + head + "\n" + relative, _ => new Lazy<Task<Commit?>>(async () =>
         {
-            var text = await _tool!.RunAsync(repository, ["log", "-1", "--format=%h%x1f%an%x1f%ct%x1f%s", "--", relative], CancellationToken.None).ConfigureAwait(false);
+            var text = await CurrentTool!.RunAsync(repository, ["log", "-1", "--format=%h%x1f%an%x1f%ct%x1f%s", "--", relative], CancellationToken.None).ConfigureAwait(false);
             return ParseHeader(text.Trim());
         }));
         return await single.Value.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -246,7 +248,7 @@ public sealed class GitColumns : IColumnProvider
     /// <summary>One "git log --name-only" of a folder: the newest commit of each of its children (files and subfolders).</summary>
     private async Task<Dictionary<string, Commit>> FolderLogAsync(string repository, string folder)
     {
-        var text = await _tool!.RunAsync(repository,
+        var text = await CurrentTool!.RunAsync(repository,
             ["log", "-n", LogDepth.ToString(CultureInfo.InvariantCulture), "--name-only", "--format=%x1e%h%x1f%an%x1f%ct%x1f%s", "--", folder.Length == 0 ? "." : folder],
             CancellationToken.None).ConfigureAwait(false);
         return ParseFolderLog(text, folder);

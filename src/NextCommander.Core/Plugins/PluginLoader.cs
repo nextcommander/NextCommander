@@ -34,6 +34,9 @@ public sealed class LoadedPlugin
 
     public List<IViewerPlugin> Viewers { get; } = [];
 
+    /// <summary>The plugin's settings (<see cref="IConfigurablePlugin"/>), shown on the Plugins page of the configuration.</summary>
+    public List<IConfigurablePlugin> Configurables { get; } = [];
+
     public string? Error { get; set; }
 
     public string Name => Manifest?.Name is { Length: > 0 } n ? n : Path.GetFileName(Folder);
@@ -125,7 +128,8 @@ public static class PluginLoader
                 var isColumns = typeof(IColumnProvider).IsAssignableFrom(type);
                 var isPacker = typeof(IPackerPlugin).IsAssignableFrom(type);
                 var isViewer = typeof(IViewerPlugin).IsAssignableFrom(type);
-                if (!isFileSystem && !isColumns && !isPacker && !isViewer)
+                var isConfigurable = typeof(IConfigurablePlugin).IsAssignableFrom(type);
+                if (!isFileSystem && !isColumns && !isPacker && !isViewer && !isConfigurable)
                 {
                     continue;
                 }
@@ -145,6 +149,11 @@ public static class PluginLoader
                 if (isViewer)
                 {
                     plugin.Viewers.Add((IViewerPlugin)instance);
+                }
+                if (isConfigurable)
+                {
+                    // (one instance: a file system that is also the plugin's settings gets them itself)
+                    plugin.Configurables.Add((IConfigurablePlugin)instance);
                 }
             }
             if (plugin.FileSystems.Count + plugin.Columns.Count + plugin.Packers.Count + plugin.Viewers.Count == 0)

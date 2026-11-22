@@ -27,8 +27,33 @@ public sealed class DockerTool(string path) : IDockerRunner
     /// <summary>The docker program.</summary>
     public string Path { get; } = path;
 
-    /// <summary>The installed docker, or null.</summary>
-    public static DockerTool? Installed => s_installed.Value;
+    /// <summary>The docker the plugin's settings name (empty: the one found).</summary>
+    public static string? ConfiguredPath { get; set; }
+
+    private static DockerTool? s_configured;
+
+    /// <summary>The docker to use: the one the settings name when it exists, else the installed one, or null.</summary>
+    public static DockerTool? Installed
+    {
+        get
+        {
+            if (ConfiguredPath is not { Length: > 0 } path)
+            {
+                return s_installed.Value;
+            }
+            if (!File.Exists(path))
+            {
+                return null;
+            }
+            var configured = s_configured;
+            if (configured?.Path != path)
+            {
+                configured = new DockerTool(path);
+                s_configured = configured;
+            }
+            return configured;
+        }
+    }
 
     /// <summary>docker(.exe): FM_DOCKER, then PATH, then the usual install folders.</summary>
     public static string? Find()

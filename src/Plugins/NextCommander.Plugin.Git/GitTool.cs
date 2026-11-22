@@ -16,8 +16,33 @@ public sealed class GitTool
     /// <summary>The git program.</summary>
     public string Path { get; }
 
-    /// <summary>The installed git, or null.</summary>
-    public static GitTool? Installed => s_installed.Value;
+    /// <summary>The git the plugin's settings name (empty: the one found).</summary>
+    public static string? ConfiguredPath { get; set; }
+
+    private static GitTool? s_configured;
+
+    /// <summary>The git to use: the one the settings name when it exists, else the installed one, or null.</summary>
+    public static GitTool? Installed
+    {
+        get
+        {
+            if (ConfiguredPath is not { Length: > 0 } path)
+            {
+                return s_installed.Value;
+            }
+            if (!File.Exists(path))
+            {
+                return null;
+            }
+            var configured = s_configured;
+            if (configured?.Path != path)
+            {
+                configured = new GitTool(path);
+                s_configured = configured;
+            }
+            return configured;
+        }
+    }
 
     public const string NotInstalled = "git is not installed. Install it from git-scm.com (or set FM_GIT to its path), then open this again.";
 

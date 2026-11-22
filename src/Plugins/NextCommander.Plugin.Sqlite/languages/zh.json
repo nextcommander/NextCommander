@@ -15,5 +15,9 @@
   "Sqlite.FirstRows": "前几行",
   "Sqlite.BlobBytes": "BLOB，{0} 字节",
   "Sqlite.IndexesTitle": "索引",
-  "Sqlite.ReadOnly": "数据库以只读方式打开：请将表复制出来（CSV 或 JSON）以使用其中的行。"
+  "Sqlite.ReadOnly": "数据库以只读方式打开：请将表复制出来（CSV 或 JSON）以使用其中的行。",
+  "Sqlite.FileNotFound": "找不到文件：{0}",
+  "Sqlite.Library": "SQLite 库",
+  "Sqlite.LibraryHelp": "留空：先用 FM_SQLITE，再使用系统自带的（winsqlite3.dll、libsqlite3.so.0、libsqlite3.dylib）。重启后生效。",
+  "Sqlite.PreviewRows": "每个表显示的行数（F3）"
 }
