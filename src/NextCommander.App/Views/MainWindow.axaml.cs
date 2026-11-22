@@ -1021,8 +1021,15 @@ public partial class MainWindow : Window
             Placement = PlacementMode.AnchorAndGravity,
             PlacementAnchor = anchor is null ? PopupAnchor.TopLeft : PopupAnchor.BottomRight,
             PlacementGravity = anchor is null ? PopupGravity.BottomRight : PopupGravity.BottomLeft,
+            // the look of the drive box's list (the user's request, 22 November 2026): a card with rounded rows
+            FlyoutPresenterClasses = { "mwmenu" },
         };
         HotlistMenu = flyout;
+        var icons = _vm.Settings.ShowMenuIcons;
+        Control? FolderIcon(bool group) => icons
+            ? new PathIcon { Data = (Avalonia.Media.Geometry)this.FindResource("MiFolderOpen")!, Width = 14, Height = 14, Opacity = group ? 0.75 : 1,
+                [!PathIcon.ForegroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("FmFolderBrush") }
+            : null;
         // submenus at any depth ("A/B/Name"), "A/" an empty submenu, "-" a separator, "&" the menu key
         var groups = new Dictionary<string, MenuItem>(StringComparer.OrdinalIgnoreCase);
         var number = 0;
@@ -1035,7 +1042,7 @@ public partial class MainWindow : Window
                 key += "/" + group;
                 if (!groups.TryGetValue(key, out var menu))
                 {
-                    menu = new MenuItem { Header = HotlistHeader(group) };
+                    menu = new MenuItem { Header = HotlistHeader(group), Icon = FolderIcon(true) };
                     groups[key] = menu;
                     items.Add(menu);
                 }
@@ -1062,7 +1069,7 @@ public partial class MainWindow : Window
             {
                 header = $"_{++number} {header}";
             }
-            var item = new MenuItem { Header = header };
+            var item = new MenuItem { Header = header, Icon = FolderIcon(false) };
             ToolTip.SetTip(item, string.IsNullOrEmpty(entry.Target) ? entry.Path : entry.Path + "  |  " + entry.Target);
             var e = entry;
             item.Click += async (_, _) => await _vm.NavigateToHotlistEntryAsync(e);
@@ -1074,7 +1081,7 @@ public partial class MainWindow : Window
         }
         void Command(string header, string command)
         {
-            var item = new MenuItem { Header = header };
+            var item = new MenuItem { Header = header, Icon = icons ? Services.MenuIcons.Create(command) : null };
             item.Click += async (_, _) => await _vm.ExecuteAsync(command);
             flyout.Items.Add(item);
         }

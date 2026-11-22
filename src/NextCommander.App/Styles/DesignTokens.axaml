@@ -24,6 +24,12 @@
       <SolidColorBrush x:Key="NcMwPressBrush" Color="#14000000" />
       <SolidColorBrush x:Key="NcMwChipBrush" Color="#FFFFFF" />
       <SolidColorBrush x:Key="NcMwCardBrush" Color="#FBFBFB" />
+      <!-- the accent tints of the main window; DesignColors.Update makes them from the theme's panel accent -->
+      <SolidColorBrush x:Key="NcMwCursorBrush" Color="#1F2F6FDB" />
+      <SolidColorBrush x:Key="NcMwCursorLineBrush" Color="#802F6FDB" />
+      <SolidColorBrush x:Key="NcMwCursorInactiveBrush" Color="#102F6FDB" />
+      <SolidColorBrush x:Key="NcMwCursorInactiveLineBrush" Color="#402F6FDB" />
+      <SolidColorBrush x:Key="NcMwAccentSoftBrush" Color="#1A2F6FDB" />
       <BoxShadows x:Key="NcMwChipShadow">0 1 2 0 #1F000000</BoxShadows>
       <BoxShadows x:Key="NcMwPopupShadow">0 12 36 0 #2E000000</BoxShadows>
     </ResourceDictionary>
@@ -42,6 +48,11 @@
       <SolidColorBrush x:Key="NcMwPressBrush" Color="#17FFFFFF" />
       <SolidColorBrush x:Key="NcMwChipBrush" Color="#2F2F2F" />
       <SolidColorBrush x:Key="NcMwCardBrush" Color="#262626" />
+      <SolidColorBrush x:Key="NcMwCursorBrush" Color="#244C9AFF" />
+      <SolidColorBrush x:Key="NcMwCursorLineBrush" Color="#804C9AFF" />
+      <SolidColorBrush x:Key="NcMwCursorInactiveBrush" Color="#144C9AFF" />
+      <SolidColorBrush x:Key="NcMwCursorInactiveLineBrush" Color="#404C9AFF" />
+      <SolidColorBrush x:Key="NcMwAccentSoftBrush" Color="#214C9AFF" />
       <BoxShadows x:Key="NcMwChipShadow">0 1 2 0 #4D000000</BoxShadows>
       <BoxShadows x:Key="NcMwPopupShadow">0 12 36 0 #99000000</BoxShadows>
     </ResourceDictionary>
