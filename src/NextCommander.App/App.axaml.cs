@@ -353,7 +353,7 @@ public partial class App : Application
         services.AddSingleton(_ => new SecretStore(store.Directory));
         services.AddSingleton<RemoteSession>();
         services.AddSingleton(sp => new NextCommander.Vfs.Remote.SftpFileSystemProvider(sp.GetRequiredService<RemoteSession>().Hooks));
-        services.AddSingleton(sp => new NextCommander.Vfs.Remote.FtpFileSystemProvider(sp.GetRequiredService<RemoteSession>().Hooks) { ShowHidden = settings.FtpShowHidden });
+        services.AddSingleton(sp => new NextCommander.Vfs.Remote.FtpFileSystemProvider(sp.GetRequiredService<RemoteSession>().Hooks));
         services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Vfs.Remote.SftpFileSystemProvider>());
         services.AddSingleton(sp => new NextCommander.Vfs.Remote.ScpFileSystemProvider(sp.GetRequiredService<RemoteSession>().Hooks));
         services.AddSingleton<IFileSystemProvider>(sp => sp.GetRequiredService<NextCommander.Vfs.Remote.ScpFileSystemProvider>());

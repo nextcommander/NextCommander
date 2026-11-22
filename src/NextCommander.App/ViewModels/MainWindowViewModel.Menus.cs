@@ -77,9 +77,7 @@ public sealed partial class MainWindowViewModel
     /// <summary>Layout: drive buttons on, but one bar for both panels.</summary>
     public bool FlatDriveButtons => _settings.FlatDriveButtons;
 
-    /// <summary>Net menu check marks (bound directly: AppSettings does not notify).</summary>
-    public bool FtpShowHidden => _settings.FtpShowHidden;
-
+    /// <summary>Connection menu check marks (bound directly: AppSettings does not notify).</summary>
     public bool ShowAdminShares => _settings.ShowAdminShares;
 
     /// <summary>PC link: this computer shares its folders (Net > Share with PC link, check mark).</summary>
@@ -127,7 +125,6 @@ public sealed partial class MainWindowViewModel
         c.Register("nc_SshTunnels", "SSH tunnels: ports forwarded through a saved SSH connection", ShowSshTunnels);
         c.Register("nc_NetworkTools", "Network tools: ping, port scan, Wake-on-LAN", ShowNetworkTools);
         c.Register("nc_FtpNewConnection", "Connect by address (Ctrl+N)", _ => QuickConnectAsync());
-        c.Register("nc_FtpHiddenFiles", "Show hidden files on FTP", ToggleFtpHidden);
         c.Register("nc_FtpDownloadList", "Download the addresses in the list", _ => DownloadFromListAsync());
 
         // Configuration
@@ -249,6 +246,15 @@ public sealed partial class MainWindowViewModel
         {
             return;
         }
+        await OpenAddressAsync(text);
+    }
+
+    /// <summary>
+    /// Opens a server's address (sftp://, smb:// ...) in the active panel, or a session (rdp://, telnet:// ...) in its client
+    /// (Connect by address; Connect of an open port in the network tools).
+    /// </summary>
+    public async Task OpenAddressAsync(string text)
+    {
         if (!VfsPath.TryParse(text.Trim(), out var path) || path!.IsLocal)
         {
             await _dialogs.ShowMessageAsync("Connect by address", $"Address not understood: {text}");
@@ -263,17 +269,6 @@ public sealed partial class MainWindowViewModel
             return;
         }
         await ActivePanel.NavigateAsync(path);
-    }
-
-    private void ToggleFtpHidden()
-    {
-        _settings.FtpShowHidden = !_settings.FtpShowHidden;
-        foreach (var ftp in _registry.Providers.OfType<NextCommander.Vfs.Remote.FtpFileSystemProvider>())
-        {
-            ftp.ShowHidden = _settings.FtpShowHidden;
-        }
-        _ = ActivePanel.RefreshAsync();
-        OnPropertyChanged(nameof(FtpShowHidden));
     }
 
     /// <summary>Net > FTP download from list: a text file with one address per line (http, https, ftp, sftp).</summary>

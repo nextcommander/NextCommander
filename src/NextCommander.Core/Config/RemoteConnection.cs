@@ -348,6 +348,9 @@ public sealed class RemoteConnection
     /// <summary>FTPS: the data connections are encrypted too (off: only the commands and the password; PROT C).</summary>
     public bool FtpEncryptData { get; set; } = true;
 
+    /// <summary>FTP: hidden files are listed too (LIST -a; the Advanced tab, user's request, 22 November 2026).</summary>
+    public bool FtpShowHidden { get; set; } = true;
+
     /// <summary>WebDAV: how the user logs in.</summary>
     public WebDavAuth WebDavAuth { get; set; }
 

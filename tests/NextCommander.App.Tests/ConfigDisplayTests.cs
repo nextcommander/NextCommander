@@ -161,16 +161,19 @@ public sealed class ConfigDisplayTests : IDisposable
     }
 
     [AvaloniaFact]
-    public async Task Net_menu_check_marks_follow_the_settings()
+    public async Task Connection_menu_check_marks_follow_the_settings()
     {
         var (w, vm) = await _fx.OpenAsync();
         var item = Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(w).OfType<MenuItem>()
-            .First(m => m.CommandParameter as string == "nc_FtpHiddenFiles");
-        Assert.True(item.IsChecked);
-        await vm.ExecuteAsync("nc_FtpHiddenFiles");
+            .First(m => m.CommandParameter as string == "nc_SwitchAdminShares");
+        var before = vm.Settings.ShowAdminShares;
+        Assert.Equal(before, item.IsChecked);
+        await vm.ExecuteAsync("nc_SwitchAdminShares");
         await SettleAsync();
-        Assert.False(vm.Settings.FtpShowHidden);
-        Assert.False(item.IsChecked);
+        Assert.Equal(!before, vm.Settings.ShowAdminShares);
+        Assert.Equal(!before, item.IsChecked);
+        // hidden FTP files are a setting of each FTP connection now, not of this menu
+        Assert.DoesNotContain(Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(w).OfType<MenuItem>(), m => m.CommandParameter as string == "nc_FtpHiddenFiles");
     }
 }
 

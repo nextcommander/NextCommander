@@ -11,6 +11,20 @@ public sealed record PingReply(int Sequence, string Address, long? Milliseconds,
 /// <summary>An open TCP port found by a scan.</summary>
 public sealed record OpenPort(int Port, string Service, long Milliseconds);
 
+/// <summary>What a port said to a TCP connect: open, closed (refused) or filtered (no answer within the time).</summary>
+public enum PortState
+{
+    Open,
+    Closed,
+    Filtered,
+}
+
+/// <summary>One port of a scan.</summary>
+public sealed record PortResult(int Port, string Service, PortState State, long Milliseconds);
+
+/// <summary>A broadcast address of a local network (for Wake-on-LAN) and what it is.</summary>
+public sealed record BroadcastTarget(string Address, string Description);
+
 /// <summary>
 /// The network tools of the Net menu (user's request, 21 November 2026): ping, a TCP port
 /// scan and Wake-on-LAN (the magic packet: 6 × 0xFF and the MAC address 16 times, sent as a UDP broadcast).
@@ -144,11 +158,27 @@ public static class NetworkTools
     public static async Task<IReadOnlyList<OpenPort>> ScanAsync(string host, IReadOnlyList<int> ports, TimeSpan timeout, int parallel = 64,
         IProgress<int>? progress = null, Action<OpenPort>? found = null, CancellationToken cancellationToken = default)
     {
-        var addresses = await Dns.GetHostAddressesAsync(host, cancellationToken).ConfigureAwait(false);
-        var address = addresses.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork) ?? addresses.FirstOrDefault()
-            ?? throw new IOException($"{host}: no address");
-        var open = new List<OpenPort>();
         var tried = 0;
+        var all = await ScanPortsAsync(host, ports, timeout, parallel, result =>
+        {
+            if (result.State == PortState.Open)
+            {
+                found?.Invoke(new OpenPort(result.Port, result.Service, result.Milliseconds));
+            }
+            progress?.Report(Interlocked.Increment(ref tried));
+        }, cancellationToken).ConfigureAwait(false);
+        return [.. all.Where(r => r.State == PortState.Open).Select(r => new OpenPort(r.Port, r.Service, r.Milliseconds))];
+    }
+
+    /// <summary>
+    /// TCP connects to the ports (several at a time, each within the timeout); every port with what it said, in port order.
+    /// <paramref name="each"/> hears of each port as it is done (from the scanning threads).
+    /// </summary>
+    public static async Task<IReadOnlyList<PortResult>> ScanPortsAsync(string host, IReadOnlyList<int> ports, TimeSpan timeout, int parallel = 64,
+        Action<PortResult>? each = null, CancellationToken cancellationToken = default)
+    {
+        var address = await ResolveAsync(host, cancellationToken).ConfigureAwait(false);
+        var results = new List<PortResult>();
         using var gate = new SemaphoreSlim(Math.Max(1, parallel));
         var tasks = ports.Select(async port =>
         {
@@ -159,28 +189,111 @@ public static class NetworkTools
                 using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 limit.CancelAfter(timeout);
                 var started = System.Diagnostics.Stopwatch.StartNew();
+                PortState state;
                 try
                 {
                     await client.ConnectAsync(address, port, limit.Token).ConfigureAwait(false);
-                    var result = new OpenPort(port, ServiceName(port), started.ElapsedMilliseconds);
-                    lock (open)
-                    {
-                        open.Add(result);
-                    }
-                    found?.Invoke(result);
+                    state = PortState.Open;
+                }
+                catch (SocketException ex) when (ex.SocketErrorCode == SocketError.ConnectionRefused)
+                {
+                    state = PortState.Closed; // the computer answered: nothing listens there
                 }
                 catch (Exception ex) when (ex is SocketException or OperationCanceledException && !cancellationToken.IsCancellationRequested)
                 {
-                    // closed, filtered or too slow
+                    state = PortState.Filtered; // no answer in time (a firewall drops it) or unreachable
                 }
+                var result = new PortResult(port, ServiceName(port), state, started.ElapsedMilliseconds);
+                lock (results)
+                {
+                    results.Add(result);
+                }
+                each?.Invoke(result);
             }
             finally
             {
                 gate.Release();
-                progress?.Report(Interlocked.Increment(ref tried));
             }
         });
         await Task.WhenAll(tasks).ConfigureAwait(false);
-        return [.. open.OrderBy(p => p.Port)];
+        return [.. results.OrderBy(p => p.Port)];
+    }
+
+    /// <summary>The address of a host (IPv4 first); an <see cref="IOException"/> when the name is not known.</summary>
+    public static async Task<IPAddress> ResolveAsync(string host, CancellationToken cancellationToken = default)
+    {
+        if (IPAddress.TryParse(host, out var literal))
+        {
+            return literal;
+        }
+        IPAddress[] addresses;
+        try
+        {
+            addresses = await Dns.GetHostAddressesAsync(host, cancellationToken).ConfigureAwait(false);
+        }
+        catch (SocketException ex)
+        {
+            throw new IOException($"{host}: {ex.Message}", ex);
+        }
+        return addresses.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork) ?? addresses.FirstOrDefault()
+            ?? throw new IOException($"{host}: no address");
+    }
+
+    /// <summary>A host name or an IP address (letters, digits, dots, dashes; IPv6 in its own form).</summary>
+    public static bool IsHostName(string? text)
+    {
+        var host = (text ?? string.Empty).Trim();
+        if (host.Length == 0)
+        {
+            return false;
+        }
+        if (IPAddress.TryParse(host, out _))
+        {
+            return true;
+        }
+        return host.Length <= 253 && !host.Contains("..", StringComparison.Ordinal) && !host.StartsWith('.') && !host.EndsWith('.')
+            && !host.StartsWith('-') && host.All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '-' or '_');
+    }
+
+    /// <summary>"a4bb6d123f90", "A4-BB-..." as "A4:BB:6D:12:3F:90" (what is there so far: the box is formatted while typed).</summary>
+    public static string FormatMac(string? text)
+    {
+        var hex = new string([.. (text ?? string.Empty).Where(char.IsAsciiHexDigit).Take(12)]).ToUpperInvariant();
+        return string.Join(":", Enumerable.Range(0, (hex.Length + 1) / 2).Select(i => hex.Substring(i * 2, Math.Min(2, hex.Length - i * 2))));
+    }
+
+    /// <summary>
+    /// Where a magic packet can go: the whole local network (255.255.255.255) and the broadcast address of each local IPv4
+    /// network this computer is on, with the network card's name.
+    /// </summary>
+    public static IReadOnlyList<BroadcastTarget> BroadcastTargets()
+    {
+        var targets = new List<BroadcastTarget> { new("255.255.255.255", "This network (everyone)") };
+        try
+        {
+            foreach (var card in NetworkInterface.GetAllNetworkInterfaces()
+                         .Where(n => n.OperationalStatus == OperationalStatus.Up && n.NetworkInterfaceType != NetworkInterfaceType.Loopback))
+            {
+                foreach (var unicast in card.GetIPProperties().UnicastAddresses.Where(u => u.Address.AddressFamily == AddressFamily.InterNetwork))
+                {
+                    var address = unicast.Address.GetAddressBytes();
+                    var mask = unicast.IPv4Mask?.GetAddressBytes();
+                    if (mask is null || mask.Length != 4 || mask.All(b => b == 0))
+                    {
+                        continue;
+                    }
+                    var broadcast = new IPAddress([.. address.Select((b, i) => (byte)(b | ~mask[i]))]).ToString();
+                    if (targets.All(t => t.Address != broadcast))
+                    {
+                        targets.Add(new(broadcast, card.Name));
+                    }
+                }
+            }
+        }
+        catch (Exception ex) when (ex is NetworkInformationException or PlatformNotSupportedException)
+        {
+            // the whole network only
+        }
+        return targets;
     }
 }

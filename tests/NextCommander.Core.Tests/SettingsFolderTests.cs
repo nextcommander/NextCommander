@@ -45,6 +45,21 @@ public sealed class SettingsFolderTests : IDisposable
     }
 
     [Fact]
+    public void An_old_ftp_hidden_files_off_goes_to_each_ftp_connection()
+    {
+        // version 9 and before: one program-wide setting; since 10 each FTP connection has its own
+        var json = """{ "SettingsVersion": 9, "FtpShowHidden": false, "Connections": [ { "Name": "a", "Protocol": "Ftp", "Host": "a" }, { "Name": "b", "Protocol": "Sftp", "Host": "b" } ] }""";
+        var old = System.Text.Json.JsonSerializer.Deserialize<AppSettings>(json, SettingsStore.JsonOptions)!;
+        old.Upgrade();
+        Assert.False(old.Connections.Single(c => c.Name == "a").FtpShowHidden);
+        Assert.True(old.Connections.Single(c => c.Name == "b").FtpShowHidden); // not FTP: untouched
+        Assert.Null(old.FtpShowHidden); // not written again
+        using var written = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(old, SettingsStore.JsonOptions));
+        Assert.False(written.RootElement.TryGetProperty("FtpShowHidden", out _));
+        Assert.True(new RemoteConnection().FtpShowHidden);
+    }
+
+    [Fact]
     public void Older_button_bars_get_the_internal_terminal_the_connection_manager_and_the_settings()
     {
         // a bar the user changed: the new buttons join it, the user's own ones stay

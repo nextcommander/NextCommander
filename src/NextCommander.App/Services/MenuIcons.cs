@@ -332,7 +332,7 @@ public static class MenuIcons
     /// <summary>Commands left without a menu icon on purpose.</summary>
     public static IReadOnlySet<string> WithoutIcon { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
-        "nc_NetShareDir", "nc_NetUnshareDir", "nc_SwitchAdminShares", "nc_FtpHiddenFiles", "nc_FtpDownloadList", "nc_SwitchDarkNormal",
+        "nc_NetShareDir", "nc_NetUnshareDir", "nc_SwitchAdminShares", "nc_FtpDownloadList", "nc_SwitchDarkNormal",
         "nc_SavePosition", "nc_SaveSettings",
     };
 
