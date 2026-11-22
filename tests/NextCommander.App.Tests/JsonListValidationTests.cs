@@ -180,7 +180,7 @@ public sealed class JsonListValidationTests : IDisposable
         {
             vm.Settings.DisabledPlugins = ["Beta", "Gone"];
             var window = await OpenAsync(_fx, vm.Settings, "Operation/Plugins");
-            var boxes = window.GetVisualDescendants().OfType<CheckBox>().Where(b => b.Tag is string).ToDictionary(b => (string)b.Tag!);
+            var boxes = window.GetVisualDescendants().OfType<ToggleSwitch>().Where(b => b.Tag is string).ToDictionary(b => (string)b.Tag!);
             Assert.Equal(["Alpha", "Beta", "Gone"], boxes.Keys);
             Assert.True(boxes["Alpha"].IsChecked);
             Assert.False(boxes["Beta"].IsChecked);
