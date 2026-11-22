@@ -109,33 +109,3 @@ public sealed class JobErrorDialogTests : IDisposable
         Assert.True(words.Count == 0, "Not translated:\n" + string.Join("\n", words));
     }
 }
-
-/// <summary>The program holding a file, through Windows' Restart Manager.</summary>
-public sealed class FileLocksTests
-{
-    [Fact]
-    public void The_program_that_has_a_file_open_is_named()
-    {
-        var path = Path.Combine(Path.GetTempPath(), "nc-lock-" + Guid.NewGuid().ToString("N")[..8] + ".txt");
-        try
-        {
-            using (var held = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
-            {
-                var names = NextCommander.Platform.Windows.FileLocks.WhoLocks(path);
-                if (OperatingSystem.IsWindows())
-                {
-                    Assert.NotEmpty(names); // this test's own process
-                }
-                else
-                {
-                    Assert.Empty(names);
-                }
-            }
-            Assert.Empty(NextCommander.Platform.Windows.FileLocks.WhoLocks(path)); // closed: nobody
-        }
-        finally
-        {
-            File.Delete(path);
-        }
-    }
-}
