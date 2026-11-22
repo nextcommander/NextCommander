@@ -746,6 +746,12 @@ public sealed class ListerView : UserControl
             _image.ZoomBy(direction > 0 ? 1.25 : 0.8);
             return;
         }
+        if (PdfView is { } pdf)
+        {
+            // the pages, not the text font (Ctrl+plus / Ctrl+minus went to the font size)
+            pdf.Zoom(direction > 0 ? pdf.ZoomFactor * 1.15 : pdf.ZoomFactor / 1.15);
+            return;
+        }
         var size = Math.Clamp(_context.Settings.ListerFontSize + direction, 6, 48);
         _context.Settings.ListerFontSize = size;
         _editor.FontSize = size;
@@ -1060,6 +1066,9 @@ public sealed class ListerView : UserControl
             case Key.F when plain && Mode == ListerMode.Image:
                 _image.ToggleFit();
                 break;
+            case Key.F when plain && PdfView is { } fitPdf:
+                fitPdf.ToggleFit(); // whole page ↔ page width
+                break;
             case Key.Enter when plain && Mode == ListerMode.Info:
                 OpenExternally();
                 break;
@@ -1209,7 +1218,7 @@ public sealed class ListerView : UserControl
                     break;
                 case ListerMode.Preview when _host.Content == _pdf && _pdf is { PageCount: > 0 } pdf:
                     parts.Add(string.Format(CultureInfo.CurrentCulture, "Page {0}/{1}", pdf.CurrentPage, pdf.PageCount));
-                    parts.Add($"{pdf.ZoomFactor:P0}");
+                    parts.Add(pdf.FitsWholePage ? $"Whole page ({pdf.ZoomFactor:P0})" : $"Page width ({pdf.ZoomFactor:P0})");
                     break;
                 case ListerMode.Image when _image.Bitmap is { } bmp:
                     parts.Add($"{bmp.PixelSize.Width}×{bmp.PixelSize.Height}");
