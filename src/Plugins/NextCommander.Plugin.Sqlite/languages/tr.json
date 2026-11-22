@@ -1,0 +1,19 @@
+{
+  "Sqlite.Tables": "{0} tablo",
+  "Sqlite.Views": "{0} görünüm",
+  "Sqlite.Indexes": "{0} dizin",
+  "Sqlite.Rows": "{0} satır",
+  "Sqlite.NoTables": "Veritabanında tablo yok.",
+  "Sqlite.View": "Görünüm",
+  "Sqlite.Table": "Tablo",
+  "Sqlite.Column": "Sütun",
+  "Sqlite.Type": "Tür",
+  "Sqlite.Key": "Anahtar",
+  "Sqlite.NotNull": "Boş olamaz",
+  "Sqlite.Default": "Varsayılan",
+  "Sqlite.PrimaryKey": "Birincil anahtar",
+  "Sqlite.FirstRows": "İlk satırlar",
+  "Sqlite.BlobBytes": "BLOB, {0} bayt",
+  "Sqlite.IndexesTitle": "Dizinler",
+  "Sqlite.ReadOnly": "Veritabanı salt okunur açıldı: satırlarını kullanmak için bir tabloyu dışarı kopyalayın (CSV veya JSON)."
+}

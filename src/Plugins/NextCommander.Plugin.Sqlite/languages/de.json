@@ -1,0 +1,19 @@
+{
+  "Sqlite.Tables": "{0} Tabellen",
+  "Sqlite.Views": "{0} Sichten",
+  "Sqlite.Indexes": "{0} Indizes",
+  "Sqlite.Rows": "{0} Zeilen",
+  "Sqlite.NoTables": "Die Datenbank hat keine Tabellen.",
+  "Sqlite.View": "Sicht",
+  "Sqlite.Table": "Tabelle",
+  "Sqlite.Column": "Spalte",
+  "Sqlite.Type": "Typ",
+  "Sqlite.Key": "Schlüssel",
+  "Sqlite.NotNull": "Nicht leer",
+  "Sqlite.Default": "Standardwert",
+  "Sqlite.PrimaryKey": "Primärschlüssel",
+  "Sqlite.FirstRows": "Erste Zeilen",
+  "Sqlite.BlobBytes": "BLOB, {0} Bytes",
+  "Sqlite.IndexesTitle": "Indizes",
+  "Sqlite.ReadOnly": "Die Datenbank ist schreibgeschützt geöffnet: Kopieren Sie eine Tabelle heraus (CSV oder JSON), um ihre Zeilen zu verwenden."
+}

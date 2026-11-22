@@ -1,0 +1,6 @@
+{
+  "Name": "sqlite",
+  "Assembly": "NextCommander.Plugin.Sqlite.dll",
+  "Description": "SQLite databases: a database file opens like a folder of its tables (as CSV and JSON, with their schema), and F3 shows its tables and first rows. Uses the system's SQLite.",
+  "Version": "1.0"
+}

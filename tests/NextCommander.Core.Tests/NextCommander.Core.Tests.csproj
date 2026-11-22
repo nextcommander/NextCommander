@@ -28,6 +28,7 @@
     <ProjectReference Include="..\SamplePlugin\SamplePlugin.csproj" />
     <ProjectReference Include="..\..\src\Plugins\NextCommander.Plugin.Rclone\NextCommander.Plugin.Rclone.csproj" />
     <ProjectReference Include="..\..\src\Plugins\NextCommander.Plugin.Git\NextCommander.Plugin.Git.csproj" />
+    <ProjectReference Include="..\..\src\Plugins\NextCommander.Plugin.Sqlite\NextCommander.Plugin.Sqlite.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\Shared\TestDocuments.cs" Link="Shared\TestDocuments.cs" />

@@ -59,6 +59,8 @@
                       ReferenceOutputAssembly="false" OutputItemType="NcShippedPlugin" PluginFolder="rclone" />
     <ProjectReference Include="..\Plugins\NextCommander.Plugin.Git\NextCommander.Plugin.Git.csproj"
                       ReferenceOutputAssembly="false" OutputItemType="NcShippedPlugin" PluginFolder="git" />
+    <ProjectReference Include="..\Plugins\NextCommander.Plugin.Sqlite\NextCommander.Plugin.Sqlite.csproj"
+                      ReferenceOutputAssembly="false" OutputItemType="NcShippedPlugin" PluginFolder="sqlite" />
   </ItemGroup>
   <Target Name="NcPluginFiles" DependsOnTargets="ResolveProjectReferences">
     <ItemGroup>
