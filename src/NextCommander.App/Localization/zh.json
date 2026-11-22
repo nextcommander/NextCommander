@@ -1724,7 +1724,7 @@
   "Settings.Zip.ZipCrypto": "ZipCrypto（旧式，兼容）",
   "Settings.Assoc.InternalAssociationsEnter.Description": "按 Enter 时用指定的命令打开这些文件类型：程序（含参数）、nc_ 命令、Lister、编辑器或系统程序。Shift+Enter：一起打开。",
   "Settings.Plugins.InstalledPlugins": "已安装的插件",
-  "Settings.Plugins.InstalledPlugins.Description": "关闭的插件不会加载。重启后生效。",
+  "Settings.Plugins.LoadThisPlugin": "加载此插件（重启后）",
   "Settings.Plugins.NoPlugins": "未安装插件。插件是位于设置文件夹或程序文件夹的 plugins 文件夹中、含有 plugin.json 的文件夹。",
   "Settings.Plugins.NotInstalled": "（未安装）",
   "Settings.Proxy.Group.Proxy": "代理",

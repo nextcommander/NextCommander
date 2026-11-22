@@ -39,26 +39,98 @@ public sealed partial class SettingsView
         }
     }
 
-    /// <summary>The settings of every loaded plugin that has some.</summary>
-    private static IEnumerable<SettingItem> PluginItems()
+    /// <summary>
+    /// The Plugins page, a group per plugin (the user's request, 22 November 2026): its switch (loaded or not) first, its
+    /// own settings below it (greyed out while it is off). Installed plugins come from <see cref="PluginRoots"/>; turned
+    /// off ones that are not installed any more stay until they are turned on.
+    /// </summary>
+    private static IEnumerable<SettingItem> PluginItems(AppSettings s)
     {
-        foreach (var (plugin, config) in Configurations())
+        var configurations = Configurations();
+        IReadOnlyList<(string Name, PluginManifest? Manifest, string Folder)> found;
+        try
         {
-            IReadOnlyList<PluginSetting> settings;
-            try
+            found = PluginLoader.Discover(PluginRoots);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            found = [];
+        }
+        var names = found.Select(p => p.Name).ToList();
+        // plugins with settings that were not found in the folders (tests, a plugin loaded from elsewhere)
+        names.AddRange(configurations.Select(c => c.Plugin).Where(p => !names.Contains(p, StringComparer.OrdinalIgnoreCase)).Distinct(StringComparer.OrdinalIgnoreCase));
+        // turned off before and not installed any more: they keep a switch until turned on
+        names.AddRange(s.DisabledPlugins.Where(d => !names.Contains(d, StringComparer.OrdinalIgnoreCase)));
+        if (names.Count == 0 && PluginRoots.Count > 0)
+        {
+            yield return NoPluginsItem();
+        }
+        foreach (var name in names)
+        {
+            (string Name, PluginManifest? Manifest, string Folder)? info = found.Any(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase))
+                ? found.First(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase)) : null;
+            var mine = configurations.Where(c => string.Equals(c.Plugin, name, StringComparison.OrdinalIgnoreCase)).ToList();
+            var group = mine.Count > 0 ? mine[0].Config.SettingsTitle : name;
+            yield return PluginSwitchItem(name, group, info);
+            foreach (var (plugin, config) in mine)
             {
-                settings = config.Settings;
-            }
-            catch (Exception ex) when (ex is InvalidOperationException or NotSupportedException or IOException)
-            {
-                continue; // a plugin that cannot tell its settings is left out
-            }
-            foreach (var setting in settings)
-            {
-                yield return PluginItem(plugin, config.SettingsTitle, setting);
+                IReadOnlyList<PluginSetting> settings;
+                try
+                {
+                    settings = config.Settings;
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or NotSupportedException or IOException)
+                {
+                    continue; // a plugin that cannot tell its settings is left out
+                }
+                foreach (var setting in settings)
+                {
+                    // under the plugin's switch: greyed out while the plugin is off
+                    yield return PluginItem(plugin, group, setting) with { Indent = true };
+                }
             }
         }
     }
+
+    /// <summary>A plugin's switch: loaded or not (in <see cref="AppSettings.DisabledPlugins"/>); its version and description below.</summary>
+    private static SettingItem PluginSwitchItem(string name, string group, (string Name, PluginManifest? Manifest, string Folder)? info)
+    {
+        bool Get(AppSettings s) => !s.DisabledPlugins.Contains(name, StringComparer.OrdinalIgnoreCase);
+        void Set(AppSettings s, bool on)
+        {
+            if (Get(s) == on)
+            {
+                return; // the list keeps its order
+            }
+            var others = s.DisabledPlugins.Where(d => !string.Equals(d, name, StringComparison.OrdinalIgnoreCase));
+            s.DisabledPlugins = on ? [.. others] : [.. others, name];
+        }
+        var details = info?.Folder is null ? "(not installed)"
+            : string.Join("  ·  ", new[] { info.Value.Manifest?.Version, info.Value.Manifest?.Description }.Where(t => !string.IsNullOrWhiteSpace(t)));
+        return new(PluginsPage, group, "Load this plugin (after a restart)", details.Length > 0 ? details : null, (s, changed) =>
+        {
+            var box = new CheckBox { Content = "Load this plugin (after a restart)", Tag = name, IsChecked = Get(s) };
+            if (info?.Folder is { } folder)
+            {
+                ToolTip.SetTip(box, folder);
+            }
+            box.IsCheckedChanged += (_, _) =>
+            {
+                Set(s, box.IsChecked == true);
+                changed();
+            };
+            return box;
+        }, (from, to) => Set(to, Get(from)), IsCheckBox: true);
+    }
+
+    /// <summary>The page without plugins: where they go.</summary>
+    private static SettingItem NoPluginsItem() =>
+        new(PluginsPage, "Plugins", "Installed plugins", null, (_, _) => new TextBlock
+        {
+            Text = "No plugins are installed. A plugin is a folder with a plugin.json in the plugins folder of the settings folder or of the program.",
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+            Opacity = 0.7,
+        }, (_, _) => { }, FullWidth: true);
 
     /// <summary>The stored value (null: none, the default applies).</summary>
     internal static string? StoredValue(AppSettings s, string plugin, string key) =>
