@@ -13,5 +13,14 @@
   "Docker.DockerProgramHelp": "留空：先用 FM_DOCKER，再查找 PATH 和常用文件夹中的 docker。也可使用命令相同的其他程序（podman）。",
   "Docker.WorkAs": "在容器中以此用户工作",
   "Docker.WorkAsHelp": "在容器内列出、读取和写入文件的用户。",
-  "Docker.OwnUser": "容器自身的用户"
+  "Docker.OwnUser": "容器自身的用户",
+  "Docker.StartContainer": "启动容器",
+  "Docker.StopContainer": "停止容器",
+  "Docker.RestartContainer": "重启容器",
+  "Docker.PauseContainer": "暂停容器",
+  "Docker.ResumeContainer": "恢复容器",
+  "Docker.HelperImage": "用于打开卷的镜像",
+  "Docker.HelperImageHelp": "卷通过一个挂载它的小容器打开；其镜像需要 sh、ls、stat 和 sleep（首次使用时下载）。",
+  "Docker.VolumeNotOpened": "无法打开卷：无法从镜像 {0} 创建辅助容器（{1}）。",
+  "Docker.TooManyLinks": "链接过多：{0}"
 }

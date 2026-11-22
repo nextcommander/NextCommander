@@ -132,6 +132,15 @@ public static class MenuIcons
         ["nc_RestoreLastClosedTab"] = new("MiTabs", Yellow, "OvArrowLeft", Green),
         ["nc_OpenTabInOther"] = new("MiTabs", Yellow, "OvArrowRight", Blue),
         // the menus of the built-in editor (not commands: its own items)
+        // a plugin's actions in the file list menu (Core.Plugins.PluginActionIcon)
+        ["plugin.Start"] = new("MiArrowRight", Green),
+        ["plugin.Stop"] = new("MiPower", Red),
+        ["plugin.Restart"] = new("MiRefresh", Orange),
+        ["plugin.Pause"] = new("MiMinusCircle", Orange),
+        ["plugin.Delete"] = new("MiTrash", Red),
+        ["plugin.Refresh"] = new("MiRefresh", Blue),
+        ["plugin.Info"] = new("MiInfo", Blue),
+        ["plugin.Other"] = new("MiPlug", Purple),
         ["editor.save"] = new("MiSave", Blue),
         ["editor.reload"] = new("MiRefresh", Blue),
         ["editor.close"] = new("MiX", Gray),
