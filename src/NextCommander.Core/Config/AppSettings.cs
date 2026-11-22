@@ -1216,9 +1216,16 @@ public sealed class AppSettings
     /// <summary>The plugins' own settings: plugin name → setting key → value (edited on the Plugins page; see IConfigurablePlugin).</summary>
     public Dictionary<string, Dictionary<string, string>> PluginSettings { get; set; } = [];
 
-    /// <summary>The values of one plugin's settings, with their defaults.</summary>
-    public Plugins.IPluginSettingValues PluginValues(string plugin, IReadOnlyList<Plugins.PluginSetting> settings) =>
-        new Plugins.PluginSettingValues(settings, PluginSettings.TryGetValue(plugin, out var values) ? values : null);
+    /// <summary>The values of one plugin's settings, with their defaults (and its secrets through <paramref name="secrets"/>: key → value).</summary>
+    public Plugins.IPluginSettingValues PluginValues(string plugin, IReadOnlyList<Plugins.PluginSetting> settings, Func<string, Task<string?>>? secrets = null) =>
+        new Plugins.PluginSettingValues(settings, PluginSettings.TryGetValue(plugin, out var values) ? values : null, secrets);
+
+    /// <summary>
+    /// Plugin secrets typed in the settings window (secret id → value; empty: remove it). The main window moves them to
+    /// the password store and clears this; never written to settings.json.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public Dictionary<string, string> PluginSecretChanges { get; set; } = [];
 
     /// <summary>Internal associations: what Enter does for a file type (before the system application).</summary>
     public List<FileAssociation> Associations { get; set; } = [];

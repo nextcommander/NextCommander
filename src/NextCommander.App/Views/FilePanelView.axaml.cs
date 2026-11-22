@@ -323,6 +323,7 @@ public partial class FilePanelView : UserControl
         var icons = _vm?.Settings.ShowMenuIcons != false;
         var inTrash = _vm?.CurrentPath?.Scheme == Platform.Trash.TrashFileSystemProvider.TrashScheme;
         var image = CursorIsMountableImage();
+        AddPluginActions(menu);
         foreach (var control in menu.Items.OfType<Control>())
         {
             if (IsTrashOnly(control.Tag))
@@ -336,9 +337,42 @@ public partial class FilePanelView : UserControl
         }
         foreach (var item in menu.Items.OfType<MenuItem>())
         {
+            if (item.Tag is NextCommander.Core.Plugins.PluginAction action)
+            {
+                item.Icon = icons ? Services.MenuIcons.Create("plugin." + action.Icon) : null;
+                continue;
+            }
             item.IsEnabled = selected || item.Tag is not string command || !MainWindowViewModel.SelectionCommands.Contains(command.Split(' ', 2)[0]);
             item.Icon = icons && item.Tag is string tagged ? Services.MenuIcons.Create(tagged) : null;
         }
+    }
+
+    private const string PluginActionsSeparator = "plugin-actions";
+
+    /// <summary>The plugin's actions for the entry under the cursor (start a container ...) at the top of the menu, made anew each time.</summary>
+    private void AddPluginActions(ContextMenu menu)
+    {
+        foreach (var old in menu.Items.OfType<Control>().Where(c => c.Tag is NextCommander.Core.Plugins.PluginAction or PluginActionsSeparator).ToList())
+        {
+            menu.Items.Remove(old);
+        }
+        var actions = _vm?.PluginActionsForCursor() ?? [];
+        if (actions.Count == 0)
+        {
+            return;
+        }
+        var index = 0;
+        foreach (var action in actions)
+        {
+            var item = new MenuItem { Header = action.Name, Tag = action };
+            item.Click += (_, _) =>
+            {
+                Activated?.Invoke(this, EventArgs.Empty);
+                _ = _vm?.RunPluginActionAsync(action);
+            };
+            menu.Items.Insert(index++, item);
+        }
+        menu.Items.Insert(index, new Separator { Tag = PluginActionsSeparator });
     }
 
     private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)

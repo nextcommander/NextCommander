@@ -2004,6 +2004,43 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         CursorMoved?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <summary>What the plugin of this folder can do with the entry under the cursor (start a container ...); empty when nothing.</summary>
+    public IReadOnlyList<NextCommander.Core.Plugins.PluginAction> PluginActionsForCursor()
+    {
+        if (CursorItem is not { IsParent: false, IsError: false, Entry: { } entry }
+            || _registry.Providers.FirstOrDefault(p => p.CanHandle(entry.Path)) is not NextCommander.Core.Plugins.IPluginEntryActions actions)
+        {
+            return [];
+        }
+        try
+        {
+            return actions.ActionsFor(entry);
+        }
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or NotSupportedException)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>Runs a plugin's action; its message (or error) is shown, and the folder is read again.</summary>
+    public async Task RunPluginActionAsync(NextCommander.Core.Plugins.PluginAction action)
+    {
+        string? message;
+        try
+        {
+            message = await action.RunAsync(CancellationToken.None);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)
+        {
+            message = ex.Message;
+        }
+        if (!string.IsNullOrWhiteSpace(message))
+        {
+            ErrorOccurred?.Invoke(this, message);
+        }
+        await RefreshAsync();
+    }
+
     public static bool CanMark(FileItemViewModel? item) => item is { IsParent: false, IsError: false, IsGroupHeader: false };
 
     public void ToggleMark(FileItemViewModel? item)

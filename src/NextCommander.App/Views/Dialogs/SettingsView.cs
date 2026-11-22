@@ -362,6 +362,12 @@ public sealed partial class SettingsView : UserControl
         var live = new AppSettings();
         item.Copy(_work, working);
         item.Copy(_settings, live);
+        // passwords typed here are not in the JSON (they go to the password store): compared on their own
+        if (working.ProxyPasswordChange != live.ProxyPasswordChange
+            || !working.PluginSecretChanges.OrderBy(p => p.Key, StringComparer.Ordinal).SequenceEqual(live.PluginSecretChanges.OrderBy(p => p.Key, StringComparer.Ordinal)))
+        {
+            return true;
+        }
         return JsonSerializer.Serialize(working, SettingsStore.JsonOptions) != JsonSerializer.Serialize(live, SettingsStore.JsonOptions);
     }
 

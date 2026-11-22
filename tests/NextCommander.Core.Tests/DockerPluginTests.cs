@@ -1,3 +1,4 @@
+using System.Formats.Tar;
 using System.Text;
 using NextCommander.Core.Vfs;
 using NextCommander.Plugin.Docker;
@@ -55,15 +56,26 @@ public sealed class DockerPluginTests
             "1/4096/1763800000/directory/nginx\n0/12/1763800000/regular file/hostname\n0/7/1763800000/symbolic link/my file\n");
         var provider = new DockerFileSystemProvider(docker);
 
-        var containers = await provider.ListAsync(DockerFileSystemProvider.Root, CancellationToken.None);
-        Assert.Equal(["db", "web"], containers.Select(e => e.Name));
-        Assert.All(containers, c => Assert.True(c.IsDirectory));
+        var all = await provider.ListAsync(DockerFileSystemProvider.Root, CancellationToken.None);
+        Assert.Equal(["(volumes)", "db", "web"], all.Select(e => e.Name));
+        Assert.All(all, c => Assert.True(c.IsDirectory));
+        var containers = all.Skip(1).ToList();
         Assert.Equal(new DateTimeOffset(2026, 11, 22, 10, 15, 30, TimeSpan.FromHours(3)).LocalDateTime, containers[1].LastWriteTime);
         Assert.Equal(VfsPath.Create("docker", "web", "/"), containers[1].Path);
 
         // ".." from a container goes back to the list, onto the container
         Assert.Equal((DockerFileSystemProvider.Root, "web"), provider.OriginOf(containers[1].Path));
         Assert.Null(provider.OriginOf(containers[1].Path.Combine("etc")));
+        Assert.Equal((DockerFileSystemProvider.Root, "(volumes)"), provider.OriginOf(DockerFileSystemProvider.VolumesRoot));
+
+        // the menu: a running container stops, restarts and pauses; a stopped one starts
+        Assert.Equal(["Stop the container", "Restart the container", "Pause the container"], provider.ActionsFor(containers[1]).Select(a => a.Name));
+        var start = Assert.Single(provider.ActionsFor(containers[0]));
+        Assert.Equal("Start the container", start.Name);
+        Assert.Null(await start.RunAsync(CancellationToken.None));
+        Assert.Equal(["start", "db"], docker.Calls[^1].Arguments);
+        Assert.Empty(provider.ActionsFor(all[0]));
+        Assert.Empty(provider.ActionsFor(new VfsEntry { Name = "etc", Path = containers[1].Path.Combine("etc"), IsDirectory = true }));
 
         var etc = await provider.ListAsync(VfsPath.Create("docker", "web", "/etc"), CancellationToken.None);
         Assert.Equal(["nginx", "hostname", "my file"], etc.Select(e => e.Name));
@@ -147,6 +159,87 @@ public sealed class DockerPluginTests
     }
 
     [Fact]
+    public async Task Volumes_open_through_a_helper_container()
+    {
+        var docker = new FakeDocker();
+        docker.Reply(a => a is ["volume", "ls", ..], """
+            {"Driver":"local","Name":"pgdata"}
+            {"Driver":"local","Name":"cache"}
+            """);
+        docker.Reply(a => a is ["exec", "nc-volume-pgdata", "sh", "-c", _] && a[4].StartsWith("cd -- '/v/base'", StringComparison.Ordinal),
+            "0/8192/1763800000/regular file/PG_VERSION\n");
+        var provider = new DockerFileSystemProvider(docker);
+
+        Assert.Equal(["cache", "pgdata"], (await provider.ListAsync(DockerFileSystemProvider.VolumesRoot, CancellationToken.None)).Select(e => e.Name));
+        var files = await provider.ListAsync(VfsPath.Create("docker", "~volumes", "/pgdata/base"), CancellationToken.None);
+        Assert.Equal(["PG_VERSION"], files.Select(e => e.Name));
+        Assert.Equal("/pgdata/base/PG_VERSION", files[0].Path.Path);
+        // the helper: from the settings' image, mounting the volume, removing itself
+        Assert.Contains(docker.Calls, c => c.Arguments is ["run", "-d", "--rm", "--name", "nc-volume-pgdata", "--label", "nextcommander=volume-helper", "-v", "pgdata:/v", "busybox", "sleep", "3600"]);
+
+        // started once; a volume's files change, the volume itself is left to docker
+        await provider.ListAsync(VfsPath.Create("docker", "~volumes", "/pgdata/base"), CancellationToken.None);
+        Assert.Single(docker.Calls, c => c.Arguments is ["run", ..]);
+        await provider.CreateDirectoryAsync(VfsPath.Create("docker", "~volumes", "/pgdata/new"), CancellationToken.None);
+        Assert.Equal(["exec", "nc-volume-pgdata", "sh", "-c", "mkdir -p -- '/v/new'"], docker.Calls[^1].Arguments);
+        await Assert.ThrowsAsync<NotSupportedException>(() => provider.DeleteAsync(VfsPath.Create("docker", "~volumes", "/pgdata"), true, CancellationToken.None));
+
+        // the helpers this run started are removed at the end
+        provider.Dispose();
+        Assert.Equal(["rm", "-f", "nc-volume-pgdata"], docker.Calls[^1].Arguments);
+    }
+
+    [Fact]
+    public void A_stopped_container_is_listed_from_the_tar_of_docker_cp()
+    {
+        static MemoryStream Tar(params (string Name, TarEntryType Type, string? Data)[] entries)
+        {
+            var stream = new MemoryStream();
+            using (var writer = new TarWriter(stream, TarEntryFormat.Pax, leaveOpen: true))
+            {
+                foreach (var (name, type, data) in entries)
+                {
+                    var entry = new PaxTarEntry(type, name) { ModificationTime = new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.Zero) };
+                    if (type == TarEntryType.SymbolicLink)
+                    {
+                        entry.LinkName = "/bin/busybox";
+                    }
+                    if (data is not null)
+                    {
+                        entry.DataStream = new MemoryStream(Encoding.UTF8.GetBytes(data));
+                    }
+                    writer.WriteEntry(entry);
+                }
+            }
+            stream.Position = 0;
+            return stream;
+        }
+
+        // a folder: "apk/", "apk/arch", "apk/keys/", "apk/keys/x.pub" → arch and keys
+        var folder = VfsPath.Create("docker", "db", "/etc/apk");
+        var listed = DockerFileSystemProvider.ReadTarListing(Tar(("apk/", TarEntryType.Directory, null), ("apk/arch", TarEntryType.RegularFile, "x86_64"),
+            ("apk/keys/", TarEntryType.Directory, null), ("apk/keys/x.pub", TarEntryType.RegularFile, "key")), folder, CancellationToken.None)!;
+        Assert.Equal(["arch", "keys"], listed.Select(e => e.Name));
+        Assert.Equal(6, listed[0].Size);
+        Assert.True(listed[1].IsDirectory);
+        Assert.Equal("/etc/apk/arch", listed[0].Path.Path);
+
+        // the root: "/", "/bin/", "/bin/sh" (a link), "/.dockerenv" → bin and .dockerenv
+        var root = DockerFileSystemProvider.ReadTarListing(Tar(("/", TarEntryType.Directory, null), ("/bin/", TarEntryType.Directory, null),
+            ("/bin/sh", TarEntryType.SymbolicLink, null), ("/.dockerenv", TarEntryType.RegularFile, string.Empty)), VfsPath.Create("docker", "db", "/"), CancellationToken.None)!;
+        Assert.Equal(["bin", ".dockerenv"], root.Select(e => e.Name));
+        Assert.Equal(new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.Zero).LocalDateTime, root[0].LastWriteTime);
+
+        // nothing came (docker cp failed): not found
+        Assert.Null(DockerFileSystemProvider.ReadTarListing(new MemoryStream(), folder, CancellationToken.None));
+
+        // links are followed by the plugin (docker cp -L resolves relative ones against the wrong folder)
+        Assert.Equal("/usr/lib/os-release", DockerFileSystemProvider.ResolveLink("/etc/os-release", "../usr/lib/os-release"));
+        Assert.Equal("/bin/busybox", DockerFileSystemProvider.ResolveLink("/bin/sh", "/bin/busybox"));
+        Assert.Equal("/bin/busybox", DockerFileSystemProvider.ResolveLink("/bin/sh", "./busybox"));
+    }
+
+    [Fact]
     public void Docker_errors_say_what_to_do()
     {
         var path = VfsPath.Create("docker", "web", "/app");
@@ -207,14 +300,53 @@ public sealed class DockerPluginTests
             await provider.DeleteAsync(folder, recursive: true, CancellationToken.None);
             Assert.Null(await provider.GetEntryAsync(folder, CancellationToken.None));
 
-            // a stopped container says how to start it
+            // a stopped container: read-only through docker cp; writing says how to start it
             await docker.RunAsync(["stop", "-t", "0", name], null, CancellationToken.None);
-            var error = await Assert.ThrowsAsync<IOException>(() => provider.ListAsync(root, CancellationToken.None));
+            Assert.Contains("etc", (await provider.ListAsync(root, CancellationToken.None)).Select(e => e.Name));
+            var os = root.Combine("etc").Combine("os-release");
+            Assert.Contains("os-release", (await provider.ListAsync(root.Combine("etc"), CancellationToken.None)).Select(e => e.Name));
+            await using (var read = await provider.OpenReadAsync(os, CancellationToken.None))
+            {
+                Assert.Contains("Alpine", await new StreamReader(read).ReadToEndAsync(), StringComparison.Ordinal);
+            }
+            var error = await Assert.ThrowsAnyAsync<IOException>(async () =>
+            {
+                await using var write = await provider.OpenWriteAsync(root.Combine("tmp").Combine("x.txt"), overwrite: false, CancellationToken.None);
+                await write.WriteAsync("x"u8.ToArray());
+            });
             Assert.Contains("docker start " + name, error.Message, StringComparison.Ordinal);
+
+            // the menu starts it again
+            var listed = (await provider.ListAsync(DockerFileSystemProvider.Root, CancellationToken.None)).Single(e => e.Name == name);
+            await Assert.Single(provider.ActionsFor(listed), a => a.Name == "Start the container").RunAsync(CancellationToken.None);
+            Assert.Contains("etc", (await provider.ListAsync(root, CancellationToken.None)).Select(e => e.Name));
         }
         finally
         {
             await docker.RunAsync(["rm", "-f", name], null, CancellationToken.None);
+        }
+
+        // a volume: through a helper container, removed at the end
+        var volume = "nc-test-volume-" + Guid.NewGuid().ToString("N")[..8];
+        Assert.Equal(0, (await docker.RunAsync(["volume", "create", volume], null, CancellationToken.None)).ExitCode);
+        var volumes = new DockerFileSystemProvider(docker);
+        try
+        {
+            Assert.Contains(volume, (await volumes.ListAsync(DockerFileSystemProvider.VolumesRoot, CancellationToken.None)).Select(e => e.Name));
+            var file = VfsPath.Create("docker", "~volumes", "/" + volume + "/hello.txt");
+            await using (var write = await volumes.OpenWriteAsync(file, overwrite: false, CancellationToken.None))
+            {
+                await write.WriteAsync("in a volume"u8.ToArray());
+            }
+            await using (var read = await volumes.OpenReadAsync(file, CancellationToken.None))
+            {
+                Assert.Equal("in a volume", await new StreamReader(read).ReadToEndAsync());
+            }
+        }
+        finally
+        {
+            volumes.Dispose();
+            await docker.RunAsync(["volume", "rm", "-f", volume], null, CancellationToken.None);
         }
     }
 }

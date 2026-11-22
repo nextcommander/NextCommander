@@ -25,6 +25,12 @@ public enum PluginSettingKind
 
     /// <summary>A folder's path.</summary>
     Folder,
+
+    /// <summary>
+    /// A password, token or key: typed hidden, kept in the program's password store (protected by the master password
+    /// when there is one), never in the settings file; the plugin asks for it with <see cref="IPluginSettingValues.GetSecretAsync"/>.
+    /// </summary>
+    Secret,
 }
 
 /// <summary>
@@ -59,6 +65,12 @@ public interface IPluginSettingValues
     bool GetBool(string key) => string.Equals(Get(key), "true", StringComparison.OrdinalIgnoreCase);
 
     double GetNumber(string key) => double.TryParse(Get(key), NumberStyles.Float, CultureInfo.InvariantCulture, out var value) ? value : 0;
+
+    /// <summary>
+    /// A <see cref="PluginSettingKind.Secret"/> from the password store, or null when none is saved. Ask when it is
+    /// needed (connecting ...), not in <see cref="IConfigurablePlugin.Apply"/>: a locked store asks for the master password.
+    /// </summary>
+    Task<string?> GetSecretAsync(string key) => Task.FromResult<string?>(null);
 }
 
 /// <summary>
@@ -82,9 +94,16 @@ public interface IConfigurablePlugin
     void Apply(IPluginSettingValues values);
 }
 
-/// <summary>A plugin's values from the settings (key → text), with the defaults of its settings.</summary>
-public sealed class PluginSettingValues(IReadOnlyList<PluginSetting> settings, IReadOnlyDictionary<string, string>? values) : IPluginSettingValues
+/// <summary>A plugin's values from the settings (key → text), with the defaults of its settings, and its secrets from the password store.</summary>
+public sealed class PluginSettingValues(IReadOnlyList<PluginSetting> settings, IReadOnlyDictionary<string, string>? values,
+    Func<string, Task<string?>>? secrets = null) : IPluginSettingValues
 {
+    /// <summary>The id of a plugin's secret in the password store.</summary>
+    public static string SecretId(string plugin, string key) => $"plugin:{plugin}:{key}";
+
+    public Task<string?> GetSecretAsync(string key) =>
+        secrets is not null && settings.Any(s => s.Key == key && s.Kind == PluginSettingKind.Secret) ? secrets(key) : Task.FromResult<string?>(null);
+
     public string? Get(string key)
     {
         if (values is not null && values.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value))

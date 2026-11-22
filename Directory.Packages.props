@@ -16,6 +16,7 @@
     <PackageVersion Include="SharpCompress" Version="0.50.9" />
     <PackageVersion Include="Blake3" Version="3.0.2" />
     <PackageVersion Include="Markdig" Version="1.6.0" />
+    <PackageVersion Include="YamlDotNet" Version="16.3.0" />
     <!-- 5.1.1: the last Svg.Skia on SkiaSharp 3.119 (Avalonia 12.1's). 5.2+ needs SkiaSharp 4.148, whose Linux native
          library does not come with it (Avalonia brings the 3.119 one): the app then crashes at start on Linux. -->
     <PackageVersion Include="Svg.Skia" Version="5.1.1" />

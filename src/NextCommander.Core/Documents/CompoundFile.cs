@@ -5,7 +5,8 @@ namespace NextCommander.Core.Documents;
 
 /// <summary>
 /// A reader of Compound File Binary files (MS-CFB, "OLE2"): the container of the old Office formats (doc, xls, ppt).
-/// The whole file is in memory; streams are read by name (the first one of that name anywhere in the tree).
+/// The whole file is in memory; streams are read by name (the first one of that name anywhere in the tree) or by their
+/// path through the storages ("__attach_version1.0_#00000000/__substg1.0_3707001F" of an Outlook message).
 /// </summary>
 public sealed class CompoundFile
 {
@@ -21,6 +22,10 @@ public sealed class CompoundFile
     private readonly List<uint> _fat = [];
     private readonly List<uint> _miniFat = [];
     private readonly List<(string Name, int Type, uint Start, long Size)> _entries = [];
+
+    /// <summary>Every directory entry by its number (empty ones too): name, type, the red-black tree links, start, size.</summary>
+    private readonly List<(string Name, int Type, uint Left, uint Right, uint Child, uint Start, long Size)> _directory = [];
+    private Dictionary<string, int>? _paths;
     private byte[] _miniStream = [];
 
     private CompoundFile(byte[] data)
@@ -58,6 +63,69 @@ public sealed class CompoundFile
             return null;
         }
         return entry.Size < _miniCutoff ? ReadMini(entry.Start, entry.Size) : ReadChain(entry.Start, entry.Size);
+    }
+
+    /// <summary>The paths of every stream and storage below the root ("storage/stream").</summary>
+    public IEnumerable<string> Paths => PathTable().Keys;
+
+    /// <summary>The bytes of a stream by its path through the storages, or null when there is none.</summary>
+    public byte[]? ReadPath(string path)
+    {
+        if (!PathTable().TryGetValue(path, out var index) || _directory[index].Type != 2)
+        {
+            return null;
+        }
+        var entry = _directory[index];
+        return entry.Size < _miniCutoff ? ReadMini(entry.Start, entry.Size) : ReadChain(entry.Start, entry.Size);
+    }
+
+    /// <summary>The names of the streams and storages directly in a storage ("": the root).</summary>
+    public IEnumerable<string> Children(string storage) =>
+        PathTable().Keys.Where(p => storage.Length == 0
+                ? !p.Contains('/', StringComparison.Ordinal)
+                : p.StartsWith(storage + "/", StringComparison.OrdinalIgnoreCase) && p.IndexOf('/', storage.Length + 1) < 0)
+            .Select(p => p[(p.LastIndexOf('/') + 1)..]);
+
+    /// <summary>Path → directory number, made by walking each storage's red-black tree of children.</summary>
+    private Dictionary<string, int> PathTable()
+    {
+        if (_paths is { } known)
+        {
+            return known;
+        }
+        var paths = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var visited = new HashSet<uint>();
+        void Walk(uint node, string parent)
+        {
+            // every node of a storage's tree is one of its children; links outside the directory or seen before end the walk
+            var stack = new Stack<uint>();
+            stack.Push(node);
+            while (stack.Count > 0)
+            {
+                var id = stack.Pop();
+                if (id >= _directory.Count || !visited.Add(id))
+                {
+                    continue;
+                }
+                var entry = _directory[(int)id];
+                if (entry.Type is 1 or 2)
+                {
+                    var path = parent.Length == 0 ? entry.Name : parent + "/" + entry.Name;
+                    paths.TryAdd(path, (int)id);
+                    if (entry.Type == 1)
+                    {
+                        Walk(entry.Child, path);
+                    }
+                }
+                stack.Push(entry.Left);
+                stack.Push(entry.Right);
+            }
+        }
+        if (_directory.Count > 0)
+        {
+            Walk(_directory[0].Child, string.Empty);
+        }
+        return _paths = paths;
     }
 
     private long SectorOffset(uint sector) => ((long)sector + 1) * _sectorSize;
@@ -118,14 +186,16 @@ public sealed class CompoundFile
         {
             var entry = directory.AsSpan(offset, 128);
             var type = entry[66];
-            if (type is not (1 or 2 or 5))
-            {
-                continue;
-            }
             var nameLength = Math.Clamp(BinaryPrimitives.ReadUInt16LittleEndian(entry[64..]), (ushort)2, (ushort)64);
             var name = Encoding.Unicode.GetString(entry[..(nameLength - 2)]);
             var start = BinaryPrimitives.ReadUInt32LittleEndian(entry[116..]);
             var size = _sectorSize == 512 ? BinaryPrimitives.ReadUInt32LittleEndian(entry[120..]) : (long)BinaryPrimitives.ReadUInt64LittleEndian(entry[120..]);
+            _directory.Add((name, type, BinaryPrimitives.ReadUInt32LittleEndian(entry[68..]), BinaryPrimitives.ReadUInt32LittleEndian(entry[72..]),
+                BinaryPrimitives.ReadUInt32LittleEndian(entry[76..]), start, size));
+            if (type is not (1 or 2 or 5))
+            {
+                continue;
+            }
             _entries.Add((name, type, start, size));
             if (type == 5 && start < EndOfChain - 2)
             {

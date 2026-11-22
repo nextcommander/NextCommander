@@ -3761,5 +3761,7 @@
   "JobErrorDialog.TechnicalDetails": "Technical details",
   "JobErrorDialog.RetryingIn": "Retrying in {0} s…",
   "SettingsWindow.Browse": "Browse...",
-  "SettingsWindow.PluginProblem": "Settings of {0}: {1}"
+  "SettingsWindow.PluginProblem": "Settings of {0}: {1}",
+  "SettingsWindow.NotSet": "Not set",
+  "MainWindow.PasswordNotSavedStoreLocked": "The password could not be saved: the password store is locked."
 }
