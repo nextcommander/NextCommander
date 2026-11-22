@@ -2588,6 +2588,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             Services.LinkFirewall.Command(port) is { } command && await _platform.RunElevatedAsync(command.Program, command.Arguments);
         Views.Dialogs.SettingsView.ColumnFields = () => ColumnValues.Columns.AllFields.ToList();
         Views.Dialogs.SettingsView.PluginConfigurations = () => PluginConfigurations;
+        Views.Dialogs.SettingsView.SecretSaved = id => _remote?.Secrets?.Contains(id) == true;
         await _dialogs.ShowSettingsAsync(_settings, ApplySettings, extras, search);
         ApplySettings();
         SaveSettings();
@@ -2879,8 +2880,37 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>Gives the loaded plugins their settings (at the start and after the configuration).</summary>
-    public void ApplyPluginSettings() =>
-        Views.Dialogs.SettingsView.ApplyPluginSettings(_settings, Plugins, (name, ex) => Serilog.Log.Warning(ex, "Plugin {Name}: its settings could not be applied", name));
+    public void ApplyPluginSettings()
+    {
+        // secrets typed in the configuration: into the password store (never into settings.json)
+        if (_settings.PluginSecretChanges.Count > 0)
+        {
+            var changes = _settings.PluginSecretChanges.ToList();
+            _settings.PluginSecretChanges.Clear();
+            _ = StorePluginSecretsAsync(changes);
+        }
+        Views.Dialogs.SettingsView.ApplyPluginSettings(_settings, Plugins, (name, ex) => Serilog.Log.Warning(ex, "Plugin {Name}: its settings could not be applied", name),
+            id => _remote?.Secrets is { } store && store.Contains(id) ? store.GetAsync(id) : Task.FromResult<string?>(null));
+    }
+
+    private async Task StorePluginSecretsAsync(IReadOnlyList<KeyValuePair<string, string>> changes)
+    {
+        if (_remote?.Secrets is not { } store)
+        {
+            return;
+        }
+        foreach (var (id, value) in changes)
+        {
+            if (value.Length == 0)
+            {
+                store.Remove(id);
+            }
+            else if (!await store.SetAsync(id, value))
+            {
+                await _dialogs.ShowMessageAsync("Plugins", "The password could not be saved: the password store is locked.");
+            }
+        }
+    }
 
     // ---------------------------------------------------------------- remote (phase 6)
 

@@ -3761,5 +3761,7 @@
   "JobErrorDialog.TechnicalDetails": "Detalles técnicos",
   "JobErrorDialog.RetryingIn": "Reintentando en {0} s…",
   "SettingsWindow.Browse": "Examinar...",
-  "SettingsWindow.PluginProblem": "Ajustes de {0}: {1}"
+  "SettingsWindow.PluginProblem": "Ajustes de {0}: {1}",
+  "SettingsWindow.NotSet": "Sin definir",
+  "MainWindow.PasswordNotSavedStoreLocked": "No se pudo guardar la contraseña: el almacén de contraseñas está bloqueado."
 }

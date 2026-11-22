@@ -105,6 +105,7 @@ public sealed partial class SettingsView
             PluginSettingKind.Choice when setting.Choices.Count > 0 => Choice(PluginsPage, title, label, description,
                 [.. setting.Choices.Select(c => (c.Text, c.Value))], s => setting.Choices.Any(c => c.Value == Current(s)) ? Current(s) : setting.Choices[0].Value, Set),
             PluginSettingKind.Program or PluginSettingKind.File or PluginSettingKind.Folder => PathItem(title, setting, Get, Set),
+            PluginSettingKind.Secret => SecretItem(title, PluginSettingValues.SecretId(plugin, setting.Key), setting),
             _ => Text(PluginsPage, title, label, description, Get, Set, setting.Placeholder ?? setting.Default),
         };
     }
@@ -143,6 +144,61 @@ public sealed partial class SettingsView
             return row;
         }, (from, to) => set(to, get(from)));
 
+    /// <summary>Whether the password store holds a secret (the field then says it is saved); set by the main window.</summary>
+    public static Func<string, bool>? SecretSaved { get; set; }
+
+    /// <summary>
+    /// A secret: typed hidden; what is typed replaces the saved one, Forget removes it. Only the change is carried
+    /// (<see cref="AppSettings.PluginSecretChanges"/>), the main window puts it into the password store.
+    /// </summary>
+    private static SettingItem SecretItem(string title, string id, PluginSetting setting) =>
+        new(PluginsPage, title, setting.Label, setting.Description, (s, changed) =>
+        {
+            var saved = SecretSaved?.Invoke(id) == true;
+            var box = new TextBox
+            {
+                PasswordChar = '•',
+                MinWidth = 300,
+                MaxWidth = 420,
+                PlaceholderText = saved ? "saved (type to change)" : setting.Placeholder ?? "Not set",
+                Text = s.PluginSecretChanges.TryGetValue(id, out var typed) ? typed : null,
+            };
+            var forget = new Button { Content = "Forget", VerticalAlignment = VerticalAlignment.Center, IsEnabled = saved };
+            box.TextChanged += (_, _) =>
+            {
+                if (string.IsNullOrEmpty(box.Text))
+                {
+                    s.PluginSecretChanges.Remove(id);
+                }
+                else
+                {
+                    s.PluginSecretChanges[id] = box.Text;
+                }
+                changed();
+            };
+            forget.Click += (_, _) =>
+            {
+                box.Text = null;
+                s.PluginSecretChanges[id] = string.Empty; // removed from the store with Apply / OK
+                box.PlaceholderText = setting.Placeholder ?? "Not set";
+                forget.IsEnabled = false;
+                changed();
+            };
+            var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+            row.Children.AddRange([box, forget]);
+            return row;
+        }, (from, to) =>
+        {
+            if (from.PluginSecretChanges.TryGetValue(id, out var value))
+            {
+                to.PluginSecretChanges[id] = value;
+            }
+            else
+            {
+                to.PluginSecretChanges.Remove(id);
+            }
+        });
+
     /// <summary>What a plugin says against the values being edited (the first one), or null.</summary>
     private string? PluginProblem()
     {
@@ -175,15 +231,19 @@ public sealed partial class SettingsView
     }
 
     /// <summary>Gives every loaded plugin its values (at the start and after the configuration); a plugin's failure only goes to the log.</summary>
-    public static void ApplyPluginSettings(AppSettings settings, IEnumerable<LoadedPlugin> plugins, Action<string, Exception>? failed = null)
+    /// <param name="readSecret">Reads a secret from the password store by its id (null: plugins get no secrets).</param>
+    public static void ApplyPluginSettings(AppSettings settings, IEnumerable<LoadedPlugin> plugins, Action<string, Exception>? failed = null,
+        Func<string, Task<string?>>? readSecret = null)
     {
         foreach (var plugin in plugins)
         {
+            var name = plugin.Name;
+            Func<string, Task<string?>>? secrets = readSecret is null ? null : key => readSecret(PluginSettingValues.SecretId(name, key));
             foreach (var config in plugin.Configurables)
             {
                 try
                 {
-                    config.Apply(settings.PluginValues(plugin.Name, config.Settings));
+                    config.Apply(settings.PluginValues(name, config.Settings, secrets));
                 }
                 catch (Exception ex) when (ex is InvalidOperationException or NotSupportedException or IOException or ArgumentException or UnauthorizedAccessException)
                 {

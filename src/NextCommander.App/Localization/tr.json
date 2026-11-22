@@ -3761,5 +3761,7 @@
   "JobErrorDialog.TechnicalDetails": "Teknik ayrıntılar",
   "JobErrorDialog.RetryingIn": "{0} sn içinde yeniden denenecek…",
   "SettingsWindow.Browse": "Gözat...",
-  "SettingsWindow.PluginProblem": "{0} ayarları: {1}"
+  "SettingsWindow.PluginProblem": "{0} ayarları: {1}",
+  "SettingsWindow.NotSet": "Ayarlanmadı",
+  "MainWindow.PasswordNotSavedStoreLocked": "Parola kaydedilemedi: parola deposu kilitli."
 }

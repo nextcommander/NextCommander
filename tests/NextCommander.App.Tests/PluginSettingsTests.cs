@@ -18,6 +18,7 @@ public sealed class PluginSettingsTests : IDisposable
     {
         SettingsView.PluginConfigurations = null;
         SettingsView.StartAt = null;
+        SettingsView.SecretSaved = null;
         _fx.Dispose();
     }
 
@@ -31,6 +32,7 @@ public sealed class PluginSettingsTests : IDisposable
             new("rows", PluginSettingKind.Number, "Sample rows") { Default = "10", Min = 1, Max = 50 },
             new("fast", PluginSettingKind.Toggle, "Sample fast mode") { Default = "false" },
             new("mode", PluginSettingKind.Choice, "Sample mode") { Default = "a", Choices = [("a", "Alpha"), ("b", "Beta")] },
+            new("token", PluginSettingKind.Secret, "Sample token"),
         ];
 
         public IPluginSettingValues? Applied { get; private set; }
@@ -91,6 +93,37 @@ public sealed class PluginSettingsTests : IDisposable
         window.Apply();
         Assert.False(settings.PluginSettings.ContainsKey(plugin.Name));
         Assert.Null(sample.Applied.Get("program"));
+
+        // a secret: typed hidden, carried as a change for the password store, never in the settings file
+        var tokenBox = window.GetLogicalDescendants().OfType<TextBox>().Single(t => t.PasswordChar == '•');
+        Assert.Equal("Not set", tokenBox.PlaceholderText);
+        tokenBox.Text = "s3cret";
+        await SettleAsync();
+        Assert.True(window.IsDirty);
+        window.Apply();
+        var tokenId = PluginSettingValues.SecretId(plugin.Name, "token");
+        Assert.Equal("s3cret", settings.PluginSecretChanges[tokenId]);
+        Assert.DoesNotContain("s3cret", System.Text.Json.JsonSerializer.Serialize(settings, SettingsStore.JsonOptions), StringComparison.Ordinal);
+        Assert.False(settings.PluginSettings.ContainsKey(plugin.Name));
+        window.Close();
+
+        // a saved secret: the field says so; Forget removes it with Apply
+        settings.PluginSecretChanges.Clear();
+        SettingsView.PluginConfigurations = () => [(plugin.Name, sample)];
+        SettingsView.SecretSaved = id => id == tokenId;
+        SettingsView.StartAt = (SettingsView.PluginsPage, sample.SettingsTitle);
+        window = _fx.Track(new SettingsWindow(settings, () => { }, []));
+        window.Show();
+        await SettleAsync(4);
+        tokenBox = window.GetLogicalDescendants().OfType<TextBox>().Single(t => t.PasswordChar == '•');
+        Assert.Equal("saved (type to change)", tokenBox.PlaceholderText);
+        var forget = window.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Forget"));
+        forget.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        await SettleAsync();
+        Assert.True(window.IsDirty);
+        window.Apply();
+        Assert.Equal(string.Empty, settings.PluginSecretChanges[tokenId]);
+        SettingsView.SecretSaved = null;
 
         // the plugins window: "Configure..." on a plugin with settings (not on one without), which opens them
         var roots = _fx.L("plugins");
