@@ -236,4 +236,59 @@ public sealed class DiscImagePackMountTests : IAsyncLifetime
             DiskImages.Run = old;
         }
     }
+
+    [Fact]
+    public async Task Windows_mounts_a_virtual_disk_through_an_elevated_powershell()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            Assert.False(DiskImages.CanMount("disk.vhdx"));
+            return;
+        }
+        Assert.True(DiskImages.CanMount("disk.VHDX"));
+        Assert.True(DiskImages.CanMount("disk.vhd"));
+        Assert.False(DiskImages.CanMount("disk.vmdk"));
+        var (oldRun, oldElevation) = (DiskImages.Run, DiskImages.NeedsElevation);
+        var inner = new List<string>();
+        var answer = "G";
+        try
+        {
+            DiskImages.NeedsElevation = _ => true;
+            DiskImages.Run = (program, arguments, _) =>
+            {
+                var script = arguments[^1];
+                if (!script.Contains("Start-Process", StringComparison.Ordinal))
+                {
+                    // the plain check before mounting: not mounted (as seen without administrator rights)
+                    return Task.FromResult((0, string.Empty, string.Empty));
+                }
+                // the elevated PowerShell: its script, whose output goes to the file it names
+                Assert.Contains("-Verb RunAs", script, StringComparison.Ordinal);
+                var encoded = System.Text.RegularExpressions.Regex.Match(script, "'-EncodedCommand','([^']+)'").Groups[1].Value;
+                var decoded = System.Text.Encoding.Unicode.GetString(Convert.FromBase64String(encoded));
+                inner.Add(decoded);
+                var outFile = System.Text.RegularExpressions.Regex.Match(decoded, "Out-File -LiteralPath '([^']+out\\.txt)'").Groups[1].Value;
+                File.WriteAllText(outFile, answer + "\r\n");
+                return Task.FromResult((0, string.Empty, string.Empty));
+            };
+            const string image = @"C:\VMs\it's a disk.vhdx";
+            Assert.Equal(@"G:\", await DiskImages.MountAsync(image, CancellationToken.None));
+            Assert.Contains("Mount-DiskImage -ImagePath 'C:\\VMs\\it''s a disk.vhdx' -Access ReadOnly", inner[^1], StringComparison.Ordinal);
+            Assert.Contains("Get-Partition | Get-Volume", inner[^1], StringComparison.Ordinal);
+
+            // a disk without a volume Windows reads is let go again, and the message says how to see its files
+            answer = "nc-no-volume";
+            var error = await Assert.ThrowsAsync<IOException>(() => DiskImages.MountAsync(image, CancellationToken.None));
+            Assert.Equal("it's a disk.vhdx has no volume Windows can read: open it with Enter to see its files.", error.Message);
+            Assert.Contains("Dismount-DiskImage", inner[^1], StringComparison.Ordinal);
+
+            answer = string.Empty;
+            await DiskImages.UnmountAsync(image, CancellationToken.None);
+            Assert.StartsWith("$ErrorActionPreference = 'Stop'; try { Dismount-DiskImage -ImagePath 'C:\\VMs\\it''s a disk.vhdx'", inner[^1], StringComparison.Ordinal);
+        }
+        finally
+        {
+            (DiskImages.Run, DiskImages.NeedsElevation) = (oldRun, oldElevation);
+        }
+    }
 }

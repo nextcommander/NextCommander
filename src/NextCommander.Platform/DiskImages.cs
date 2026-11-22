@@ -14,9 +14,24 @@ public static class DiskImages
     /// <summary>Runs a program and gives its exit code and output (tests replace it).</summary>
     public static Func<string, IReadOnlyList<string>, CancellationToken, Task<(int Exit, string Output, string Error)>> Run { get; set; } = RunProcessAsync;
 
-    /// <summary>The images the system mounts (.iso; the system's own tools do it).</summary>
-    public static bool CanMount(string fileName) => fileName.EndsWith(".iso", StringComparison.OrdinalIgnoreCase)
-        && (OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS());
+    /// <summary>The images the system mounts (.iso; on Windows also the virtual disks .vhd / .vhdx; the system's own tools do it).</summary>
+    public static bool CanMount(string fileName) =>
+        (fileName.EndsWith(".iso", StringComparison.OrdinalIgnoreCase) && (OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()))
+        || (IsVirtualDisk(fileName) && OperatingSystem.IsWindows());
+
+    /// <summary>A Hyper-V virtual disk (.vhd, .vhdx), which Windows mounts like an ISO.</summary>
+    public static bool IsVirtualDisk(string fileName) =>
+        fileName.EndsWith(".vhd", StringComparison.OrdinalIgnoreCase) || fileName.EndsWith(".vhdx", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Windows mounts a virtual disk only for an administrator: without administrator rights the work is done by an
+    /// elevated PowerShell (the system's consent dialog). Tests set it.
+    /// </summary>
+    public static Func<string, bool> NeedsElevation { get; set; } = image =>
+        OperatingSystem.IsWindows() && IsVirtualDisk(image) && !Environment.IsPrivilegedProcess;
+
+    /// <summary>Printed by the mount script when the disk has no volume Windows can read (it is let go again).</summary>
+    private const string NoVolume = "nc-no-volume";
 
     /// <summary>Mounts the image (read-only) and gives the folder of its files; when it is mounted already, that folder.</summary>
     public static async Task<string> MountAsync(string image, CancellationToken cancellationToken)
@@ -24,6 +39,21 @@ public static class DiskImages
         if (await MountedAtAsync(image, cancellationToken).ConfigureAwait(false) is { } already)
         {
             return already;
+        }
+        if (OperatingSystem.IsWindows() && IsVirtualDisk(image))
+        {
+            // attached read-only; a disk without a volume Windows reads (Linux partitions ...) is let go again
+            var script = $"$i = Get-DiskImage -ImagePath {Quote(image)}; if (-not $i.Attached) {{ $i = Mount-DiskImage -ImagePath {Quote(image)} -Access ReadOnly -PassThru }}; " +
+                $"$d = ($i | Get-Disk | Get-Partition | Get-Volume | Where-Object DriveLetter).DriveLetter; " +
+                $"if ($d) {{ $d }} else {{ Dismount-DiskImage -ImagePath {Quote(image)} | Out-Null; '{NoVolume}' }}";
+            var (exit, output, error) = await WindowsDiskScriptAsync(image, script, cancellationToken).ConfigureAwait(false);
+            if (DriveOf(output) is { } drive)
+            {
+                return drive;
+            }
+            throw output.Contains(NoVolume, StringComparison.Ordinal)
+                ? new IOException($"{Path.GetFileName(image)} has no volume Windows can read: open it with Enter to see its files.")
+                : Failed(image, exit, error.Length > 0 ? error : output);
         }
         if (OperatingSystem.IsWindows())
         {
@@ -76,7 +106,10 @@ public static class DiskImages
     {
         if (OperatingSystem.IsWindows())
         {
-            var (exit, output, error) = await PowerShellAsync($"Dismount-DiskImage -ImagePath {Quote(image)} | Out-Null", cancellationToken).ConfigureAwait(false);
+            var script = $"Dismount-DiskImage -ImagePath {Quote(image)} | Out-Null";
+            var (exit, output, error) = IsVirtualDisk(image)
+                ? await WindowsDiskScriptAsync(image, script, cancellationToken).ConfigureAwait(false)
+                : await PowerShellAsync(script, cancellationToken).ConfigureAwait(false);
             if (exit != 0)
             {
                 throw Failed(image, exit, error.Length > 0 ? error : output, unmount: true);
@@ -231,8 +264,10 @@ public static class DiskImages
     {
         if (OperatingSystem.IsWindows())
         {
+            // (a virtual disk's volumes are on the partitions of its disk; without administrator rights this may find nothing)
+            var volumes = IsVirtualDisk(image) ? "($i | Get-Disk | Get-Partition | Get-Volume | Where-Object DriveLetter)" : "($i | Get-Volume)";
             var (_, output, _) = await PowerShellAsync(
-                $"$i = Get-DiskImage -ImagePath {Quote(image)} -ErrorAction SilentlyContinue; if ($i -and $i.Attached) {{ ($i | Get-Volume).DriveLetter }}", cancellationToken).ConfigureAwait(false);
+                $"$i = Get-DiskImage -ImagePath {Quote(image)} -ErrorAction SilentlyContinue; if ($i -and $i.Attached) {{ {volumes}.DriveLetter }}", cancellationToken).ConfigureAwait(false);
             return DriveOf(output);
         }
         if (OperatingSystem.IsMacOS())
@@ -309,6 +344,44 @@ public static class DiskImages
 
     private static Task<(int Exit, string Output, string Error)> PowerShellAsync(string script, CancellationToken cancellationToken) =>
         Run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "$ErrorActionPreference = 'Stop'; " + script], cancellationToken);
+
+    /// <summary>A virtual disk's script: as it is with administrator rights, else in an elevated PowerShell (<see cref="ElevatedPowerShellAsync"/>).</summary>
+    private static Task<(int Exit, string Output, string Error)> WindowsDiskScriptAsync(string image, string script, CancellationToken cancellationToken) =>
+        NeedsElevation(image) ? ElevatedPowerShellAsync(script, cancellationToken) : PowerShellAsync(script, cancellationToken);
+
+    /// <summary>
+    /// Runs a script in a PowerShell started with "run as administrator" (the consent dialog); its output and error come
+    /// back through two temporary files. Declining the dialog is an error of the outer PowerShell.
+    /// </summary>
+    internal static async Task<(int Exit, string Output, string Error)> ElevatedPowerShellAsync(string script, CancellationToken cancellationToken)
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "nc-elevated-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(folder);
+        var outFile = Path.Combine(folder, "out.txt");
+        var errFile = Path.Combine(folder, "err.txt");
+        try
+        {
+            var inner = "$ErrorActionPreference = 'Stop'; try { " + script + $" | Out-File -LiteralPath {Quote(outFile)} -Encoding utf8 }} " +
+                $"catch {{ $_.Exception.Message | Out-File -LiteralPath {Quote(errFile)} -Encoding utf8; exit 1 }}";
+            var encoded = Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(inner));
+            var (exit, output, error) = await PowerShellAsync(
+                "$p = Start-Process powershell.exe -Verb RunAs -WindowStyle Hidden -Wait -PassThru -ArgumentList " +
+                $"'-NoProfile','-NonInteractive','-EncodedCommand','{encoded}'; exit $p.ExitCode", cancellationToken).ConfigureAwait(false);
+            var innerOutput = File.Exists(outFile) ? await File.ReadAllTextAsync(outFile, cancellationToken).ConfigureAwait(false) : string.Empty;
+            var innerError = File.Exists(errFile) ? await File.ReadAllTextAsync(errFile, cancellationToken).ConfigureAwait(false) : string.Empty;
+            return (exit, innerOutput + output, innerError.Length > 0 ? innerError : error);
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(folder, recursive: true);
+            }
+            catch (IOException)
+            {
+            }
+        }
+    }
 
     private static IOException Failed(string image, int exit, string message, bool unmount = false)
     {

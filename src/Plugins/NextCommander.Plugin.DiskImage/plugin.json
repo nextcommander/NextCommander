@@ -1,0 +1,6 @@
+{
+  "Name": "diskimage",
+  "Assembly": "NextCommander.Plugin.DiskImage.dll",
+  "Description": "Virtual disks: .vhd, .vhdx, .vmdk, .vdi and .dmg files open like folders of their partitions and files (NTFS, FAT, exFAT, ext, XFS, Btrfs, HFS+, LVM; read-only), and F3 shows their partitions.",
+  "Version": "1.0"
+}

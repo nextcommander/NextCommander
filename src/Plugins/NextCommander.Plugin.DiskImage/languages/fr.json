@@ -1,0 +1,19 @@
+{
+  "DiskImage.VirtualDisk": "Disque virtuel",
+  "DiskImage.OnlyLocal": "Les disques virtuels ne sont affichés que lorsqu'ils se trouvent sur cet ordinateur.",
+  "DiskImage.DiskSize": "Taille du disque : {0}",
+  "DiskImage.FileSize": "Taille du fichier : {0}",
+  "DiskImage.NoPartitionTable": "Aucune table de partitions",
+  "DiskImage.DifferencingChain": "Chaîne de disques de différenciation",
+  "DiskImage.Volumes": "Volumes",
+  "DiskImage.NoVolumes": "Le disque n'a aucun volume.",
+  "DiskImage.Label": "Étiquette",
+  "DiskImage.Type": "Type",
+  "DiskImage.FileSystem": "Système de fichiers",
+  "DiskImage.Size": "Taille",
+  "DiskImage.Used": "Utilisé",
+  "DiskImage.CannotBeRead": "Illisible",
+  "DiskImage.Unreadable": "Le système de fichiers de cette partition ne peut pas être lu (chiffré avec BitLocker ou LUKS, APFS, ReFS ou non formaté).",
+  "DiskImage.ReadOnly": "Les disques virtuels sont ouverts en lecture seule : copiez les fichiers pour les modifier.",
+  "DiskImage.NotReadable": "{0} : pas un disque virtuel lisible ({1})"
+}

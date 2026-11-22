@@ -240,7 +240,7 @@ built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC l
 - [x] Mounting an image through the system (Files > Archive > Mount / Unmount disc image: Windows Mount-DiskImage,
   Linux udisks, macOS hdiutil; `Platform/DiskImages`). Tried on Windows with a real mount (`FM_TEST_MOUNT=1`); the
   Linux and macOS commands are tested with recorded output, to be tried on those systems.
-- [ ] Other images DiscUtils reads (VHD / VHDX / VMDK), if wanted.
+- [x] Other images DiscUtils reads: VHD / VHDX / VMDK / VDI / DMG as the disk image plugin (read-only, 22 November 2026); Windows mounts .vhd / .vhdx.
 
 ## AI support (ideas, to be evaluated)
 

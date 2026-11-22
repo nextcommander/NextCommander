@@ -38,7 +38,10 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
 
 ### Archives
 - Open zip, 7z, rar, tar and other archives, and .iso disc images, like folders; change zip files in place.
-- Pack to zip, tar, iso and (with 7-Zip installed) 7z, with passwords; unpack and test archives; mount .iso images.
+- Pack to zip, tar, iso and (with 7-Zip installed) 7z, with passwords; unpack and test archives; mount .iso images
+  (on Windows also .vhd / .vhdx).
+- Virtual machine disks (.vhd, .vhdx, .vmdk, .vdi, .dmg) open like folders of their partitions and files: NTFS,
+  FAT, ext, XFS, Btrfs, HFS+ and LVM, read-only, on every system.
 - SQLite databases open like folders of their tables (copy a table out as CSV or JSON); F3 shows the tables, columns
   and first rows. A Git repository's branches, tags and commits open as folders, and Git columns show each file's
   state and last commit.

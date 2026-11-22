@@ -1,0 +1,19 @@
+{
+  "DiskImage.VirtualDisk": "虚拟磁盘",
+  "DiskImage.OnlyLocal": "仅当虚拟磁盘位于此计算机上时才会显示。",
+  "DiskImage.DiskSize": "磁盘大小：{0}",
+  "DiskImage.FileSize": "文件大小：{0}",
+  "DiskImage.NoPartitionTable": "无分区表",
+  "DiskImage.DifferencingChain": "差异磁盘链",
+  "DiskImage.Volumes": "卷",
+  "DiskImage.NoVolumes": "磁盘中没有卷。",
+  "DiskImage.Label": "卷标",
+  "DiskImage.Type": "类型",
+  "DiskImage.FileSystem": "文件系统",
+  "DiskImage.Size": "大小",
+  "DiskImage.Used": "已用",
+  "DiskImage.CannotBeRead": "无法读取",
+  "DiskImage.Unreadable": "无法读取此分区的文件系统（已用 BitLocker 或 LUKS 加密、APFS、ReFS 或未格式化）。",
+  "DiskImage.ReadOnly": "虚拟磁盘以只读方式打开：请将文件复制出来再修改。",
+  "DiskImage.NotReadable": "{0}：不是可读取的虚拟磁盘（{1}）"
+}
