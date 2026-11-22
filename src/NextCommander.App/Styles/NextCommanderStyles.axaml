@@ -816,20 +816,14 @@
     bar, a plain command line and function keys with their key caps. Later than the styles above: they win.
     ================================================================================================================
   -->
-  <!-- menu bar: rounded items, a soft background on hover, no line under it (the button bar below has one) -->
+  <!-- menu bar: more room around the items; the open item keeps the look of the selected tab (the theme's
+       Menu.HoverBackground and the accent line below, the styles at the top of this file) -->
   <Style Selector="Menu#MainMenu">
     <Setter Property="Padding" Value="6,3" />
   </Style>
   <Style Selector="Menu#MainMenu > MenuItem">
-    <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Margin" Value="1,0" />
     <Setter Property="Padding" Value="9,3" />
-  </Style>
-  <Style Selector="Menu#MainMenu > MenuItem /template/ Border#PART_LayoutRoot">
-    <Setter Property="CornerRadius" Value="4" />
-  </Style>
-  <Style Selector="Menu#MainMenu > MenuItem:pointerover /template/ Border#PART_LayoutRoot, Menu#MainMenu > MenuItem:open /template/ Border#PART_LayoutRoot, Menu#MainMenu > MenuItem:selected /template/ Border#PART_LayoutRoot">
-    <Setter Property="Background" Value="{DynamicResource NcMwHoverBrush}" />
   </Style>
 
   <!-- the panel: a card with rounded corners; the active one with the accent around it -->
@@ -982,13 +976,29 @@
   <Style Selector="Button.tabclose:pointerover /template/ ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource NcMwPressBrush}" />
   </Style>
+  <!-- new tab: a plus in the accent color on a square button, clearly a button (it was a faint "+") -->
   <Style Selector="Button.tabadd">
-    <Setter Property="Height" Value="28" />
-    <Setter Property="Padding" Value="8,0" />
-    <Setter Property="CornerRadius" Value="6,6,0,0" />
+    <Setter Property="Width" Value="26" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="4,0,0,2" />
+    <Setter Property="CornerRadius" Value="6" />
     <Setter Property="VerticalAlignment" Value="Bottom" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
-    <Setter Property="Opacity" Value="0.7" />
+    <Setter Property="Background" Value="{DynamicResource NcMwChipBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcMwStrongStrokeBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Foreground" Value="{DynamicResource FmActiveAccentBrush}" />
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <Style Selector="Button.tabadd:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcMwAccentSoftBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FmActiveAccentBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource FmActiveAccentBrush}" />
+  </Style>
+  <Style Selector="Button.tabadd:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcMwPressBrush}" />
   </Style>
 
   <!-- the hotlist and history buttons at the end of the path row: icons in a square button -->
@@ -1067,6 +1077,25 @@
   </Style>
 
   <!-- the drive box's list -->
+  <!-- the hotlist menu in the look of the drive box's list: a card, rounded rows -->
+  <Style Selector="MenuFlyoutPresenter.mwmenu">
+    <Setter Property="Background" Value="{DynamicResource NcMwCardBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcMwStrongStrokeBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="4" />
+    <Setter Property="MinWidth" Value="260" />
+  </Style>
+  <Style Selector="MenuFlyoutPresenter.mwmenu MenuItem">
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="10,7" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+  <Style Selector="MenuFlyoutPresenter.mwmenu Separator">
+    <Setter Property="Margin" Value="6,4" />
+    <Setter Property="Background" Value="{DynamicResource NcMwStrokeBrush}" />
+  </Style>
+
   <!-- opaque: the list background of the light theme is transparent, the panel showed through the open list -->
   <Style Selector="Border.mwpopup">
     <Setter Property="Background" Value="{DynamicResource NcMwCardBrush}" />
@@ -1124,9 +1153,10 @@
   <Style Selector="DataGrid.files.inactive DataGridRow:selected">
     <Setter Property="Opacity" Value="1" />
   </Style>
+  <!-- the inactive panel keeps its cursor, faded (the user's request, 22 November 2026: it seemed to disappear) -->
   <Style Selector="DataGrid.files.inactive DataGridRow:selected /template/ Rectangle#BackgroundRectangle">
-    <Setter Property="Fill" Value="Transparent" />
-    <Setter Property="Stroke" Value="{DynamicResource NcMwStrongStrokeBrush}" />
+    <Setter Property="Fill" Value="{DynamicResource NcMwCursorInactiveBrush}" />
+    <Setter Property="Stroke" Value="{DynamicResource NcMwCursorInactiveLineBrush}" />
   </Style>
   <!-- on the soft cursor the text keeps its colors (file type, hidden, marked) -->
   <Style Selector="DataGrid.files DataGridRow:selected TextBlock.cell">

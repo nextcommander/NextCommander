@@ -85,6 +85,12 @@ public partial class FilePanelView : UserControl
                     e.Handled = true;
                     return;
                 }
+                // the column headers and the scroll bars have no menu (the system's would be the folder's)
+                if (IsListChrome(e.Source))
+                {
+                    e.Handled = true;
+                    return;
+                }
                 var at = e.TryGetPosition(list, out var point) ? point : (Point?)null;
                 if (TryShowSystemMenu(list, at))
                 {
@@ -638,6 +644,15 @@ public partial class FilePanelView : UserControl
     private bool _suppressContextMenu;
     private IDisposable? _rightHoldTimer;
 
+    /// <summary>
+    /// A column header or a scroll bar of the list: no context menu there, neither the system's nor the application's
+    /// (the user's request, 22 November 2026: only on the files and the empty space of the list).
+    /// </summary>
+    internal static bool IsListChrome(object? source) =>
+        source is Visual visual
+        && (visual.FindAncestorOfType<DataGridColumnHeader>(includeSelf: true) is not null
+            || visual.FindAncestorOfType<Avalonia.Controls.Primitives.ScrollBar>(includeSelf: true) is not null);
+
     /// <summary>Mac clicks: the secondary click opens the context menu, Cmd+click marks (tests set it on other systems).</summary>
     public bool? MacClicksOverride { get; set; }
 
@@ -649,7 +664,7 @@ public partial class FilePanelView : UserControl
     /// </summary>
     private bool HandleMacContextClick(Control list, FileItemViewModel? item, PointerPressedEventArgs e)
     {
-        if (!MacClicks || e.Pointer.Type == PointerType.Touch)
+        if (!MacClicks || e.Pointer.Type == PointerType.Touch || IsListChrome(e.Source))
         {
             return false;
         }
