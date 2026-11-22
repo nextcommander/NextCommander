@@ -49,6 +49,19 @@ public sealed class ToolDialogsTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task The_folder_history_opens_with_a_drive_root_in_it()
+    {
+        // a root drew a resource that did not exist (FmDriveIcon): the dialog failed to open (log of 22 November 2026)
+        var root = VfsPath.Local(Path.GetPathRoot(_fx.L())!);
+        var request = new FolderHistoryRequest([new(root, DateTime.Now, 1), new(VfsPath.Local(_fx.L()), DateTime.Now, 1)], [], () => { }, _ => "C:",
+            _ => Task.CompletedTask, _ => Task.CompletedTask, _ => Task.CompletedTask, _ => { }, _ => { });
+        var dialog = _fx.Track(new FolderHistoryDialog(request));
+        dialog.Show();
+        await SettleAsync(2);
+        Assert.NotEmpty(dialog.Sections);
+    }
+
+    [AvaloniaFact]
     public async Task The_folder_history_groups_pins_searches_and_undoes()
     {
         var now = DateTime.Now;

@@ -97,6 +97,11 @@ public sealed class ScpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBas
         {
             throw new UnauthorizedAccessException($"Access denied: {path}");
         }
+        if (run.ExitStatus == 127)
+        {
+            // the server has no such command (e.g. an SFTP-only server such as test.rebex.net): SCP needs a POSIX shell
+            throw new IOException("SCP: the server cannot run shell commands (ls, stat ...), which SCP needs for listing. Connect with SFTP instead.");
+        }
         throw new IOException(error.Length > 0 ? $"SCP: {error}" : $"SCP: the command failed (exit code {run.ExitStatus}).");
     }
 

@@ -20,7 +20,7 @@ public sealed class DocumentPreviewUiTests : IDisposable
     public void Dispose() => _fx.Dispose();
 
     /// <summary>A PDF of pages 200 × 100 points with a black box and a line of text.</summary>
-    private static byte[] SamplePdf(int pages)
+    private static byte[] SamplePdf(int pages, int width = 200, int height = 100)
     {
         var objects = new List<string>
         {
@@ -30,7 +30,7 @@ public sealed class DocumentPreviewUiTests : IDisposable
         };
         for (var i = 0; i < pages; i++)
         {
-            objects.Add($"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /Contents {5 + i * 2} 0 R /Resources << /Font << /F1 3 0 R >> >> >>");
+            objects.Add($"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {width} {height}] /Contents {5 + i * 2} 0 R /Resources << /Font << /F1 3 0 R >> >> >>");
             var content = $"0 0 0 rg 10 10 50 20 re f BT /F1 12 Tf 80 60 Td (Page {i + 1}) Tj ET";
             objects.Add($"<< /Length {content.Length} >>\nstream\n{content}\nendstream");
         }
@@ -73,6 +73,40 @@ public sealed class DocumentPreviewUiTests : IDisposable
 
     private static async Task<VfsEntry> EntryAsync(string file) =>
         (await new NextCommander.Vfs.Local.LocalFileSystemProvider().GetEntryAsync(VfsPath.Local(file), CancellationToken.None))!;
+
+    [AvaloniaFact]
+    public async Task A_tall_pdf_page_fits_the_lister_whole_and_F_fits_its_width()
+    {
+        // a portrait page (A4-like) filled the width and was cut at the bottom (user's report, 22 November 2026)
+        var (_, vm) = await _fx.OpenAsync();
+        var pdf = _fx.L("portrait.pdf");
+        File.WriteAllBytes(pdf, SamplePdf(3, 100, 141));
+        var window = _fx.Track(new ListerWindow(new ListerRequest([await EntryAsync(pdf)], 0, vm.Tools)) { Width = 900, Height = 700 });
+        window.Show();
+        await WaitUntilAsync(() => window.View.Entry is not null && window.View.Loading is { IsCompleted: true });
+        var pages = Assert.IsType<PdfView>(window.View.PdfView);
+        await SettleAsync(4);
+        Assert.True(pages.FitsWholePage);
+        var whole = pages.DisplayedPageSize(0);
+        Assert.True(whole.Height <= pages.Bounds.Height, $"page {whole} in a view of {pages.Bounds.Size}");
+        Assert.Contains("Whole page", window.View.StatusText, StringComparison.Ordinal);
+        if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
+        {
+            window.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "lister-pdf-whole-page.png"));
+        }
+
+        // F: the page width; Ctrl+plus zooms the pages (it changed the text font size)
+        pages.Focus();
+        Press(window, Avalonia.Input.Key.F);
+        await SettleAsync(2);
+        Assert.False(pages.FitsWholePage);
+        Assert.True(pages.DisplayedPageSize(0).Width > whole.Width);
+        Assert.Contains("Page width", window.View.StatusText, StringComparison.Ordinal);
+        var font = vm.Settings.ListerFontSize;
+        window.View.Zoom(1);
+        Assert.True(pages.ZoomFactor > 1);
+        Assert.Equal(font, vm.Settings.ListerFontSize);
+    }
 
     [AvaloniaFact]
     public async Task The_lister_shows_pdf_pages_and_office_documents()
