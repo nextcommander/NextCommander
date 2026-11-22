@@ -7,5 +7,11 @@
   "Docker.NoSuchContainer": "Kein solcher Container: {0}",
   "Docker.NoShell": "Der Container hat keine Shell (sh), daher können seine Dateien nicht aufgelistet werden.",
   "Docker.MoveBetween": "Zwischen Containern wird durch Kopieren verschoben.",
-  "Docker.MadeWithDocker": "Container werden mit docker selbst erstellt und entfernt."
+  "Docker.MadeWithDocker": "Container werden mit docker selbst erstellt und entfernt.",
+  "Docker.ProgramNotFound": "Das Programm wurde nicht gefunden: {0}",
+  "Docker.DockerProgram": "docker-Programm",
+  "Docker.DockerProgramHelp": "Leer: FM_DOCKER, dann docker im PATH und in den üblichen Ordnern. Ein anderes Programm mit denselben Befehlen (podman) geht auch.",
+  "Docker.WorkAs": "In Containern arbeiten als",
+  "Docker.WorkAsHelp": "Der Benutzer, der die Dateien im Container auflistet, liest und schreibt.",
+  "Docker.OwnUser": "Der eigene Benutzer des Containers"
 }

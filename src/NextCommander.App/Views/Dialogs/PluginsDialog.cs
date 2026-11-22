@@ -18,6 +18,7 @@ namespace NextCommander.App.Views.Dialogs;
 /// <param name="Roots">The plugin folders: the settings folder's first (where installing puts a plugin), then the program's.</param>
 /// <param name="Open">Opens a plugin: its entry point when it has one (rclone remotes ...), else its folder in the panel.</param>
 /// <param name="Restart">Starts the program again (false: it could not).</param>
+/// <param name="Configure">Opens a plugin's settings (the configuration at its group); null: no "Configure..." buttons.</param>
 public sealed record PluginsRequest(
     IReadOnlyList<LoadedPlugin> Loaded,
     IReadOnlyList<string> Roots,
@@ -25,7 +26,8 @@ public sealed record PluginsRequest(
     Action SaveSettings,
     Func<string, Task<string?>> PickFile,
     Func<LoadedPlugin?, string, Task> Open,
-    Func<bool> Restart);
+    Func<bool> Restart,
+    Func<LoadedPlugin, Task>? Configure = null);
 
 /// <summary>
 /// The plugins (Configuration > Plugins..., nc_Plugins): every installed plugin with its version, state, what it adds
@@ -413,6 +415,15 @@ public sealed class PluginsDialog : Window
             {
                 await _request.Open(null, where);
                 Close();
+            }));
+        }
+        if (row.Loaded is { Error: null, Configurables.Count: > 0 } configurable && _request.Configure is { } configure)
+        {
+            // its settings: the plugin's group on the Plugins page of the configuration
+            actions.Children.Add(Action("MiGear", "Configure...", async () =>
+            {
+                Close();
+                await configure(configurable);
             }));
         }
         var disabledNow = IsDisabled(row);

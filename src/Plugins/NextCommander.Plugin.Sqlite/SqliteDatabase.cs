@@ -24,6 +24,9 @@ public sealed unsafe class SqliteDatabase : IDisposable
     /// <summary>The system's SQLite (null when there is none); found once.</summary>
     private static readonly Lazy<Native?> s_native = new(Native.Load);
 
+    /// <summary>The library the plugin's settings name (read when SQLite is first used: a change takes effect after a restart).</summary>
+    public static string? ConfiguredLibrary { get; set; }
+
     /// <summary>Whether the system has a SQLite library the plugin can use.</summary>
     public static bool IsAvailable => s_native.Value is not null;
 
@@ -194,7 +197,11 @@ public sealed unsafe class SqliteDatabase : IDisposable
             string[] names = OperatingSystem.IsWindows() ? ["winsqlite3.dll", "sqlite3.dll", "e_sqlite3.dll"]
                 : OperatingSystem.IsMacOS() ? ["/usr/lib/libsqlite3.dylib", "libsqlite3.dylib", "libsqlite3.0.dylib"]
                 : ["libsqlite3.so.0", "libsqlite3.so"];
-            if (Environment.GetEnvironmentVariable("FM_SQLITE") is { Length: > 0 } configured)
+            if (ConfiguredLibrary is { Length: > 0 } chosen)
+            {
+                names = [chosen, .. names];
+            }
+            else if (Environment.GetEnvironmentVariable("FM_SQLITE") is { Length: > 0 } configured)
             {
                 names = [configured, .. names];
             }

@@ -5,6 +5,7 @@ using NextCommander.Plugin.Git;
 namespace NextCommander.Core.Tests;
 
 /// <summary>The Git plugin against a real repository made with the installed git (skipped without git).</summary>
+[Collection("PluginStatics")] // the Git settings are static (PluginSettingsTests changes them)
 public sealed class GitPluginTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "nc-git-" + Guid.NewGuid().ToString("N")[..8]);

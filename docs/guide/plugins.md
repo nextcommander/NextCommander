@@ -133,6 +133,25 @@ Every subfolder with a `plugin.json` is one plugin; other folders are ignored.
 not loaded; the change takes effect after a restart. A plugin that is not installed any more stays in the list,
 unchecked, until you check it again (the list is the `DisabledPlugins` setting).
 
+### A plugin's settings
+
+A plugin with settings has its own group on the same page (*Configuration > Options > Operation > Plugins*), titled
+with its name; the search of the configuration finds them too. Its **Configure...** button in the plugins window
+opens the configuration there, and so does the message a plugin gives when it cannot be used (for example when
+its program is not found). The settings take effect with Apply / OK, without a restart unless the setting says so;
+a value the plugin cannot use (a program that is not there) is refused with the reason next to the buttons.
+
+| Plugin | Settings |
+|---|---|
+| Git | the git program; how often the Git columns read a repository's status; how many commits the history lists |
+| Docker | the docker program (podman works too); the user commands run as inside a container |
+| rclone | the rclone program; the rclone.conf with the remotes |
+| SQLite | the SQLite library (after a restart); the rows of each table in the F3 overview |
+
+An empty program path means what it meant before: the environment variable (`FM_GIT`, `FM_DOCKER`, `FM_RCLONE`,
+`FM_SQLITE`), then the PATH and the usual folders. The values are kept in the settings file under the plugin's name
+(`PluginSettings`); a value left at its default is not stored.
+
 ### The Plugins menu
 
 The **Plugins** button of the button bar (next to the connection manager) lists the places the plugins offer, such
@@ -147,8 +166,9 @@ is `nc_PluginsMenu` (for a shortcut or the command line); `nc_Plugins` opens the
 providers, packers, viewers) and its folder.
 - **Search** (Ctrl+F) by name, kind or folder; the chips **All**, **File systems**, **Column providers** and
   **Disabled** filter the list and show how many plugins each has.
-- On a plugin: **copy its path**, **open its folder** in the panel, or **turn it on / off** (the same as
-  *Configuration > Plugins*). A plugin turned off whose folder is gone can be removed from the list.
+- On a plugin: **copy its path**, **open its folder** in the panel, **configure it** (a plugin with settings, see
+  [A plugin's settings](#a-plugins-settings)), or **turn it on / off** (the same as *Configuration > Plugins*). A
+  plugin turned off whose folder is gone can be removed from the list.
 - **+** installs a plugin from a zip file (with its `plugin.json` at the top or in one folder) or from a
   `plugin.json` file: it is copied to the plugins folder of the settings folder, under its name; an older copy there is
   replaced (turn a loaded plugin off and restart before replacing it, its files are in use).
@@ -481,6 +501,50 @@ plus a `Status` line. `dark` tells whether the program shows a dark theme. A vie
 references Avalonia: use the same Avalonia version as NextCommander (`Directory.Packages.props`) and do not copy it
 (`Private="false"`); the program's copy is used. The first viewer whose `CanView` says yes gets the file; the Lister
 opens it in its plugin mode (key 6).
+
+## Settings
+
+A plugin does not draw a settings window of its own: it says what can be set, and the program shows it with its
+own controls on the Plugins page of the configuration (a group per plugin, with the program's look, translations,
+search, Apply / OK and Cancel), stores the values under the plugin's name and gives them to the plugin.
+
+```csharp
+public sealed class HelloSettings : IConfigurablePlugin
+{
+    public string SettingsTitle => "Hello";
+
+    public IReadOnlyList<PluginSetting> Settings { get; } =
+    [
+        new("program", PluginSettingKind.Program, "hello program") { Description = "Empty: hello on the PATH." },
+        new("greeting", PluginSettingKind.Text, "Greeting") { Default = "Hello" },
+        new("rows", PluginSettingKind.Number, "Rows") { Default = "10", Min = 1, Max = 100 },
+        new("mode", PluginSettingKind.Choice, "Mode") { Default = "fast", Choices = [("fast", "Fast"), ("safe", "Safe")] },
+    ];
+
+    // OK / Apply are refused while this says something (shown next to the buttons)
+    public string? Validate(IPluginSettingValues values) =>
+        values.Get("program") is { } program && !File.Exists(program) ? $"The program was not found: {program}" : null;
+
+    // at the start and after every change (no restart)
+    public void Apply(IPluginSettingValues values) => HelloTool.Program = values.Get("program");
+}
+```
+
+- **Where:** any public class of the plugin with a parameterless constructor, its own settings class or one of
+  its file systems, columns, viewers (the same instance is used for both). One `IConfigurablePlugin` per plugin.
+- **Kinds:** `Text`, `Number` (`Min`, `Max`), `Toggle` ("true" / "false"), `Choice` (`Choices`: value and text),
+  `Program` and `File` (with a Browse button), `Folder` (with a folder picker).
+- **Values** are texts: `values.Get(key)` gives the value or the setting's `Default` (null when empty);
+  `GetBool` and `GetNumber` read them as such. A value equal to the default is not stored.
+- **Applying:** `Apply` runs when the plugin is loaded (before anything uses it) and after every Apply / OK of the
+  configuration. Objects made at the start (a file system's tool ...) must read the current value when they need
+  it, not keep the one they were made with. A setting that takes effect only after a restart says so in its
+  `Description`.
+- **Texts** (labels, descriptions, choice texts, `Validate`'s messages) are English; their translations go into
+  the plugin's `languages` folder like its other texts. Prefer patterns with a fixed start ("The program was not
+  found: {0}") to ones that are only a hole and a word ("{0} rows"): a pattern matches whole texts anywhere in
+  the program.
+- **No secrets** in settings: they are stored as plain text in the settings file.
 
 ## Translations
 

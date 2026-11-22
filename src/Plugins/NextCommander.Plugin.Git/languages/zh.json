@@ -20,5 +20,12 @@
   "Git.Changed": "已更改",
   "Git.Group": "Git",
   "Git.ChangedStaged": "已修改（已暂存）",
-  "Git.CouldNotBeStarted": "无法启动 git。"
+  "Git.CouldNotBeStarted": "无法启动 git。",
+  "Git.ProgramNotFound": "找不到程序：{0}",
+  "Git.GitProgram": "git 程序",
+  "Git.GitProgramHelp": "留空：先用 FM_GIT，再查找 PATH 和常用文件夹中的 git。",
+  "Git.Refresh": "Git 列刷新间隔（秒）",
+  "Git.RefreshHelp": "仓库状态在再次询问 git 之前使用多久。",
+  "Git.Commits": "Git 历史中列出的提交数",
+  "Git.CommitsHelp": "commits 文件夹中当前分支的最新提交。"
 }

@@ -3759,5 +3759,7 @@
   "JobErrorDialog.RetryAsAdmin": "以管理员身份重试",
   "JobErrorDialog.Message": "消息",
   "JobErrorDialog.TechnicalDetails": "技术详细信息",
-  "JobErrorDialog.RetryingIn": "{0} 秒后重试…"
+  "JobErrorDialog.RetryingIn": "{0} 秒后重试…",
+  "SettingsWindow.Browse": "浏览...",
+  "SettingsWindow.PluginProblem": "{0} 的设置：{1}"
 }

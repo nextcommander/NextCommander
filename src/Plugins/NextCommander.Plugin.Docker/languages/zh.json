@@ -7,5 +7,11 @@
   "Docker.NoSuchContainer": "没有此容器：{0}",
   "Docker.NoShell": "容器中没有 shell (sh)，因此无法列出其文件。",
   "Docker.MoveBetween": "在容器之间移动需通过复制完成。",
-  "Docker.MadeWithDocker": "容器由 docker 本身创建和删除。"
+  "Docker.MadeWithDocker": "容器由 docker 本身创建和删除。",
+  "Docker.ProgramNotFound": "找不到程序：{0}",
+  "Docker.DockerProgram": "docker 程序",
+  "Docker.DockerProgramHelp": "留空：先用 FM_DOCKER，再查找 PATH 和常用文件夹中的 docker。也可使用命令相同的其他程序（podman）。",
+  "Docker.WorkAs": "在容器中以此用户工作",
+  "Docker.WorkAsHelp": "在容器内列出、读取和写入文件的用户。",
+  "Docker.OwnUser": "容器自身的用户"
 }

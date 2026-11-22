@@ -20,5 +20,12 @@
   "Git.Changed": "Changed",
   "Git.Group": "Git",
   "Git.ChangedStaged": "Changed (staged)",
-  "Git.CouldNotBeStarted": "git could not be started."
+  "Git.CouldNotBeStarted": "git could not be started.",
+  "Git.ProgramNotFound": "The program was not found: {0}",
+  "Git.GitProgram": "git program",
+  "Git.GitProgramHelp": "Empty: FM_GIT, then git on the PATH and in the usual folders.",
+  "Git.Refresh": "Refresh the Git columns every (seconds)",
+  "Git.RefreshHelp": "How long a repository's status is used before git is asked again.",
+  "Git.Commits": "Commits listed in the Git history",
+  "Git.CommitsHelp": "The newest commits of the current branch in the commits folder."
 }

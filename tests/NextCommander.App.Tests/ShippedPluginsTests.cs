@@ -19,6 +19,13 @@ public sealed class ShippedPluginsTests
             Assert.True(plugin.Error is null, $"{name}: {plugin.Error}");
         }
 
+        // the plugins with settings (their program ...) bring them; the disk image plugin has none
+        foreach (var (name, title) in new[] { ("git", "Git"), ("rclone", "rclone"), ("sqlite", "SQLite"), ("docker", "Docker") })
+        {
+            Assert.Equal(title, Assert.Single(plugins.Single(p => p.Name == name).Configurables).SettingsTitle);
+        }
+        Assert.Empty(plugins.Single(p => p.Name == "diskimage").Configurables);
+
         // the disk image plugin reaches DiscUtils (from its folder): a file that is no disk is said to be one it cannot read
         var disks = Assert.Single(plugins.Single(p => p.Name == "diskimage").FileSystems, f => f.Scheme == "vdisk");
         var file = Path.Combine(Path.GetTempPath(), "nc-shipped-" + Guid.NewGuid().ToString("N")[..8] + ".vhdx");

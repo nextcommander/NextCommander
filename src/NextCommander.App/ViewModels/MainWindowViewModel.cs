@@ -843,6 +843,15 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     {
         if (entry.Unavailable is { } reason)
         {
+            // a plugin with settings offers them (e.g. where its program is)
+            if (Plugins.FirstOrDefault(p => p.FileSystems.Any(f => ReferenceEquals(f, entry)) && p.Configurables.Count > 0) is { } plugin)
+            {
+                if (await _dialogs.ConfirmAsync(entry.EntryName, reason, "Configure..."))
+                {
+                    await ConfigurePluginAsync(plugin);
+                }
+                return;
+            }
             await _dialogs.ShowMessageAsync(entry.EntryName, reason);
             return;
         }
@@ -2578,6 +2587,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         Views.Dialogs.SettingsView.AllowLinkThroughFirewall = async port =>
             Services.LinkFirewall.Command(port) is { } command && await _platform.RunElevatedAsync(command.Program, command.Arguments);
         Views.Dialogs.SettingsView.ColumnFields = () => ColumnValues.Columns.AllFields.ToList();
+        Views.Dialogs.SettingsView.PluginConfigurations = () => PluginConfigurations;
         await _dialogs.ShowSettingsAsync(_settings, ApplySettings, extras, search);
         ApplySettings();
         SaveSettings();
@@ -2595,6 +2605,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         App.ApplyPanelFont(_settings);
         App.ApplyIconSettings(_settings);
         Services.FileIndexService.Apply(_settings);
+        ApplyPluginSettings();
         if (Avalonia.Application.Current is { } app)
         {
             Services.UiFonts.Apply(app, _settings);
@@ -2847,9 +2858,29 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
                 }
                 ExitRequested?.Invoke(this, EventArgs.Empty);
                 return true;
-            });
+            },
+            ConfigurePluginAsync);
         await _dialogs.ShowPluginsAsync(request);
     }
+
+    /// <summary>The loaded plugins with settings, for the Plugins page of the configuration.</summary>
+    public IReadOnlyList<(string Plugin, NextCommander.Core.Plugins.IConfigurablePlugin Config)> PluginConfigurations =>
+        [.. Plugins.Where(p => p.Error is null).SelectMany(p => p.Configurables.Select(c => (p.Name, c)))];
+
+    /// <summary>A plugin's settings: the configuration opened at the plugin's group of the Plugins page.</summary>
+    public Task ConfigurePluginAsync(NextCommander.Core.Plugins.LoadedPlugin plugin)
+    {
+        if (plugin.Configurables.FirstOrDefault() is not { } config)
+        {
+            return Task.CompletedTask;
+        }
+        Views.Dialogs.SettingsView.StartAt = (Views.Dialogs.SettingsView.PluginsPage, config.SettingsTitle);
+        return ShowSettingsAsync();
+    }
+
+    /// <summary>Gives the loaded plugins their settings (at the start and after the configuration).</summary>
+    public void ApplyPluginSettings() =>
+        Views.Dialogs.SettingsView.ApplyPluginSettings(_settings, Plugins, (name, ex) => Serilog.Log.Warning(ex, "Plugin {Name}: its settings could not be applied", name));
 
     // ---------------------------------------------------------------- remote (phase 6)
 

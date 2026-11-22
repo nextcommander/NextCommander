@@ -7,5 +7,11 @@
   "Docker.NoSuchContainer": "Böyle bir konteyner yok: {0}",
   "Docker.NoShell": "Konteynerde kabuk (sh) yok, bu yüzden dosyaları listelenemiyor.",
   "Docker.MoveBetween": "Konteynerler arasında taşıma kopyalayarak yapılır.",
-  "Docker.MadeWithDocker": "Konteynerler docker'ın kendisiyle oluşturulur ve kaldırılır."
+  "Docker.MadeWithDocker": "Konteynerler docker'ın kendisiyle oluşturulur ve kaldırılır.",
+  "Docker.ProgramNotFound": "Program bulunamadı: {0}",
+  "Docker.DockerProgram": "docker programı",
+  "Docker.DockerProgramHelp": "Boş: önce FM_DOCKER, sonra PATH'teki ve bilinen klasörlerdeki docker. Aynı komutları anlayan başka bir program (podman) da olur.",
+  "Docker.WorkAs": "Konteynerlerde şu kullanıcıyla çalış",
+  "Docker.WorkAsHelp": "Konteynerin içindeki dosyaları listeleyen, okuyan ve yazan kullanıcı.",
+  "Docker.OwnUser": "Konteynerin kendi kullanıcısı"
 }
