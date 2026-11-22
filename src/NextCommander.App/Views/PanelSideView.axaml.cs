@@ -36,6 +36,13 @@ public partial class PanelSideView : UserControl
         TabStrip.AddHandler(PointerReleasedEvent, OnTabPointerReleased, RoutingStrategies.Tunnel, handledEventsToo: true);
         TabStrip.AddHandler(PointerPressedEvent, OnTabPointerPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
         TabStrip.AddHandler(PointerMovedEvent, OnTabPointerMoved, RoutingStrategies.Tunnel, handledEventsToo: true);
+        TabStrip.AddHandler(PointerCaptureLostEvent, (_, _) =>
+        {
+            if (_dragging)
+            {
+                EndDrag();
+            }
+        }, RoutingStrategies.Bubble, handledEventsToo: true);
         TabStrip.ContextMenu = BuildTabMenu();
         TabStripHost.PointerWheelChanged += (_, e) =>
         {
@@ -196,7 +203,10 @@ public partial class PanelSideView : UserControl
     {
         if (_dragTab is not { } tab || Side is not { } side || !e.GetCurrentPoint(TabStrip).Properties.IsLeftButtonPressed)
         {
-            _dragTab = null;
+            if (_dragging || _dragTab is not null)
+            {
+                EndDrag();
+            }
             return;
         }
         var position = e.GetPosition(TabStrip);
@@ -205,10 +215,61 @@ public partial class PanelSideView : UserControl
             return;
         }
         _dragging = true;
+        TabStrip.Cursor = s_dragCursor;
+        // over the other side's panel: the tab goes there when it is let go
+        if (OtherSide is { IsEffectivelyVisible: true } other && e.GetPosition(other) is var there
+            && new Rect(other.Bounds.Size).Contains(there))
+        {
+            SetDropTarget(other);
+            return;
+        }
+        SetDropTarget(null);
         if (TabAt(position) is { } target && !ReferenceEquals(target, tab))
         {
             side.MoveTab(tab, side.Tabs.IndexOf(target));
         }
+    }
+
+    private static readonly Cursor s_dragCursor = new(StandardCursorType.DragMove);
+
+    /// <summary>The side on the other half of the window (set by the main window): a tab dragged onto it moves there.</summary>
+    public PanelSideView? OtherSide { get; set; }
+
+    /// <summary>A tab of this side was let go over <see cref="OtherSide"/>: the tab and where in that side's strip (null: after its current tab).</summary>
+    public event EventHandler<(PanelViewModel Tab, int? At)>? TabDroppedOnOtherSide;
+
+    private PanelSideView? _dropTarget;
+
+    /// <summary>Whether a tab of the other side is dragged over this side now (tests, the highlight).</summary>
+    public bool IsDropTarget => Classes.Contains("droptarget");
+
+    private void SetDropTarget(PanelSideView? target)
+    {
+        if (ReferenceEquals(target, _dropTarget))
+        {
+            return;
+        }
+        _dropTarget?.Classes.Set("droptarget", false);
+        _dropTarget = target;
+        target?.Classes.Set("droptarget", true);
+    }
+
+    /// <summary>Where a tab let go at a point of this side goes: before the tab under it, or null (after the current tab).</summary>
+    private int? DropIndexAt(Point inSide)
+    {
+        if (Side is not { } side || this.TranslatePoint(inSide, TabStrip) is not { } inStrip)
+        {
+            return null;
+        }
+        return TabAt(inStrip) is { } under ? side.Tabs.IndexOf(under) : null;
+    }
+
+    private void EndDrag()
+    {
+        _dragging = false;
+        _dragTab = null;
+        TabStrip.Cursor = null;
+        SetDropTarget(null);
     }
 
     /// <summary>The tab under a point of the strip.</summary>
@@ -229,9 +290,15 @@ public partial class PanelSideView : UserControl
     {
         if (_dragging && _dragTab is { } dragged && Side is { } dragSide)
         {
+            var onto = _dropTarget;
+            EndDrag();
+            e.Handled = true;
+            if (onto is not null)
+            {
+                TabDroppedOnOtherSide?.Invoke(this, (dragged, onto.DropIndexAt(e.GetPosition(onto))));
+                return;
+            }
             // end of a drag: the moved tab becomes the current one (its Click may have been lost with the move)
-            _dragging = false;
-            _dragTab = null;
             dragSide.ActiveTab = dragged;
             Activated?.Invoke(this, EventArgs.Empty);
             return;

@@ -373,6 +373,41 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         UpdatePrompt();
     }
 
+    /// <summary>
+    /// A tab dragged onto the other side (the user's request, 22 November 2026): it moves there (at <paramref name="at"/>,
+    /// default after that side's current tab) with its folder, view and sort, and becomes the active panel. The only tab
+    /// of a side cannot leave it: the two sides' current panels change places then.
+    /// </summary>
+    public async Task MoveTabToOtherSideAsync(PanelViewModel tab, int? at = null)
+    {
+        var from = LeftSide.Tabs.Contains(tab) ? LeftSide : RightSide.Tabs.Contains(tab) ? RightSide : null;
+        if (from is null || ReferenceEquals(from, _quickViewSide))
+        {
+            return;
+        }
+        var to = ReferenceEquals(from, LeftSide) ? RightSide : LeftSide;
+        if (ReferenceEquals(to, _quickViewSide))
+        {
+            return;
+        }
+        var state = tab.State.Clone();
+        if (from.Tabs.Count > 1)
+        {
+            var moved = await to.AddTabAsync(state, activate: true, at: at ?? to.ActiveIndex + 1);
+            from.RemoveTab(tab);
+            Activate(moved);
+            return;
+        }
+        // the only tab: the panels change places (the other side's current tab comes here)
+        var other = to.ActiveTab;
+        var otherState = other.State.Clone();
+        var arrived = await to.AddTabAsync(state, activate: true, at: to.Tabs.IndexOf(other));
+        await from.AddTabAsync(otherState, activate: true, at: 0);
+        to.RemoveTab(other);
+        from.RemoveTab(tab);
+        Activate(arrived);
+    }
+
     /// <summary>Theme switched (rule colors differ for light/dark).</summary>
     public void OnThemeChanged()
     {

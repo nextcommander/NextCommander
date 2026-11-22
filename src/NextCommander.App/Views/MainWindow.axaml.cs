@@ -166,6 +166,16 @@ public partial class MainWindow : Window
                 }
             };
             sideView.CommandRequested += (_, c) => _ = _vm?.ExecuteAsync(c);
+            // a tab dragged onto the other side moves there (the only tab: the panels change places)
+            sideView.OtherSide = left ? RightSideView : LeftSideView;
+            sideView.TabDroppedOnOtherSide += async (_, drop) =>
+            {
+                if (_vm is not null)
+                {
+                    await _vm.MoveTabToOtherSideAsync(drop.Tab, drop.At);
+                    ActiveSideView.Panel.FocusList();
+                }
+            };
             var panel = sideView.Panel;
             panel.CommandRequested += (_, c) => _ = _vm?.ExecuteAsync(c);
             panel.DropRequested += (_, r) => _ = _vm?.DropAsync(r);

@@ -165,12 +165,12 @@ public sealed partial class TabSideViewModel : ObservableObject, IDisposable
         return panel;
     }
 
-    /// <summary>Adds a tab for a saved state (loading .tab files, restoring closed tabs).</summary>
-    public async Task<PanelViewModel> AddTabAsync(PanelSettings state, bool activate)
+    /// <summary>Adds a tab for a saved state (loading .tab files, restoring closed tabs; at <paramref name="at"/>: a tab dragged from the other side).</summary>
+    public async Task<PanelViewModel> AddTabAsync(PanelSettings state, bool activate, int? at = null)
     {
         var panel = Create(state.Clone());
         panel.Drives = ActiveTab.Drives;
-        Tabs.Insert(InsertIndex(null), panel);
+        Tabs.Insert(at is { } index ? Math.Clamp(index, 0, Tabs.Count) : InsertIndex(null), panel);
         var path = state.Path is not null && VfsPath.TryParse(state.Path, out var p) ? p : ActiveTab.CurrentPath;
         if (path is not null)
         {
@@ -205,6 +205,23 @@ public sealed partial class TabSideViewModel : ObservableObject, IDisposable
         if (_closed.Count > MaxClosed)
         {
             _closed.RemoveAt(_closed.Count - 1);
+        }
+        if (ReferenceEquals(tab, ActiveTab))
+        {
+            ActiveTab = Tabs[index + 1 < Tabs.Count ? index + 1 : index - 1];
+        }
+        Tabs.RemoveAt(index);
+        _recent.Remove(tab);
+        tab.Dispose();
+    }
+
+    /// <summary>Takes a tab out of the side without keeping it among the closed ones (it went to the other side); the last tab stays.</summary>
+    public void RemoveTab(PanelViewModel tab)
+    {
+        var index = Tabs.IndexOf(tab);
+        if (index < 0 || Tabs.Count <= 1)
+        {
+            return;
         }
         if (ReferenceEquals(tab, ActiveTab))
         {

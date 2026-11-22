@@ -336,8 +336,8 @@ public sealed class MenuTests : IDisposable
     {
         var (w, vm) = await _fx.OpenAsync();
         vm.Settings.Hotlist.Add(new Core.Config.HotlistEntry { Name = "Proje", Path = _fx.L() });
-        var bar = w.RightPanel.GetVisualDescendants().OfType<Views.PathBarView>().First();
-        var star = bar.GetVisualDescendants().OfType<Button>().First(b => b.Name == "HotlistButton");
+        // the star sits at the end of the panel's path row (after the free space)
+        var star = w.RightPanel.GetVisualDescendants().OfType<Button>().First(b => b.Name == "HotlistButton");
         star.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
         await SettleAsync();
         var menu = w.HotlistMenu!;
