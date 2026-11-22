@@ -311,7 +311,8 @@ public sealed class FolderHistoryDialog : Window
         var icon = new Border { Width = 36, Height = 36, CornerRadius = new CornerRadius(9), BorderThickness = new Thickness(1) };
         icon[!Border.BorderBrushProperty] = new DynamicResourceExtension("SystemControlForegroundBaseLowBrush");
         icon[!Border.BackgroundProperty] = new DynamicResourceExtension("FmPanelHeaderBrush");
-        var geometry = (Geometry?)Application.Current?.FindResource(root ? "FmDriveIcon" : "FmFolderIcon") ?? (Geometry?)Application.Current?.FindResource("FmFolderIcon");
+        // through the icon pack: a missing resource is UnsetValue, not null (there was no FmDriveIcon: the dialog failed on a drive root)
+        var geometry = Services.Icons.IconPacks.Glyph(root ? "MiDrive" : "FmFolderIcon") ?? Services.Icons.IconPacks.Glyph("FmFolderIcon");
         icon.Child = new PathIcon { Width = 18, Height = 18, Data = geometry, Foreground = new SolidColorBrush(Color.Parse(root ? "#8E8E93" : "#E8B44C")) };
 
         var nameLine = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };

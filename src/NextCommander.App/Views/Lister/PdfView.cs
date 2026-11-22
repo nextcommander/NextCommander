@@ -114,6 +114,24 @@ public sealed class PdfView : UserControl, IDisposable
 
     public double ZoomFactor => _zoom;
 
+    /// <summary>
+    /// At zoom 1 a whole page fits the view (its width and height; the user's report, 22 November 2026: a tall page was
+    /// cut at the bottom), else the page width fills the view. F switches between them.
+    /// </summary>
+    public bool FitsWholePage { get; private set; } = true;
+
+    /// <summary>The size a page is shown at (tests).</summary>
+    public Size DisplayedPageSize(int index) => new(_pages[index].Frame.Width, _pages[index].Frame.Height);
+
+    /// <summary>F: whole page ↔ page width, at zoom 1.</summary>
+    public void ToggleFit()
+    {
+        FitsWholePage = !FitsWholePage;
+        _zoom = 1;
+        Arrange();
+        StatusChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     /// <summary>How many pages have a picture now (tests).</summary>
     public int DrawnPages => _pages.Count(p => p.Drawn > 0);
 
@@ -447,19 +465,22 @@ public sealed class PdfView : UserControl, IDisposable
     protected override void OnSizeChanged(SizeChangedEventArgs e)
     {
         base.OnSizeChanged(e);
-        if (Math.Abs(e.NewSize.Width - e.PreviousSize.Width) > 0.5)
+        if (Math.Abs(e.NewSize.Width - e.PreviousSize.Width) > 0.5
+            || FitsWholePage && Math.Abs(e.NewSize.Height - e.PreviousSize.Height) > 0.5)
         {
             Arrange();
         }
     }
 
-    /// <summary>The pages' sizes for the view's width and the zoom; pictures of another size are drawn again.</summary>
+    /// <summary>The pages' sizes for the view (its width, and its height for a whole page) and the zoom; pictures of another size are drawn again.</summary>
     private void Arrange()
     {
         var available = Math.Max(120, (Bounds.Width > 0 ? Bounds.Width : 800) - 2 * Gap - 18);
+        var tall = Math.Max(120, (Bounds.Height > 0 ? Bounds.Height : 600) - 2 * Gap - 18);
         foreach (var page in _pages)
         {
-            var width = available * _zoom;
+            var fit = FitsWholePage ? Math.Min(available, tall * page.Width / page.Height) : available;
+            var width = fit * _zoom;
             page.Frame.Width = width;
             page.Frame.Height = width * page.Height / page.Width;
         }
