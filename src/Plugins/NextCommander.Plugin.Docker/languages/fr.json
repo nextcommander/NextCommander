@@ -1,0 +1,11 @@
+{
+  "Docker.Containers": "Conteneurs Docker",
+  "Docker.Group": "Docker",
+  "Docker.NotInstalled": "Docker n'est pas installé. Installez Docker Desktop ou Docker Engine (ou indiquez le programme docker avec FM_DOCKER), puis rouvrez ceci.",
+  "Docker.NotRunning": "Docker ne fonctionne pas : démarrez Docker Desktop (ou le service docker), puis réessayez.",
+  "Docker.ContainerStopped": "Le conteneur n'est pas en cours d'exécution : démarrez-le (docker start {0}) pour travailler avec ses fichiers.",
+  "Docker.NoSuchContainer": "Conteneur introuvable : {0}",
+  "Docker.NoShell": "Le conteneur n'a pas de shell (sh), ses fichiers ne peuvent donc pas être listés.",
+  "Docker.MoveBetween": "Le déplacement entre conteneurs se fait par copie.",
+  "Docker.MadeWithDocker": "Les conteneurs sont créés et supprimés avec docker lui-même."
+}

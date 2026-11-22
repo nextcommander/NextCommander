@@ -1,0 +1,11 @@
+{
+  "Docker.Containers": "Docker konteynerleri",
+  "Docker.Group": "Docker",
+  "Docker.NotInstalled": "Docker kurulu değil. Docker Desktop'ı veya Docker Engine'i kurun (ya da FM_DOCKER ile docker programını gösterin), sonra bunu yeniden açın.",
+  "Docker.NotRunning": "Docker çalışmıyor: Docker Desktop'ı (ya da docker hizmetini) başlatıp yeniden deneyin.",
+  "Docker.ContainerStopped": "Konteyner çalışmıyor: dosyalarıyla çalışmak için başlatın (docker start {0}).",
+  "Docker.NoSuchContainer": "Böyle bir konteyner yok: {0}",
+  "Docker.NoShell": "Konteynerde kabuk (sh) yok, bu yüzden dosyaları listelenemiyor.",
+  "Docker.MoveBetween": "Konteynerler arasında taşıma kopyalayarak yapılır.",
+  "Docker.MadeWithDocker": "Konteynerler docker'ın kendisiyle oluşturulur ve kaldırılır."
+}

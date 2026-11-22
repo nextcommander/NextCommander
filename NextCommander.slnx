@@ -12,6 +12,7 @@
     <Project Path="src/Plugins/NextCommander.Plugin.Rclone/NextCommander.Plugin.Rclone.csproj" />
     <Project Path="src/Plugins/NextCommander.Plugin.Git/NextCommander.Plugin.Git.csproj" />
     <Project Path="src/Plugins/NextCommander.Plugin.Sqlite/NextCommander.Plugin.Sqlite.csproj" />
+    <Project Path="src/Plugins/NextCommander.Plugin.Docker/NextCommander.Plugin.Docker.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/NextCommander.App.Tests/NextCommander.App.Tests.csproj" />
