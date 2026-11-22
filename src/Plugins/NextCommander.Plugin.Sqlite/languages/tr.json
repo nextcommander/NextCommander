@@ -1,8 +1,8 @@
 {
-  "Sqlite.Tables": "{0} tablo",
-  "Sqlite.Views": "{0} görünüm",
-  "Sqlite.Indexes": "{0} dizin",
-  "Sqlite.Rows": "{0} satır",
+  "Sqlite.Tables": "Tablo: {0}",
+  "Sqlite.Views": "Görünüm: {0}",
+  "Sqlite.Indexes": "Dizin: {0}",
+  "Sqlite.Rows": "Satır: {0}",
   "Sqlite.NoTables": "Veritabanında tablo yok.",
   "Sqlite.View": "Görünüm",
   "Sqlite.Table": "Tablo",

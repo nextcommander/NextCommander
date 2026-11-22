@@ -85,7 +85,7 @@ public sealed class SqliteViewer : IViewerPlugin
             </style></head><body>
             """);
         html.Append(CultureInfo.InvariantCulture, $"<h1>{E(fileName)}</h1><div class=\"muted\">");
-        html.Append(E(T($"{tableCount} tables"))).Append(" · ").Append(E(T($"{viewCount} views"))).Append(" · ").Append(E(T($"{indexes.Count} indexes")));
+        html.Append(E(T($"Tables: {tableCount}"))).Append(" · ").Append(E(T($"Views: {viewCount}"))).Append(" · ").Append(E(T($"Indexes: {indexes.Count}")));
         html.Append(" · SQLite ").Append(E(SqliteDatabase.Version)).Append("</div>");
 
         if (objects.Count == 0)
@@ -99,7 +99,7 @@ public sealed class SqliteViewer : IViewerPlugin
             string count;
             try
             {
-                count = T($"{Convert.ToInt64(db.Scalar("SELECT count(*) FROM " + quoted), CultureInfo.InvariantCulture):N0} rows");
+                count = T($"Rows: {Convert.ToInt64(db.Scalar("SELECT count(*) FROM " + quoted), CultureInfo.InvariantCulture):N0}");
             }
             catch (IOException ex)
             {
@@ -170,7 +170,7 @@ public sealed class SqliteViewer : IViewerPlugin
             html.Append("</table>");
         }
         html.Append("</body></html>");
-        return new ViewerContent { Html = html.ToString(), Status = T($"{tableCount} tables") };
+        return new ViewerContent { Html = html.ToString(), Status = T($"Tables: {tableCount}") };
     }
 
     private static string T(string text) => Localizer.T(text);
