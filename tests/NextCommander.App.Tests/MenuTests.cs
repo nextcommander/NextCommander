@@ -226,7 +226,7 @@ public sealed class MenuTests : IDisposable
         Assert.Equal(["All files", "Programs", "*.*", "Custom...", "Only selected files"], Headers(w, "File filter"));
         Assert.Contains("New folder tab", Headers(w, "Tabs"));
         // grouped by type: main settings, look, button bars, commands and lists, saving / moving / backups
-        Assert.Equal(["Options...", "Plugins...", "Color theme", "Dark <-> Normal", "Edit column sets...",
+        Assert.Equal(["Settings...", "Plugins...", "Color theme", "Dark <-> Normal", "Edit column sets...",
             "Button bar...", "Button bar 2 (vertical)...", "Add button to button bar...",
             "Commands and shortcuts...", "Add user command (uc_)...", "Edit Hotlist...",
             "Save position", "Save settings", "Export settings...", "Import settings...", "Restore settings from a backup..."], Headers(w, "C_onfiguration"));
