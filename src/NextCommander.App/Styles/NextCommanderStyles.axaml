@@ -806,4 +806,411 @@
     <Setter Property="FontSize" Value="12" />
     <Setter Property="Background" Value="Transparent" />
   </Style>
+
+  <!--
+    ================================================================================================================
+    The main window after the user's template (main-window-template, 22 November 2026). The colors stay the theme's
+    (Fm* brushes, theme keys), the shapes are the template's: rounded panel cards on the window's background, the
+    drive chips with a used-space bar, rounded folder tabs, a path row with the drive box, a soft cursor, the middle
+    bar, a plain command line and function keys with their key caps. Later than the styles above: they win.
+    ================================================================================================================
+  -->
+  <!-- menu bar: rounded items, a soft background on hover, no line under it (the button bar below has one) -->
+  <Style Selector="Menu#MainMenu">
+    <Setter Property="Padding" Value="6,3" />
+  </Style>
+  <Style Selector="Menu#MainMenu > MenuItem">
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Margin" Value="1,0" />
+    <Setter Property="Padding" Value="9,3" />
+  </Style>
+  <Style Selector="Menu#MainMenu > MenuItem /template/ Border#PART_LayoutRoot">
+    <Setter Property="CornerRadius" Value="4" />
+  </Style>
+  <Style Selector="Menu#MainMenu > MenuItem:pointerover /template/ Border#PART_LayoutRoot, Menu#MainMenu > MenuItem:open /template/ Border#PART_LayoutRoot, Menu#MainMenu > MenuItem:selected /template/ Border#PART_LayoutRoot">
+    <Setter Property="Background" Value="{DynamicResource NcMwHoverBrush}" />
+  </Style>
+
+  <!-- the panel: a card with rounded corners; the active one with the accent around it -->
+  <Style Selector="Border.panelframe">
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcMwStrokeBrush}" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Background" Value="{DynamicResource NcMwCardBrush}" />
+  </Style>
+  <!-- one sharp line in the accent color (a half-transparent line with a ring around it looked blurred at the corners) -->
+  <Style Selector="Border.panelframe.active">
+    <Setter Property="BorderBrush" Value="{DynamicResource FmActiveAccentBrush}" />
+  </Style>
+  <!-- the bars inside the card: drive chips, tabs, path row, status -->
+  <Style Selector="Border.mwbar">
+    <Setter Property="Background" Value="{DynamicResource FmDriveBarBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcMwStrokeBrush}" />
+  </Style>
+
+  <!-- drive chips: a letter and a little used-space bar; the panel's drive raised -->
+  <Style Selector="Button.drivebtn">
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="Height" Value="28" />
+    <Setter Property="Padding" Value="8,0" />
+    <Setter Property="Margin" Value="1,0" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource NcMutedBrush}" />
+  </Style>
+  <Style Selector="Button.drivebtn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcMwHoverBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="Button.drivebtn.current, ItemsControl.raised Button.drivebtn.current">
+    <Setter Property="Background" Value="{DynamicResource NcMwChipBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.drivebtn.current /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BoxShadow" Value="{DynamicResource NcMwChipShadow}" />
+  </Style>
+  <Style Selector="Button.drivebtn.current:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcMwChipBrush}" />
+  </Style>
+  <Style Selector="Image.driveimage">
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+  </Style>
+  <Style Selector="Button.drivebtn PathIcon.driveicon">
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+  </Style>
+  <Style Selector="Border.drivebarsep">
+    <Setter Property="Margin" Value="6,6" />
+    <Setter Property="Background" Value="{DynamicResource NcMwStrongStrokeBrush}" />
+  </Style>
+  <!-- the used-space bar of a drive (chip, drive box, free space of the path row) -->
+  <Style Selector="Border.usage">
+    <Setter Property="Height" Value="4" />
+    <Setter Property="CornerRadius" Value="2" />
+    <Setter Property="Background" Value="{DynamicResource NcMwStrongStrokeBrush}" />
+    <Setter Property="ClipToBounds" Value="True" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.usage > Border">
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="Background" Value="{DynamicResource FmActiveAccentBrush}" />
+  </Style>
+  <Style Selector="Border.usage.low > Border">
+    <Setter Property="Background" Value="{DynamicResource NcBadBrush}" />
+  </Style>
+
+  <!-- folder tabs: rounded at the top; the selected one is part of the card, with the accent line in the active panel -->
+  <!-- the strip on the bar color, the tabs standing on its bottom edge -->
+  <Style Selector="Border#TabStripHost">
+    <Setter Property="Padding" Value="6,4,6,0" />
+  </Style>
+  <Style Selector="Border#TabStripHost ItemsControl#TabStrip">
+    <Setter Property="VerticalAlignment" Value="Bottom" />
+  </Style>
+  <Style Selector="Button.tab">
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="Height" Value="28" />
+    <Setter Property="MaxWidth" Value="180" />
+    <Setter Property="Padding" Value="10,0,6,0" />
+    <Setter Property="Margin" Value="0,0,2,0" />
+    <Setter Property="CornerRadius" Value="6,6,0,0" />
+    <Setter Property="BorderThickness" Value="1,1,1,0" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="VerticalAlignment" Value="Bottom" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+    <Setter Property="Foreground" Value="{DynamicResource NcMutedBrush}" />
+  </Style>
+  <!-- the accent line at the top of the current tab of the active panel (8 px in from both sides) -->
+  <Style Selector="Border.tabline">
+    <Setter Property="Height" Value="2" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="Margin" Value="-2,-1,2,0" />
+    <Setter Property="CornerRadius" Value="0,0,2,2" />
+    <Setter Property="Background" Value="{DynamicResource FmActiveAccentBrush}" />
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="Button.tab.current.focused Border.tabline">
+    <Setter Property="IsVisible" Value="True" />
+  </Style>
+  <Style Selector="Button.tab:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcMwHoverBrush}" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.tab.current">
+    <Setter Property="Background" Value="{DynamicResource NcMwCardBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcMwStrokeBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.tab.current.focused">
+    <Setter Property="BorderBrush" Value="{DynamicResource NcMwStrokeBrush}" />
+  </Style>
+  <Style Selector="Button.tab.current:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcMwCardBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcMwStrokeBrush}" />
+  </Style>
+  <!-- the page tabs of the window (files, options ...) keep their own look -->
+  <Style Selector="Button.tab.pagetab">
+    <Setter Property="Height" Value="NaN" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="BorderThickness" Value="0,0,0,2" />
+    <Setter Property="Padding" Value="12,7" />
+  </Style>
+  <Style Selector="Button.tabclose">
+    <Setter Property="Width" Value="18" />
+    <Setter Property="Height" Value="18" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="4,0,0,0" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource NcFaintBrush}" />
+  </Style>
+  <Style Selector="Button.tabclose:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcMwPressBrush}" />
+  </Style>
+  <Style Selector="Button.tabadd">
+    <Setter Property="Height" Value="28" />
+    <Setter Property="Padding" Value="8,0" />
+    <Setter Property="CornerRadius" Value="6,6,0,0" />
+    <Setter Property="VerticalAlignment" Value="Bottom" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Opacity" Value="0.7" />
+  </Style>
+
+  <!-- path row: the drive box, the crumbs, the free space -->
+  <Style Selector="Border.pathline, Border.pathline.active">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.drivebox">
+    <Setter Property="Height" Value="28" />
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="Padding" Value="8,0,6,0" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcMwStrokeBrush}" />
+    <Setter Property="Background" Value="{DynamicResource NcMwChipBrush}" />
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.drivebox:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcMwChipBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcMwStrongStrokeBrush}" />
+  </Style>
+  <Style Selector="Button.drivebox.open /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource FmActiveAccentBrush}" />
+  </Style>
+  <Style Selector="Button.crumb, Button.crumbsep">
+    <Setter Property="MinHeight" Value="24" />
+    <Setter Property="Padding" Value="6,2" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="Foreground" Value="{DynamicResource NcMutedBrush}" />
+  </Style>
+  <Style Selector="Button.crumbsep">
+    <Setter Property="Padding" Value="1,2" />
+    <Setter Property="Foreground" Value="{DynamicResource NcFaintBrush}" />
+  </Style>
+  <Style Selector="Button.crumb:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcMwPressBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="Button.crumb.last">
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="TextBox.pathbox">
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="FontFamily" Value="{DynamicResource NcMonoFont}" />
+    <Setter Property="FontSize" Value="12.5" />
+  </Style>
+  <Style Selector="TextBlock.freetext">
+    <Setter Property="FontSize" Value="11.5" />
+    <Setter Property="Foreground" Value="{DynamicResource NcFaintBrush}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <!-- the drive box's list -->
+  <Style Selector="Border.mwpopup">
+    <Setter Property="Background" Value="{DynamicResource FmListBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcMwStrongStrokeBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="4" />
+    <Setter Property="BoxShadow" Value="{DynamicResource NcMwPopupShadow}" />
+    <Setter Property="Margin" Value="8,0,8,16" />
+  </Style>
+  <Style Selector="ListBox.drivelist">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="ListBox.drivelist ListBoxItem">
+    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="MinHeight" Value="0" />
+  </Style>
+  <Style Selector="ListBox.drivelist ListBoxItem.header">
+    <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="Focusable" Value="False" />
+    <Setter Property="Padding" Value="10,6,10,2" />
+  </Style>
+  <Style Selector="ListBox.drivelist ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcMwHoverBrush}" />
+  </Style>
+  <Style Selector="ListBox.drivelist ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcMwAccentSoftBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+
+  <!-- the file list: header in quiet text, the cursor a soft accent with a line, the inactive panel's only a line -->
+  <Style Selector="DataGrid.files DataGridColumnHeader">
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="Padding" Value="8,0" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource NcMutedBrush}" />
+  </Style>
+  <Style Selector="DataGrid.files /template/ Rectangle#PART_ColumnHeadersAndRowsSeparator">
+    <Setter Property="Fill" Value="{DynamicResource NcMwStrokeBrush}" />
+  </Style>
+  <Style Selector="DataGrid.files DataGridRow">
+    <Setter Property="CornerRadius" Value="4" />
+  </Style>
+  <Style Selector="DataGrid.files DataGridRow:selected /template/ Rectangle#BackgroundRectangle">
+    <Setter Property="Fill" Value="{DynamicResource NcMwCursorBrush}" />
+    <Setter Property="Opacity" Value="1" />
+    <Setter Property="Stroke" Value="{DynamicResource NcMwCursorLineBrush}" />
+    <Setter Property="StrokeThickness" Value="1" />
+    <Setter Property="RadiusX" Value="4" />
+    <Setter Property="RadiusY" Value="4" />
+  </Style>
+  <Style Selector="DataGrid.files.inactive DataGridRow:selected">
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <Style Selector="DataGrid.files.inactive DataGridRow:selected /template/ Rectangle#BackgroundRectangle">
+    <Setter Property="Fill" Value="Transparent" />
+    <Setter Property="Stroke" Value="{DynamicResource NcMwStrongStrokeBrush}" />
+  </Style>
+  <!-- on the soft cursor the text keeps its colors (file type, hidden, marked) -->
+  <Style Selector="DataGrid.files DataGridRow:selected TextBlock.cell">
+    <Setter Property="Foreground" Value="{DynamicResource FmListTextBrush}" />
+  </Style>
+  <Style Selector="DataGrid.files DataGridRow:selected TextBlock.cell.colored" x:DataType="vm:FileItemViewModel">
+    <Setter Property="Foreground" Value="{Binding RuleBrush}" />
+  </Style>
+  <Style Selector="DataGrid.files DataGridRow:selected TextBlock.cell.hidden">
+    <Setter Property="Foreground" Value="{DynamicResource FmHiddenBrush}" />
+  </Style>
+  <Style Selector="DataGrid.files DataGridRow:selected TextBlock.cell.marked">
+    <Setter Property="Foreground" Value="{DynamicResource FmMarkedBrush}" />
+  </Style>
+  <Style Selector="TextBlock.cell">
+    <Setter Property="Margin" Value="6,0" />
+  </Style>
+
+  <!-- status line of the panel -->
+  <Style Selector="Border.mwstatus">
+    <Setter Property="Background" Value="{DynamicResource FmStatusBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcMwStrokeBrush}" />
+    <Setter Property="BorderThickness" Value="0,1,0,0" />
+  </Style>
+  <Style Selector="Border.mwstatus TextBlock">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{DynamicResource NcMutedBrush}" />
+  </Style>
+
+  <!-- the bar between the panels: round icon buttons in a narrow column -->
+  <Style Selector="Border#VerticalBarHost Button.barbutton">
+    <Setter Property="Width" Value="32" />
+    <Setter Property="Height" Value="32" />
+    <Setter Property="MinWidth" Value="32" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="0,2" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="Border#VerticalBarHost Button.barbutton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcMwHoverBrush}" />
+  </Style>
+  <Style Selector="Border#VerticalBarHost Border.barseparator">
+    <Setter Property="Height" Value="1" />
+    <Setter Property="Width" Value="20" />
+    <Setter Property="Margin" Value="0,5" />
+    <Setter Property="Background" Value="{DynamicResource NcMwStrongStrokeBrush}" />
+  </Style>
+  <!-- the button bar at the top: the same soft hover -->
+  <Style Selector="Border#TopBarHost Button.barbutton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcMwHoverBrush}" />
+  </Style>
+  <Style Selector="Border#TopBarHost Border.barseparator">
+    <Setter Property="Width" Value="1" />
+    <Setter Property="Height" Value="20" />
+    <Setter Property="Margin" Value="6,0" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Background" Value="{DynamicResource NcMwStrongStrokeBrush}" />
+  </Style>
+
+  <!-- command line: a plain box in a monospaced font, the prompt before it -->
+  <Style Selector="TextBox#CommandLine">
+    <Setter Property="FontFamily" Value="{DynamicResource NcMonoFont}" />
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBlock.prompt">
+    <Setter Property="FontFamily" Value="{DynamicResource NcMonoFont}" />
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="Foreground" Value="{DynamicResource NcMutedBrush}" />
+  </Style>
+
+  <!-- function keys: no frames, the key cap before the name, a soft hover -->
+  <Style Selector="Button.fkey">
+    <Setter Property="Height" Value="30" />
+    <Setter Property="Margin" Value="2,0" />
+    <Setter Property="Padding" Value="4,0" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="Foreground" Value="{DynamicResource NcMutedBrush}" />
+  </Style>
+  <Style Selector="Button.fkey:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcMwHoverBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.fkey.danger:pointerover /template/ ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource NcBadBrush}" />
+  </Style>
+  <Style Selector="Button.fkey:disabled /template/ ContentPresenter">
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector="Border.keycap">
+    <Setter Property="MinWidth" Value="24" />
+    <Setter Property="Height" Value="20" />
+    <Setter Property="Padding" Value="5,0" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="BorderThickness" Value="1,1,1,2" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcMwStrongStrokeBrush}" />
+    <Setter Property="Background" Value="{DynamicResource NcMwChipBrush}" />
+  </Style>
+  <Style Selector="Border.keycap TextBlock">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
 </Styles>

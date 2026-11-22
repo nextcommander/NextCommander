@@ -88,6 +88,31 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _freeSpaceText = string.Empty;
 
+    /// <summary>The free and total bytes of the folder's volume (0 / 0: not known); the path row's bar and text.</summary>
+    private (long Free, long Total) _space;
+
+    public bool HasSpace => _space.Total > 0;
+
+    /// <summary>"484 GB free of 931 GB" (the path row of the panel).</summary>
+    public string FreeShortText => HasSpace
+        ? string.Format(CultureInfo.CurrentCulture, "{0} free of {1}", NextCommander.Core.Formatting.SizeFormatter.Human(_space.Free), NextCommander.Core.Formatting.SizeFormatter.Human(_space.Total))
+        : string.Empty;
+
+    /// <summary>How much of the volume is used, 0 to 1.</summary>
+    public double UsedFraction => HasSpace ? Math.Clamp(1 - (double)_space.Free / _space.Total, 0, 1) : 0;
+
+    /// <summary>Less than a tenth of the volume is free (the bar turns red).</summary>
+    public bool SpaceIsLow => HasSpace && (double)_space.Free / _space.Total < 0.1;
+
+    private void SetSpace(long free, long total)
+    {
+        _space = (Math.Max(0, free), Math.Max(0, total));
+        OnPropertyChanged(nameof(HasSpace));
+        OnPropertyChanged(nameof(FreeShortText));
+        OnPropertyChanged(nameof(UsedFraction));
+        OnPropertyChanged(nameof(SpaceIsLow));
+    }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DriveChoices))]
     [NotifyPropertyChangedFor(nameof(DriveBarItems))]
@@ -601,6 +626,9 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
 
     public bool ShowDriveCombo => _settings.ShowDriveCombo;
 
+    /// <summary>The path row of the panel (drive box, path, free space) is shown while the drive box or the path line is on.</summary>
+    public bool ShowPathRow => ShowDriveCombo || ShowPathLine;
+
     public bool ShowDriveLabels => _settings.ShowDriveLabels;
 
     public bool InvertedSelection => _settings.InvertedSelection;
@@ -673,7 +701,7 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         UpdateFreeSpace();
         UpdateStatus();
         OnPropertyChanged(nameof(ColumnLayout));
-        foreach (var name in new[] { nameof(Title), nameof(ShowTabIcon), nameof(TabGlyph), nameof(InvertedSelection), nameof(FlatDriveButtons), nameof(ShowDriveLabels), nameof(ShowDriveButtons), nameof(FolderShortcutItems), nameof(HasFolderShortcuts), nameof(DriveBarItems), nameof(ShowDriveCombo), nameof(ShowPathLine), nameof(ShowBreadcrumbs),
+        foreach (var name in new[] { nameof(Title), nameof(ShowTabIcon), nameof(TabGlyph), nameof(InvertedSelection), nameof(FlatDriveButtons), nameof(ShowDriveLabels), nameof(ShowDriveButtons), nameof(FolderShortcutItems), nameof(HasFolderShortcuts), nameof(DriveBarItems), nameof(ShowDriveCombo), nameof(ShowPathLine), nameof(ShowPathRow), nameof(ShowBreadcrumbs),
                      nameof(ShowPathButtons), nameof(ShowColumnHeaders), nameof(ShowStatusBar) })
         {
             OnPropertyChanged(name);
@@ -2401,11 +2429,13 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         if (CurrentPath?.LocalAnchor is not { } path)
         {
             FreeSpaceText = string.Empty;
+            SetSpace(0, 0);
             return;
         }
         if (DriveSpaceOverride?.Invoke(path.Path) is { } fixedSpace)
         {
             FreeSpaceText = string.Format(CultureInfo.CurrentCulture, "[{0}] {1} of {2} free", fixedSpace.Label, FooterSize(fixedSpace.Free), FooterSize(fixedSpace.Total));
+            SetSpace(fixedSpace.Free, fixedSpace.Total);
             return;
         }
         try
@@ -2423,10 +2453,12 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
                 label = "_none_";
             }
             FreeSpaceText = string.Format(CultureInfo.CurrentCulture, "[{0}] {1} of {2} free", label, FooterSize(drive.AvailableFreeSpace), FooterSize(drive.TotalSize));
+            SetSpace(drive.AvailableFreeSpace, drive.TotalSize);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
         {
             FreeSpaceText = string.Empty;
+            SetSpace(0, 0);
         }
     }
 
@@ -2461,6 +2493,7 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         FreeSpaceText = space is null ? string.Empty
             : string.Format(CultureInfo.CurrentCulture, "[{0}] {1} of {2} free", string.IsNullOrEmpty(space.Label) ? "_none_" : space.Label,
                 FooterSize(space.Free), FooterSize(space.Total));
+        SetSpace(space?.Free ?? 0, space?.Total ?? 0);
     }
 
     private void SyncDriveSelection()

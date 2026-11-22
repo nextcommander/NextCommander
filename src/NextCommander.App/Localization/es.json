@@ -3763,5 +3763,8 @@
   "SettingsWindow.Browse": "Examinar...",
   "SettingsWindow.PluginProblem": "Ajustes de {0}: {1}",
   "SettingsWindow.NotSet": "Sin definir",
-  "MainWindow.PasswordNotSavedStoreLocked": "No se pudo guardar la contraseña: el almacén de contraseñas está bloqueado."
+  "MainWindow.PasswordNotSavedStoreLocked": "No se pudo guardar la contraseña: el almacén de contraseñas está bloqueado.",
+  "FilePanel.ChangeDriveTip": "Cambiar de unidad (Alt+F1 / Alt+F2)",
+  "FilePanel.Places": "Lugares",
+  "MainWindow.CommandLinePlaceholder": "Escriba un comando: se ejecuta en la carpeta del panel activo"
 }

@@ -46,9 +46,16 @@ public sealed class DriveWatchLiveTests
             Assert.True(Listed(), "the new drive is not in the drive lists");
             await WaitUntilAsync(() => Buttons() > 0, 3000);
             Assert.True(Buttons() > 0, "the new drive has no drive button");
-            var combos = w.GetVisualDescendants().OfType<ComboBox>().Where(c => c.Name == "DriveCombo").ToList();
-            Assert.NotEmpty(combos);
-            Assert.All(combos, c => Assert.Contains(c.Items.OfType<DriveItem>(), d => char.ToUpperInvariant(d.Name[0]) == letter));
+            // the drive box's list (opened as with Alt+F1) lists it too
+            var panels = w.GetVisualDescendants().OfType<Views.FilePanelView>().ToList();
+            Assert.NotEmpty(panels);
+            foreach (var panel in panels)
+            {
+                panel.OpenDriveBox();
+                Assert.True(panel.IsDriveBoxOpen);
+                Assert.Contains(panel.DriveBoxEntries, d => char.ToUpperInvariant(d.Name[0]) == letter);
+                panel.CloseDriveBox();
+            }
             await WaitUntilAsync(InOverview, 5000);
             Assert.True(InOverview(), "the new drive is not in the Computer view");
         }

@@ -135,7 +135,9 @@ public partial class MainWindow : Window
         CommandLineCompletion = Services.PathAutoComplete.Attach(CommandLine, files: true, lastWordOnly: true,
             baseFolder: () => _vm?.ActivePanel.CurrentPath is { IsLocal: true } here ? here.Path : null,
             settings: () => _vm?.Settings);
-        CommandHistoryButton.Click += (_, _) => ShowCommandHistory();
+        // while typing: the last 20 command lines that fit (Up / Down choose, Tab takes, Enter runs the chosen one)
+        CommandHistoryComplete = Services.HistoryAutoComplete.Attach(CommandLine, () => _vm?.RecentCommandLines(20) ?? [],
+            blocked: () => CommandLineCompletion?.IsOpen == true);
         TerminalButton.Click += (_, _) => ToggleTerminal();
         TransfersButton.Click += (_, _) => ToggleTransfers();
         CommandHistoryList.Tapped += (_, _) => TakeCommandFromHistory();
@@ -661,7 +663,7 @@ public partial class MainWindow : Window
         var top = Avalonia.VisualExtensions.TranslatePoint(RightPanel.ListArea, default, parent)?.Y ?? 0;
         if (Math.Abs(VerticalBarHost.Margin.Top - top) > 0.5)
         {
-            VerticalBarHost.Margin = new Avalonia.Thickness(4, Math.Max(0, top), 0, 0); // 4: the splitter left of it
+            VerticalBarHost.Margin = new Avalonia.Thickness(6, Math.Max(0, top), 0, 0); // 6: the splitter left of it
         }
     }
 
@@ -1330,6 +1332,9 @@ public partial class MainWindow : Window
 
     /// <summary>Path completion of the last word of the command line.</summary>
     public Services.PathAutoComplete CommandLineCompletion { get; private set; } = null!;
+
+    /// <summary>The last command lines offered while typing (tests).</summary>
+    public Services.HistoryAutoComplete CommandHistoryComplete { get; private set; } = null!;
 
     /// <summary>The internal terminal (created when first shown).</summary>
     public TerminalView? Terminal => _terminal;
