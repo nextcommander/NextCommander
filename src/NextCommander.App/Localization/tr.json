@@ -1724,7 +1724,7 @@
   "Settings.Zip.ZipCrypto": "ZipCrypto (eski, uyumlu)",
   "Settings.Assoc.InternalAssociationsEnter.Description": "Enter bu dosya türlerini verilen komutla açar: bir program (parametreleriyle), bir nc_ komutu, Lister, editör ya da sistemin programı. Shift+Enter: birlikte aç.",
   "Settings.Plugins.InstalledPlugins": "Kurulu eklentiler",
-  "Settings.Plugins.InstalledPlugins.Description": "Kapatılan eklentiler yüklenmez. Yeniden başlatınca geçerli olur.",
+  "Settings.Plugins.LoadThisPlugin": "Bu eklentiyi yükle (yeniden başlatınca)",
   "Settings.Plugins.NoPlugins": "Kurulu eklenti yok. Eklenti, ayarlar klasörünün ya da programın plugins klasöründe plugin.json içeren bir klasördür.",
   "Settings.Plugins.NotInstalled": "(kurulu değil)",
   "Settings.Proxy.Group.Proxy": "Proxy",

@@ -107,7 +107,7 @@ public sealed partial class SettingsView : UserControl
         _work = Clone(settings);
         _changed = changed;
         _extras = extraActions;
-        _items = [.. BuildItems(), .. PluginItems()];
+        _items = [.. BuildItems(), .. PluginItems(_work)];
         if (s_pages.Contains(settings.SettingsLastPage))
         {
             _page = settings.SettingsLastPage!;
@@ -1947,71 +1947,6 @@ public sealed partial class SettingsView : UserControl
     /// <summary>The plugin folders (settings folder and program folder); set by the main window.</summary>
     public static IReadOnlyList<string> PluginRoots { get; set; } = [];
 
-    /// <summary>Configuration > Plugins: every installed plugin with a check box; unchecked ones are not loaded.</summary>
-    private static SettingItem PluginsItem(string page, string group) =>
-        new(page, group, "Installed plugins", "Plugins turned off are not loaded. Takes effect after a restart.", (s, changed) =>
-        {
-            var panel = new StackPanel { Spacing = 6 };
-            var found = NextCommander.Core.Plugins.PluginLoader.Discover(PluginRoots);
-            var names = found.Select(p => p.Name).ToList();
-            // disabled plugins that are not installed any more stay in the list (unchecked) until they are removed
-            names.AddRange(s.DisabledPlugins.Where(d => !names.Contains(d, StringComparer.OrdinalIgnoreCase)));
-            if (names.Count == 0)
-            {
-                panel.Children.Add(new TextBlock
-                {
-                    Text = "No plugins are installed. A plugin is a folder with a plugin.json in the plugins folder of the settings folder or of the program.",
-                    TextWrapping = TextWrapping.Wrap,
-                    Opacity = 0.7,
-                });
-                return panel;
-            }
-            foreach (var name in names)
-            {
-                var info = found.FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
-                var details = info.Folder is null ? "(not installed)"
-                    : string.Join("  ·  ", new[] { info.Manifest?.Version, info.Manifest?.Description }.Where(t => !string.IsNullOrWhiteSpace(t)));
-                var header = new StackPanel { Spacing = 1 };
-                header.Children.Add(new TextBlock { Text = name, FontWeight = FontWeight.SemiBold, Classes = { "noloc" } });
-                if (details.Length > 0)
-                {
-                    header.Children.Add(new TextBlock { Text = details, FontSize = 12, Opacity = 0.7, TextWrapping = TextWrapping.Wrap, Classes = { "noloc" } });
-                }
-                // a switch at the right with "On" / "Off" before it (the user's request, 22 November 2026; was a check box)
-                var box = new ToggleSwitch
-                {
-                    Tag = name,
-                    IsChecked = !s.DisabledPlugins.Contains(name, StringComparer.OrdinalIgnoreCase),
-                    OnContent = null,
-                    OffContent = null,
-                    MinWidth = 0,
-                    VerticalAlignment = VerticalAlignment.Center,
-                };
-                var state = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Opacity = 0.8, Margin = new Thickness(0, 0, 10, 0) };
-                void ShowState() => state.Text = Core.Localization.Localizer.T(box.IsChecked == true ? "On" : "Off");
-                ShowState();
-                var toggle = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Children = { state, box } };
-                var row = new DockPanel { Margin = new Thickness(0, 2) };
-                DockPanel.SetDock(toggle, Dock.Right);
-                header.VerticalAlignment = VerticalAlignment.Center;
-                header.Margin = new Thickness(0, 0, 16, 0);
-                row.Children.AddRange([toggle, header]);
-                if (info.Folder is not null)
-                {
-                    ToolTip.SetTip(row, info.Folder);
-                }
-                box.IsCheckedChanged += (_, _) =>
-                {
-                    ShowState();
-                    var others = s.DisabledPlugins.Where(d => !string.Equals(d, name, StringComparison.OrdinalIgnoreCase));
-                    s.DisabledPlugins = box.IsChecked == true ? [.. others] : [.. others, name];
-                    changed();
-                };
-                panel.Children.Add(row);
-            }
-            return panel;
-        }, CopyOf(s => s.DisabledPlugins.ToList(), (s, v) => s.DisabledPlugins = v), FullWidth: true);
-
     /// <summary>The column fields for the view modes (column providers, plugins); set by the main window.</summary>
     public static Func<IReadOnlyList<NextCommander.Core.Columns.ColumnField>>? ColumnFields { get; set; }
 
@@ -2069,7 +2004,6 @@ public sealed partial class SettingsView : UserControl
         const string quick = "Operation/Quick search";
         const string ftp = "Operation/FTP";
         const string proxy = "Operation/Proxy";
-        const string plugins = "Operation/Plugins";
         const string thumbs = "Operation/Thumbnails";
         const string assoc = "Operation/Associations";
         const string index = "Operation/File index";
@@ -2335,7 +2269,6 @@ public sealed partial class SettingsView : UserControl
             Number(ftp, "FTP", "Retries when the server is busy", "How often a command is tried again after a dropped connection or a busy server (applies to new connections).",
                 0, 20, s => s.FtpRetries, (s, v) => s.FtpRetries = (int)v),
 
-            PluginsItem(plugins, "Plugins"),
             ProxyItem(proxy, "Proxy"),
 
             Number(thumbs, "Thumbnails", "Thumbnail size", "Also changes with Ctrl+wheel.", 32, 400, s => s.ThumbnailSize, (s, v) => s.ThumbnailSize = (int)v, 8),

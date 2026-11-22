@@ -58,7 +58,7 @@ public sealed class PluginSettingsTests : IDisposable
         await SettleAsync(4);
         Assert.Equal("Plugins", window.PageTitle);
         Assert.Null(SettingsView.StartAt); // used once
-        Assert.Contains("Installed plugins", window.VisibleLabels);
+        Assert.Contains("Load this plugin (after a restart)", window.VisibleLabels); // the plugin's switch, at the top of its group
         foreach (var label in new[] { "Sample program", "Sample rows", "Sample fast mode", "Sample mode" })
         {
             Assert.Contains(label, window.VisibleLabels);
