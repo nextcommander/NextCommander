@@ -3846,5 +3846,7 @@
   "ConnectionManagerView.FolderName": "Klasör adı",
   "ConnectionManagerView.ThereIsAFolderWith": "Bu adda bir klasör zaten var",
   "TerminalView.UploadTo": "{0} konumuna yükle",
-  "TerminalView.TypeThePathsAfterThe": "Yolları komut satırına yaz"
+  "TerminalView.TypeThePathsAfterThe": "Yolları komut satırına yaz",
+  "TerminalView.BackBelowThePanels": "Panellerin altına geri al",
+  "TerminalView.DragTheTitleBarOnto": "Terminali bir panelin yerine koymak için başlık çubuğunu o panelin üzerine sürükleyin"
 }

@@ -3846,5 +3846,7 @@
   "ConnectionManagerView.FolderName": "Nombre de la carpeta",
   "ConnectionManagerView.ThereIsAFolderWith": "Ya hay una carpeta con este nombre",
   "TerminalView.UploadTo": "Subir a {0}",
-  "TerminalView.TypeThePathsAfterThe": "Escribir las rutas tras el símbolo del sistema"
+  "TerminalView.TypeThePathsAfterThe": "Escribir las rutas tras el símbolo del sistema",
+  "TerminalView.BackBelowThePanels": "Volver debajo de los paneles",
+  "TerminalView.DragTheTitleBarOnto": "Arrastre la barra de título sobre un panel para poner el terminal en su lugar"
 }

@@ -1373,7 +1373,7 @@ public partial class MainWindow : Window
     /// </summary>
     public void ToggleTerminal()
     {
-        if (_vm is null)
+        if (_vm is null || ToggleDockedTerminal())
         {
             return;
         }
@@ -1444,7 +1444,7 @@ public partial class MainWindow : Window
     /// </summary>
     public void ToggleTerminalPage()
     {
-        if (_vm is null)
+        if (_vm is null || ToggleDockedTerminal())
         {
             return;
         }
@@ -1465,6 +1465,12 @@ public partial class MainWindow : Window
     private void ShowTerminalPage()
     {
         EnsureTerminal();
+        if (_terminalSide is not null)
+        {
+            SelectPage(WorkspacePage.Files);
+            _terminal!.Activate(); // in place of a panel: there
+            return;
+        }
         if (IsTerminalMaximizedPage)
         {
             SelectPage(WorkspacePage.Terminal);
@@ -1542,6 +1548,7 @@ public partial class MainWindow : Window
                 HideTerminal();
             };
             TerminalHost.Child = _terminal;
+            WireTerminalDock(_terminal);
             Closed += (_, _) => _terminal.Stop();
             SizeChanged += (_, e) =>
             {
@@ -1576,6 +1583,11 @@ public partial class MainWindow : Window
     private void ShowTerminal()
     {
         ApplyTerminalSettings();
+        if (_terminalSide is not null)
+        {
+            _terminal!.Activate(); // in place of a panel: there
+            return;
+        }
         if (!TerminalHost.IsVisible)
         {
             TerminalHost.IsVisible = true;
@@ -1591,9 +1603,9 @@ public partial class MainWindow : Window
     /// </summary>
     public void ToggleTerminalMaximized()
     {
-        if (_vm is null)
+        if (_vm is null || _terminalSide is not null)
         {
-            return;
+            return; // in place of a panel: no maximize (⤓ takes it below first)
         }
         if (IsTerminalMaximizedPage && _page != WorkspacePage.Terminal)
         {
@@ -1632,6 +1644,7 @@ public partial class MainWindow : Window
 
     private void HideTerminal()
     {
+        ReleaseTerminalFromSide(); // closed in place of a panel: the panel comes back
         RestoreTerminalSize();
         TerminalHost.IsVisible = false;
         if (_vm is not null)
