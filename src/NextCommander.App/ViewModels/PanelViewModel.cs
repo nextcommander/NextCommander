@@ -1147,7 +1147,9 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         var cursorName = CursorItem?.FullName;
         var marked = MarkedNames();
         var cursorIndex = CursorItem is null ? 0 : IndexOf(CursorItem);
-        if (CurrentPath == NetworkFileSystemProvider.Root && _registry.Resolve(CurrentPath) is NetworkFileSystemProvider network)
+        var fromWatch = _watchRefresh;
+        _watchRefresh = false;
+        if (!fromWatch && CurrentPath == NetworkFileSystemProvider.Root && _registry.Resolve(CurrentPath) is NetworkFileSystemProvider network)
         {
             network.Rescan(); // Ctrl+R in the network: scan again
         }
@@ -2614,11 +2616,15 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
             return;
         }
         _changeRefresh = _settings.AddedFilesAtEnd;
+        _watchRefresh = true; // (in the network: the scan's new machines, not a new scan)
         _ = RefreshAsync();
     }
 
     /// <summary>The next rebuild comes from a change in the folder: new files go to the end (Configuration > Refresh).</summary>
     private bool _changeRefresh;
+
+    /// <summary>The next refresh comes from a watched change, not from the user (Ctrl+R in the network scans again).</summary>
+    private bool _watchRefresh;
 
     /// <summary>Files added at the end since the list was last sorted, in the order they came.</summary>
     private readonly List<string> _addedAtEnd = [];
@@ -2647,6 +2653,10 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
     /// <summary>Configuration > Refresh: automatic refresh on, not excluded by drive type or folder mask.</summary>
     private bool WantsWatching(VfsPath path)
     {
+        if (path.Scheme == NextCommander.Platform.NetworkFileSystemProvider.NetworkScheme)
+        {
+            return true; // the machines of a running network scan come in as they are found (not a file watch)
+        }
         if (!_settings.AutoRefresh)
         {
             return false;

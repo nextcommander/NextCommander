@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net;
 using NextCommander.Core.Vfs;
 
@@ -26,18 +27,33 @@ public sealed class NetworkFileSystemProvider : IFileSystemProvider
 
     private readonly IPlatformService? _platform;
     private readonly Func<bool> _includeAdminShares;
-    private readonly Func<CancellationToken, Task<IReadOnlyList<NetworkHost>>> _scan;
-    private readonly SemaphoreSlim _scanLock = new(1, 1);
+    private readonly Func<Action<NetworkHost>?, CancellationToken, Task<IReadOnlyList<NetworkHost>>> _scan;
+    private readonly object _gate = new();
     private IReadOnlyList<NetworkHost>? _hosts;
     private DateTime _scannedAt;
 
+    /// <summary>The scan running now (null: none) and the machines it found so far.</summary>
+    private Task<IReadOnlyList<NetworkHost>>? _running;
+    private readonly ConcurrentDictionary<IPAddress, NetworkHost> _found = new();
+    private readonly List<Action> _watchers = [];
+    private DateTime _lastNotice;
+
+    /// <param name="scan">The scan (tests); by default <see cref="NetworkScanner.ScanAsync"/>.</param>
+    /// <param name="progressiveScan">A scan that tells each machine as it is found (tests).</param>
     public NetworkFileSystemProvider(IPlatformService? platform, Func<bool> includeAdminShares,
-        Func<CancellationToken, Task<IReadOnlyList<NetworkHost>>>? scan = null)
+        Func<CancellationToken, Task<IReadOnlyList<NetworkHost>>>? scan = null,
+        Func<Action<NetworkHost>?, CancellationToken, Task<IReadOnlyList<NetworkHost>>>? progressiveScan = null)
     {
         _platform = platform;
         _includeAdminShares = includeAdminShares;
-        _scan = scan ?? (ct => NetworkScanner.ScanAsync(null, ct));
+        _scan = progressiveScan ?? (scan is not null ? (_, ct) => scan(ct) : (found, ct) => NetworkScanner.ScanAsync(found, ct));
     }
+
+    /// <summary>
+    /// How long the first listing waits for the scan (the user's report, 23 November 2026: the Network button seemed to do
+    /// nothing while a scan of ~20 s ran): then the machines found so far are shown, the others come as they are found.
+    /// </summary>
+    public TimeSpan FirstWait { get; set; } = TimeSpan.FromSeconds(1.5);
 
     public static VfsPath Root { get; } = VfsPath.Parse(NetworkScheme + ":///");
 
@@ -83,28 +99,108 @@ public sealed class NetworkFileSystemProvider : IFileSystemProvider
         };
     }
 
+    /// <summary>
+    /// The machines: the last scan's while it is fresh; else a scan runs in the background and, if it is not done within
+    /// <see cref="FirstWait"/>, the machines found so far are returned (the panel watching the network is told of more).
+    /// </summary>
     private async Task<IReadOnlyList<NetworkHost>> HostsAsync(CancellationToken cancellationToken)
     {
-        await _scanLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        Task<IReadOnlyList<NetworkHost>> running;
+        lock (_gate)
+        {
+            if (_hosts is not null && DateTime.UtcNow - _scannedAt <= CacheTime)
+            {
+                return _hosts;
+            }
+            if (_running is null)
+            {
+                _found.Clear();
+                _running = Task.Run(ScanInBackgroundAsync, CancellationToken.None);
+            }
+            running = _running;
+        }
+        var done = await Task.WhenAny(running, Task.Delay(FirstWait, cancellationToken)).ConfigureAwait(false) == running;
+        cancellationToken.ThrowIfCancellationRequested();
+        return done ? await running.ConfigureAwait(false) : Found();
+    }
+
+    /// <summary>The machines found so far by the running scan (with at least one service), by address.</summary>
+    private List<NetworkHost> Found() =>
+        [.. _found.Values.Where(h => h.Services.Count > 0).OrderBy(h => string.Join('.', h.Address.GetAddressBytes().Select(b => b.ToString("D3", System.Globalization.CultureInfo.InvariantCulture))), StringComparer.Ordinal)];
+
+    private async Task<IReadOnlyList<NetworkHost>> ScanInBackgroundAsync()
+    {
+        IReadOnlyList<NetworkHost> hosts;
         try
         {
-            if (_hosts is null || DateTime.UtcNow - _scannedAt > CacheTime)
+            hosts = await _scan(host =>
             {
-                _hosts = await _scan(cancellationToken).ConfigureAwait(false);
-                _scannedAt = DateTime.UtcNow;
-            }
-            return _hosts;
+                _found[host.Address] = host;
+                Notify(throttled: true);
+            }, CancellationToken.None).ConfigureAwait(false);
         }
-        finally
+        catch (Exception ex) when (ex is System.Net.Sockets.SocketException or IOException or OperationCanceledException or UnauthorizedAccessException)
         {
-            _scanLock.Release();
+            hosts = Found(); // what was found before the failure
+        }
+        lock (_gate)
+        {
+            _hosts = hosts;
+            _scannedAt = DateTime.UtcNow;
+            _running = null;
+        }
+        Notify(throttled: false);
+        return hosts;
+    }
+
+    /// <summary>Tells the panels watching the network that it changed (while scanning at most about twice a second).</summary>
+    private void Notify(bool throttled)
+    {
+        Action[] watchers;
+        lock (_gate)
+        {
+            if (throttled && DateTime.UtcNow - _lastNotice < TimeSpan.FromMilliseconds(600))
+            {
+                return;
+            }
+            _lastNotice = DateTime.UtcNow;
+            watchers = [.. _watchers];
+        }
+        foreach (var watcher in watchers)
+        {
+            watcher();
+        }
+    }
+
+    /// <summary>A panel showing the network hears of the machines a running scan finds (and of its end).</summary>
+    public IDisposable? Watch(VfsPath directory, Action onChanged)
+    {
+        if (directory.Path.Trim('/').Length != 0)
+        {
+            return null;
+        }
+        lock (_gate)
+        {
+            _watchers.Add(onChanged);
+        }
+        return new Unwatch(this, onChanged);
+    }
+
+    private sealed class Unwatch(NetworkFileSystemProvider owner, Action watcher) : IDisposable
+    {
+        public void Dispose()
+        {
+            lock (owner._gate)
+            {
+                owner._watchers.Remove(watcher);
+            }
         }
     }
 
     /// <summary>A machine of the last scan, or (typed path) one asked directly: its services by trying the ports.</summary>
     private async Task<NetworkHost?> HostAsync(string name, CancellationToken cancellationToken)
     {
-        if (_hosts?.FirstOrDefault(h => Matches(h, name)) is { } known)
+        if ((_hosts ?? Found()).FirstOrDefault(h => Matches(h, name)) is { } known)
         {
             return known;
         }
