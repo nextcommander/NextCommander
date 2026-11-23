@@ -3844,5 +3844,7 @@
   "NetworkToolsWindow.ThisNetworkEveryone": "This network (everyone)",
   "ConnectionManagerView.AFolderNameCanT": "A folder name can't contain /",
   "ConnectionManagerView.FolderName": "Folder name",
-  "ConnectionManagerView.ThereIsAFolderWith": "There is a folder with this name already"
+  "ConnectionManagerView.ThereIsAFolderWith": "There is a folder with this name already",
+  "TerminalView.UploadTo": "Upload to {0}",
+  "TerminalView.TypeThePathsAfterThe": "Type the paths after the prompt"
 }

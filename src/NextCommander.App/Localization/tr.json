@@ -3844,5 +3844,7 @@
   "NetworkToolsWindow.ThisNetworkEveryone": "Bu ağ (herkes)",
   "ConnectionManagerView.AFolderNameCanT": "Klasör adında / olamaz",
   "ConnectionManagerView.FolderName": "Klasör adı",
-  "ConnectionManagerView.ThereIsAFolderWith": "Bu adda bir klasör zaten var"
+  "ConnectionManagerView.ThereIsAFolderWith": "Bu adda bir klasör zaten var",
+  "TerminalView.UploadTo": "{0} konumuna yükle",
+  "TerminalView.TypeThePathsAfterThe": "Yolları komut satırına yaz"
 }
