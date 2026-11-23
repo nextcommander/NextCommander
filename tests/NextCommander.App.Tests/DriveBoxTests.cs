@@ -81,7 +81,7 @@ public sealed class DriveBoxTests : IDisposable
         // a bar above each panel: that panel's drive
         Assert.Equal(["A", "B"], Marked("DriveButtons"));
         var current = w.GetVisualDescendants().OfType<Button>().First(b => b.Classes.Contains("current") && b.IsEffectivelyVisible);
-        Assert.Equal(Avalonia.Media.FontWeight.Bold, current.FontWeight);
+        Assert.True(current.FontWeight >= Avalonia.Media.FontWeight.SemiBold); // the template's chip: semi-bold
         if (Environment.GetEnvironmentVariable("FM_SCREENSHOT_DIR") is { Length: > 0 } dir)
         {
             w.CaptureRenderedFrame()!.SavePng(Path.Combine(dir, "drivebar-current.png"));

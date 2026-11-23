@@ -3,6 +3,7 @@
   "Docker.Group": "Docker",
   "Docker.NotInstalled": "Docker is not installed. Install Docker Desktop or Docker Engine (or set FM_DOCKER to the docker program), then open this again.",
   "Docker.NotRunning": "Docker is not running: start Docker Desktop (or the docker service), then try again.",
+  "Docker.WrongHost": "Docker does not answer at {0} (the DOCKER_HOST environment variable): start Docker, or remove or correct DOCKER_HOST.",
   "Docker.ContainerStopped": "The container is not running: start it (docker start {0}) to work with its files.",
   "Docker.NoSuchContainer": "No such container: {0}",
   "Docker.NoShell": "The container has no shell (sh), so its files cannot be listed.",

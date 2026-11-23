@@ -27,4 +27,14 @@
   <ItemGroup>
     <Compile Include="..\Shared\TestDocuments.cs" Link="Shared\TestDocuments.cs" />
   </ItemGroup>
+  <!--
+    The shipped plugins in plugins/ next to the tests, as next to the program (ShippedPluginsTests, UserFilesTests load
+    them from there); the application's NcPluginFileList gives the files.
+  -->
+  <Target Name="NcCopyShippedPlugins" AfterTargets="CopyFilesToOutputDirectory">
+    <MSBuild Projects="..\..\src\NextCommander.App\NextCommander.App.csproj" Targets="NcPluginFileList">
+      <Output TaskParameter="TargetOutputs" ItemName="_NcTestPluginFile" />
+    </MSBuild>
+    <Copy SourceFiles="@(_NcTestPluginFile)" DestinationFiles="@(_NcTestPluginFile->'$(OutDir)%(RelativePath)')" SkipUnchangedFiles="true" />
+  </Target>
 </Project>

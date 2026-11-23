@@ -3,6 +3,7 @@
   "Docker.Group": "Docker",
   "Docker.NotInstalled": "未安装 Docker。请安装 Docker Desktop 或 Docker Engine（或用 FM_DOCKER 指定 docker 程序），然后重新打开。",
   "Docker.NotRunning": "Docker 未运行：请启动 Docker Desktop（或 docker 服务），然后重试。",
+  "Docker.WrongHost": "Docker 在 {0} 没有响应（DOCKER_HOST 环境变量）：请启动 Docker，或删除或更正 DOCKER_HOST。",
   "Docker.ContainerStopped": "容器未运行：请启动它（docker start {0}）以处理其文件。",
   "Docker.NoSuchContainer": "没有此容器：{0}",
   "Docker.NoShell": "容器中没有 shell (sh)，因此无法列出其文件。",

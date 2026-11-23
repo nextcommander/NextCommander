@@ -3,6 +3,7 @@
   "Docker.Group": "Docker",
   "Docker.NotInstalled": "Docker no está instalado. Instale Docker Desktop o Docker Engine (o indique el programa docker con FM_DOCKER) y vuelva a abrir esto.",
   "Docker.NotRunning": "Docker no se está ejecutando: inicie Docker Desktop (o el servicio docker) y vuelva a intentarlo.",
+  "Docker.WrongHost": "Docker no responde en {0} (la variable de entorno DOCKER_HOST): inicie Docker, o quite o corrija DOCKER_HOST.",
   "Docker.ContainerStopped": "El contenedor no se está ejecutando: inícielo (docker start {0}) para trabajar con sus archivos.",
   "Docker.NoSuchContainer": "No existe el contenedor: {0}",
   "Docker.NoShell": "El contenedor no tiene shell (sh), por lo que no se pueden listar sus archivos.",

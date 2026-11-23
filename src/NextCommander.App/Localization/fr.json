@@ -1095,6 +1095,7 @@
   "MultiRenameWindow.ItemsWillBeRenamedItems": "{0} éléments seront renommés ; {1} éléments posent problème (ils seront ignorés).",
   "MultiRenameWindow.Lowercase": "minuscules",
   "MultiRenameWindow.MultiRenameToolItems": "Outil de renommage multiple — {0} éléments",
+  "MultiRenameWindow.NName": "[N] nom",
   "MultiRenameWindow.N1CharactersOfTheName": "[N1-3] caractères 1 à 3 du nom",
   "MultiRenameWindow.NameMask": "Masque de nom :",
   "MultiRenameWindow.PParentFolder": "[P] dossier parent",

@@ -1095,6 +1095,7 @@
   "MultiRenameWindow.ItemsWillBeRenamedItems": "{0} öğe yeniden adlandırılacak, {1} öğede sorun var (bunlar atlanır).",
   "MultiRenameWindow.Lowercase": "küçük harf",
   "MultiRenameWindow.MultiRenameToolItems": "Çoklu yeniden adlandır — {0} öğe",
+  "MultiRenameWindow.NName": "[N] ad",
   "MultiRenameWindow.N1CharactersOfTheName": "[N1-3] adın 1-3. harfleri",
   "MultiRenameWindow.NameMask": "Ad maskesi:",
   "MultiRenameWindow.PParentFolder": "[P] üst klasör",

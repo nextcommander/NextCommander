@@ -231,6 +231,25 @@ built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC l
 - [x] Trash: the original location of deleted items as a column ("Original location", `TrashColumns`): the trash gets its own view mode by itself unless a view mode of the user matches it.
 - [x] MTP: free space of the phone's storages in the footer (WPD storage capacity, `IVolumeSpaceProvider`); a phone folder shown in a panel is read again every 3 s (ids only) and the panel refreshes when files come or go (Configuration > Refresh: removable drives). To be tried with a real phone.
 
+## User's report (23 November 2026)
+- [x] Right button selection: held and dragged over the rows, it marks (or, started on a marked file, unmarks) every row
+  passed, the cursor following (`FilePanelView.OnRightPaintMoved`); moving off the first row means no context menu.
+- [x] A folder that may not be listed but is a link (Windows' compatibility junctions such as "Application Data" in
+  ProgramData, which deny listing to everyone) opens its target folder instead of `<Read error!>`
+  (`PanelViewModel.ReadableLinkTarget`).
+- [x] Duplicate files by content: the sizes, then 4 KB at the start, middle and end of each file (small files read
+  whole), then the whole file through BLAKE3 for those still alike; a few files read at a time. Before: the first
+  64 KB, then the whole file through SHA-256, one file at a time.
+- [x] Sorting by name: files by the name before the extension first ("deneme1.txt" before "deneme1 - Copy.txt").
+- [x] Multi-Rename: the placeholder "[N] name" (was "[N] ad", Turkish in the English interface); the letter case
+  buttons gave the case chosen before (the button checked first counted, the old one is unchecked only after the event).
+- [x] Docker: a `DOCKER_HOST` left behind by another tool (Rancher Desktop's `tcp://localhost:2375`) overrides Docker
+  Desktop's context and every command failed with "Docker is not running"; the plugin now runs the command again
+  without it, and the message names DOCKER_HOST when it still fails. The installed program (18 November 2026) has no
+  Docker plugin yet: it needs a new setup.
+- [ ] To be tried by the user: these in the app (right button drag with the selection mode on, C:\ProgramData\Application Data,
+  duplicates in C:\Windows, Docker with Docker Desktop).
+
 ## Disc images (user's request, 21 November 2026)
 - [x] ISO files open like an archive in a panel (Enter on an .iso): browse, view, copy out, search inside, compare,
   checksum; read-only. Read with DiscUtils (MIT; `Vfs.Archive/DiscImage`): UDF when the image has it (DVD / Blu-ray),

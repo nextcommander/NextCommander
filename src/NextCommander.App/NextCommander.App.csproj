@@ -98,6 +98,8 @@
       <_NcPluginFile Include="@(_NcPluginDependency)" RelativePath="plugins\%(PluginFolder)\%(Filename)%(Extension)" />
     </ItemGroup>
   </Target>
+  <!-- the plugin files with their RelativePath, for the test project (it puts them next to its own output) -->
+  <Target Name="NcPluginFileList" DependsOnTargets="NcPluginFiles" Returns="@(_NcPluginFile)" />
   <Target Name="NcCopyPlugins" AfterTargets="CopyFilesToOutputDirectory" DependsOnTargets="NcPluginFiles">
     <Copy SourceFiles="@(_NcPluginFile)" DestinationFiles="@(_NcPluginFile->'$(OutDir)%(RelativePath)')" SkipUnchangedFiles="true" />
   </Target>

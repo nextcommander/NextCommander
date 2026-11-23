@@ -161,7 +161,7 @@ public sealed class PanelToolsTests : IDisposable
         again.SelectPage("Layout");
         await SettleAsync(4);
         var bar = again.GetLogicalDescendants().OfType<CheckBox>().First(c => Equals(c.Content, "Show command line"));
-        Assert.True(w.FindControl<Grid>("CommandLineRow")!.IsVisible);
+        Assert.True(vm.Settings.ShowCommandLine); // (the row itself is hidden while the options page is shown)
         bar.IsChecked = false;
         await SettleAsync();
         again.GetLogicalDescendants().OfType<Button>().First(b => Equals(b.Content, "Apply")).RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
@@ -171,6 +171,8 @@ public sealed class PanelToolsTests : IDisposable
         Assert.Same(again, w.Settings); // Apply keeps it open
         again.Close();
         await shownAgain;
+        await SettleAsync();
+        Assert.False(w.FindControl<Grid>("CommandLineRow")!.IsVisible); // back on the files: still off
     }
 
     [AvaloniaFact]
