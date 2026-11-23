@@ -1547,7 +1547,7 @@
   "Settings.Misc.RealTerminal": "真实终端（颜色、全屏程序）",
   "Settings.Misc.RealTerminal.Description": "Shell 运行在伪终端上（Windows 上为 ConPTY，Linux 和 macOS 上为 pty）：颜色、光标移动以及 vim、mc、top 等全屏程序均可正常工作。关闭时使用简单的行控制台。对新打开的标签生效。",
   "Settings.Misc.Shell": "Shell",
-  "Settings.Misc.Shell.Description": "通过命令行末尾的终端按钮打开的终端所用的 Shell（如 pwsh、powershell、/bin/zsh）。留空：Windows 上为 cmd.exe，其他系统为 $SHELL。对新启动的 Shell 生效。",
+  "Settings.Misc.Shell.Description": "通过命令行末尾的终端按钮打开的终端所用的 Shell（如 pwsh、powershell、/bin/zsh）。留空：Windows 上已安装 PowerShell 时使用 PowerShell（否则为 cmd.exe），其他系统为 $SHELL。对新启动的 Shell 生效。",
   "Settings.Misc.SoundWhenAnOperationEnds": "操作结束时播放声音",
   "Settings.Misc.SoundWhenAnOperationEnds.Description": "复制、删除、压缩 ... 完成时播放的声音文件（.wav；Linux 和 macOS 上也可以是 .mp3）。",
   "Settings.Misc.StartMenu.Description": "“开始”菜单的项目：程序（含参数和起始文件夹）或 nc_ 命令；用分隔符分组。",

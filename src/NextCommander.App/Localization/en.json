@@ -1547,7 +1547,7 @@
   "Settings.Misc.RealTerminal": "Real terminal (colors, full screen programs)",
   "Settings.Misc.RealTerminal.Description": "The shell runs on a pseudo terminal (ConPTY on Windows, a pty on Linux and macOS): colors, cursor movement and full screen programs such as vim, mc and top work. When off, a simple line console is used. Applies to newly opened tabs.",
   "Settings.Misc.Shell": "Shell",
-  "Settings.Misc.Shell.Description": "Shell of the terminal opened with the terminal button at the end of the command line (e.g. pwsh, powershell, /bin/zsh). Empty: cmd.exe on Windows, $SHELL elsewhere. Applies to a newly started shell.",
+  "Settings.Misc.Shell.Description": "Shell of the terminal opened with the terminal button at the end of the command line (e.g. pwsh, powershell, /bin/zsh). Empty: PowerShell on Windows when it is installed (else cmd.exe), $SHELL elsewhere. Applies to a newly started shell.",
   "Settings.Misc.SoundWhenAnOperationEnds": "Sound when an operation ends",
   "Settings.Misc.SoundWhenAnOperationEnds.Description": "A sound file (.wav; .mp3 too on Linux and macOS) played when copying, deleting, packing ... is over.",
   "Settings.Misc.StartMenu.Description": "The items of the Start menu: a program (with parameters and start folder) or a nc_ command; separators group them.",

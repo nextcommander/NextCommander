@@ -1547,7 +1547,7 @@
   "Settings.Misc.RealTerminal": "Echtes Terminal (Farben, Vollbildprogramme)",
   "Settings.Misc.RealTerminal.Description": "Die Shell läuft auf einem Pseudo-Terminal (ConPTY unter Windows, ein pty unter Linux und macOS): Farben, Cursorbewegung und Vollbildprogramme wie vim, mc und top funktionieren. Wenn aus, wird eine einfache Zeilenkonsole verwendet. Gilt für neu geöffnete Tabs.",
   "Settings.Misc.Shell": "Shell",
-  "Settings.Misc.Shell.Description": "Shell des Terminals, das mit der Terminal-Schaltfläche am Ende der Befehlszeile geöffnet wird (z. B. pwsh, powershell, /bin/zsh). Leer: cmd.exe unter Windows, sonst $SHELL. Gilt für eine neu gestartete Shell.",
+  "Settings.Misc.Shell.Description": "Shell des Terminals, das mit der Terminal-Schaltfläche am Ende der Befehlszeile geöffnet wird (z. B. pwsh, powershell, /bin/zsh). Leer: unter Windows PowerShell, wenn installiert (sonst cmd.exe), sonst $SHELL. Gilt für eine neu gestartete Shell.",
   "Settings.Misc.SoundWhenAnOperationEnds": "Klang am Ende eines Vorgangs",
   "Settings.Misc.SoundWhenAnOperationEnds.Description": "Eine Klangdatei (.wav; unter Linux und macOS auch .mp3), die nach Kopieren, Löschen, Packen ... abgespielt wird.",
   "Settings.Misc.StartMenu.Description": "Die Einträge des Startmenüs: ein Programm (mit Parametern und Startordner) oder ein nc_-Befehl; Trennlinien gruppieren sie.",
