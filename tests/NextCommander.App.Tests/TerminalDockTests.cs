@@ -71,4 +71,70 @@ public sealed class TerminalDockTests
         Assert.False(host.IsVisible);
         vm.Dispose();
     }
+
+    [AvaloniaFact]
+    public async Task The_terminal_page_tab_is_dragged_into_a_panel()
+    {
+        using var fx = new UiFixture();
+        var (w, vm) = await fx.OpenAsync();
+        vm.Settings.TerminalEmulation = false;
+        vm.Settings.TerminalTabs = [];
+        w.ToggleTerminal();
+        await SettleAsync(4);
+        await vm.ExecuteAsync("nc_MaximizeTerminal"); // a page with a tab
+        await SettleAsync(4);
+        Assert.Equal(WorkspacePage.Terminal, w.CurrentPage);
+        var terminal = w.Terminal!;
+        var left = w.FindControl<PanelSideView>("LeftSideView")!;
+
+        Button TerminalTab() => w.FindControl<Border>("WorkspaceTabsHost")!.GetVisualDescendants().OfType<Button>()
+            .First(b => Equals(b.Tag, WorkspacePage.Terminal) && b.Classes.Contains("pagetab"));
+
+        // dropped outside the panels: back on its page
+        var tab = TerminalTab();
+        var from = tab.TranslatePoint(new Point(tab.Bounds.Width / 2, tab.Bounds.Height / 2), w)!.Value;
+        w.MouseDown(from, MouseButton.Left);
+        w.MouseMove(from + new Point(40, 5), RawInputModifiers.LeftMouseButton);
+        await SettleAsync(2);
+        Assert.Equal(WorkspacePage.Files, w.CurrentPage); // the panels are shown while dragging
+        w.MouseUp(from + new Point(40, 5), MouseButton.Left);
+        await SettleAsync(4);
+        Assert.Equal(WorkspacePage.Terminal, w.CurrentPage);
+        Assert.Null(w.TerminalSide);
+
+        // dropped on the left panel: the terminal takes its place
+        tab = TerminalTab();
+        from = tab.TranslatePoint(new Point(tab.Bounds.Width / 2, tab.Bounds.Height / 2), w)!.Value;
+        w.MouseDown(from, MouseButton.Left);
+        w.MouseMove(from + new Point(40, 5), RawInputModifiers.LeftMouseButton);
+        await SettleAsync(2);
+        var to = left.TranslatePoint(new Point(left.Bounds.Width / 2, left.Bounds.Height / 2), w)!.Value;
+        w.MouseMove(to, RawInputModifiers.LeftMouseButton);
+        await SettleAsync(2);
+        Assert.Contains("droptarget", left.Classes);
+        w.MouseUp(to, MouseButton.Left);
+        await SettleAsync(4);
+        Assert.Same(left, w.TerminalSide);
+        Assert.Same(terminal, left.Overlay);
+        Assert.False(terminal.IsMaximized);
+        Assert.Equal(WorkspacePage.Files, w.CurrentPage);
+        Assert.False(w.FindControl<Border>("WorkspaceTabsHost")!.IsVisible); // no Terminal page any more
+        Assert.DoesNotContain("droptarget", left.Classes);
+        Assert.Same(vm.RightSide, vm.ActiveSide);
+        vm.Dispose();
+    }
+
+    [AvaloniaFact]
+    public void PowerShell_is_the_default_shell_on_Windows_when_installed()
+    {
+        var shells = NextCommander.App.Services.TerminalSession.AvailableShells();
+        var expected = OperatingSystem.IsWindows()
+            ? shells.FirstOrDefault(s => s.Name == "PowerShell 7") ?? shells.FirstOrDefault(s => s.Name == "Windows PowerShell") ?? shells[0]
+            : shells[0];
+        Assert.Same(expected, NextCommander.App.Services.TerminalSession.ShellFor(null));
+        if (OperatingSystem.IsWindows() && shells.Any(s => s.Name.Contains("PowerShell", StringComparison.Ordinal)))
+        {
+            Assert.Contains("PowerShell", NextCommander.App.Services.TerminalSession.ShellFor("").Name, StringComparison.Ordinal);
+        }
+    }
 }

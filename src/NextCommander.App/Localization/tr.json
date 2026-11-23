@@ -1547,7 +1547,7 @@
   "Settings.Misc.RealTerminal": "Gerçek terminal (renkler, tam ekran programlar)",
   "Settings.Misc.RealTerminal.Description": "Kabuk bir sözde terminalde çalışır (Windows'ta ConPTY, Linux ve macOS'ta pty): renkler, imleç hareketleri, vim, mc, top gibi tam ekran programlar çalışır. Kapalıyken basit satır konsolu kullanılır. Yeni açılan sekmelere uygulanır.",
   "Settings.Misc.Shell": "Kabuk",
-  "Settings.Misc.Shell.Description": "Komut satırının sonundaki terminal düğmesiyle açılan terminalin kabuğu (ör. pwsh, powershell, /bin/zsh). Boş: Windows'ta cmd.exe, diğerlerinde $SHELL. Yeni açılan kabuğa uygulanır.",
+  "Settings.Misc.Shell.Description": "Komut satırının sonundaki terminal düğmesiyle açılan terminalin kabuğu (ör. pwsh, powershell, /bin/zsh). Boş: Windows'ta yüklüyse PowerShell (yoksa cmd.exe), diğerlerinde $SHELL. Yeni açılan kabuğa uygulanır.",
   "Settings.Misc.SoundWhenAnOperationEnds": "İşlem bitince çalınacak ses",
   "Settings.Misc.SoundWhenAnOperationEnds.Description": "Kopyalama, silme, paketleme ... bitince çalınan ses dosyası (.wav; Linux ve macOS'ta .mp3 de).",
   "Settings.Misc.StartMenu.Description": "Başlat menüsünün öğeleri: bir program (parametreleri ve başlangıç klasörüyle) ya da bir nc_ komutu; ayırıcılar onları gruplar.",

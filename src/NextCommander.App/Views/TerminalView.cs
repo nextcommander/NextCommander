@@ -467,7 +467,7 @@ public sealed partial class TerminalView : DockPanel
     /// <summary>The local folder of the active panel (for a new shell and "Panel folder").</summary>
     public Func<string?>? CurrentFolder { get; set; }
 
-    /// <summary>Default shell (setting; empty: the system's, cmd.exe on Windows).</summary>
+    /// <summary>Default shell (setting; empty: the system's, PowerShell on Windows when installed).</summary>
     public string? Shell { get; set; }
 
     /// <summary>New tabs run on a pseudo terminal with a real terminal screen (setting; off: the line console).</summary>
