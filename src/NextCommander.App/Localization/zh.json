@@ -3841,5 +3841,8 @@
   "NetworkToolsWindow.Waking": "正在唤醒 {0}...",
   "NetworkToolsWindow.WhyMightItNotWake": "为什么可能无法唤醒？",
   "NetworkToolsWindow.Windows": "Windows",
-  "NetworkToolsWindow.ThisNetworkEveryone": "此网络（所有设备）"
+  "NetworkToolsWindow.ThisNetworkEveryone": "此网络（所有设备）",
+  "ConnectionManagerView.AFolderNameCanT": "文件夹名称不能包含 /",
+  "ConnectionManagerView.FolderName": "文件夹名称",
+  "ConnectionManagerView.ThereIsAFolderWith": "已存在同名文件夹"
 }

@@ -3841,5 +3841,8 @@
   "NetworkToolsWindow.Waking": "Waking {0}...",
   "NetworkToolsWindow.WhyMightItNotWake": "Why might it not wake?",
   "NetworkToolsWindow.Windows": "Windows",
-  "NetworkToolsWindow.ThisNetworkEveryone": "This network (everyone)"
+  "NetworkToolsWindow.ThisNetworkEveryone": "This network (everyone)",
+  "ConnectionManagerView.AFolderNameCanT": "A folder name can't contain /",
+  "ConnectionManagerView.FolderName": "Folder name",
+  "ConnectionManagerView.ThereIsAFolderWith": "There is a folder with this name already"
 }

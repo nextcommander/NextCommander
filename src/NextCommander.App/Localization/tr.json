@@ -3841,5 +3841,8 @@
   "NetworkToolsWindow.Waking": "{0} uyandırılıyor...",
   "NetworkToolsWindow.WhyMightItNotWake": "Neden uyanmamış olabilir?",
   "NetworkToolsWindow.Windows": "Windows",
-  "NetworkToolsWindow.ThisNetworkEveryone": "Bu ağ (herkes)"
+  "NetworkToolsWindow.ThisNetworkEveryone": "Bu ağ (herkes)",
+  "ConnectionManagerView.AFolderNameCanT": "Klasör adında / olamaz",
+  "ConnectionManagerView.FolderName": "Klasör adı",
+  "ConnectionManagerView.ThereIsAFolderWith": "Bu adda bir klasör zaten var"
 }

@@ -3841,5 +3841,8 @@
   "NetworkToolsWindow.Waking": "{0} wird aufgeweckt...",
   "NetworkToolsWindow.WhyMightItNotWake": "Warum wacht er vielleicht nicht auf?",
   "NetworkToolsWindow.Windows": "Windows",
-  "NetworkToolsWindow.ThisNetworkEveryone": "Dieses Netzwerk (alle)"
+  "NetworkToolsWindow.ThisNetworkEveryone": "Dieses Netzwerk (alle)",
+  "ConnectionManagerView.AFolderNameCanT": "Ein Ordnername darf kein / enthalten",
+  "ConnectionManagerView.FolderName": "Ordnername",
+  "ConnectionManagerView.ThereIsAFolderWith": "Es gibt bereits einen Ordner mit diesem Namen"
 }

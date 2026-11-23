@@ -53,6 +53,9 @@ public sealed partial class ConnectionManagerView : UserControl
 
     private const double IndentWidth = 16;
 
+    /// <summary>The tag of the name in a tree row (renaming in place finds it).</summary>
+    private const string RowNameTag = "rowname";
+
     private readonly ConnectionManagerRequest _request;
     private readonly AppSettings _settings;
     private readonly TextBox _search = new() { PlaceholderText = "Name, server, bucket ..." };
@@ -513,7 +516,7 @@ public sealed partial class ConnectionManagerView : UserControl
             var color = ConnectionFolders.ColorOf(_settings, folder);
             icon = GlyphIcon("MiFolderOpen", 15, color.Length > 0 ? new SolidColorBrush(Color.Parse(color)) : new SolidColorBrush(Color.Parse("#E0A526")));
             text.Margin = new Thickness(6, 0, 0, 0);
-            text.Children.Add(ConnectionLook.Muted(new TextBlock { Text = ConnectionFolders.NameOf(folder), FontSize = 12.5, FontWeight = FontWeight.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis }));
+            text.Children.Add(ConnectionLook.Muted(new TextBlock { Text = ConnectionFolders.NameOf(folder), FontSize = 12.5, FontWeight = FontWeight.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis, Tag = RowNameTag }));
             trailing.Children.Add(ConnectionLook.Muted(new TextBlock
             {
                 Text = ConnectionFolders.ConnectionsIn(_settings, folder).Count.ToString(System.Globalization.CultureInfo.CurrentCulture), FontSize = 11.5, Classes = { "noloc" },
@@ -524,7 +527,7 @@ public sealed partial class ConnectionManagerView : UserControl
             var c = row.Connection!;
             chevron.Width = 4;
             icon = ConnectionLook.Tile(c.Protocol, 32, _request.IsConnected(c));
-            text.Children.Add(new TextBlock { Text = c.Name, FontSize = 13.5, TextTrimming = TextTrimming.CharacterEllipsis });
+            text.Children.Add(new TextBlock { Text = c.Name, FontSize = 13.5, TextTrimming = TextTrimming.CharacterEllipsis, Tag = RowNameTag });
             text.Children.Add(ConnectionLook.Muted(new TextBlock
             {
                 Text = ConnectionChecks.Address(c), FontFamily = ConnectionLook.Mono,
@@ -637,6 +640,10 @@ public sealed partial class ConnectionManagerView : UserControl
 
     private void OnTreeKeyDown(object? sender, KeyEventArgs e)
     {
+        if (_treeRename is not null || e.Source is TextBox)
+        {
+            return; // the keys of the name being typed in the tree
+        }
         var row = Selected;
         switch (e.Key)
         {
@@ -675,7 +682,7 @@ public sealed partial class ConnectionManagerView : UserControl
                 e.Handled = true;
                 break;
             case Key.F2 when row is not null:
-                FocusName();
+                RenameInTree();
                 e.Handled = true;
                 break;
             case Key.Delete when row is not null:
@@ -723,6 +730,10 @@ public sealed partial class ConnectionManagerView : UserControl
         {
             case Key.Escape when _wizard is not null:
                 _wizard.Close();
+                e.Handled = true;
+                break;
+            case Key.Escape when _treeRename is not null:
+                EndTreeRename(commit: false);
                 e.Handled = true;
                 break;
             case Key.Escape when _renaming is not null:
@@ -1377,7 +1388,7 @@ public sealed partial class ConnectionManagerView : UserControl
             menu.Items.Add(MenuItem("New subfolder", "connections.folder", () => NewFolder(folder)));
             menu.Items.Add(new Separator());
             menu.Items.Add(MenuItem($"Connect to all ({inside.Count})", "connections.connect", () => Connect(inside, right: false)));
-            menu.Items.Add(MenuItem("Rename", "connections.rename", FocusName, "F2"));
+            menu.Items.Add(MenuItem("Rename", "connections.rename", RenameInTree, "F2"));
             menu.Items.Add(new Separator());
             menu.Items.Add(MenuItem("Delete folder", "connections.delete", () => _ = DeleteAsync(row), "Delete"));
         }
@@ -1398,7 +1409,7 @@ public sealed partial class ConnectionManagerView : UserControl
                 _ = _request.ForgetPassword(c);
                 Toast("The saved password is forgotten");
             }));
-            menu.Items.Add(MenuItem("Rename", "connections.rename", FocusName, "F2"));
+            menu.Items.Add(MenuItem("Rename", "connections.rename", RenameInTree, "F2"));
             menu.Items.Add(new Separator());
             menu.Items.Add(MenuItem("Delete", "connections.delete", () => _ = DeleteAsync(row), "Delete"));
         }
