@@ -3846,5 +3846,7 @@
   "ConnectionManagerView.FolderName": "Ordnername",
   "ConnectionManagerView.ThereIsAFolderWith": "Es gibt bereits einen Ordner mit diesem Namen",
   "TerminalView.UploadTo": "Nach {0} hochladen",
-  "TerminalView.TypeThePathsAfterThe": "Die Pfade hinter die Eingabeaufforderung schreiben"
+  "TerminalView.TypeThePathsAfterThe": "Die Pfade hinter die Eingabeaufforderung schreiben",
+  "TerminalView.BackBelowThePanels": "Zurück unter die Fenster",
+  "TerminalView.DragTheTitleBarOnto": "Ziehen Sie die Titelleiste auf ein Fenster, um das Terminal an seine Stelle zu setzen"
 }

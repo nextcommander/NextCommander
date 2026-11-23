@@ -3846,5 +3846,7 @@
   "ConnectionManagerView.FolderName": "文件夹名称",
   "ConnectionManagerView.ThereIsAFolderWith": "已存在同名文件夹",
   "TerminalView.UploadTo": "上传到 {0}",
-  "TerminalView.TypeThePathsAfterThe": "在提示符后输入路径"
+  "TerminalView.TypeThePathsAfterThe": "在提示符后输入路径",
+  "TerminalView.BackBelowThePanels": "放回面板下方",
+  "TerminalView.DragTheTitleBarOnto": "将标题栏拖到某个面板上，即可让终端占据该面板的位置"
 }
