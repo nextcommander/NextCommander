@@ -28,15 +28,24 @@
   </PropertyGroup>
 
   <Target Name="NcVersion" BeforeTargets="GetAssemblyVersion;GenerateAssemblyInfo;GetAssemblyAttributes">
+    <!--
+      git's "%" in the commands: Exec runs them from a .cmd file on Windows, where a "%" is written "%%"; on Linux and
+      macOS from /bin/sh, where "%%" stays "%%" (git then printed "%cd" and the build number was always 000; the user's
+      report, 23 November 2026).
+    -->
+    <PropertyGroup>
+      <_NcPercent>%25</_NcPercent>
+      <_NcPercent Condition="'$(OS)' == 'Windows_NT'">%25%25</_NcPercent>
+    </PropertyGroup>
     <!-- year and month of the commit, "26.11" -->
-    <Exec Command="git log -1 --format=%25%25cd --date=format:%25%25y.%25%25m" WorkingDirectory="$(MSBuildThisFileDirectory)" ConsoleToMSBuild="true"
+    <Exec Command="git log -1 --format=$(_NcPercent)cd --date=format:$(_NcPercent)y.$(_NcPercent)m" WorkingDirectory="$(MSBuildThisFileDirectory)" ConsoleToMSBuild="true"
           IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" EchoOff="true"
           StandardOutputImportance="low" StandardErrorImportance="low" ContinueOnError="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="_NcCommitMonth" />
       <Output TaskParameter="ExitCode" PropertyName="_NcGitDateExitCode" />
     </Exec>
     <!-- the month of every commit of the history ("26.11;26.11;26.10;..."): the commits of the same month are counted -->
-    <Exec Command="git log --format=%25%25cd --date=format:%25%25y.%25%25m HEAD" WorkingDirectory="$(MSBuildThisFileDirectory)" ConsoleToMSBuild="true"
+    <Exec Command="git log --format=$(_NcPercent)cd --date=format:$(_NcPercent)y.$(_NcPercent)m HEAD" WorkingDirectory="$(MSBuildThisFileDirectory)" ConsoleToMSBuild="true"
           IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" EchoOff="true"
           StandardOutputImportance="low" StandardErrorImportance="low" ContinueOnError="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="_NcMonths" />

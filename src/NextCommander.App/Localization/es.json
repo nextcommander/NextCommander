@@ -3841,5 +3841,8 @@
   "NetworkToolsWindow.Waking": "Despertando {0}...",
   "NetworkToolsWindow.WhyMightItNotWake": "¿Por qué podría no despertar?",
   "NetworkToolsWindow.Windows": "Windows",
-  "NetworkToolsWindow.ThisNetworkEveryone": "Esta red (todos)"
+  "NetworkToolsWindow.ThisNetworkEveryone": "Esta red (todos)",
+  "ConnectionManagerView.AFolderNameCanT": "Un nombre de carpeta no puede contener /",
+  "ConnectionManagerView.FolderName": "Nombre de la carpeta",
+  "ConnectionManagerView.ThereIsAFolderWith": "Ya hay una carpeta con este nombre"
 }

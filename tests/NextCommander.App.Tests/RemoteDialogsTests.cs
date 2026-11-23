@@ -517,6 +517,59 @@ public sealed class RemoteDialogsTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task Connections_and_folders_are_renamed_in_the_tree()
+    {
+        var settings = new AppSettings();
+        var web = new RemoteConnection { Name = "web", Protocol = RemoteProtocol.Sftp, Host = "web", User = "u", Folder = "Work" };
+        settings.Connections.Add(web);
+        var (view, calls) = Open(settings);
+        await SettleAsync();
+        var window = (Window)TopLevel.GetTopLevel(view)!;
+        view.Reveal(web);
+        await SettleAsync();
+
+        // F2 in the tree (the focus on the selected row, as after a click): the row's name is a box in place (not the
+        // editor's title); Enter keeps and saves it
+        var tree = view.GetVisualDescendants().OfType<ListBox>().First(l => l.SelectedItem is ConnectionManagerView.Row);
+        ((Control)tree.ContainerFromItem(tree.SelectedItem!)!).Focus();
+        await SettleAsync();
+        window.KeyPressQwerty(PhysicalKey.F2, RawInputModifiers.None);
+        await SettleAsync();
+        Assert.True(view.IsRenamingInTree);
+        var box = view.TreeRenameBox!;
+        Assert.Equal("web", box.Text);
+        box.Text = "web-prod";
+        var saves = calls.Saves;
+        window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        await SettleAsync();
+        Assert.False(view.IsRenamingInTree);
+        Assert.Equal("web-prod", web.Name);
+        Assert.Equal(saves + 1, calls.Saves);
+        Assert.Same(web, view.Current);
+
+        // Esc goes back without a change; Delete in the box deletes nothing
+        view.RenameInTree();
+        await SettleAsync();
+        view.TreeRenameBox!.Text = "other";
+        window.KeyPressQwerty(PhysicalKey.Delete, RawInputModifiers.None);
+        window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        await SettleAsync();
+        Assert.Equal("web-prod", web.Name);
+        Assert.Contains(web, settings.Connections);
+
+        // a folder: it moves with what is in it
+        view.Select(view.Rows.First(r => r.Folder == "Work"));
+        await SettleAsync();
+        view.RenameInTree();
+        await SettleAsync();
+        view.TreeRenameBox!.Text = "Office";
+        window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        await SettleAsync();
+        Assert.Equal("Office", web.Folder.Trim('/'));
+        Assert.Contains(view.Rows, r => r.Folder == "Office");
+    }
+
+    [AvaloniaFact]
     public async Task Alt_arrows_go_back_and_forward_from_the_keyboard()
     {
         var settings = new AppSettings();
