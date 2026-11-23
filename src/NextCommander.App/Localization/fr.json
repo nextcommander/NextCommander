@@ -3846,5 +3846,7 @@
   "ConnectionManagerView.FolderName": "Nom du dossier",
   "ConnectionManagerView.ThereIsAFolderWith": "Un dossier de ce nom existe déjà",
   "TerminalView.UploadTo": "Envoyer vers {0}",
-  "TerminalView.TypeThePathsAfterThe": "Écrire les chemins après l'invite"
+  "TerminalView.TypeThePathsAfterThe": "Écrire les chemins après l'invite",
+  "TerminalView.BackBelowThePanels": "Remettre sous les panneaux",
+  "TerminalView.DragTheTitleBarOnto": "Faites glisser la barre de titre sur un panneau pour y placer le terminal"
 }

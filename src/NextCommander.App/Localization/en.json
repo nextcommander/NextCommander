@@ -3846,5 +3846,7 @@
   "ConnectionManagerView.FolderName": "Folder name",
   "ConnectionManagerView.ThereIsAFolderWith": "There is a folder with this name already",
   "TerminalView.UploadTo": "Upload to {0}",
-  "TerminalView.TypeThePathsAfterThe": "Type the paths after the prompt"
+  "TerminalView.TypeThePathsAfterThe": "Type the paths after the prompt",
+  "TerminalView.BackBelowThePanels": "Back below the panels",
+  "TerminalView.DragTheTitleBarOnto": "Drag the title bar onto a panel to put the terminal in its place"
 }

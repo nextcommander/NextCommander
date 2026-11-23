@@ -95,6 +95,7 @@ public sealed partial class TerminalView : DockPanel
         grip.PointerCaptureLost += (_, _) => _resizeStartY = null;
         SetDock(grip, Dock.Top);
         Children.Add(grip);
+        _grip = grip;
 
         // header: title, tabs, new tab, actions
         var header = new DockPanel { Margin = new Thickness(8, 0, 4, 2) };
@@ -138,14 +139,17 @@ public sealed partial class TerminalView : DockPanel
         buttons.Children.Add(HeaderButton("Stop", "Stop the running program and restart the shell (Ctrl+C)", () => _active?.Restart()));
         _maximize = HeaderButton("□", "Maximize the terminal (double click on the title)", () => MaximizeToggleRequested?.Invoke(this, EventArgs.Empty));
         _maximize.Tag = "maximize";
+        buttons.Children.Add(DockBelowButton());
         buttons.Children.Add(_maximize);
         buttons.Children.Add(HeaderButton("✕", "Close the terminal (ends every shell)", () => CloseRequested?.Invoke(this, EventArgs.Empty)));
         SetDock(buttons, Dock.Right);
         header.Children.Add(buttons);
+        _actions = buttons;
         // the title, the tabs and the new tab buttons in the room the actions leave: many tabs scroll sideways (the
         // wheel or the active tab brought into view) instead of running under the actions
         var left = new DockPanel { ClipToBounds = true, Margin = new Thickness(0, 0, 8, 0) };
         var title = new TextBlock { Text = "TERMINAL", FontSize = 11, FontWeight = FontWeight.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
+        ToolTip.SetTip(title, "Drag the title bar onto a panel to put the terminal in its place");
         var add = HeaderButton("+", "New terminal (default shell)", () => NewTab());
         var choose = HeaderButton("▾", "New terminal with a chosen shell", () => { });
         choose.Click += (_, _) => ShowShellMenu(choose);
@@ -166,13 +170,14 @@ public sealed partial class TerminalView : DockPanel
         // a double click on the title bar maximizes or restores, like a window
         header.DoubleTapped += (_, e) =>
         {
-            if (e.Source is not Button && (e.Source as Visual)?.FindAncestorOfType<Button>() is null)
+            if (!IsDockedInPanel && e.Source is not Button && (e.Source as Visual)?.FindAncestorOfType<Button>() is null)
             {
                 MaximizeToggleRequested?.Invoke(this, EventArgs.Empty);
                 e.Handled = true;
             }
         };
         header.Background = Brushes.Transparent;
+        InitializeDockDrag(header);
         SetDock(header, Dock.Top);
         Children.Add(header);
 
@@ -526,7 +531,7 @@ public sealed partial class TerminalView : DockPanel
     /// <summary>The window changed its size: the terminal keeps its part of the window.</summary>
     public void FitWindow(double windowHeight)
     {
-        if (windowHeight > 0 && !IsMaximized)
+        if (windowHeight > 0 && !IsMaximized && !IsDockedInPanel)
         {
             Height = Math.Clamp(windowHeight * _ratio, MinHeight, Math.Max(MinHeight, windowHeight * 0.85));
         }
