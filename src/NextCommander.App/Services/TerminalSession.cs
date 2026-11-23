@@ -111,7 +111,21 @@ public sealed class TerminalSession : IDisposable
                 _ => Posix(Path.GetFileName(wanted), wanted),
             };
         }
-        return AvailableShells()[0];
+        return DefaultShell();
+    }
+
+    /// <summary>
+    /// The shell when none is set: on Windows PowerShell when it is installed (PowerShell 7, else Windows PowerShell; the
+    /// user's request, 23 November 2026), else the Command Prompt; elsewhere $SHELL.
+    /// </summary>
+    public static ShellInfo DefaultShell()
+    {
+        var shells = AvailableShells();
+        if (OperatingSystem.IsWindows())
+        {
+            return shells.FirstOrDefault(s => s.Name == "PowerShell 7") ?? shells.FirstOrDefault(s => s.Name == "Windows PowerShell") ?? shells[0];
+        }
+        return shells[0];
     }
 
     private static IReadOnlyList<ShellInfo>? s_available;

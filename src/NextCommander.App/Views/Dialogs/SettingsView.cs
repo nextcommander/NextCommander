@@ -2386,7 +2386,7 @@ public sealed partial class SettingsView : UserControl
 
             // Misc.
             Bool(misc, "Exit", "Ask before closing", null, s => s.ConfirmExit, (s, v) => s.ConfirmExit = v),
-            Text(misc, "Internal terminal", "Shell", "Shell of the terminal opened with the terminal button at the end of the command line (e.g. pwsh, powershell, /bin/zsh). Empty: cmd.exe on Windows, $SHELL elsewhere. Applies to a newly started shell.",
+            Text(misc, "Internal terminal", "Shell", "Shell of the terminal opened with the terminal button at the end of the command line (e.g. pwsh, powershell, /bin/zsh). Empty: PowerShell on Windows when it is installed (else cmd.exe), $SHELL elsewhere. Applies to a newly started shell.",
                 s => s.InternalTerminalShell, (s, v) => s.InternalTerminalShell = v ?? string.Empty, "system shell"),
             Bool(misc, "Internal terminal", "Real terminal (colors, full screen programs)",
                 "The shell runs on a pseudo terminal (ConPTY on Windows, a pty on Linux and macOS): colors, cursor movement and full screen programs such as vim, mc and top work. When off, a simple line console is used. Applies to newly opened tabs.",

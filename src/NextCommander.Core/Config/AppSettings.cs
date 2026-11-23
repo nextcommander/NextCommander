@@ -626,7 +626,7 @@ public sealed class AppSettings
 
     public int CommandLineHistoryLength { get; set; } = 50;
 
-    /// <summary>Shell of the internal terminal (empty: cmd.exe on Windows, $SHELL elsewhere; e.g. "pwsh", "/bin/zsh").</summary>
+    /// <summary>Shell of the internal terminal (empty: PowerShell on Windows when installed, else cmd.exe; $SHELL elsewhere; e.g. "pwsh", "/bin/zsh").</summary>
     public string InternalTerminalShell { get; set; } = string.Empty;
 
     /// <summary>Internal terminal on a pseudo terminal (ConPTY / pty) with a real terminal screen; off: a simple line console.</summary>

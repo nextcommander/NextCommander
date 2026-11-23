@@ -50,6 +50,10 @@ public sealed class CommandLineTerminalTests : IDisposable
         var (w, vm) = await _fx.OpenAsync();
         vm.Settings.TerminalEmulation = false; // the line console (the emulated terminal: TerminalEmulationTests)
         vm.Settings.TerminalTabs = [];
+        if (OperatingSystem.IsWindows())
+        {
+            vm.Settings.InternalTerminalShell = "cmd"; // its prompt shows the folder (the default is PowerShell when installed)
+        }
         w.ToggleTerminal(); // the button at the end of the command line: below the panels
         await SettleAsync();
         var terminal = w.Terminal!;

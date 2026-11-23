@@ -1,5 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.VisualTree;
 
 namespace NextCommander.App.Views;
 
@@ -115,6 +117,96 @@ public partial class MainWindow
         terminal.SetDockedInPanel(false, Bounds.Height);
         TerminalHost.Child = terminal;
         return true;
+    }
+
+    private Point? _pageDragStart;
+    private bool _pageDragging;
+
+    /// <summary>
+    /// The Terminal page's tab can be dragged onto a side of the panels too (the user's request, 23 November 2026): when
+    /// the drag starts the files page is shown, the side under the pointer is marked, and the terminal goes into the side
+    /// it is dropped on; dropped elsewhere it stays on its page.
+    /// </summary>
+    private void WireTerminalPageDrag(Button tab)
+    {
+        tab.AddHandler(PointerPressedEvent, (_, e) =>
+        {
+            if (e.GetCurrentPoint(tab).Properties.IsLeftButtonPressed && (e.Source as Visual)?.FindAncestorOfType<Button>(includeSelf: true) is { } source
+                && ReferenceEquals(source, tab))
+            {
+                _pageDragStart = e.GetPosition(this);
+            }
+        }, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+        tab.AddHandler(PointerMovedEvent, (_, e) =>
+        {
+            if (_pageDragging || _pageDragStart is not { } start)
+            {
+                return;
+            }
+            if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            {
+                _pageDragStart = null;
+                return;
+            }
+            var at = e.GetPosition(this);
+            if (Math.Abs(at.X - start.X) + Math.Abs(at.Y - start.Y) < 10)
+            {
+                return;
+            }
+            _pageDragging = true;
+            e.Pointer.Capture(this); // the tab goes away with the page change: the window follows the pointer
+            Cursor = new Cursor(StandardCursorType.DragMove);
+            AddHandler(PointerMovedEvent, OnTerminalPageDragMoved, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+            AddHandler(PointerReleasedEvent, OnTerminalPageDragReleased, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+            AddHandler(PointerCaptureLostEvent, OnTerminalPageDragLost, Avalonia.Interactivity.RoutingStrategies.Bubble, handledEventsToo: true);
+            SelectPage(WorkspacePage.Files);
+            MarkTerminalDrop(SideAt(at));
+        }, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+        tab.AddHandler(PointerReleasedEvent, (_, _) =>
+        {
+            if (!_pageDragging)
+            {
+                _pageDragStart = null;
+            }
+        }, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+    }
+
+    private void OnTerminalPageDragMoved(object? sender, PointerEventArgs e) => MarkTerminalDrop(SideAt(e.GetPosition(this)));
+
+    private void OnTerminalPageDragReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        var side = SideAt(e.GetPosition(this));
+        EndTerminalPageDrag();
+        e.Pointer.Capture(null);
+        e.Handled = true;
+        if (side is not null)
+        {
+            DockTerminalIn(side);
+        }
+        else
+        {
+            SelectPage(WorkspacePage.Terminal); // not on a panel: back to its page
+        }
+    }
+
+    private void OnTerminalPageDragLost(object? sender, PointerCaptureLostEventArgs e)
+    {
+        if (_pageDragging)
+        {
+            EndTerminalPageDrag();
+            SelectPage(WorkspacePage.Terminal);
+        }
+    }
+
+    private void EndTerminalPageDrag()
+    {
+        _pageDragging = false;
+        _pageDragStart = null;
+        Cursor = null;
+        MarkTerminalDrop(null);
+        RemoveHandler(PointerMovedEvent, OnTerminalPageDragMoved);
+        RemoveHandler(PointerReleasedEvent, OnTerminalPageDragReleased);
+        RemoveHandler(PointerCaptureLostEvent, OnTerminalPageDragLost);
     }
 
     /// <summary>The terminal shortcuts while it is in a side: into the terminal, or back to the panel from it.</summary>

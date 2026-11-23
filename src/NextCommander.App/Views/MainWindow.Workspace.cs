@@ -447,6 +447,10 @@ public partial class MainWindow
             tab.Classes.Add("focused");
         }
         ToolTip.SetTip(tab, tip);
+        if (page == WorkspacePage.Terminal)
+        {
+            WireTerminalPageDrag(tab);
+        }
         tab.Click += (_, _) =>
         {
             if (desktop is not null)

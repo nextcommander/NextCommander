@@ -1547,7 +1547,7 @@
   "Settings.Misc.RealTerminal": "Terminal real (colores, programas de pantalla completa)",
   "Settings.Misc.RealTerminal.Description": "El shell se ejecuta en un pseudoterminal (ConPTY en Windows, un pty en Linux y macOS): funcionan los colores, el movimiento del cursor y los programas de pantalla completa como vim, mc y top. Si está desactivado, se usa una consola de líneas sencilla. Se aplica a las pestañas que se abran nuevas.",
   "Settings.Misc.Shell": "Shell",
-  "Settings.Misc.Shell.Description": "Shell del terminal que se abre con el botón de terminal al final de la línea de comandos (p. ej. pwsh, powershell, /bin/zsh). Vacío: cmd.exe en Windows, $SHELL en los demás sistemas. Se aplica a un shell recién iniciado.",
+  "Settings.Misc.Shell.Description": "Shell del terminal que se abre con el botón de terminal al final de la línea de comandos (p. ej. pwsh, powershell, /bin/zsh). Vacío: PowerShell en Windows si está instalado (si no, cmd.exe), $SHELL en los demás sistemas. Se aplica a un shell recién iniciado.",
   "Settings.Misc.SoundWhenAnOperationEnds": "Sonido al terminar una operación",
   "Settings.Misc.SoundWhenAnOperationEnds.Description": "Un archivo de sonido (.wav; también .mp3 en Linux y macOS) que se reproduce al terminar de copiar, eliminar, comprimir ...",
   "Settings.Misc.StartMenu.Description": "Los elementos del menú Inicio: un programa (con parámetros y carpeta de inicio) o un comando nc_; los separadores los agrupan.",
