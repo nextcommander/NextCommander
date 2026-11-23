@@ -522,6 +522,7 @@ public sealed class MultiRenameWindow : Window
         var job = new MultiRenameJob(_context.Registry, Plan) { Interaction = new UiJobInteraction(_context.Dialogs) };
         await job.RunAsync();
         await AfterJobAsync(job);
+        _context.JobDone?.Invoke(job); // Ctrl+Z in the main window undoes it too
         _lastJob = job;
         _undo.IsEnabled = job.Done.Count > 0;
     }

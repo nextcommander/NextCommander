@@ -27,7 +27,9 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
 ### Viewer and editor
 - Lister (F3) shows text with syntax colors, binary and hex views, images (including camera RAW previews),
   audio and video (with VLC installed), and Markdown, HTML and RTF previews.
-- Quick View (Ctrl+Q) shows the file under the cursor in place of the other panel.
+- Quick View (Ctrl+Q) shows the file under the cursor in place of the other panel, or below / right of the file list.
+- Command palette (Ctrl+Shift+P): any command, folder, Hotlist entry or saved connection found by typing.
+- Undo (Ctrl+Z) for copy, move, rename, multi-rename, new folder and deleting into the recycle bin.
 - A built-in text editor (F4) that keeps the file's encoding and line endings.
 
 ### Search and tools

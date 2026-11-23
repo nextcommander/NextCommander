@@ -83,7 +83,8 @@ Operation > Selection (with Num +)* > *Also select directories* makes them take 
 | Alt+Enter | Properties... |
 | Ctrl+L | Calculate occupied space... |
 | Alt+Shift+Enter | Calculate folder sizes |
-| Ctrl+Z | Edit comment... |
+| Ctrl+Z | Undo the last file operation (copy, move, rename, new folder, to the recycle bin) |
+| Ctrl+Alt+Z | Edit comment... |
 | Ctrl+M | Multi-Rename Tool... |
 | Ctrl+C / Ctrl+X / Ctrl+V | Copy to clipboard / Cut to clipboard / Paste from clipboard |
 | Alt+F4 | Exit |
@@ -148,7 +149,8 @@ Operation > Selection (with Num +)* > *Also select directories* makes them take 
 | Ctrl+Alt+C | Copy selected names to clipboard |
 | Ctrl+Shift+C | Copy names with paths to the clipboard |
 | Ctrl+Alt+D | Copy to clipboard with all details |
-| Ctrl+Shift+P | Copy folder path to the clipboard |
+| Ctrl+Alt+P | Copy folder path to the clipboard |
+| Ctrl+Shift+P | Command palette: find any command, folder, Hotlist entry or saved connection by typing |
 
 ## Inside Lister (F3)
 

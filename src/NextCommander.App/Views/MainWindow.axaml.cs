@@ -317,6 +317,7 @@ public partial class MainWindow : Window
         _vm.CommandLineFocusRequested += (_, _) => FocusCommandLine();
         _vm.CommandLineHistoryRequested += (_, _) => ShowCommandHistory();
         _vm.TerminalToggleRequested += (_, _) => ToggleTerminalPage();
+        _vm.CommandPaletteRequested += (_, _) => OpenCommandPalette();
         _vm.TerminalMaximizeRequested += (_, _) => ToggleTerminalMaximized();
         _vm.EditPathRequested += (_, _) => ActiveView.BeginEditPath();
         // Shift+F6: the name is typed in the list of the panel (the dialog only where no name cell can be edited)
@@ -623,6 +624,7 @@ public partial class MainWindow : Window
                 UpdateDiskUsageHost();
                 break;
             case nameof(MainWindowViewModel.QuickViewSide):
+            case nameof(MainWindowViewModel.QuickViewPlacement):
                 UpdateQuickViewHost();
                 break;
             case nameof(MainWindowViewModel.QuickViewEntry):
@@ -822,6 +824,7 @@ public partial class MainWindow : Window
         if (_vm.QuickViewSide is not { } side)
         {
             QuickViewHost.IsVisible = false;
+            ReleaseQuickViewFromSides();
             _quickView?.Unload();
             ActiveView.FocusList();
             return;
@@ -840,19 +843,85 @@ public partial class MainWindow : Window
                 title.Text = "Quick View (Ctrl+Q) — " + (_quickView.Entry?.Name ?? string.Empty);
                 status.Text = _quickView.StatusText;
             };
+            // ⇄: the next place (in place of the other panel, below, right of the file list)
+            var place = new Button
+            {
+                Content = "⇄",
+                Tag = "quickviewplace",
+                Classes = { "flat" },
+                Padding = new Avalonia.Thickness(6, 0),
+                Focusable = false,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            };
+            ToolTip.SetTip(place, "Move the Quick View: in place of the other panel, below or right of the file list");
+            place.Click += (_, _) => _vm?.SetQuickViewPlacement(_vm.QuickViewPlacement switch
+            {
+                Core.Config.QuickViewPlacement.OtherPanel => Core.Config.QuickViewPlacement.Below,
+                Core.Config.QuickViewPlacement.Below => Core.Config.QuickViewPlacement.Right,
+                _ => Core.Config.QuickViewPlacement.OtherPanel,
+            });
+            var headerRow = new DockPanel();
+            DockPanel.SetDock(place, Dock.Right);
+            headerRow.Children.Add(place);
+            header.Child = null;
+            headerRow.Children.Add(title);
+            header.Child = headerRow;
             var dock = new DockPanel();
             DockPanel.SetDock(header, Dock.Top);
             DockPanel.SetDock(footer, Dock.Bottom);
             dock.Children.Add(header);
             dock.Children.Add(footer);
             dock.Children.Add(_quickView);
-            QuickViewHost.Child = dock;
+            _quickViewFrame = dock;
         }
-        Grid.SetColumn(QuickViewHost, ReferenceEquals(side, _vm.LeftSide) ? 0 : 2);
-        UpdateVerticalBarSpace();
-        QuickViewHost.IsVisible = true;
+        var frame = _quickViewFrame!;
+        if (_vm.IsQuickViewInPanel)
+        {
+            // in the active side, below or right of its file list; both panels stay
+            QuickViewHost.IsVisible = false;
+            QuickViewHost.Child = null;
+            var host = ReferenceEquals(side, _vm.LeftSide) ? LeftSideView : RightSideView;
+            var other = ReferenceEquals(host, LeftSideView) ? RightSideView : LeftSideView;
+            var right = _vm.QuickViewPlacement == Core.Config.QuickViewPlacement.Right;
+            if (ReferenceEquals(other.Preview, frame))
+            {
+                _vm.Settings.QuickViewRatio = other.PreviewRatio is > 0 and var r ? r : _vm.Settings.QuickViewRatio;
+                other.ShowPreview(null, false, 0);
+            }
+            if (!ReferenceEquals(host.Preview, frame) || host.PreviewIsRight != right)
+            {
+                host.ShowPreview(null, false, 0);
+                host.ShowPreview(frame, right, _vm.Settings.QuickViewRatio);
+            }
+        }
+        else
+        {
+            ReleaseQuickViewFromSides();
+            QuickViewHost.Child = frame;
+            Grid.SetColumn(QuickViewHost, ReferenceEquals(side, _vm.LeftSide) ? 0 : 2);
+            UpdateVerticalBarSpace();
+            QuickViewHost.IsVisible = true;
+        }
         _ = LoadQuickViewAsync();
         ActiveView.FocusList();
+    }
+
+    private DockPanel? _quickViewFrame;
+
+    /// <summary>The Quick View out of the sides (its share of the side kept for the next time).</summary>
+    private void ReleaseQuickViewFromSides()
+    {
+        foreach (var view in new[] { LeftSideView, RightSideView })
+        {
+            if (view.Preview is not null && ReferenceEquals(view.Preview, _quickViewFrame))
+            {
+                if (_vm is not null && view.PreviewRatio > 0)
+                {
+                    _vm.Settings.QuickViewRatio = view.PreviewRatio;
+                }
+                view.ShowPreview(null, false, 0);
+            }
+        }
     }
 
     private void ScheduleQuickViewLoad()

@@ -65,9 +65,56 @@ public sealed record CopyOptions
     public VfsPath? RelativeBase { get; init; }
 }
 
+/// <summary>What a done step of a copy / move is (for undoing it).</summary>
+public enum CopyMoveDoneKind
+{
+    /// <summary>A file (or a file link) arrived at its target.</summary>
+    File,
+
+    /// <summary>A folder: moved as a whole (<see cref="CopyMoveDone.Whole"/>) or made in the target.</summary>
+    Directory,
+
+    /// <summary>A file that was in the way was renamed (Source: its name before, Target: its name now).</summary>
+    TargetRenamedAside,
+}
+
+/// <summary>
+/// A done step of a copy / move, in the order done: <paramref name="Source"/> ended at <paramref name="Target"/>.
+/// <paramref name="Overwrote"/>: a file at the target was overwritten (it cannot be brought back); <paramref name="Whole"/>:
+/// the entry went as one (a file, or a folder moved by renaming it); a folder not whole was made (<paramref name="Created"/>)
+/// or already there.
+/// </summary>
+public sealed record CopyMoveDone(CopyMoveDoneKind Kind, VfsPath Source, VfsPath Target, bool Overwrote = false, bool Whole = true, bool Created = true)
+{
+    /// <summary>A file moved whose source could not be removed: undone like a copy.</summary>
+    public bool KeptSource { get; init; }
+}
+
 /// <summary>Copies or moves entries between any two providers.</summary>
 public sealed class CopyMoveJob : FileJob
 {
+    private readonly List<CopyMoveDone> _done = [];
+
+    /// <summary>What was done, in order (the main window's undo uses it; the user's request, 23 November 2026).</summary>
+    public IReadOnlyList<CopyMoveDone> Done
+    {
+        get
+        {
+            lock (_done)
+            {
+                return [.. _done];
+            }
+        }
+    }
+
+    private void Record(CopyMoveDone done)
+    {
+        lock (_done)
+        {
+            _done.Add(done);
+        }
+    }
+
     private readonly ProviderRegistry _registry;
     private readonly IReadOnlyList<VfsEntry> _sources;
     private readonly VfsPath _targetDirectory;
@@ -154,8 +201,11 @@ public sealed class CopyMoveJob : FileJob
             {
                 if (_move && !string.Equals(destination.Name, source.Name, StringComparison.Ordinal))
                 {
-                    await WithErrorHandlingAsync(source.Name,
-                        () => sourceProvider.MoveAsync(source.Path, destination, overwrite: false, ct), ct).ConfigureAwait(false);
+                    if (await WithErrorHandlingAsync(source.Name,
+                        () => sourceProvider.MoveAsync(source.Path, destination, overwrite: false, ct), ct).ConfigureAwait(false))
+                    {
+                        Record(new CopyMoveDone(source.IsDirectory ? CopyMoveDoneKind.Directory : CopyMoveDoneKind.File, source.Path, destination));
+                    }
                 }
                 else if (!_move)
                 {
@@ -172,6 +222,7 @@ public sealed class CopyMoveJob : FileJob
                 try
                 {
                     await sourceProvider.MoveAsync(source.Path, destination, overwrite: false, ct).ConfigureAwait(false);
+                    Record(new CopyMoveDone(CopyMoveDoneKind.Directory, source.Path, destination));
                     Progress.AddCounted(0, 1);
                     Progress.CompleteFile();
                     continue;
@@ -295,6 +346,7 @@ public sealed class CopyMoveJob : FileJob
                 if (await target.GetEntryAsync(item.Destination, ct).ConfigureAwait(false) is null)
                 {
                     await links.CreateSymbolicLinkAsync(item.Destination, item.Source.LinkTarget, isDirectory: true, ct).ConfigureAwait(false);
+                    Record(new CopyMoveDone(CopyMoveDoneKind.File, item.Source.Path, item.Destination));
                 }
             }, ct).ConfigureAwait(false);
             return;
@@ -302,7 +354,9 @@ public sealed class CopyMoveJob : FileJob
 
         await WithErrorHandlingAsync(display, async () =>
         {
+            var existed = await target.GetEntryAsync(item.Destination, ct).ConfigureAwait(false) is not null;
             await target.CreateDirectoryAsync(item.Destination, ct).ConfigureAwait(false);
+            Record(new CopyMoveDone(CopyMoveDoneKind.Directory, item.Source.Path, item.Destination, Whole: false, Created: !existed));
             if (_options.PreserveTimestamps)
             {
                 await TrySetTimesAsync(target, item.Destination, item.Source, ct).ConfigureAwait(false);
@@ -484,6 +538,7 @@ public sealed class CopyMoveJob : FileJob
                     var renamed = parent.Combine(await ConflictNaming.NextFreeNameAsync(destination.Name, false,
                         async n => await target.GetEntryAsync(parent.Combine(n), ct).ConfigureAwait(false) is not null).ConfigureAwait(false));
                     await target.MoveAsync(destination, renamed, overwrite: false, ct).ConfigureAwait(false);
+                    Record(new CopyMoveDone(CopyMoveDoneKind.TargetRenamedAside, destination, renamed));
                     continue;
             }
             break;
@@ -501,10 +556,15 @@ public sealed class CopyMoveJob : FileJob
                 }
                 await fileLinks.CreateSymbolicLinkAsync(destination, source.LinkTarget, isDirectory: false, ct).ConfigureAwait(false);
             }, ct).ConfigureAwait(false);
+            var linkDone = linked;
             if (linked && _move)
             {
-                await WithErrorHandlingAsync(source.Path.ToDisplayString(),
+                linkDone = await WithErrorHandlingAsync(source.Path.ToDisplayString(),
                     () => sourceProvider.DeleteAsync(source.Path, recursive: false, ct), ct).ConfigureAwait(false);
+            }
+            if (linkDone)
+            {
+                Record(new CopyMoveDone(CopyMoveDoneKind.File, source.Path, destination, overwrite));
             }
             Progress.SkipFile(source.Size);
             return;
@@ -515,8 +575,11 @@ public sealed class CopyMoveJob : FileJob
         {
             try
             {
-                _ = await WithErrorHandlingAsync(source.Name, () =>
-                    sourceProvider.MoveAsync(source.Path, destination, overwrite, ct), ct).ConfigureAwait(false);
+                if (await WithErrorHandlingAsync(source.Name, () =>
+                    sourceProvider.MoveAsync(source.Path, destination, overwrite, ct), ct).ConfigureAwait(false))
+                {
+                    Record(new CopyMoveDone(CopyMoveDoneKind.File, source.Path, destination, overwrite));
+                }
                 Progress.SkipFile(source.Size);
                 return;
             }
@@ -646,10 +709,20 @@ public sealed class CopyMoveJob : FileJob
             return; // never delete the source of a failed move
         }
 
+        var done = true;
         if (_move)
         {
-            await WithErrorHandlingAsync(source.Path.ToDisplayString(),
+            done = await WithErrorHandlingAsync(source.Path.ToDisplayString(),
                 () => sourceProvider.DeleteAsync(source.Path, recursive: false, ct), ct).ConfigureAwait(false);
+        }
+        if (done)
+        {
+            Record(new CopyMoveDone(CopyMoveDoneKind.File, source.Path, destination, overwrite));
+        }
+        else
+        {
+            // moved but its source stayed: as far as undo goes, a copy
+            Record(new CopyMoveDone(CopyMoveDoneKind.File, source.Path, destination, overwrite) { KeptSource = true });
         }
         Progress.CompleteFile();
     }

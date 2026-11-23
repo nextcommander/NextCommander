@@ -11,7 +11,11 @@ public sealed record ToolContext(
     AppSettings Settings,
     IPlatformService Platform,
     IDialogService Dialogs,
-    Func<VfsEntry, Task> Edit);
+    Func<VfsEntry, Task> Edit)
+{
+    /// <summary>A file operation a tool window ran itself is over (the main window keeps it for Ctrl+Z).</summary>
+    public Action<Core.Operations.FileJob>? JobDone { get; init; }
+}
 
 /// <summary>F3: files of the panel (for N/P) and the one to show.</summary>
 public sealed record ListerRequest(IReadOnlyList<VfsEntry> Files, int Index, ToolContext Context)

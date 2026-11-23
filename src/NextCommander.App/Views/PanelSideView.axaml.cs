@@ -109,6 +109,67 @@ public partial class PanelSideView : UserControl
         FilePanel.FocusList();
     }
 
+    /// <summary>The control sharing the side with the file list (the Quick View; null: none).</summary>
+    public Control? Preview => PreviewHost.Content as Control;
+
+    /// <summary>Whether the preview is right of the file list (else below it).</summary>
+    public bool PreviewIsRight { get; private set; }
+
+    /// <summary>The share of the side the preview takes now (the splitter moves it).</summary>
+    public double PreviewRatio
+    {
+        get
+        {
+            if (Preview is null)
+            {
+                return 0;
+            }
+            var defs = PreviewIsRight ? SplitGrid.ColumnDefinitions.Select(c => c.ActualWidth).ToArray() : SplitGrid.RowDefinitions.Select(r => r.ActualHeight).ToArray();
+            var total = defs.Length == 3 ? defs[0] + defs[2] : 0;
+            return total > 0 ? defs[2] / total : 0;
+        }
+    }
+
+    /// <summary>
+    /// Shows a control below or right of the file list (the Quick View, the user's request, 23 November 2026), taking
+    /// <paramref name="ratio"/> of the side, with a splitter between; null: the file list alone again.
+    /// </summary>
+    public void ShowPreview(Control? content, bool right, double ratio)
+    {
+        PreviewHost.Content = content;
+        PreviewHost.IsVisible = content is not null;
+        PreviewSplitter.IsVisible = content is not null;
+        PreviewIsRight = right;
+        if (content is null)
+        {
+            SplitGrid.RowDefinitions.Clear();
+            SplitGrid.ColumnDefinitions.Clear();
+            return;
+        }
+        ratio = Math.Clamp(ratio, 0.15, 0.85);
+        GridLength[] sizes = [new(1 - ratio, GridUnitType.Star), new(5), new(ratio, GridUnitType.Star)];
+        // the definitions are changed in place (a new collection set on the grid kept the old layout)
+        SplitGrid.RowDefinitions.Clear();
+        SplitGrid.ColumnDefinitions.Clear();
+        foreach (var size in sizes)
+        {
+            if (right)
+            {
+                SplitGrid.ColumnDefinitions.Add(new ColumnDefinition(size));
+            }
+            else
+            {
+                SplitGrid.RowDefinitions.Add(new RowDefinition(size));
+            }
+        }
+        foreach (var (control, index) in new (Control, int)[] { (FileArea, 0), (PreviewSplitter, 1), (PreviewHost, 2) })
+        {
+            Grid.SetRow(control, right ? 0 : index);
+            Grid.SetColumn(control, right ? index : 0);
+        }
+        PreviewSplitter.ResizeDirection = right ? GridResizeDirection.Columns : GridResizeDirection.Rows;
+    }
+
     private void OnSidePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(TabSideViewModel.TabsMultiline))

@@ -64,9 +64,14 @@
       </DockPanel>
     </Border>
     <!-- the file panel; a tool such as the connection manager can take its place for a while -->
-    <Panel>
-      <views:FilePanelView x:Name="FilePanel" DataContext="{Binding ActiveTab}" />
-      <ContentControl x:Name="OverlayHost" IsVisible="False" />
-    </Panel>
+    <!-- the Quick View can share the side with the file list (below or right of it; PanelSideView.ShowPreview) -->
+    <Grid x:Name="SplitGrid">
+      <Panel x:Name="FileArea">
+        <views:FilePanelView x:Name="FilePanel" DataContext="{Binding ActiveTab}" />
+        <ContentControl x:Name="OverlayHost" IsVisible="False" />
+      </Panel>
+      <GridSplitter x:Name="PreviewSplitter" IsVisible="False" Background="Transparent" />
+      <ContentControl x:Name="PreviewHost" IsVisible="False" />
+    </Grid>
   </DockPanel>
 </UserControl>
