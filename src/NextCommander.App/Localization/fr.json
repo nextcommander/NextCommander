@@ -3844,5 +3844,7 @@
   "NetworkToolsWindow.ThisNetworkEveryone": "Ce réseau (tous)",
   "ConnectionManagerView.AFolderNameCanT": "Un nom de dossier ne peut pas contenir /",
   "ConnectionManagerView.FolderName": "Nom du dossier",
-  "ConnectionManagerView.ThereIsAFolderWith": "Un dossier de ce nom existe déjà"
+  "ConnectionManagerView.ThereIsAFolderWith": "Un dossier de ce nom existe déjà",
+  "TerminalView.UploadTo": "Envoyer vers {0}",
+  "TerminalView.TypeThePathsAfterThe": "Écrire les chemins après l'invite"
 }

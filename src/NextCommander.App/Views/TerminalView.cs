@@ -16,7 +16,7 @@ namespace NextCommander.App.Views;
 /// installed (cmd, Windows PowerShell, PowerShell 7, Git Bash, WSL; bash, zsh ... elsewhere). Opened with the terminal
 /// button at the end of the command line or nc_ToggleTerminal; the top edge is dragged to change the height.
 /// </summary>
-public sealed class TerminalView : DockPanel
+public sealed partial class TerminalView : DockPanel
 {
     private readonly List<TerminalTab> _consoles = [];
     private readonly StackPanel _tabStrip = new() { Orientation = Orientation.Horizontal, Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
@@ -149,10 +149,9 @@ public sealed class TerminalView : DockPanel
         var add = HeaderButton("+", "New terminal (default shell)", () => NewTab());
         var choose = HeaderButton("▾", "New terminal with a chosen shell", () => { });
         choose.Click += (_, _) => ShowShellMenu(choose);
-        var adders = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 2, Margin = new Thickness(6, 0, 0, 0) };
+        var adders = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 2, Margin = new Thickness(6, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
         adders.Children.AddRange([add, choose]);
         SetDock(title, Dock.Left);
-        SetDock(adders, Dock.Right);
         _tabScroller.Content = _tabStrip;
         _tabScroller.PointerWheelChanged += (_, e) =>
         {
@@ -160,7 +159,9 @@ public sealed class TerminalView : DockPanel
             _tabScroller.Offset = new Vector(Math.Max(0, _tabScroller.Offset.X - (e.Delta.Y * 40)), 0);
             e.Handled = true;
         };
-        left.Children.AddRange([title, adders, _tabScroller]);
+        // the new tab buttons right after the last tab; when the tabs do not fit they scroll and the buttons stay at
+        // the right end, before the actions (the user's request, 23 November 2026)
+        left.Children.AddRange([title, new TabsThenButtons { Children = { _tabScroller, adders } }]);
         header.Children.Add(left);
         // a double click on the title bar maximizes or restores, like a window
         header.DoubleTapped += (_, e) =>
@@ -204,7 +205,7 @@ public sealed class TerminalView : DockPanel
         _monitorBar[!Border.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("FmStatusBrush");
         SetDock(_monitorBar, Dock.Top);
         Children.Add(_monitorBar);
-        Children.Add(_host);
+        Children.Add(HostWithDrop());
         this[!BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("FmStatusBrush");
     }
 
