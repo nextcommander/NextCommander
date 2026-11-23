@@ -4,6 +4,8 @@
 
 - [Lister (F3)](#lister-f3)
 - [Quick View (Ctrl+Q)](#quick-view-ctrlq)
+- [Command palette (Ctrl+Shift+P)](#command-palette-ctrlshiftp)
+- [Undo (Ctrl+Z)](#undo-ctrlz)
 - [Editor (F4)](#editor-f4)
 - [Find files (Alt+F7)](#find-files-altf7)
 - [Multi-Rename Tool (Ctrl+M)](#multi-rename-tool-ctrlm)
@@ -73,7 +75,34 @@ Lister shows a file without changing it. The number keys switch between its view
 Quick View shows the file under the cursor in place of the other panel, and follows the cursor as you move.
 Tab moves into the view and back.
 
+The ⇄ button in its title moves it: in place of the other panel, below the file list or right of it. Below or right of
+the file list both panels stay; the Quick View is in the active panel and goes with it when you switch panels, and the
+line between the list and the view can be dragged. The place is kept (*Configuration > Options > Edit/View > Lister*).
+
 ![Quick View](../screenshots/quick-view.png)
+
+## Command palette (Ctrl+Shift+P)
+
+Ctrl+Shift+P (Commands > Command palette...) opens a box at the top of the window. Type a few words: it finds every
+command with its description and shortcut, your most used folders, the Hotlist entries and the saved connections.
+Each word you type has to appear (the start of a word counts most, then a part of a word, then its letters in order:
+`nmk` finds *nc_MkDir*); case and accents do not matter. ↑ / ↓ choose, Enter runs, Esc closes. With nothing typed it
+lists what you used last.
+
+## Undo (Ctrl+Z)
+
+Ctrl+Z (Edit > Undo) undoes the last file operation, after asking; pressed again it undoes the one before (up to 30):
+
+- **Copy**: the copies are removed (into the recycle bin for local files), then the folders the copy made. A file the
+  copy overwrote cannot be brought back; its copy is kept and you are told.
+- **Move**: everything goes back where it was (renamed back where it can be, else copied back).
+- **Rename** and the **Multi-Rename Tool**: the old names come back.
+- **New folder**: the folders are removed while they are still empty.
+- **Delete into the recycle bin**: the files come back from it (Windows and Linux; on macOS use the Trash).
+
+Deleting for good, copying through Windows Explorer and operations done again with administrator rights cannot be
+undone. While a text box has the focus (command line, quick filter), Ctrl+Z undoes typing as usual. Editing a comment
+moved from Ctrl+Z to Ctrl+Alt+Z, copying the folder path from Ctrl+Shift+P to Ctrl+Alt+P.
 
 ## Editor (F4)
 
@@ -271,7 +300,7 @@ panel is next to it, *Folder...* scans another folder (chosen in the folder tree
 - **Properties...** (Alt+Enter): on Windows the Explorer properties window; elsewhere NextCommander's own window
   with dates, attributes, Unix permissions and the folder size.
 - **Calculate occupied space...** (Ctrl+L): total size and file and folder count of the selection.
-- **Edit comment...** (Ctrl+Z): a comment for a file, stored in a `descript.ion` file (the 4DOS format other file managers read too).
+- **Edit comment...** (Ctrl+Alt+Z): a comment for a file, stored in a `descript.ion` file (the 4DOS format other file managers read too).
   *Show > Display > Comments* (Ctrl+Shift+F2) shows them.
 - **Encode / decode:** MIME (Base64), UUE and XXE.
 - **Print:** print the file list, or send the selected files to the printer.

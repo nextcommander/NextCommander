@@ -95,7 +95,7 @@ public sealed class MenuTests : IDisposable
 
         SetCursor(vm.Left, "a.txt");
         _fx.Dialogs.NextComment = "önemli dosya";
-        Press(w, Key.Z, RawInputModifiers.Control);
+        Press(w, Key.Z, RawInputModifiers.Control | RawInputModifiers.Alt); // (Ctrl+Z is undo since 23 November 2026)
         await WaitUntilAsync(() => File.Exists(Path.Combine(_fx.L(), "descript.ion")));
         Assert.Equal("önemli dosya", NextCommander.Core.Tools.Descriptions.Read(_fx.L())["a.txt"]);
 
@@ -147,7 +147,7 @@ public sealed class MenuTests : IDisposable
         var (w, vm) = await _fx.OpenAsync();
         Assert.Equal(["Folder tree...", "Find files...", "Find files in separate process...", "Volume label...", "System information...", "Synchronize directories...",
             "Hotlist", "Back", "Open command prompt window", "Internal terminal", "Branch View (with subfolders)", "Open Desktop folder",
-            "Background transfer manager...", "Source <-> Target", "Target = Source", "Calculate folder sizes", "Show in system file manager", "Duplicate files...", "Folder sizes..."], Headers(w, "_Commands"));
+            "Background transfer manager...", "Source <-> Target", "Target = Source", "Calculate folder sizes", "Show in system file manager", "Duplicate files...", "Folder sizes...", "Command palette..."], Headers(w, "_Commands"));
 
         SetCursor(vm.Left, "b.log");
         await vm.ExecuteAsync("nc_MatchSrc");

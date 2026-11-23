@@ -79,7 +79,8 @@ public sealed class HotkeyMap
         ["Ctrl+L"] = "nc_GetFileSpace",
         ["Alt+D"] = "nc_EditPath",
         ["Alt+Enter"] = "nc_Properties",
-        ["Ctrl+Z"] = "nc_EditComment",
+        ["Ctrl+Z"] = "nc_Undo",
+        ["Ctrl+Alt+Z"] = "nc_EditComment",
         ["Alt+Add"] = "nc_SelectCurrentExtension",
         ["Divide"] = "nc_RestoreSelection",
         ["Shift+F2"] = "nc_CompareDirs",
@@ -123,7 +124,8 @@ public sealed class HotkeyMap
         ["Ctrl+Shift+C"] = "nc_CopyFullNamesToClip",
         ["Ctrl+Alt+C"] = "nc_CopyNamesToClip",
         ["Ctrl+Alt+D"] = "nc_CopyDetailsToClip",
-        ["Ctrl+Shift+P"] = "nc_CopySrcPathToClip",
+        ["Ctrl+Alt+P"] = "nc_CopySrcPathToClip",
+        ["Ctrl+Shift+P"] = "nc_CommandPalette",
 
         // Misc
         ["Ctrl+Alt+T"] = "nc_ExecuteTerminal",

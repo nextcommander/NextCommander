@@ -167,6 +167,19 @@ public enum SizeDisplay
     Dynamic,
 }
 
+/// <summary>Where the Quick View (Ctrl+Q) is shown.</summary>
+public enum QuickViewPlacement
+{
+    /// <summary>In place of the other panel.</summary>
+    OtherPanel,
+
+    /// <summary>Below the file list of the active panel (both panels stay).</summary>
+    Below,
+
+    /// <summary>Right of the file list of the active panel (both panels stay).</summary>
+    Right,
+}
+
 public enum DirectorySizeMode
 {
     Off,
@@ -1152,6 +1165,12 @@ public sealed class AppSettings
     // ---- Lister (F3) ----
     public bool ListerWrap { get; set; } = true;
 
+    /// <summary>Where the Quick View (Ctrl+Q) is shown (the user's request, 23 November 2026).</summary>
+    public QuickViewPlacement QuickViewPlacement { get; set; } = QuickViewPlacement.OtherPanel;
+
+    /// <summary>The share of the side the Quick View takes below or right of the file list (the splitter keeps it).</summary>
+    public double QuickViewRatio { get; set; } = 0.45;
+
     public double ListerFontSize { get; set; } = 13;
 
     /// <summary>
@@ -1322,6 +1341,9 @@ public sealed class AppSettings
     private Dictionary<string, string> _hotkeys = new(StringComparer.OrdinalIgnoreCase);
 
     public List<string> CommandLineHistory { get; set; } = [];
+
+    /// <summary>The entries of the command palette used last, the latest first ("cmd:nc_Copy", "dir:...", "conn:...").</summary>
+    public List<string> CommandPaletteRecent { get; set; } = [];
 }
 
 /// <summary>Editor for a file type.</summary>

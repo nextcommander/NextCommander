@@ -36,7 +36,7 @@
         <MenuItem Header="Properties..." InputGesture="Alt+Enter" Command="{Binding RunCommandCommand}" CommandParameter="nc_Properties" />
         <MenuItem Header="Calculate occupied space..." InputGesture="Ctrl+L" Command="{Binding RunCommandCommand}" CommandParameter="nc_GetFileSpace" />
         <MenuItem Header="Multi-Rename Tool..." InputGesture="Ctrl+M" Command="{Binding RunCommandCommand}" CommandParameter="nc_MultiRenameFiles" />
-        <MenuItem Header="Edit comment..." InputGesture="Ctrl+Z" Command="{Binding RunCommandCommand}" CommandParameter="nc_EditComment" />
+        <MenuItem Header="Edit comment..." InputGesture="Ctrl+Alt+Z" Command="{Binding RunCommandCommand}" CommandParameter="nc_EditComment" />
         <MenuItem Header="Print" Tag="nc_PrintFile">
           <MenuItem Header="File list..." Command="{Binding RunCommandCommand}" CommandParameter="nc_PrintFileList" />
           <MenuItem Header="Selected files" Command="{Binding RunCommandCommand}" CommandParameter="nc_PrintFile" />
@@ -78,6 +78,8 @@
         <MenuItem Header="Paste from clipboard" InputGesture="Ctrl+V" Command="{Binding RunCommandCommand}" CommandParameter="nc_PasteFromClipboard" />
         <Separator />
         <MenuItem Header="Show list file in panel..." Command="{Binding RunCommandCommand}" CommandParameter="LOADLIST" />
+        <Separator />
+        <MenuItem Header="Undo" InputGesture="Ctrl+Z" Command="{Binding RunCommandCommand}" CommandParameter="nc_Undo" />
       </MenuItem>
       <MenuItem Header="_Mark">
         <MenuItem Header="Select group..." InputGesture="Add" Command="{Binding RunCommandCommand}" CommandParameter="nc_SpreadSelection" />
@@ -97,7 +99,7 @@
         <MenuItem Header="Copy names with paths to the clipboard" InputGesture="Ctrl+Shift+C" Command="{Binding RunCommandCommand}" CommandParameter="nc_CopyFullNamesToClip" />
         <MenuItem Header="Copy to clipboard with all details" InputGesture="Ctrl+Alt+D" Command="{Binding RunCommandCommand}" CommandParameter="nc_CopyDetailsToClip" />
         <MenuItem Header="Copy to the clipboard with path and details" Command="{Binding RunCommandCommand}" CommandParameter="nc_CopyFullDetailsToClip" />
-        <MenuItem Header="Copy folder path to the clipboard" InputGesture="Ctrl+Shift+P" Command="{Binding RunCommandCommand}" CommandParameter="nc_CopySrcPathToClip" />
+        <MenuItem Header="Copy folder path to the clipboard" InputGesture="Ctrl+Alt+P" Command="{Binding RunCommandCommand}" CommandParameter="nc_CopySrcPathToClip" />
         <Separator />
         <MenuItem Header="Compare folders" InputGesture="Shift+F2" Command="{Binding RunCommandCommand}" CommandParameter="nc_CompareDirs" />
         <MenuItem Header="Mark newer, hide identical" Command="{Binding RunCommandCommand}" CommandParameter="nc_CompareDirsHideSame" />
@@ -126,6 +128,7 @@
         <MenuItem Header="Show in system file manager" InputGesture="Ctrl+Shift+E" Command="{Binding RunCommandCommand}" CommandParameter="nc_RevealInExplorer" />
         <MenuItem Header="Duplicate files..." Command="{Binding RunCommandCommand}" CommandParameter="nc_FindDuplicates" />
         <MenuItem Header="Folder sizes..." Command="{Binding RunCommandCommand}" CommandParameter="nc_DiskUsage" />
+        <MenuItem Header="Command palette..." InputGesture="Ctrl+Shift+P" Command="{Binding RunCommandCommand}" CommandParameter="nc_CommandPalette" />
       </MenuItem>
       <!-- Connection (was Net; user's request, 22 November 2026): the PC link, tunnels and network tools right below Disconnect -->
       <MenuItem Header="Co_nnection">

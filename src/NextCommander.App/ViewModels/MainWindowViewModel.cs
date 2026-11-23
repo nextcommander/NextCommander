@@ -183,6 +183,12 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     /// <summary>nc_ToggleTerminal: show or hide the internal terminal.</summary>
     public event EventHandler? TerminalToggleRequested;
 
+    /// <summary>The file operations Ctrl+Z (nc_Undo) can undo, the latest last.</summary>
+    public Services.UndoHistory Undo { get; } = new();
+
+    /// <summary>nc_CommandPalette: the window opens the command palette.</summary>
+    public event EventHandler? CommandPaletteRequested;
+
     /// <summary>nc_MaximizeTerminal: maximize or restore the internal terminal.</summary>
     public event EventHandler? TerminalMaximizeRequested;
 
@@ -362,13 +368,17 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
 
     public void ActivateSide(TabSideViewModel side)
     {
-        if (ReferenceEquals(side, ActiveSide) || ReferenceEquals(side, _quickViewSide))
+        if (ReferenceEquals(side, ActiveSide) || (ReferenceEquals(side, _quickViewSide) && !IsQuickViewInPanel))
         {
             return; // the side under the quick view cannot become active
         }
         ActiveSide.IsActiveSide = false;
         ActiveSide = side;
         side.IsActiveSide = true;
+        if (_quickViewSide is not null && IsQuickViewInPanel)
+        {
+            QuickViewSide = side; // the Quick View in a side follows the active one
+        }
         _settings.LeftActive = ReferenceEquals(side, LeftSide);
         UpdatePrompt();
     }
@@ -381,12 +391,12 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     public async Task MoveTabToOtherSideAsync(PanelViewModel tab, int? at = null)
     {
         var from = LeftSide.Tabs.Contains(tab) ? LeftSide : RightSide.Tabs.Contains(tab) ? RightSide : null;
-        if (from is null || ReferenceEquals(from, _quickViewSide))
+        if (from is null || (ReferenceEquals(from, _quickViewSide) && !IsQuickViewInPanel))
         {
             return;
         }
         var to = ReferenceEquals(from, LeftSide) ? RightSide : LeftSide;
-        if (ReferenceEquals(to, _quickViewSide))
+        if (ReferenceEquals(to, _quickViewSide) && !IsQuickViewInPanel)
         {
             return;
         }
@@ -1203,7 +1213,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         c.Register("nc_MatchSrc", "Target = Source", _ => MatchSourceAsync());
         c.Register("nc_Properties", "Properties (Alt+Enter)", _ => PropertiesAsync());
         c.Register("nc_GetFileSpace", "Calculate occupied space (Ctrl+L)", _ => FileSpaceAsync());
-        c.Register("nc_EditComment", "Edit comment (Ctrl+Z, descript.ion)", _ => EditCommentAsync());
+        c.Register("nc_EditComment", "Edit comment (descript.ion)", _ => EditCommentAsync());
         c.Register("nc_AssociateWith", "Associate this file type with a program", _ => AssociateWithAsync());
         c.Register("nc_InternalAssociate", "Edit internal associations", _ => ShowSettingsAsync("associate"));
         c.Register("nc_PrintFileList", "Print file list", _ => PrintFileListAsync());
@@ -1476,6 +1486,8 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         c.Register("nc_CommandBrowser", "Commands and shortcuts", _ => ShowCommandBrowserAsync());
         c.Register("nc_AddButton", "Add button to button bar", _ => AddButtonAsync(null));
         c.Register("nc_AddUserCommand", "Add user command (uc_)", _ => AddUserCommandAsync());
+        c.Register("nc_CommandPalette", "Command palette", () => CommandPaletteRequested?.Invoke(this, EventArgs.Empty));
+        c.Register("nc_Undo", "Undo the last file operation", _ => UndoAsync());
     }
 
     /// <summary>Registers uc_* commands from the settings.</summary>
@@ -2632,6 +2644,10 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     public void ApplySettings()
     {
         Services.UiLocalization.Switch(_settings.Language); // a new language: the open windows at once
+        if (_quickViewSide is not null && _shownPlacement != _settings.QuickViewPlacement)
+        {
+            SetQuickViewPlacement(_settings.QuickViewPlacement); // Configuration changed its place: an open one moves
+        }
         NextCommander.Core.Tools.Descriptions.Encoding = _settings.DescriptionEncoding;
         SaveIgnoreListFile();
         ApplyOperationSettings();
@@ -3973,7 +3989,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>Lister, editor and find files need these from the main window.</summary>
-    public ToolContext Tools => _tools ??= new ToolContext(_registry, _settings, _platform, _dialogs, EditEntryAsync);
+    public ToolContext Tools => _tools ??= new ToolContext(_registry, _settings, _platform, _dialogs, EditEntryAsync) { JobDone = RecordUndo };
 
     private ToolContext? _tools;
 
@@ -4082,8 +4098,32 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         {
             CloseDiskUsage();
         }
-        QuickViewSide = QuickViewSide is null ? OtherSide : null;
+        _shownPlacement = _settings.QuickViewPlacement;
+        QuickViewSide = QuickViewSide is null ? (IsQuickViewInPanel ? ActiveSide : OtherSide) : null;
     }
+
+    /// <summary>The Quick View shares the active side with its file list (below or right of it) instead of covering the other side.</summary>
+    public bool IsQuickViewInPanel => _settings.QuickViewPlacement != QuickViewPlacement.OtherPanel;
+
+    /// <summary>The place of the Quick View (Configuration, or its ⇄ button); an open one moves there.</summary>
+    public void SetQuickViewPlacement(QuickViewPlacement placement)
+    {
+        var open = _quickViewSide is not null;
+        var changed = _settings.QuickViewPlacement != placement;
+        _settings.QuickViewPlacement = placement;
+        if (open && (changed || _shownPlacement != placement))
+        {
+            QuickViewSide = null;
+            QuickViewSide = IsQuickViewInPanel ? ActiveSide : OtherSide;
+        }
+        _shownPlacement = placement;
+        OnPropertyChanged(nameof(QuickViewPlacement));
+    }
+
+    private QuickViewPlacement _shownPlacement;
+
+    /// <summary>Where the Quick View is shown (the window places it).</summary>
+    public QuickViewPlacement QuickViewPlacement => _settings.QuickViewPlacement;
 
     // ---------------------------------------------------------------- folder sizes in the other panel
 
@@ -4132,7 +4172,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             QuickViewEntry = null;
             return;
         }
-        var followed = ReferenceEquals(_quickViewSide, LeftSide) ? RightSide : LeftSide;
+        var followed = IsQuickViewInPanel ? _quickViewSide : ReferenceEquals(_quickViewSide, LeftSide) ? RightSide : LeftSide;
         QuickViewEntry = followed.ActiveTab.CursorItem is { IsParent: false, IsError: false, Entry: { } e } ? e : null;
     }
 
@@ -4623,6 +4663,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             afterSuccess?.Invoke(); // also after errors / cancelling: for the files that did arrive
         }
         Services.OperationLog.Job(_settings, job, sources.Select(s => s.Path).ToList(), (job as CopyMoveJob)?.TargetDirectory);
+        RecordUndo(job);
         await OfferElevationAsync(job);
         if (!string.IsNullOrWhiteSpace(_settings.SoundFile) && job.Progress.Snapshot().Elapsed >= TimeSpan.FromSeconds(Math.Max(0, _settings.SoundMinSeconds)))
         {
@@ -4701,6 +4742,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         try
         {
             await provider.MoveAsync(entry.Path, destination, overwrite: false, CancellationToken.None);
+            Undo.Push(Services.FileUndo.ForRename(_registry, entry.Path, destination));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -4766,6 +4808,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             return;
         }
         string? firstTop = null;
+        var created = new List<VfsPath>();
         foreach (var raw in names)
         {
             var parts = raw.Replace('\\', '/').Split('/', StringSplitOptions.RemoveEmptyEntries);
@@ -4781,7 +4824,14 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             }
             try
             {
+                // the folders that are not there yet are the ones undo removes
+                var missing = new List<VfsPath>();
+                for (var p = path; p is not null && p != dir && await _registry.Resolve(p).GetEntryAsync(p, CancellationToken.None) is null; p = p.Parent)
+                {
+                    missing.Add(p);
+                }
                 await _registry.Resolve(path).CreateDirectoryAsync(path, CancellationToken.None);
+                created.AddRange(missing);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -4798,8 +4848,53 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
                 return;
             }
         }
+        Undo.Push(Services.FileUndo.ForNewFolders(_registry, created));
         panel.MarkWorkedHere();
         await panel.NavigateAsync(dir, focusName: firstTop, recordHistory: false);
+    }
+
+    /// <summary>What a finished job did, kept for Ctrl+Z (copy / move, moving to the recycle bin, multi-rename).</summary>
+    public void RecordUndo(FileJob job)
+    {
+        Undo.Push(job switch
+        {
+            CopyMoveJob copy => Services.FileUndo.ForCopyMove(_registry, copy, _platform),
+            DeleteJob { UsesTrash: true } delete => Services.FileUndo.ForTrash(_platform.TrashStore, delete),
+            Core.Rename.MultiRenameJob rename => Services.FileUndo.ForMultiRename(rename),
+            _ => null,
+        });
+    }
+
+    /// <summary>nc_Undo (Ctrl+Z): asks, then undoes the latest file operation and says what could not be undone.</summary>
+    private async Task UndoAsync()
+    {
+        if (Undo.Next is not { } next)
+        {
+            await _dialogs.ShowMessageAsync("Undo", "There is nothing to undo.");
+            return;
+        }
+        if (!await _dialogs.ConfirmAsync("Undo", $"Undo: {next.Title}?", "Undo"))
+        {
+            return;
+        }
+        Undo.Pop();
+        UndoResult result;
+        try
+        {
+            result = await next.RunAsync(CancellationToken.None);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)
+        {
+            result = new UndoResult(0, [ex.Message]);
+        }
+        Services.OperationLog.Single(_settings, Services.OperationLog.Kind.CopyMove, "Undo", next.Title, failed: result.Problems.Count > 0);
+        await _registry.FlushAsync();
+        await Task.WhenAll(Left.RefreshAsync(), Right.RefreshAsync());
+        if (result.Problems.Count > 0)
+        {
+            await _dialogs.ShowMessageAsync("Undo", string.Join("\n", result.Problems.Take(20))
+                + (result.Problems.Count > 20 ? $"\n... ({result.Problems.Count - 20} more)" : string.Empty));
+        }
     }
 
     private async Task DeleteAsync(bool permanent)

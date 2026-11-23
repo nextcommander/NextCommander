@@ -268,6 +268,7 @@ public sealed partial class FindFilesWindow
         var job = new DeleteJob(_request.Context.Registry, selected, useTrash ? _request.Context.Platform : null);
         _status.Text = "Deleting...";
         await Task.Run(job.RunAsync);
+        _request.Context.JobDone?.Invoke(job);
         var failed = job.Errors.Select(e => e.Item).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var deleted = selected.Where(e => !failed.Contains(e.Path.ToDisplayString())).ToList();
         RemoveFromList(deleted);

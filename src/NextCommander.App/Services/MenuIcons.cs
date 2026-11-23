@@ -311,6 +311,8 @@ public static class MenuIcons
         ["nc_RevealInExplorer"] = new("FmFolderIcon", Yellow, "OvSearch", Blue),
         ["nc_Config"] = new("MiGear", Gray),
         ["nc_CommandBrowser"] = new("MiKeyboard", Gray),
+        ["nc_CommandPalette"] = new("MiKeyboard", Purple, "OvSearch", Blue),
+        ["nc_Undo"] = new("MiHistory", Blue, "OvArrowLeft", Orange),
         ["nc_AddButton"] = new("FmBarCommands", Blue, "OvPlus", Green),
         ["nc_CheckForUpdates"] = new("MiRefresh", Blue, "OvArrowDown", Green),
         ["nc_ExportSettings"] = new("MiSave", Blue, "OvArrowRight", Green),
