@@ -3844,5 +3844,7 @@
   "NetworkToolsWindow.ThisNetworkEveryone": "Dieses Netzwerk (alle)",
   "ConnectionManagerView.AFolderNameCanT": "Ein Ordnername darf kein / enthalten",
   "ConnectionManagerView.FolderName": "Ordnername",
-  "ConnectionManagerView.ThereIsAFolderWith": "Es gibt bereits einen Ordner mit diesem Namen"
+  "ConnectionManagerView.ThereIsAFolderWith": "Es gibt bereits einen Ordner mit diesem Namen",
+  "TerminalView.UploadTo": "Nach {0} hochladen",
+  "TerminalView.TypeThePathsAfterThe": "Die Pfade hinter die Eingabeaufforderung schreiben"
 }

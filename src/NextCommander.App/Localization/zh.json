@@ -3844,5 +3844,7 @@
   "NetworkToolsWindow.ThisNetworkEveryone": "此网络（所有设备）",
   "ConnectionManagerView.AFolderNameCanT": "文件夹名称不能包含 /",
   "ConnectionManagerView.FolderName": "文件夹名称",
-  "ConnectionManagerView.ThereIsAFolderWith": "已存在同名文件夹"
+  "ConnectionManagerView.ThereIsAFolderWith": "已存在同名文件夹",
+  "TerminalView.UploadTo": "上传到 {0}",
+  "TerminalView.TypeThePathsAfterThe": "在提示符后输入路径"
 }

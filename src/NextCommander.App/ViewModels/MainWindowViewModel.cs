@@ -3148,6 +3148,40 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// Files dropped on an SSH session of the terminal (the user's request, 23 November 2026): copied over SFTP into the
+    /// shell's folder (its home when the shell has not told it) by the usual copy, with its dialog and progress.
+    /// </summary>
+    public async Task UploadToSshAsync(Views.TerminalDrop drop)
+    {
+        var files = drop.Connection.FilesOverSsh(_settings.Connections, drop.Folder);
+        if (!_settings.Connections.Any(c => c.SecretId == files.SecretId))
+        {
+            Remote?.Remember(files, drop.Connection.SecretId);
+        }
+        if (PathOf(files) is not { } target)
+        {
+            return;
+        }
+        var entries = drop.Entries.ToList();
+        foreach (var path in drop.LocalPaths)
+        {
+            if (await ActivePanel.GetEntryAsync(VfsPath.Local(path)) is { } entry)
+            {
+                entries.Add(entry);
+            }
+        }
+        if (entries.Count == 0)
+        {
+            return;
+        }
+        UploadStarted?.Invoke(this, target);
+        await DropAsync(new DropRequest(entries, target, Move: false, drop.SourcePanel));
+    }
+
+    /// <summary>An upload from the terminal started (tests): where the files go.</summary>
+    public event EventHandler<VfsPath>? UploadStarted;
+
     /// <summary>A Telnet, SSH or rsh connection to open in a tab of the internal terminal (the window opens it).</summary>
     public event EventHandler<RemoteConnection>? TerminalSessionRequested; // also serial ports
 
