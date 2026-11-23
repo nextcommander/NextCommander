@@ -62,7 +62,7 @@ public sealed class MultiRenameWindow : Window
 {
     private static readonly (string Text, string Insert)[] s_placeholders =
     [
-        ("[N] ad", "[N]"), ("[N1-3] characters 1-3 of the name", "[N1-3]"), ("[E] extension", "[E]"), ("[C] counter", "[C]"),
+        ("[N] name", "[N]"), ("[N1-3] characters 1-3 of the name", "[N1-3]"), ("[E] extension", "[E]"), ("[C] counter", "[C]"),
         ("[YMD] date", "[YMD]"), ("[hms] time", "[hms]"), ("[P] parent folder", "[P]"), ("[G] grandparent folder", "[G]"), ("[S] size", "[S]"),
     ];
 
@@ -129,12 +129,17 @@ public sealed class MultiRenameWindow : Window
         {
             check.IsCheckedChanged += (_, _) => Recompute();
         }
-        foreach (var button in _cases)
+        for (var i = 0; i < _cases.Length; i++)
         {
+            var index = i;
+            var button = _cases[i];
             button.IsCheckedChanged += (_, _) =>
             {
                 if (button.IsChecked == true)
                 {
+                    // the button just checked, not the first checked one: the one checked before is unchecked only
+                    // after this event (clicking UPPERCASE applied the previous choice; user's report, 23 November 2026)
+                    _caseIndex = index;
                     Recompute();
                 }
             };
@@ -168,11 +173,17 @@ public sealed class MultiRenameWindow : Window
 
     public string StatusText => _status.Text ?? string.Empty;
 
+    private int _caseIndex;
+
     /// <summary>The chosen letter case.</summary>
     private CaseMode CaseChoice
     {
-        get => s_cases[Math.Max(0, Array.FindIndex(_cases, b => b.IsChecked == true))].Mode;
-        set => _cases[Math.Max(0, Array.FindIndex(s_cases, c => c.Mode == value))].IsChecked = true;
+        get => s_cases[_caseIndex].Mode;
+        set
+        {
+            _caseIndex = Math.Max(0, Array.FindIndex(s_cases, c => c.Mode == value));
+            _cases[_caseIndex].IsChecked = true;
+        }
     }
 
     private Control BuildLayout()

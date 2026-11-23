@@ -100,15 +100,19 @@ public sealed class DockerFileSystemProvider : IFileSystemProvider, IUploadTimeS
     // ---------------------------------------------------------------- running docker
 
     /// <summary>The message of a docker failure as the matching exception.</summary>
-    internal static Exception ErrorOf(DockerResult result, VfsPath path)
+    internal static Exception ErrorOf(DockerResult result, VfsPath path) => ErrorOf(result, path, Environment.GetEnvironmentVariable("DOCKER_HOST"));
+
+    /// <summary>The message of a docker failure; <paramref name="dockerHost"/> the daemon address DOCKER_HOST names, if any.</summary>
+    internal static Exception ErrorOf(DockerResult result, VfsPath path, string? dockerHost)
     {
         var text = (result.Error + "\n" + result.Output).Trim();
         var line = text.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(l => l.Trim()).FirstOrDefault(l => l.Length > 0) ?? string.Empty;
         bool Has(string part) => text.Contains(part, StringComparison.OrdinalIgnoreCase);
-        if (Has("Cannot connect to the Docker daemon") || Has("failed to connect to the docker API") || Has("error during connect")
-            || Has("Is the docker daemon running"))
+        if (DockerTool.CannotConnect(result))
         {
-            return new IOException("Docker is not running: start Docker Desktop (or the docker service), then try again.");
+            return dockerHost is { Length: > 0 } host
+                ? new IOException($"Docker does not answer at {host} (the DOCKER_HOST environment variable): start Docker, or remove or correct DOCKER_HOST.")
+                : new IOException("Docker is not running: start Docker Desktop (or the docker service), then try again.");
         }
         if (Has("is not running") || Has("is paused") || Has("is restarting"))
         {

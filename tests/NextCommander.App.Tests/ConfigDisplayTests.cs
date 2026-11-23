@@ -45,6 +45,31 @@ public sealed class ConfigDisplayTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void A_link_that_cannot_be_listed_opens_its_target()
+    {
+        Assert.Null(PanelViewModel.ReadableLinkTarget(VfsPath.Local(_fx.L()))); // not a link
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+        // as Windows' "Application Data" junction in ProgramData (user's report, 23 November 2026)
+        var target = Directory.CreateDirectory(_fx.L("real")).FullName;
+        var junction = _fx.L("Application Data");
+        using (var mklink = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("cmd.exe", ["/c", "mklink", "/J", junction, target]) { CreateNoWindow = true, UseShellExecute = false }))
+        {
+            mklink!.WaitForExit();
+        }
+        try
+        {
+            Assert.Equal(target, PanelViewModel.ReadableLinkTarget(VfsPath.Local(junction))?.Path);
+        }
+        finally
+        {
+            Directory.Delete(junction); // the link only (the folder's clean-up would go into it)
+        }
+    }
+
+    [AvaloniaFact]
     public async Task Sort_methods_and_folder_sorting()
     {
         File.WriteAllText(_fx.L("_x.txt"), "x");
@@ -61,6 +86,16 @@ public sealed class ConfigDisplayTests : IDisposable
 
         Assert.True(PanelViewModel.NameComparer(SortMethod.Natural).Compare("a2", "a10") < 0);
         Assert.True(PanelViewModel.NameComparer(SortMethod.Alphabetical).Compare("a2", "a10") > 0);
+        // files: the name before the extension first (user's report, 23 November 2026)
+        var natural = PanelViewModel.NameComparer(SortMethod.Natural);
+        Assert.True(PanelViewModel.CompareFileNames(natural, "deneme1.txt", "deneme1 - Copy.txt") < 0);
+        Assert.True(PanelViewModel.CompareFileNames(natural, "a.txt", "a.zip") < 0);
+        Assert.True(PanelViewModel.CompareFileNames(natural, ".gitignore", "a.txt") < 0);
+        File.WriteAllText(_fx.L("deneme1 - Copy.txt"), "x");
+        File.WriteAllText(_fx.L("deneme1.txt"), "x");
+        vm.Settings.SortMethod = SortMethod.Natural;
+        await left.RefreshAsync();
+        Assert.Equal(Names(left).IndexOf("deneme1.txt") + 1, Names(left).IndexOf("deneme1 - Copy.txt"));
 
         // Folders: by date like files, or always by name
         Directory.CreateDirectory(_fx.L("zz_old"));

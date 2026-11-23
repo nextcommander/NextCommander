@@ -243,10 +243,14 @@ public sealed class DockerPluginTests
     public void Docker_errors_say_what_to_do()
     {
         var path = VfsPath.Create("docker", "web", "/app");
-        Exception Of(string error) => DockerFileSystemProvider.ErrorOf(new DockerResult(1, string.Empty, error), path);
+        Exception Of(string error) => DockerFileSystemProvider.ErrorOf(new DockerResult(1, string.Empty, error), path, dockerHost: null);
 
         Assert.Contains("start Docker Desktop", Of("failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine").Message, StringComparison.Ordinal);
         Assert.Contains("start Docker Desktop", Of("Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?").Message, StringComparison.Ordinal);
+        // a DOCKER_HOST that does not answer is named (user's report, 23 November 2026)
+        Assert.Contains("DOCKER_HOST", DockerFileSystemProvider.ErrorOf(new DockerResult(1, string.Empty, "error during connect: dial tcp [::1]:2375"), path, "tcp://localhost:2375").Message, StringComparison.Ordinal);
+        Assert.True(DockerTool.CannotConnect(new DockerResult(1, string.Empty, "error during connect: dial tcp [::1]:2375")));
+        Assert.False(DockerTool.CannotConnect(new DockerResult(0, string.Empty, "error during connect")));
         Assert.Contains("docker start web", Of("Error response from daemon: container abc is not running").Message, StringComparison.Ordinal);
         Assert.IsType<DirectoryNotFoundException>(Of("Error response from daemon: No such container: web"));
         Assert.Contains("no shell", Of("OCI runtime exec failed: exec failed: unable to start container process: exec: \"sh\": executable file not found in $PATH: unknown").Message, StringComparison.Ordinal);

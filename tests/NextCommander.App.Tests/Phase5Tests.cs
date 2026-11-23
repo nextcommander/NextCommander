@@ -1,6 +1,7 @@
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.VisualTree;
 using NextCommander.App.ViewModels;
 using NextCommander.App.Views.Tools;
 using NextCommander.Core.Compare;
@@ -55,6 +56,15 @@ public sealed class Phase5Tests : IDisposable
         window.Apply(new MultiRenameOptions { NameMask = "same" });
         Assert.Equal(3, window.Rows.Count(r => r.Item.Issue == RenameIssue.Duplicate)); // three become same.txt
         Assert.Equal(RenameIssue.None, window.Rows.Single(r => r.NewName == "same.log").Item.Issue);
+
+        // a letter case button gives its own case, not the one chosen before (user's report, 23 November 2026)
+        window.Apply(new MultiRenameOptions());
+        var cases = window.GetVisualDescendants().OfType<Avalonia.Controls.RadioButton>()
+            .ToDictionary(b => ((Avalonia.Controls.TextBlock)b.Content!).Text!);
+        cases["UPPERCASE"].IsChecked = true;
+        Assert.Contains("B.LOG", window.Rows.Select(r => r.NewName));
+        cases["lowercase"].IsChecked = true;
+        Assert.Contains("b.log", window.Rows.Select(r => r.NewName));
     }
 
     [AvaloniaFact]

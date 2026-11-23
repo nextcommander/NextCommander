@@ -921,6 +921,7 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         IFileSystemProvider provider;
         IReadOnlyList<VfsEntry> list;
         string? readError = null;
+        VfsPath? linkTarget = null;
         try
         {
             provider = _registry.Resolve(path);
@@ -949,6 +950,9 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         {
             // The directory exists but cannot be read: show "<Read error!>" (Enter retries).
             Log.Information(ex, "Cannot read {Path}", path);
+            // a link that may not be listed itself (Windows' compatibility junctions such as "Application Data", which
+            // deny listing to everyone): its target folder, as Total Commander opens it (user's report, 23 November 2026)
+            linkTarget = ex is UnauthorizedAccessException ? ReadableLinkTarget(path) : null;
             if (ex is NextCommander.Platform.PrivacyPermissionException permission && path != CurrentPath)
             {
                 // the system's privacy settings keep the application out: offer them (on entering, not on every refresh)
@@ -971,6 +975,10 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         if (cts.IsCancellationRequested)
         {
             return false;
+        }
+        if (linkTarget is not null)
+        {
+            return await NavigateAsync(linkTarget, focusName, recordHistory);
         }
 
         var previous = CurrentPath;
@@ -1030,6 +1038,34 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
     public event EventHandler<ConnectionError>? ConnectionFailed;
 
     /// <summary>Reports the error of a server's folder as the connection's error (false: not a server's folder).</summary>
+    /// <summary>
+    /// The target of a local link (junction, symbolic link) when it is another folder that exists; null otherwise
+    /// (not a link, a link onto itself, a target that is gone).
+    /// </summary>
+    internal static VfsPath? ReadableLinkTarget(VfsPath path)
+    {
+        if (!path.IsLocal)
+        {
+            return null;
+        }
+        try
+        {
+            var info = new DirectoryInfo(path.Path);
+            if (info.LinkTarget is not { Length: > 0 } target)
+            {
+                return null;
+            }
+            var full = Path.GetFullPath(target, info.Parent?.FullName ?? path.Path);
+            // a target that is a link again is not followed (no loops between links)
+            return Directory.Exists(full) && new DirectoryInfo(full).LinkTarget is null && !string.Equals(Path.TrimEndingDirectorySeparator(full), path.Path, StringComparison.OrdinalIgnoreCase)
+                ? VfsPath.Local(full) : null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or System.Security.SecurityException)
+        {
+            return null;
+        }
+    }
+
     private bool ReportConnectionError(VfsPath path, Exception ex)
     {
         if (ConnectionFailed is null || path.IsLocal || path.Container is not null
@@ -1893,6 +1929,27 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         _ => NaturalStringComparer.Instance,
     };
 
+    /// <summary>
+    /// Two file names: the part before the extension first, then the extension, then the whole name. A leading dot
+    /// (".gitignore") is no extension.
+    /// </summary>
+    public static int CompareFileNames(IComparer<string> comparer, string a, string b)
+    {
+        static (string Stem, string Extension) Split(string name)
+        {
+            var dot = name.LastIndexOf('.');
+            return dot > 0 ? (name[..dot], name[(dot + 1)..]) : (name, string.Empty);
+        }
+        var (stemA, extA) = Split(a);
+        var (stemB, extB) = Split(b);
+        var c = comparer.Compare(stemA, stemB);
+        if (c == 0)
+        {
+            c = comparer.Compare(extA, extB);
+        }
+        return c != 0 ? c : comparer.Compare(a, b);
+    }
+
     private IEnumerable<VfsEntry> Sort(IEnumerable<VfsEntry> entries)
     {
         var desc = _panelSettings.SortDescending;
@@ -1904,6 +1961,12 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
             ? natural.Compare(a.Name, b.Name)
             : natural.Compare(names.GetValueOrDefault(a, a.Name), names.GetValueOrDefault(b, b.Name));
 
+        // files: the name without its extension first, then the extension ("deneme1.txt" before "deneme1 - Copy.txt",
+        // as Explorer and Total Commander sort; user's report, 23 November 2026)
+        int FileByName(VfsEntry a, VfsEntry b) => names is null
+            ? CompareFileNames(natural, a.Name, b.Name)
+            : CompareFileNames(natural, names.GetValueOrDefault(a, a.Name), names.GetValueOrDefault(b, b.Name));
+
         // Primary key only; ties are always broken by ascending name.
         Comparison<VfsEntry> filePrimary = col switch
         {
@@ -1911,7 +1974,7 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
             SortColumn.Size => (a, b) => a.Size.CompareTo(b.Size),
             SortColumn.Date => (a, b) => a.LastWriteTime.CompareTo(b.LastWriteTime),
             SortColumn.Attributes => (a, b) => a.Attributes.CompareTo(b.Attributes),
-            _ => ByName,
+            _ => FileByName,
         };
         // Directories have no size/extension: they sort by date when sorting by date, otherwise by name.
         // With "sort directories always by name" they keep name order when sorting by date.
@@ -1969,7 +2032,7 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
             return dirs.Concat(files);
         }
         dirs.Sort(Build(dirPrimary, dirDesc, ByName));
-        files.Sort(Build(filePrimary, desc, ByName));
+        files.Sort(Build(filePrimary, desc, FileByName));
         return dirs.Concat(files);
     }
 

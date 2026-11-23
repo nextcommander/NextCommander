@@ -98,10 +98,54 @@ public sealed class DockerTool(string path) : IDockerRunner
         // no "What's next" hints and no colors in the output that is read
         info.Environment["DOCKER_CLI_HINTS"] = "false";
         info.Environment["NO_COLOR"] = "1";
+        if (_withoutDockerHost)
+        {
+            info.Environment.Remove("DOCKER_HOST");
+        }
         return info;
     }
 
+    /// <summary>
+    /// DOCKER_HOST is left out: it named a daemon that did not answer while docker's own context (Docker Desktop's) did.
+    /// A DOCKER_HOST left behind by another tool (Rancher Desktop's tcp://localhost:2375) overrides the context and
+    /// made every command fail with "Docker is not running" (user's report, 23 November 2026).
+    /// </summary>
+    private bool _withoutDockerHost;
+
+    /// <summary>The daemon could not be reached (not running, or a wrong address).</summary>
+    internal static bool CannotConnect(DockerResult result)
+    {
+        var text = result.Error + "\n" + result.Output;
+        return result.ExitCode != 0 && (text.Contains("Cannot connect to the Docker daemon", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("failed to connect to the docker API", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("error during connect", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("Is the docker daemon running", StringComparison.OrdinalIgnoreCase));
+    }
+
     public async Task<DockerResult> RunAsync(IReadOnlyList<string> arguments, Stream? input, CancellationToken cancellationToken)
+    {
+        var result = await RunOnceAsync(arguments, input, cancellationToken).ConfigureAwait(false);
+        if (!_withoutDockerHost && CannotConnect(result) && Environment.GetEnvironmentVariable("DOCKER_HOST") is { Length: > 0 }
+            && (input is null || input.CanSeek))
+        {
+            // once more without DOCKER_HOST: docker then uses its current context
+            _withoutDockerHost = true;
+            if (input is not null)
+            {
+                input.Position = 0;
+            }
+            var again = await RunOnceAsync(arguments, input, cancellationToken).ConfigureAwait(false);
+            if (CannotConnect(again))
+            {
+                _withoutDockerHost = false;
+                return result;
+            }
+            return again;
+        }
+        return result;
+    }
+
+    private async Task<DockerResult> RunOnceAsync(IReadOnlyList<string> arguments, Stream? input, CancellationToken cancellationToken)
     {
         using var process = Process.Start(Start(arguments)) ?? throw new IOException("docker could not be started.");
         var output = process.StandardOutput.ReadToEndAsync(cancellationToken);

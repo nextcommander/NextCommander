@@ -71,4 +71,35 @@ public sealed class IconSelectionTests : IDisposable
         Dispatcher.UIThread.RunJobs();
         Assert.True(vm.Left.Items.Single(i => i.FullName == "b.log").IsMarked);
     }
+
+    [AvaloniaFact]
+    public async Task Right_button_held_and_dragged_marks_the_rows_passed()
+    {
+        var (w, vm) = await _fx.OpenAsync();
+        vm.Settings.RightButtonSelects = true;
+        await SettleAsync();
+        var grid = w.LeftPanel.GetVisualDescendants().OfType<DataGrid>().First();
+        DataGridRow Row(string name) => grid.GetVisualDescendants().OfType<DataGridRow>().Single(r => (r.DataContext as FileItemViewModel)?.FullName == name);
+        Point Text(string name) => Row(name).TranslatePoint(new Point(120, Row(name).Bounds.Height / 2), w)!.Value;
+        bool Marked(string name) => vm.Left.Items.Single(i => i.FullName == name).IsMarked;
+        var names = vm.Left.Items.Where(i => !i.IsParent && !i.IsDirectory).Select(i => i.FullName).ToList();
+        Assert.True(names.Count >= 3);
+
+        // pressed on the first file, moved over the third: the three are marked (user's request, 23 November 2026)
+        w.MouseDown(Text(names[0]), MouseButton.Right);
+        w.MouseMove(Text(names[2]), RawInputModifiers.RightMouseButton);
+        w.MouseUp(Text(names[2]), MouseButton.Right);
+        Dispatcher.UIThread.RunJobs();
+        Assert.All(names.Take(3), n => Assert.True(Marked(n), n));
+        Assert.Equal(names[2], vm.Left.CursorItem?.FullName);
+
+        // starting on a marked file unmarks the rows passed
+        w.MouseDown(Text(names[1]), MouseButton.Right);
+        w.MouseMove(Text(names[2]), RawInputModifiers.RightMouseButton);
+        w.MouseUp(Text(names[2]), MouseButton.Right);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(Marked(names[0]));
+        Assert.False(Marked(names[1]));
+        Assert.False(Marked(names[2]));
+    }
 }

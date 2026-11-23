@@ -198,6 +198,38 @@ public sealed class FileSearcherTests : IDisposable
     }
 
     [Fact]
+    public async Task Duplicates_by_content_need_the_whole_file_when_the_samples_agree()
+    {
+        var folder = Path.Combine(_dir.Root, "big");
+        Directory.CreateDirectory(folder);
+        var content = new byte[100_000];
+        new Random(5).NextBytes(content);
+        void Write(string name, int? changed)
+        {
+            var copy = (byte[])content.Clone();
+            if (changed is { } at)
+            {
+                copy[at] ^= 0xFF;
+            }
+            File.WriteAllBytes(Path.Combine(folder, name), copy);
+        }
+        Write("b1.bin", null);
+        Write("b2.bin", null);
+        Write("b3.bin", 20_000); // outside the start / middle / end samples: only the whole file tells
+        Write("b4.bin", 50_000); // in the middle sample
+        Write("b5.bin", 99_999); // in the end sample
+        var all = new List<VfsEntry>();
+        await new FileSearcher(_registry, new SearchOptions { SearchIn = folder, Kind = SearchItemKind.Files }).RunAsync(all.Add, CancellationToken.None);
+        long read = 0;
+
+        var groups = await DuplicateFinder.FindAsync(_registry, all, DuplicateMode.Content, CancellationToken.None, n => Interlocked.Add(ref read, n));
+
+        Assert.Equal(["b1.bin", "b2.bin"], Assert.Single(groups).Select(e => e.Name).Order(StringComparer.Ordinal));
+        // samples of the five, then only the three whose samples agree read whole
+        Assert.Equal(5L * 3 * DuplicateFinder.SampleBytes + 3L * content.Length, read);
+    }
+
+    [Fact]
     public async Task Duplicates_by_content_and_name()
     {
         _dir.Write(Path.Combine("x", "same1.dat"), "identical content");

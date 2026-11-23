@@ -76,6 +76,7 @@ public partial class FilePanelView : UserControl
             list.AddHandler(PointerReleasedEvent, OnListPointerReleased, RoutingStrategies.Tunnel, handledEventsToo: true);
             list.GotFocus += (_, _) => Activated?.Invoke(this, EventArgs.Empty);
             list.AddHandler(PointerReleasedEvent, OnRightButtonReleased, RoutingStrategies.Tunnel, handledEventsToo: true);
+            list.AddHandler(PointerMovedEvent, OnRightPaintMoved, RoutingStrategies.Tunnel, handledEventsToo: true);
             list.ContextRequested += (_, e) =>
             {
                 // Right button selection: a click marks; only a long press opens the menu (the timer opens it)
@@ -847,6 +848,7 @@ public partial class FilePanelView : UserControl
         }
         vm.ToggleMark(item);
         vm.CursorItem = item;
+        _rightPaint = (list, item.IsMarked, item);
         _suppressContextMenu = true;
         _rightHoldTimer?.Dispose();
         var pointer = e.Pointer;
@@ -854,6 +856,7 @@ public partial class FilePanelView : UserControl
         _rightHoldTimer = DispatcherTimer.RunOnce(() =>
         {
             _rightHoldTimer = null;
+            _rightPaint = null;
             vm.ToggleMark(item); // the long press was for the menu, not for marking
             // the list holds the pointer capture while the button is down: give it up so the menu gets the pointer
             pointer.Capture(null);
@@ -866,11 +869,64 @@ public partial class FilePanelView : UserControl
 
     private void OnRightButtonReleased(object? sender, PointerReleasedEventArgs e)
     {
+        if (e.InitialPressMouseButton == MouseButton.Right)
+        {
+            _rightPaint = null;
+        }
         if (e.InitialPressMouseButton == MouseButton.Right && _rightHoldTimer is not null)
         {
             _rightHoldTimer.Dispose();
             _rightHoldTimer = null;
         }
+    }
+
+    /// <summary>
+    /// Right button selection held down and dragged: the rows passed over get the mark of the first one (marked or
+    /// unmarked), as in the classic two-panel managers (user's request, 23 November 2026). Leaving the first row also
+    /// means no context menu.
+    /// </summary>
+    private (Control List, bool Mark, FileItemViewModel Last)? _rightPaint;
+
+    private void OnRightPaintMoved(object? sender, PointerEventArgs e)
+    {
+        if (_rightPaint is not { } paint || _vm is not { } vm || sender != paint.List)
+        {
+            return;
+        }
+        if (!e.GetCurrentPoint(paint.List).Properties.IsRightButtonPressed)
+        {
+            _rightPaint = null;
+            return;
+        }
+        var at = e.GetPosition(paint.List);
+        var item = paint.List == Brief ? Brief.HitTest(at)
+            : paint.List == Thumbs ? Thumbs.HitTest(at)
+            : RowItem(paint.List.InputHitTest(at));
+        if (item is null || item == paint.Last)
+        {
+            return;
+        }
+        _rightHoldTimer?.Dispose(); // dragging, not holding for the menu
+        _rightHoldTimer = null;
+        // every row between the last one and this one (a fast move skips rows)
+        var from = vm.IndexOf(paint.Last);
+        var to = vm.IndexOf(item);
+        if (from >= 0 && to >= 0)
+        {
+            var step = Math.Sign(to - from);
+            for (var i = from + step; i != to + step; i += step)
+            {
+                vm.SetMark(vm.Items[i], paint.Mark);
+            }
+        }
+        else
+        {
+            vm.SetMark(item, paint.Mark);
+        }
+        vm.NotifyMarksChanged();
+        vm.CursorItem = item;
+        _rightPaint = paint with { Last = item };
+        e.Handled = true;
     }
 
     private async void OnGridDoubleTapped(object? sender, TappedEventArgs e)
