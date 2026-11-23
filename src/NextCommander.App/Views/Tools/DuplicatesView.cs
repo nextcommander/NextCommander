@@ -969,6 +969,7 @@ public sealed class DuplicatesView : UserControl
         {
             IsEnabled = true;
         }
+        _request.Context.JobDone?.Invoke(job);
         var failed = job.Errors.Select(e => e.Item).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var done = marked.Where(e => !failed.Contains(e.Path.ToDisplayString())).Select(e => e.Path).ToHashSet();
         var keepMarked = marked.Where(e => !done.Contains(e.Path)).Select(e => e.Path).ToHashSet();

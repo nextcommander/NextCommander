@@ -1156,6 +1156,7 @@ public sealed class DiskUsageView : UserControl
         var entry = new VfsEntry { Name = node.Name, Path = node.Path, IsDirectory = node.IsDirectory, Size = node.Size, LastWriteTime = node.LastWriteTime };
         var job = new DeleteJob(_request.Context.Registry, [entry], useTrash ? _request.Context.Platform : null);
         await Task.Run(job.RunAsync);
+        _request.Context.JobDone?.Invoke(job);
         if (job.Errors.Count > 0 || job.Failure is not null)
         {
             _status.Text = (job.Errors.Count > 0 ? job.Errors[0].Message : null) ?? job.Failure?.Message ?? string.Empty;
