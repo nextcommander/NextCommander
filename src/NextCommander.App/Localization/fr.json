@@ -3841,5 +3841,8 @@
   "NetworkToolsWindow.Waking": "Réveil de {0}...",
   "NetworkToolsWindow.WhyMightItNotWake": "Pourquoi ne se réveille-t-il pas ?",
   "NetworkToolsWindow.Windows": "Windows",
-  "NetworkToolsWindow.ThisNetworkEveryone": "Ce réseau (tous)"
+  "NetworkToolsWindow.ThisNetworkEveryone": "Ce réseau (tous)",
+  "ConnectionManagerView.AFolderNameCanT": "Un nom de dossier ne peut pas contenir /",
+  "ConnectionManagerView.FolderName": "Nom du dossier",
+  "ConnectionManagerView.ThereIsAFolderWith": "Un dossier de ce nom existe déjà"
 }
