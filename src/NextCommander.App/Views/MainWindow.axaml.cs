@@ -26,7 +26,8 @@ public partial class MainWindow : Window
     public void UpdateTitle()
     {
         var progress = _vm?.Settings.ProgressInTitle == true ? _vm.JobsProgress : null;
-        Title = progress is { } p ? $"%{p * 100:0} — NextCommander" : "NextCommander";
+        var title = progress is { } p ? $"%{p * 100:0} — NextCommander" : "NextCommander";
+        Title = _vm?.IsRecordingMacro == true ? "● " + title : title; // a macro is being recorded
     }
     private DispatcherTimer? _quickViewTimer;
 

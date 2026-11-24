@@ -99,6 +99,9 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             new NextCommander.Core.Columns.FileInfoColumns(), new NextCommander.Core.Columns.TextColumns(), new NextCommander.Core.Columns.CommentColumns(),
             new NextCommander.Columns.ImageColumns(), new NextCommander.Columns.MediaColumns(), new NextCommander.Platform.Trash.TrashColumns(),
             new NextCommander.Core.Tags.TagColumns(),
+            // the custom columns written in JavaScript (scripts/columns of the settings folder)
+            .. NextCommander.Core.Scripting.ScriptColumnProvider.LoadAll(Path.Combine(store.Directory, "scripts", "columns"),
+                (file, error) => Log.Warning("Column script {File} not loaded: {Error}", file, error)),
         ]), registry);
 
         thumbnails ??= new ThumbnailService(registry, cacheDirectory: null);
@@ -926,6 +929,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         StopRules();
+        StopScripts();
         _driveWatch?.Dispose();
         _driveWatch = null;
         LeftSide.Dispose();
@@ -1292,6 +1296,8 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         RegisterTagCommands(c);
         RegisterSavedSearchCommands(c);
         RegisterSplitCommands(c);
+        RegisterMacroCommands(c);
+        RegisterScriptCommands(c);
         c.Register("nc_SecureDelete", "Delete securely: the files are overwritten with random data, then deleted for good", _ => SecureDeleteAsync());
         c.Register("nc_Exit", "Exit", () => ExitRequested?.Invoke(this, EventArgs.Empty));
 

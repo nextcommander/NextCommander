@@ -315,9 +315,14 @@ Connections and cloud
 - [ ] Settings kept in sync between computers through one of the user's own cloud connections.
 
 Automation and extending
-- [ ] Macro recording: a sequence of keys and commands recorded as a uc_ command.
-- [ ] Scripting: commands and plugins written in JavaScript (Jint is already used for PAC scripts).
-- [ ] Plugin catalog: finding, installing and updating plugins from inside the program.
+- [x] Macro recording (Commands > Record macro; 24 November 2026): the commands run from menus, keys, buttons and the
+  command line (only the outer ones: `CommandRegistry.Executing`) saved as a uc_ command.
+- [x] Scripting (24 November 2026): JavaScript commands (`scripts/*.js`, nc_RunScript, Commands > Scripts; the `nc`
+  object of `Services/ScriptRunner`) and columns (`scripts/columns/*.js`, `Core/Scripting/ScriptColumnProvider`);
+  docs/guide/scripts.md.
+- [ ] Scripting, more: file system plugins (a folder of a server or a service) written in JavaScript.
+- [ ] Plugin catalog: finding, installing and updating plugins from inside the program (put off by the user,
+  24 November 2026: no catalog is published yet; where it is read from is to be decided).
 
 Usability
 - [ ] Accessibility: screen reader support, a high-contrast theme, a check that everything can be reached by keyboard.

@@ -40,6 +40,7 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
 ### Search and tools
 - Find files by name, content, size, date and attributes; also inside Office and OpenDocument files.
   A saved search opens in a panel like a folder of its results, searched again on every refresh.
+- Macros (the commands you run, recorded as a command of your own) and JavaScript scripts as commands and columns.
 - An optional file index makes searches and folder sizes nearly instant.
 - Multi-Rename Tool, Synchronize directories, Compare by content, Duplicate files, Folder sizes with a treemap,
   checksums, split and combine, and a built-in terminal.
@@ -113,6 +114,7 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
 - [Color themes](docs/guide/themes.md): choosing a theme and making your own.
 - [Icon packs](docs/guide/icon-packs.md): choosing an icon pack and making your own.
 - [Languages](docs/guide/languages.md): choosing the language and translating NextCommander.
+- [Macros and scripts](docs/guide/scripts.md): recording macros, JavaScript commands and columns.
 - [Plugins](docs/guide/plugins.md): installing and managing plugins, and writing your own (file systems, columns,
   packers, viewers).
 - [Settings folder](docs/guide/settings-folder.md): where your settings live, and portable mode.
