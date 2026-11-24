@@ -207,6 +207,9 @@ public sealed class PanelSettings
     /// <summary>File type filter of this tab (Show > Programs / Custom): a wildcard mask for files; null = all files.</summary>
     public string? TypeFilter { get; set; }
 
+    /// <summary>Show only the files and folders with this tag (Mark > Tags > Show only ...); null: all.</summary>
+    public string? TagFilter { get; set; }
+
     public PanelSettings Clone() => (PanelSettings)MemberwiseClone();
 
     public SortColumn SortColumn { get; set; } = SortColumn.Name;
@@ -272,6 +275,9 @@ public sealed class AppSettings
     /// <summary>F8/Del moves to trash; Shift+Del deletes permanently.</summary>
     public bool DeleteToTrash { get; set; } = true;
 
+    /// <summary>How many times Delete securely overwrites a file (1 to 7).</summary>
+    public int SecureDeletePasses { get; set; } = 1;
+
     public bool ConfirmDelete { get; set; } = true;
 
     /// <summary>Use 1000 instead of 1024 for k/M/G.</summary>
@@ -314,6 +320,25 @@ public sealed class AppSettings
     public int LeftActiveTab { get; set; }
 
     public int RightActiveTab { get; set; }
+
+    /// <summary>How the left side is split (Show > Panels): 0 one panel, 1 side by side, 2 one above the other.</summary>
+    public int LeftSplitMode { get; set; }
+
+    /// <summary>The tab the second panel of the left side shows (-1: none).</summary>
+    public int LeftSecondTab { get; set; } = -1;
+
+    public int RightSplitMode { get; set; }
+
+    public int RightSecondTab { get; set; } = -1;
+
+    /// <summary>Saved workspaces (Show > Workspaces): the tabs of both panels and the terminal under a name.</summary>
+    public List<Workspace> Workspaces { get; set; } = [];
+
+    /// <summary>The tags files can have, with their color labels (Mark > Tags; the files' tags are in tags.json).</summary>
+    public List<Tags.TagDefinition> Tags { get; set; } = NextCommander.Core.Tags.TagDefinition.Defaults();
+
+    /// <summary>Rules carried out while the program runs (Commands > Rules): arriving files moved or copied, nightly synchronizations.</summary>
+    public List<Automation.FileRule> Rules { get; set; } = [];
 
     /// <summary>Show the tab strip even with a single tab.</summary>
     public bool AlwaysShowTabs { get; set; } = true;

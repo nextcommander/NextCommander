@@ -80,6 +80,7 @@
         <MenuItem Header="Show list file in panel..." Command="{Binding RunCommandCommand}" CommandParameter="LOADLIST" />
         <Separator />
         <MenuItem Header="Undo" InputGesture="Ctrl+Z" Command="{Binding RunCommandCommand}" CommandParameter="nc_Undo" />
+        <MenuItem Header="Delete securely..." Command="{Binding RunCommandCommand}" CommandParameter="nc_SecureDelete" />
       </MenuItem>
       <MenuItem Header="_Mark">
         <MenuItem Header="Select group..." InputGesture="Add" Command="{Binding RunCommandCommand}" CommandParameter="nc_SpreadSelection" />
@@ -103,6 +104,9 @@
         <Separator />
         <MenuItem Header="Compare folders" InputGesture="Shift+F2" Command="{Binding RunCommandCommand}" CommandParameter="nc_CompareDirs" />
         <MenuItem Header="Mark newer, hide identical" Command="{Binding RunCommandCommand}" CommandParameter="nc_CompareDirsHideSame" />
+        <MenuItem x:Name="TagsMenu" Header="Tags" Tag="nc_Tags">
+          <MenuItem Header="Tags..." Command="{Binding RunCommandCommand}" CommandParameter="nc_Tags" />
+        </MenuItem>
       </MenuItem>
       <MenuItem Header="_Commands">
         <MenuItem Header="Folder tree..." InputGesture="Alt+F10" Command="{Binding RunCommandCommand}" CommandParameter="nc_DirTree" />
@@ -129,6 +133,14 @@
         <MenuItem Header="Duplicate files..." Command="{Binding RunCommandCommand}" CommandParameter="nc_FindDuplicates" />
         <MenuItem Header="Folder sizes..." Command="{Binding RunCommandCommand}" CommandParameter="nc_DiskUsage" />
         <MenuItem Header="Command palette..." InputGesture="Ctrl+Shift+P" Command="{Binding RunCommandCommand}" CommandParameter="nc_CommandPalette" />
+        <MenuItem Header="Rules" Tag="nc_Rules">
+          <MenuItem Header="Rules..." Command="{Binding RunCommandCommand}" CommandParameter="nc_Rules" />
+          <MenuItem Header="Carry out the rules now" Command="{Binding RunCommandCommand}" CommandParameter="nc_RunRules" />
+          <MenuItem Header="Rules log..." Command="{Binding RunCommandCommand}" CommandParameter="nc_RuleLog" />
+        </MenuItem>
+        <MenuItem x:Name="SavedSearchesMenu" Header="Saved searches" Tag="nc_OpenSavedSearch">
+          <MenuItem Header="Open saved search..." Command="{Binding RunCommandCommand}" CommandParameter="nc_OpenSavedSearch" />
+        </MenuItem>
       </MenuItem>
       <!-- Connection (was Net; user's request, 22 November 2026): the PC link, tunnels and network tools right below Disconnect -->
       <MenuItem Header="Co_nnection">
@@ -185,6 +197,12 @@
                     Command="{Binding RunCommandCommand}" CommandParameter="nc_VerticalPanels" />
           <MenuItem Header="Active panel full width" Command="{Binding RunCommandCommand}" CommandParameter="nc_100Percent" />
           <MenuItem Header="Panels 50% / 50%" Command="{Binding RunCommandCommand}" CommandParameter="nc_PanelsSplitPercent 50" />
+          <Separator />
+          <MenuItem Header="Split side by side" Command="{Binding RunCommandCommand}" CommandParameter="nc_SplitSideBySide" />
+          <MenuItem Header="Split one above the other" Command="{Binding RunCommandCommand}" CommandParameter="nc_SplitStacked" />
+          <MenuItem Header="One panel on this side" Command="{Binding RunCommandCommand}" CommandParameter="nc_Unsplit" />
+          <MenuItem Header="Four panels" Command="{Binding RunCommandCommand}" CommandParameter="nc_FourPanels" />
+          <MenuItem Header="Other panel of this side" Command="{Binding RunCommandCommand}" CommandParameter="nc_FocusOtherPane" />
         </MenuItem>
         <Separator />
         <MenuItem Header="File filter" Tag="nc_SrcUserSpec">
@@ -257,6 +275,9 @@
           <Separator />
           <MenuItem Header="Save tabs..." Command="{Binding RunCommandCommand}" CommandParameter="nc_SaveTabs" />
           <MenuItem Header="Load tabs..." Command="{Binding RunCommandCommand}" CommandParameter="nc_LoadTabs" />
+        </MenuItem>
+        <MenuItem x:Name="WorkspacesMenu" Header="Workspaces" Tag="nc_OpenWorkspace">
+          <MenuItem Header="Save workspace..." Command="{Binding RunCommandCommand}" CommandParameter="nc_SaveWorkspace" />
         </MenuItem>
         <Separator />
         <MenuItem Header="Reread source" InputGesture="Ctrl+R" Command="{Binding RunCommandCommand}" CommandParameter="nc_RereadSource" />

@@ -163,6 +163,14 @@ public sealed class HotkeyMap
                 merged[key] = command;
             }
         }
+        // a saved workspace's key: over the defaults, under the user's own shortcuts
+        foreach (var workspace in _settings.Workspaces)
+        {
+            if (workspace.Hotkey.Length > 0 && !_settings.Hotkeys.ContainsKey(workspace.Hotkey))
+            {
+                merged[workspace.Hotkey] = Workspace.CommandFor(workspace.Name);
+            }
+        }
         var list = new List<(KeyGesture, string, string)>();
         foreach (var (key, command) in merged)
         {
@@ -206,6 +214,41 @@ public sealed class HotkeyMap
             }
         }
         return null;
+    }
+
+    /// <summary>The command bound to <paramref name="gesture"/> ("Ctrl+Shift+D1"), or null.</summary>
+    public string? CommandFor(string gesture)
+    {
+        try
+        {
+            var parsed = KeyGesture.Parse(gesture);
+            return Find(parsed.Key, parsed.KeyModifiers);
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>A stored gesture as people write it: "Ctrl+Shift+D1" → "Ctrl+Shift+1".</summary>
+    public static string ShownGesture(string gesture) =>
+        System.Text.RegularExpressions.Regex.Replace(gesture, @"(^|\+)D([0-9])$", "$1$2");
+
+    /// <summary>A gesture as typed ("ctrl + shift + 1") in the stored form ("Ctrl+Shift+D1"); empty stays empty.</summary>
+    public static string StoredGesture(string? text)
+    {
+        var parts = (text ?? string.Empty).Split('+', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length == 0)
+        {
+            return string.Empty;
+        }
+        for (var i = 0; i < parts.Length; i++)
+        {
+            var part = parts[i];
+            parts[i] = part.Length == 1 && char.IsAsciiDigit(part[0]) ? "D" + part
+                : part.Length > 0 ? char.ToUpperInvariant(part[0]) + part[1..] : part;
+        }
+        return string.Join('+', parts);
     }
 
     public string? GestureFor(string command) =>

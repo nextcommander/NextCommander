@@ -22,6 +22,18 @@ public sealed partial class TabSideViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isActiveSide;
 
+    /// <summary>The tab the first (or only) file panel of the side shows.</summary>
+    [ObservableProperty]
+    private PanelViewModel _firstPane;
+
+    /// <summary>The tab the second file panel shows while the side is split; null: one panel.</summary>
+    [ObservableProperty]
+    private PanelViewModel? _secondPane;
+
+    /// <summary>How the side is split (Show > Panels; user's request, 23 November 2026).</summary>
+    [ObservableProperty]
+    private SideSplit _split;
+
     public TabSideViewModel(string name, AppSettings settings, IReadOnlyList<PanelSettings> tabs, int activeIndex, Func<PanelSettings, PanelViewModel> createPanel)
     {
         Name = name;
@@ -32,6 +44,7 @@ public sealed partial class TabSideViewModel : ObservableObject, IDisposable
             Tabs.Add(Create(state));
         }
         _activeTab = Tabs[Math.Clamp(activeIndex, 0, Tabs.Count - 1)];
+        _firstPane = _activeTab;
         foreach (var tab in Tabs.Where(t => !ReferenceEquals(t, _activeTab)))
         {
             tab.Suspend();
@@ -119,11 +132,30 @@ public sealed partial class TabSideViewModel : ObservableObject, IDisposable
 
     partial void OnActiveTabChanged(PanelViewModel? oldValue, PanelViewModel newValue)
     {
+        // a split side: the panel that had the focus shows the new tab (a tab shown in the other panel just gets the focus)
+        if (SecondPane is null)
+        {
+            FirstPane = newValue;
+        }
+        else if (!IsShown(newValue))
+        {
+            if (ReferenceEquals(oldValue, SecondPane))
+            {
+                SecondPane = newValue;
+            }
+            else
+            {
+                FirstPane = newValue;
+            }
+        }
         if (oldValue is not null)
         {
             oldValue.IsActive = false;
             oldValue.IsCurrentTab = false;
-            oldValue.Suspend();
+            if (!IsShown(oldValue))
+            {
+                oldValue.Suspend();
+            }
         }
         newValue.IsCurrentTab = true;
         newValue.IsActive = IsActiveSide;
@@ -134,6 +166,105 @@ public sealed partial class TabSideViewModel : ObservableObject, IDisposable
     }
 
     partial void OnIsActiveSideChanged(bool value) => ActiveTab.IsActive = value;
+
+    /// <summary>Whether a file panel of the side shows <paramref name="tab"/> now.</summary>
+    public bool IsShown(PanelViewModel? tab) => tab is not null && (ReferenceEquals(tab, FirstPane) || ReferenceEquals(tab, SecondPane));
+
+    /// <summary>The file panel of a split side that got the focus: its tab becomes the side's active one.</summary>
+    public void FocusPane(PanelViewModel? pane)
+    {
+        if (pane is not null && IsShown(pane) && !ReferenceEquals(pane, ActiveTab))
+        {
+            ActiveTab = pane;
+        }
+    }
+
+    /// <summary>
+    /// Splits the side into two file panels (side by side or one above the other): the second shows a new tab of the same
+    /// folder; <see cref="SideSplit.None"/>: one panel again (the tab of the other one stays a tab).
+    /// </summary>
+    public async Task SplitAsync(SideSplit split)
+    {
+        if (split == SideSplit.None)
+        {
+            Unsplit();
+            return;
+        }
+        if (SecondPane is null)
+        {
+            var second = await OpenTabAsync(activate: false, afterIndex: ActiveIndex);
+            SecondPane = second;
+            await second.ResumeAsync();
+        }
+        Split = split;
+    }
+
+    /// <summary>One file panel again: it keeps the active tab.</summary>
+    public void Unsplit()
+    {
+        if (SecondPane is not { } second)
+        {
+            Split = SideSplit.None;
+            return;
+        }
+        var hidden = ReferenceEquals(ActiveTab, second) ? FirstPane : second;
+        SecondPane = null;
+        FirstPane = ActiveTab;
+        Split = SideSplit.None;
+        hidden.IsCurrentTab = false;
+        hidden.Suspend();
+    }
+
+    /// <summary>The split of a former session: the second panel shows the tab at <paramref name="secondIndex"/>.</summary>
+    public void RestoreSplit(SideSplit split, int secondIndex)
+    {
+        if (split == SideSplit.None || secondIndex < 0 || secondIndex >= Tabs.Count || ReferenceEquals(Tabs[secondIndex], ActiveTab))
+        {
+            return;
+        }
+        SecondPane = Tabs[secondIndex];
+        Split = split;
+        _ = SecondPane.ResumeAsync();
+    }
+
+    /// <summary>A tab shown in a panel went: another tab takes its place, or the side has one panel again.</summary>
+    private void KeepPanesShowingTabs()
+    {
+        if (SecondPane is null)
+        {
+            FirstPane = ActiveTab;
+            return;
+        }
+        PanelViewModel? Other(PanelViewModel keep) => Tabs.FirstOrDefault(t => !ReferenceEquals(t, keep));
+        if (!Tabs.Contains(SecondPane))
+        {
+            if (Other(FirstPane) is { } next && Tabs.Contains(FirstPane))
+            {
+                SecondPane = next;
+                _ = next.ResumeAsync();
+            }
+            else
+            {
+                SecondPane = null;
+                Split = SideSplit.None;
+                FirstPane = ActiveTab;
+            }
+        }
+        if (!Tabs.Contains(FirstPane))
+        {
+            if (SecondPane is not null && Other(SecondPane) is { } next)
+            {
+                FirstPane = next;
+                _ = next.ResumeAsync();
+            }
+            else
+            {
+                SecondPane = null;
+                Split = SideSplit.None;
+                FirstPane = ActiveTab;
+            }
+        }
+    }
 
     /// <summary>Ctrl+T: new tab (copy of the current one by default) next to the active tab.</summary>
     public async Task<PanelViewModel> OpenTabAsync(VfsPath? path = null, string? focusName = null, bool activate = true, int? afterIndex = null)
@@ -212,6 +343,7 @@ public sealed partial class TabSideViewModel : ObservableObject, IDisposable
         }
         Tabs.RemoveAt(index);
         _recent.Remove(tab);
+        KeepPanesShowingTabs();
         tab.Dispose();
     }
 
@@ -229,11 +361,13 @@ public sealed partial class TabSideViewModel : ObservableObject, IDisposable
         }
         Tabs.RemoveAt(index);
         _recent.Remove(tab);
+        KeepPanesShowingTabs();
         tab.Dispose();
     }
 
     public void CloseOtherTabs()
     {
+        Unsplit(); // "close others" leaves one tab: one panel
         foreach (var tab in Tabs.Where(t => !ReferenceEquals(t, ActiveTab)).ToList())
         {
             CloseTab(tab);
@@ -315,6 +449,7 @@ public sealed partial class TabSideViewModel : ObservableObject, IDisposable
         {
             return;
         }
+        Unsplit(); // other tabs: one panel
         var old = Tabs.ToList();
         var created = new List<PanelViewModel>();
         foreach (var state in states)
@@ -357,4 +492,12 @@ public sealed partial class TabSideViewModel : ObservableObject, IDisposable
             tab.Dispose();
         }
     }
+}
+
+/// <summary>How a side shows its file panels: one, two side by side, or two one above the other.</summary>
+public enum SideSplit
+{
+    None,
+    SideBySide,
+    Stacked,
 }
