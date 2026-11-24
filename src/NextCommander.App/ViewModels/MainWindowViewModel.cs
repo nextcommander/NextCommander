@@ -105,7 +105,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         ]), registry);
 
         thumbnails ??= new ThumbnailService(registry, cacheDirectory: null);
-        PanelViewModel Create(string name, PanelSettings state) => new(name, registry, platform, settings, state, icons) { Thumbnails = thumbnails, Tags = Tags };
+        PanelViewModel Create(string name, PanelSettings state) => new(name, registry, platform, settings, state, icons) { Thumbnails = thumbnails, Tags = Tags, FolderActions = PluginFolderActionsFor };
         LeftSide = new TabSideViewModel("left", settings, settings.LeftTabs.Count > 0 ? settings.LeftTabs : [settings.Left],
             settings.LeftActiveTab, s => Create("left", s));
         RightSide = new TabSideViewModel("right", settings, settings.RightTabs.Count > 0 ? settings.RightTabs : [settings.Right],
@@ -867,6 +867,29 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     /// <summary>The places the plugins offer for a folder (e.g. "Git history" of a repository).</summary>
     public IReadOnlyList<NextCommander.Core.Plugins.IPluginFolderEntry> PluginFolderEntries =>
         Plugins.SelectMany(p => p.FileSystems).OfType<NextCommander.Core.Plugins.IPluginFolderEntry>().ToList();
+
+    /// <summary>The dialogs lent to the plugins' actions.</summary>
+    private Services.PluginDialogs PluginDialogs => _pluginDialogs ??= new Services.PluginDialogs(_dialogs, () => Tools);
+
+    private Services.PluginDialogs? _pluginDialogs;
+
+    /// <summary>The loaded plugins' actions for a folder and its selected entries (Git: stage, commit, switch branch ...).</summary>
+    public IReadOnlyList<NextCommander.Core.Plugins.PluginAction> PluginFolderActionsFor(VfsPath folder, IReadOnlyList<VfsEntry> selected)
+    {
+        var result = new List<NextCommander.Core.Plugins.PluginAction>();
+        foreach (var plugin in Plugins.SelectMany(p => p.FileSystems).OfType<NextCommander.Core.Plugins.IPluginFolderActions>())
+        {
+            try
+            {
+                result.AddRange(plugin.ActionsFor(folder, selected, PluginDialogs));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)
+            {
+                // a plugin that cannot tell is left out of the menu
+            }
+        }
+        return result;
+    }
 
     /// <summary>The plugins' places for the active panel's folder, with the folder each opens.</summary>
     public IReadOnlyList<(NextCommander.Core.Plugins.IPluginFolderEntry Entry, VfsPath Root)> PluginFolderEntriesHere()

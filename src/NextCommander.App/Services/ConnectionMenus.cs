@@ -97,6 +97,16 @@ public static class PluginMenus
             item.Click += (_, _) => _ = vm.ActivePanel.NavigateAsync(root);
             items.Add(item);
         }
+        // the plugins' actions for the folder and its selection (Git: stage, commit, switch branch ...)
+        if (vm.ActivePanel.CurrentPath is { } folder)
+        {
+            foreach (var action in vm.PluginFolderActionsFor(folder, vm.ActivePanel.GetSelectedEntries()))
+            {
+                var item = new MenuItem { Header = action.Name, Icon = MenuIcons.Create("plugin." + action.Icon), Tag = "plugins.action" };
+                item.Click += (_, _) => _ = vm.ActivePanel.RunPluginActionAsync(action);
+                items.Add(item);
+            }
+        }
         if (items.Count > 0)
         {
             items.Add(new Separator());

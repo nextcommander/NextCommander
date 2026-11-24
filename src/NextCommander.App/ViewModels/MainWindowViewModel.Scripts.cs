@@ -29,8 +29,9 @@ public partial class MainWindowViewModel
     private void RegisterScriptCommands(CommandRegistry c)
     {
         c.Register("nc_RunScript", "Run a JavaScript script of the scripts folder (parameter: its name and what it is given)", RunScriptAsync);
-        c.Register("nc_NewScript", "New JavaScript script: an example in the scripts folder, opened in the editor", _ => NewScriptAsync(column: false));
-        c.Register("nc_NewColumnScript", "New JavaScript column: an example in scripts/columns, opened in the editor", _ => NewScriptAsync(column: true));
+        c.Register("nc_NewScript", "New JavaScript script: an example in the scripts folder, opened in the editor", _ => NewScriptAsync(ScriptKind.Command));
+        c.Register("nc_NewColumnScript", "New JavaScript column: an example in scripts/columns, opened in the editor", _ => NewScriptAsync(ScriptKind.Column));
+        c.Register("nc_NewFileSystemScript", "New JavaScript file system: an example in scripts/filesystems, opened in the editor", _ => NewScriptAsync(ScriptKind.FileSystem));
         c.Register("nc_OpenScriptsFolder", "Open the scripts folder in the panel", _ => OpenScriptsFolderAsync());
     }
 
@@ -84,10 +85,27 @@ public partial class MainWindowViewModel
         await Scripts.RunAsync(file, args);
     }
 
-    private async Task NewScriptAsync(bool column)
+    /// <summary>What a new script is: a command, a column or a file system.</summary>
+    internal enum ScriptKind
     {
-        var folder = column ? ScriptColumnsFolder : ScriptsFolder;
-        var name = await _dialogs.PromptAsync(column ? "New column script" : "New script", "File name:", column ? "lines.js" : "script.js", selectBaseName: true);
+        Command,
+        Column,
+        FileSystem,
+    }
+
+    /// <summary>scripts/filesystems in the settings folder (read at the start of the program).</summary>
+    public string ScriptFileSystemsFolder => Path.Combine(ScriptsFolder, "filesystems");
+
+    private async Task NewScriptAsync(ScriptKind kind)
+    {
+        var folder = kind switch { ScriptKind.Column => ScriptColumnsFolder, ScriptKind.FileSystem => ScriptFileSystemsFolder, _ => ScriptsFolder };
+        var (title, suggested) = kind switch
+        {
+            ScriptKind.Column => ("New column script", "lines.js"),
+            ScriptKind.FileSystem => ("New file system script", "scratch.js"),
+            _ => ("New script", "script.js"),
+        };
+        var name = await _dialogs.PromptAsync(title, "File name:", suggested, selectBaseName: true);
         if (string.IsNullOrWhiteSpace(name))
         {
             return;
@@ -106,7 +124,7 @@ public partial class MainWindowViewModel
         var path = Path.Combine(folder, name);
         if (!File.Exists(path))
         {
-            await File.WriteAllTextAsync(path, column ? ScriptTemplates.Column : ScriptTemplates.Command);
+            await File.WriteAllTextAsync(path, kind switch { ScriptKind.Column => ScriptTemplates.Column, ScriptKind.FileSystem => ScriptTemplates.FileSystem, _ => ScriptTemplates.Command });
         }
         var vfs = VfsPath.Local(path);
         await ActivePanel.NavigateAsync(VfsPath.Local(folder), focusName: name);

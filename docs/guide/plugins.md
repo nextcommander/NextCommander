@@ -9,6 +9,7 @@ A plugin is a .NET assembly that NextCommander loads at start. It can add:
 | A file system | `IFileSystemProvider` | Paths with the plugin's scheme (`hello://host/folder`) open in a panel; copy, move, delete, view and edit work across it and every other file system. |
 | A place to start | `IPluginEntryPoint` (on the file system) | An entry in the **Plugins** menu of the button bar. |
 | A place for the current folder | `IPluginFolderEntry` (on the file system) | An entry at the top of the **Plugins** menu while the active panel's folder fits (e.g. *Git history* in a repository). |
+| Actions for the current folder | `IPluginFolderActions` (on the file system) | Entries in the **Plugins** menu and at the top of the file list's own menu for the active panel's folder and its selection (e.g. Git's *Stage* and *Commit...*); they can ask through `IPluginDialogs`. |
 | A way back up | `IOriginProvider` (on the file system) | ".." from the file system's root goes back to the folder it came from. |
 | An archive format to read | `IContainerProvider` (on the file system) | Enter / Ctrl+PgDn on such a file opens it like a folder. |
 | Columns | `IColumnProvider` | *Show > Display > Custom view modes > Edit view modes...*: the plugin's fields can be added to a view mode. |
@@ -56,6 +57,11 @@ The Git plugin comes with NextCommander and uses the installed `git` (git-scm.co
   folder), *Commit author*, *Commit date* and *Commit*. Add them to a view mode (*Show > Display > Custom view modes >
   Edit view modes...*). They are filled in the background: one `git status` per repository every few seconds and one
   `git log` per folder.
+- **Writing:** in a repository's working folder the **Plugins** menu (and the file list's own menu: Shift+right click
+  on Windows) offers *Git: Stage*, *Unstage*, *Discard changes...* and *Show changes* for the selected files,
+  *File history...* for one file (a commit chosen, its changes shown in the Lister), and *Commit...* (with nothing
+  staged it offers to commit every change of the files Git knows), *Switch branch...* and *New branch...* for the
+  repository. Git's own message is shown when it refuses.
 
 ## SQLite
 
@@ -438,6 +444,12 @@ public string EntryGroup => "Git";
 public VfsPath? RootFor(VfsPath folder) =>
     folder.IsLocal && RepositoryOf(folder.Path) is { } repository ? RootOf(repository) : null;
 ```
+
+Actions for the folder of the active panel and its selection come from `IPluginFolderActions`: `ActionsFor(folder,
+selected, dialogs)` returns `PluginAction`s (name, icon, `RunAsync` giving a message or null; the folder is read again
+afterwards). It is called when a menu opens, so keep it cheap. `IPluginDialogs` lends the program's dialogs:
+`PromptAsync`, `ChooseAsync` (one of a list), `ConfirmAsync` and `ShowTextAsync(fileName, text)` (the Lister; a
+`.diff` name colors a difference). The Git plugin's `GitActions` is an example.
 
 With `IOriginProvider`, ".." from a root of the file system goes back where it came from: `OriginOf(root)` returns
 that folder and the name to put the cursor on (or null).

@@ -1,7 +1,7 @@
 # Macros and scripts
 
-NextCommander can repeat what you do (macros) and run small programs written in JavaScript (scripts), either as
-commands or as columns of the file list.
+NextCommander can repeat what you do (macros) and run small programs written in JavaScript (scripts): as commands,
+as columns of the file list, or as file systems (places opened in a panel).
 
 ## Macros
 
@@ -66,3 +66,28 @@ function value(file, id) {                // file = { name, ext, path, size, mod
 ```
 
 A column script gets 5 seconds for each value; a value that fails stays empty (the program's log names the script).
+
+## Scripts as file systems
+
+The `.js` files of `scripts/filesystems` are places like a server's: they are listed with the saved connections
+(**Connection > Saved connections**, group *JavaScript*) and open in a panel, where copy, move, view and edit work as
+everywhere. The program reads them when it starts. **Commands > Scripts > New file system script...** writes an
+example that keeps its files in memory and has every function a file system can have.
+
+| Function | What it does |
+| --- | --- |
+| `list(path)` | The entries of a folder: `[{ name, isDir, size, modified }]` (`modified`: ISO text or milliseconds). Needed. |
+| `read(path)` | A file's content: a text, or `{ base64: "..." }`. Needed. |
+| `write(path, data)` | Writes a file (`data.text`, `data.base64`). Without it the place is read-only. |
+| `mkdir(path)`, `remove(path, isDir)`, `rename(from, to)` | Folders, deleting, renaming (without `rename` a move copies and deletes). |
+| `var title = "..."` | The name in the menu (else the file's name). |
+
+Paths are separated by `/` and start with `/`. Throw an `Error` to report a problem: its message is shown. The
+program gives these functions to the script:
+
+- `http(method, url, body, headers)` → `{ status, body, headers }` (header names in lower case), for a web service's
+  files: `http("GET", "https://example.com/api/files", null, { Authorization: "Bearer ..." })`.
+- `toBase64(text)`, `fromBase64(base64)`, `readText(localPath, maxChars)`.
+
+Each call gets 60 seconds; one call of a script runs at a time.
+

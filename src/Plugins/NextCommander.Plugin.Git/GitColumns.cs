@@ -34,9 +34,32 @@ public sealed class GitColumns : IColumnProvider
     private readonly ConcurrentDictionary<string, Lazy<Task<Commit?>>> _single = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>The plugin loader's constructor: the installed git, as the plugin's settings name it now.</summary>
-    public GitColumns() => _installed = true;
+    public GitColumns()
+    {
+        _installed = true;
+        GitActions.RepositoryChanged += Forget;
+    }
 
-    public GitColumns(GitTool? tool) => _fixedTool = tool;
+    public GitColumns(GitTool? tool)
+    {
+        _fixedTool = tool;
+        GitActions.RepositoryChanged += Forget;
+    }
+
+    /// <summary>A stage, commit or switch changed the repository: its status, HEAD and logs are read again.</summary>
+    private void Forget(string repository)
+    {
+        _status.TryRemove(repository, out _);
+        _heads.TryRemove(repository, out _);
+        foreach (var key in _logs.Keys.Where(k => k.StartsWith(repository, StringComparison.OrdinalIgnoreCase)).ToList())
+        {
+            _logs.TryRemove(key, out _);
+        }
+        foreach (var key in _single.Keys.Where(k => k.StartsWith(repository, StringComparison.OrdinalIgnoreCase)).ToList())
+        {
+            _single.TryRemove(key, out _);
+        }
+    }
 
     private GitTool? CurrentTool => _installed ? GitTool.Installed : _fixedTool;
 

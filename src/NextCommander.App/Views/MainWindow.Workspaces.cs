@@ -44,7 +44,7 @@ public partial class MainWindow
             items.Add(new MenuItem { Header = "(none)", IsEnabled = false });
         }
         items.Add(new Separator());
-        foreach (var (header, command) in new[] { ("New script...", "nc_NewScript"), ("New column script...", "nc_NewColumnScript"), ("Open the scripts folder", "nc_OpenScriptsFolder") })
+        foreach (var (header, command) in new[] { ("New script...", "nc_NewScript"), ("New column script...", "nc_NewColumnScript"), ("New file system script...", "nc_NewFileSystemScript"), ("Open the scripts folder", "nc_OpenScriptsFolder") })
         {
             var item = new MenuItem { Header = header, Icon = Services.MenuIcons.Create(command) };
             item.Click += (_, _) => _ = _vm.ExecuteAsync(command);
