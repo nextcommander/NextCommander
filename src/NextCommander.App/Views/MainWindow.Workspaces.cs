@@ -5,7 +5,7 @@ namespace NextCommander.App.Views;
 
 /// <summary>
 /// The window side of the file management additions of 23 November 2026: the internal terminal's place for saved
-/// workspaces, and the menus filled when they open (Show > Workspaces, Mark > Tags, Commands > Saved searches).
+/// workspaces, and the menus filled when they open (Show > Workspaces, Mark > Tags, Commands > Saved searches, Commands > Scripts).
 /// </summary>
 public partial class MainWindow
 {
@@ -20,6 +20,40 @@ public partial class MainWindow
         WorkspacesMenu.SubmenuOpened += (_, _) => FillWorkspacesMenu();
         TagsMenu.SubmenuOpened += (_, _) => FillTagsMenu();
         SavedSearchesMenu.SubmenuOpened += (_, _) => FillSavedSearchesMenu();
+        ScriptsMenu.SubmenuOpened += (_, _) => FillScriptsMenu();
+    }
+
+    /// <summary>Commands > Scripts: each script of the scripts folder, then new script / new column / the folder.</summary>
+    internal void FillScriptsMenu()
+    {
+        if (_vm is null)
+        {
+            return;
+        }
+        var items = ScriptsMenu.Items;
+        items.Clear();
+        foreach (var name in _vm.ScriptNames())
+        {
+            var item = new MenuItem { Header = name, Icon = Services.MenuIcons.Create("nc_RunScript") };
+            item.Classes.Add("noloc"); // file names
+            item.Click += (_, _) => _ = _vm.ExecuteAsync("nc_RunScript \"" + name + "\"");
+            items.Add(item);
+        }
+        if (items.Count == 0)
+        {
+            items.Add(new MenuItem { Header = "(none)", IsEnabled = false });
+        }
+        items.Add(new Separator());
+        foreach (var (header, command) in new[] { ("New script...", "nc_NewScript"), ("New column script...", "nc_NewColumnScript"), ("Open the scripts folder", "nc_OpenScriptsFolder") })
+        {
+            var item = new MenuItem { Header = header, Icon = Services.MenuIcons.Create(command) };
+            item.Click += (_, _) => _ = _vm.ExecuteAsync(command);
+            items.Add(item);
+        }
+        if (!_vm.Settings.ShowMenuIcons)
+        {
+            Services.MenuIcons.Clear(items);
+        }
     }
 
     /// <summary>Commands > Saved searches: each saved search (opened as a folder of its results), then Find files.</summary>

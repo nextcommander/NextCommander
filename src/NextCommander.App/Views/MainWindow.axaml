@@ -141,6 +141,11 @@
         <MenuItem x:Name="SavedSearchesMenu" Header="Saved searches" Tag="nc_OpenSavedSearch">
           <MenuItem Header="Open saved search..." Command="{Binding RunCommandCommand}" CommandParameter="nc_OpenSavedSearch" />
         </MenuItem>
+        <MenuItem Header="Record macro" ToggleType="CheckBox" IsChecked="{Binding IsRecordingMacro, Mode=OneWay}"
+                  Command="{Binding RunCommandCommand}" CommandParameter="nc_RecordMacro" />
+        <MenuItem x:Name="ScriptsMenu" Header="Scripts" Tag="nc_RunScript">
+          <MenuItem Header="Run script..." Command="{Binding RunCommandCommand}" CommandParameter="nc_RunScript" />
+        </MenuItem>
       </MenuItem>
       <!-- Connection (was Net; user's request, 22 November 2026): the PC link, tunnels and network tools right below Disconnect -->
       <MenuItem Header="Co_nnection">

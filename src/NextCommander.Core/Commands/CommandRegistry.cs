@@ -11,6 +11,15 @@ public sealed class CommandRegistry
 {
     private readonly Dictionary<string, CommandDefinition> _commands = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>How deep the commands being run are nested (a user command runs others): only the outer ones are told.</summary>
+    private static readonly AsyncLocal<int> s_depth = new();
+
+    /// <summary>
+    /// A command is about to run that no other command started (a menu, a key, a button, the command line): its name
+    /// and parameter. The macro recorder listens.
+    /// </summary>
+    public event EventHandler<(string Name, string? Parameter)>? Executing;
+
     public IReadOnlyCollection<CommandDefinition> All => _commands.Values;
 
     public void Register(string name, string description, Func<string?, Task> handler)
@@ -38,7 +47,19 @@ public sealed class CommandRegistry
         {
             if (_commands.TryGetValue(LegacyNames.Command(name), out var command))
             {
-                await command.Handler(parameter).ConfigureAwait(true);
+                if (s_depth.Value == 0)
+                {
+                    Executing?.Invoke(this, (command.Name, parameter));
+                }
+                s_depth.Value++;
+                try
+                {
+                    await command.Handler(parameter).ConfigureAwait(true);
+                }
+                finally
+                {
+                    s_depth.Value--;
+                }
             }
             else
             {
