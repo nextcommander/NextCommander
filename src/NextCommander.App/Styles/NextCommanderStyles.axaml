@@ -1101,7 +1101,37 @@
   </Style>
 
   <!-- opaque: the list background of the light theme is transparent, the panel showed through the open list -->
-  <!-- the command palette's search box: no frame of its own (the palette's line is its frame) -->
+  <!-- the internal terminal's buttons (title bar, find bar): framed chips, easy to see (the user's request, 24 November 2026) -->
+  <Style Selector="Button.termbtn">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Padding" Value="10,3" />
+    <Setter Property="Margin" Value="1,0" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Background" Value="{DynamicResource NcMwChipBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcMwStrongStrokeBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="Button.termbtn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcMwHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcAccentBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcTextBrush}" />
+  </Style>
+  <Style Selector="Button.termbtn:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource NcMwPressBrush}" />
+  </Style>
+  <Style Selector="Button.termbtn.termsym">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="MinWidth" Value="28" />
+    <Setter Property="Padding" Value="6,1" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.termbtn.accent">
+    <Setter Property="Background" Value="{DynamicResource NcAccentSoftBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NcAccentBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource NcAccentBrush}" />
+  </Style>  <!-- the command palette's search box: no frame of its own (the palette's line is its frame) -->
   <Style Selector="TextBox.palettebox">
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Background" Value="Transparent" />

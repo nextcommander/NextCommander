@@ -4,7 +4,23 @@ using System.Text.Json.Serialization;
 namespace NextCommander.Core.Config;
 
 /// <summary>One kept configuration: the file, when it was kept, what it holds, whether it is the one in use, whether it still loads.</summary>
-public sealed record SettingsBackup(string Path, DateTime Time, int Connections, int HotlistEntries, bool IsCurrent, bool Damaged);
+public sealed record SettingsBackup(string Path, DateTime Time, int Connections, int HotlistEntries, bool IsCurrent, bool Damaged)
+{
+    /// <summary>Why it was made: "start", "manual", "file", "before:&lt;action&gt;" (<see cref="SettingsBackupInfo.Trigger"/>).</summary>
+    public string Trigger { get; init; } = "start";
+
+    /// <summary>The name the user gave it (null: none).</summary>
+    public string? Label { get; init; }
+
+    /// <summary>Never removed automatically.</summary>
+    public bool Pinned { get; init; }
+
+    /// <summary>The settings it holds (null when it does not load).</summary>
+    public AppSettings? Settings { get; init; }
+
+    /// <summary>Made by the user (Back up now) or added from a file: kept until deleted.</summary>
+    public bool IsOwn => Trigger is "manual" or "file";
+}
 
 /// <summary>
 /// Loads/saves <see cref="AppSettings"/> as JSON. Location:
@@ -96,8 +112,122 @@ public sealed class SettingsStore
         }
     }
 
-    /// <summary>How many configurations that loaded are kept in <see cref="BackupDirectory"/> (user's request, 19 November 2026).</summary>
+    /// <summary>
+    /// How many automatic backups (the configurations that loaded, those made before a restore or an import) are kept in
+    /// <see cref="BackupDirectory"/> (user's request, 19 November 2026); the user's own and pinned ones are kept until deleted.
+    /// </summary>
     public const int BackupCount = 7;
+
+    /// <summary>What is noted about the backups (why, a name, pinned): backups/index.json, by file name.</summary>
+    private string IndexPath => Path.Combine(BackupDirectory, "index.json");
+
+    private Dictionary<string, SettingsBackupInfo> ReadIndex()
+    {
+        try
+        {
+            if (File.Exists(IndexPath))
+            {
+                return JsonSerializer.Deserialize<Dictionary<string, SettingsBackupInfo>>(File.ReadAllText(IndexPath), s_json)
+                    ?? new Dictionary<string, SettingsBackupInfo>(StringComparer.OrdinalIgnoreCase);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
+        {
+            // what was noted is lost; the backups stay
+        }
+        return new Dictionary<string, SettingsBackupInfo>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private void WriteIndex(Dictionary<string, SettingsBackupInfo> index)
+    {
+        var present = Backups().Select(Path.GetFileName).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var gone in index.Keys.Where(k => !present.Contains(k)).ToList())
+        {
+            index.Remove(gone);
+        }
+        System.IO.Directory.CreateDirectory(BackupDirectory);
+        File.WriteAllText(IndexPath, JsonSerializer.Serialize(index, s_json));
+    }
+
+    /// <summary>What is noted about a backup (a default for one without a note: kept at a start).</summary>
+    public SettingsBackupInfo InfoOf(string backup) =>
+        ReadIndex().TryGetValue(Path.GetFileName(backup), out var info) ? info : new SettingsBackupInfo();
+
+    /// <summary>Gives a backup a name (empty: none).</summary>
+    public void SetLabel(string backup, string? label)
+    {
+        var index = ReadIndex();
+        var info = index.TryGetValue(Path.GetFileName(backup), out var known) ? known : new SettingsBackupInfo();
+        info.Label = string.IsNullOrWhiteSpace(label) ? null : label.Trim();
+        index[Path.GetFileName(backup)] = info;
+        WriteIndex(index);
+    }
+
+    /// <summary>Pins a backup (never removed automatically) or unpins it.</summary>
+    public void SetPinned(string backup, bool pinned)
+    {
+        var index = ReadIndex();
+        var info = index.TryGetValue(Path.GetFileName(backup), out var known) ? known : new SettingsBackupInfo();
+        info.Pinned = pinned;
+        index[Path.GetFileName(backup)] = info;
+        WriteIndex(index);
+    }
+
+    /// <summary>Deletes a backup; a pinned one is refused (unpin it first).</summary>
+    public void DeleteBackup(string backup)
+    {
+        if (InfoOf(backup).Pinned)
+        {
+            throw new InvalidOperationException("Unpin it first: pinned backups are protected.");
+        }
+        File.Delete(backup);
+        WriteIndex(ReadIndex());
+    }
+
+    /// <summary>A deleted backup back (its text and what was noted about it; the window's Undo).</summary>
+    public void PutBack(string backup, string text, SettingsBackupInfo info)
+    {
+        System.IO.Directory.CreateDirectory(BackupDirectory);
+        File.WriteAllText(backup, text);
+        var index = ReadIndex();
+        index[Path.GetFileName(backup)] = info;
+        WriteIndex(index);
+    }
+
+    /// <summary>The settings as they are now kept as a backup by the user (Back up now), with a name or not; its file.</summary>
+    public string? BackupNow(string? label = null) => KeepBackup("manual", label, evenIfSame: true);
+
+    /// <summary>The settings file as it is now kept before an action ("Import", "Restore"), unless the newest backup is the same.</summary>
+    public string? BackupBefore(string action) => KeepBackup("before:" + action);
+
+    /// <summary>A settings file chosen by the user joins the backups (it must load), named after the file; its backup.</summary>
+    public string AddBackupFromFile(string file)
+    {
+        _ = Read(file); // throws when it does not load
+        var target = NewBackupPath();
+        System.IO.Directory.CreateDirectory(BackupDirectory);
+        File.Copy(file, target);
+        var index = ReadIndex();
+        index[Path.GetFileName(target)] = new SettingsBackupInfo { Trigger = "file", Label = Path.GetFileName(file) };
+        WriteIndex(index);
+        return target;
+    }
+
+    /// <summary>The settings of a backup (throws when it does not load).</summary>
+    public AppSettings ReadBackup(string backup) => Read(backup);
+
+    /// <summary>
+    /// Restores the chosen parts of a backup into the settings file: the settings as they are now (<paramref name="current"/>,
+    /// the running program's) are kept as a backup first ("before:Restore"), so a restore can be undone the same way. The
+    /// program starts again after it.
+    /// </summary>
+    public void RestoreParts(string backup, IReadOnlyCollection<SettingsPart> parts, AppSettings current)
+    {
+        var from = Read(backup); // throws when it does not load
+        Save(current);
+        KeepBackup("before:Restore");
+        Save(SettingsDiff.Merge(current, from, parts));
+    }
 
     /// <summary>The backups of the settings: the last <see cref="BackupCount"/> different settings files that loaded.</summary>
     public string BackupDirectory => Path.Combine(Directory, "backups");
@@ -120,7 +250,7 @@ public sealed class SettingsStore
                 var settings = Read(FilePath);
                 if (backups)
                 {
-                    KeepBackup();
+                    KeepBackup("start");
                 }
                 return settings;
             }
@@ -178,37 +308,53 @@ public sealed class SettingsStore
         return [.. System.IO.Directory.GetFiles(BackupDirectory, "settings-*.json").OrderByDescending(Path.GetFileName, StringComparer.Ordinal)];
     }
 
+    /// <summary>A new backup's file: the name sorts by time ("~" after "." keeps a second one of the same millisecond after the first).</summary>
+    private string NewBackupPath()
+    {
+        var name = "settings-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-fff", System.Globalization.CultureInfo.InvariantCulture);
+        var target = Path.Combine(BackupDirectory, name + ".json");
+        for (var n = 2; File.Exists(target); n++)
+        {
+            target = Path.Combine(BackupDirectory, $"{name}~{n}.json");
+        }
+        return target;
+    }
+
     /// <summary>
-    /// The settings file that has just loaded joins the backups, unless the newest backup is the same; only the newest
-    /// <see cref="BackupCount"/> are kept. A backup that cannot be written does not keep the program from starting.
+    /// The settings file as it is now joins the backups (<paramref name="trigger"/>: why), unless the newest backup is the
+    /// same (<paramref name="evenIfSame"/>: the user's own); of the automatic ones only the newest <see cref="BackupCount"/>
+    /// are kept, the user's own and pinned ones stay. A backup that cannot be written does not keep the program from
+    /// starting. The file made, or null.
     /// </summary>
-    private void KeepBackup()
+    private string? KeepBackup(string trigger, string? label = null, bool evenIfSame = false)
     {
         try
         {
             var text = File.ReadAllText(FilePath);
             var backups = Backups();
-            if (backups.Count > 0 && File.ReadAllText(backups[0]) == text)
+            if (!evenIfSame && backups.Count > 0 && File.ReadAllText(backups[0]) == text)
             {
-                return; // nothing changed since the last one
+                return null; // nothing changed since the last one
             }
             System.IO.Directory.CreateDirectory(BackupDirectory);
-            // the name sorts by time ("~" after "." keeps a second one of the same millisecond after the first)
-            var name = "settings-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-fff", System.Globalization.CultureInfo.InvariantCulture);
-            var target = Path.Combine(BackupDirectory, name + ".json");
-            for (var n = 2; File.Exists(target); n++)
-            {
-                target = Path.Combine(BackupDirectory, $"{name}~{n}.json");
-            }
+            var target = NewBackupPath();
             File.WriteAllText(target, text);
-            foreach (var old in Backups().Skip(BackupCount))
+            var index = ReadIndex();
+            if (trigger != "start" || label is not null)
+            {
+                index[Path.GetFileName(target)] = new SettingsBackupInfo { Trigger = trigger, Label = label };
+            }
+            var automatic = Backups().Where(b => !index.TryGetValue(Path.GetFileName(b), out var info) || (!info.Pinned && info.Trigger is not ("manual" or "file")));
+            foreach (var old in automatic.Skip(BackupCount))
             {
                 File.Delete(old);
             }
+            WriteIndex(index);
+            return target;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // no backup this time
+            return null; // no backup this time
         }
     }
 
@@ -228,17 +374,22 @@ public sealed class SettingsStore
             // compared with nothing
         }
         var list = new List<SettingsBackup>();
+        var index = ReadIndex();
         foreach (var backup in Backups())
         {
             var time = File.GetLastWriteTime(backup);
+            var info = index.TryGetValue(Path.GetFileName(backup), out var known) ? known : new SettingsBackupInfo();
             try
             {
                 var settings = Read(backup);
-                list.Add(new SettingsBackup(backup, time, settings.Connections.Count, settings.Hotlist.Count, File.ReadAllText(backup) == current, Damaged: false));
+                list.Add(new SettingsBackup(backup, time, settings.Connections.Count, settings.Hotlist.Count, File.ReadAllText(backup) == current, Damaged: false)
+                {
+                    Trigger = info.Trigger, Label = info.Label, Pinned = info.Pinned, Settings = settings,
+                });
             }
             catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException or NotSupportedException)
             {
-                list.Add(new SettingsBackup(backup, time, 0, 0, IsCurrent: false, Damaged: true));
+                list.Add(new SettingsBackup(backup, time, 0, 0, IsCurrent: false, Damaged: true) { Trigger = info.Trigger, Label = info.Label, Pinned = info.Pinned });
             }
         }
         return list;
@@ -254,7 +405,7 @@ public sealed class SettingsStore
         _ = Read(backup); // throws when it does not load
         if (File.Exists(FilePath))
         {
-            KeepBackup();
+            KeepBackup("before:Restore");
         }
         System.IO.Directory.CreateDirectory(Directory);
         var temp = FilePath + ".tmp";

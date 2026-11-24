@@ -417,7 +417,8 @@ public partial class MainWindow
                 WorkspacePage.Options => "Close the options (Esc)",
                 WorkspacePage.Sync or WorkspacePage.Duplicates or WorkspacePage.DiskUsage or WorkspacePage.Connections => "Close (Esc)",
                 WorkspacePage.RemoteDesktop => "Disconnect and close",
-                _ => "Back to its place below the panels",
+                WorkspacePage.Terminal => "Close the terminal (ends every shell)",
+                _ => "Close",
             });
             close.Click += (_, e) =>
             {
@@ -465,7 +466,7 @@ public partial class MainWindow
         return tab;
     }
 
-    /// <summary>The × of a page: the options close (as with Esc), the terminal goes back below the panels.</summary>
+    /// <summary>The × of a page: the options close (as with Esc), the terminal closes (every shell ends).</summary>
     public void ClosePage(WorkspacePage page)
     {
         switch (page)
@@ -486,7 +487,8 @@ public partial class MainWindow
                 ConnectionManager?.Close();
                 break;
             case WorkspacePage.Terminal:
-                RestoreTerminalSize();
+                // closed, not put back below the panels (the user's report, 24 November 2026: it looked minimized)
+                CloseTerminal();
                 ActiveView.FocusList();
                 break;
             case WorkspacePage.RemoteDesktop:

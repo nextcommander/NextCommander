@@ -513,7 +513,20 @@ public sealed partial class TerminalView : DockPanel
 
     private static Button HeaderButton(string text, string tip, Action action)
     {
-        var button = new Button { Content = text, FontSize = 11, Padding = new Thickness(8, 1), MinHeight = 0, Background = Brushes.Transparent, Focusable = false };
+        // more visible (the user's request, 24 November 2026): a framed chip; symbols (✕ □ + ▾ ↑ ↓ ⤓) larger and square
+        var symbol = text.Length <= 2;
+        var button = new Button
+        {
+            Content = text,
+            MinHeight = 0,
+            Focusable = false,
+            Classes = { "termbtn" },
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        if (symbol)
+        {
+            button.Classes.Add("termsym");
+        }
         ToolTip.SetTip(button, tip);
         button.Click += (_, _) => action();
         return button;

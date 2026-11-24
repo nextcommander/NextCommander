@@ -41,14 +41,28 @@ yourself. A file in one of them replaces a built-in file with the same name.
 ## Automatic backups
 
 Each time NextCommander starts and its settings load, `settings.json` is copied into `backups/` inside the settings
-folder (`settings-<date>-<time>.json`), unless it is the same as the newest copy there; the last **7** different ones
-are kept. If `settings.json` is damaged, it is kept as `settings.json.corrupt` and the newest backup that loads takes
-its place; a message at the start says which one.
+folder (`settings-<date>-<time>.json`), unless it is the same as the newest copy there. A copy is also made just before
+a restore and before an import. Of these automatic backups the last **7** are kept; your own backups and pinned ones
+stay until you delete them (what is noted about each backup is in `backups/index.json`). If `settings.json` is damaged,
+it is kept as `settings.json.corrupt` and the newest backup that loads takes its place; a message at the start says
+which one.
 
 *Configuration > Restore settings from a backup...* (also a button on the *Misc.* page of the Configuration window)
-lists them, the newest first, with their connections and Hotlist entries; the one in use now is marked. The one you
-choose becomes the settings and NextCommander starts again; the settings as they were are kept as a backup too, so
-the step can be undone the same way.
+opens a window with the backups on the left, by day, the newest first: when and why each was made (at start, before a
+restore or an import, by you, added from a file), its name, a lock when it is pinned, *Same as now* for the settings in
+use and *Duplicate* for one that holds the same settings as the one below it. A search (date, name, connection or
+Hotlist names) and the filters *All*, *Mine*, *Automatic*, *Pinned* narrow the list.
+
+On the right, for the backup chosen, is what restoring it would change, part by part: **Settings** (every option; the
+window and the panels' folders stay), **Connections**, **Hotlist**, **Shortcuts**, **Button bars** and **Color theme**.
+Each part shows how many changes it has and, opened, each change (added back, removed, changed from → to). Only the
+parts ticked are restored; the rest stays as it is. *Restore...* asks first, keeps the settings in use as a backup and
+starts NextCommander again; that backup ("before Restore") is how a restore is undone.
+
+- **Back up now** keeps the settings as they are, under a name you type; **Open file...** adds a settings file (for
+  example one from another computer) to the backups.
+- F2 or the pencil names the chosen backup, the lock pins it (never removed automatically), Del or the bin deletes it
+  (*Undo* in the list's footer brings it back; a pinned one must be unpinned first). *Open folder* shows `backups/`.
 
 ## Backing up and moving to another computer
 

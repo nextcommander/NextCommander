@@ -348,6 +348,13 @@ public sealed class DialogService : IDialogService
         await dialog.ShowDialog(DialogOwner());
     }
 
+    public async Task<RestoreChoice?> ShowRestoreBackupsAsync(RestoreBackupsRequest request)
+    {
+        var window = new RestoreBackupsWindow(request);
+        await window.ShowDialog(RequireOwner());
+        return window.Result;
+    }
+
     public async Task ShowSettingsAsync(AppSettings settings, Action changed, IReadOnlyList<(string Text, Func<Task> Action)> extraActions, string? search = null)
     {
         var owner = RequireOwner();
