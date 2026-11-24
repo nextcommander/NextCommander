@@ -230,6 +230,12 @@ internal sealed class FakeDialogs : IDialogService
 
     public Task TrackJobAsync(FileJob job, Task running) => running;
 
+    /// <summary>The answer of the permissions dialog (null: cancelled); it gets the entries and their permissions.</summary>
+    public Func<IReadOnlyList<VfsEntry>, IReadOnlyList<FilePermissions>, PermissionChange?>? PermissionsHandler { get; set; }
+
+    public Task<PermissionChange?> ShowPermissionsDialogAsync(IReadOnlyList<VfsEntry> entries, IReadOnlyList<FilePermissions> current) =>
+        Task.FromResult(PermissionsHandler?.Invoke(entries, current));
+
     public ListerRequest? LastLister { get; private set; }
 
     public VfsEntry? LastEdited { get; private set; }

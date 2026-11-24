@@ -209,6 +209,7 @@ public static class MenuIcons
         ["nc_FocusOtherPane"] = new("MiSwap", Blue),
         ["nc_SecureDelete"] = new("MiTrash", Red, "OvHalo", Red),
         ["nc_RecordMacro"] = new("MiKeyboard", Red, "OvHalo", Red),
+        ["nc_Permissions"] = new("MiLock", Blue),
         ["nc_RunScript"] = new("MiDoc", Yellow, "OvArrowRight", Green),
         ["nc_NewScript"] = new("MiDoc", Yellow, "OvPlus", Green),
         ["nc_NewColumnScript"] = new("MiColumns", Yellow, "OvPlus", Green),

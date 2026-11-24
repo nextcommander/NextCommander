@@ -54,6 +54,7 @@
           <MenuItem Header="Create checksums (MD5/SHA)..." Command="{Binding RunCommandCommand}" CommandParameter="nc_CRCcreate" />
           <MenuItem Header="Verify checksums" Command="{Binding RunCommandCommand}" CommandParameter="nc_CRCcheck" />
         </MenuItem>
+        <MenuItem Header="Permissions..." Command="{Binding RunCommandCommand}" CommandParameter="nc_Permissions" />
         <Separator />
         <MenuItem Header="Exit" InputGesture="Alt+F4" Command="{Binding RunCommandCommand}" CommandParameter="nc_Exit" />
       </MenuItem>

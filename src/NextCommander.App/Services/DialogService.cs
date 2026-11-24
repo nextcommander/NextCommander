@@ -271,6 +271,13 @@ public sealed class DialogService : IDialogService
         return dialog.Result;
     }
 
+    public async Task<PermissionChange?> ShowPermissionsDialogAsync(IReadOnlyList<VfsEntry> entries, IReadOnlyList<FilePermissions> current)
+    {
+        var dialog = new PermissionsDialog(entries, current);
+        await dialog.ShowDialog(DialogOwner());
+        return dialog.Result;
+    }
+
     public async Task<NextCommander.Core.Tools.CreateChecksumsJob?> ShowChecksumDialogAsync(ChecksumDialogRequest request)
     {
         var dialog = new ChecksumDialog(request);

@@ -8,7 +8,7 @@ using Renci.SshNet.Sftp;
 namespace NextCommander.Vfs.Remote;
 
 /// <summary>SFTP (SSH) file system: <c>sftp://user@host:port/path</c>. Password or private key login, host key check.</summary>
-public sealed class SftpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBase<SftpClient>(hooks)
+public sealed class SftpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBase<SftpClient>(hooks), IPermissionSupport
 {
     public override string Scheme => "sftp";
 
@@ -213,4 +213,86 @@ public sealed class SftpFileSystemProvider(RemoteHooks hooks) : RemoteProviderBa
                 client.SetLastWriteTimeUtc(path.Path, time.ToUniversalTime());
                 return Task.CompletedTask;
             }, cancellationToken);
+
+    // ---------------------------------------------------------------- permissions (user's request, 24 November 2026)
+
+    public PermissionKind PermissionKindOf(VfsPath path) => PermissionKind.Unix;
+
+    public Task<FilePermissions> GetPermissionsAsync(VfsPath path, CancellationToken cancellationToken) =>
+        UseAsync(path, async client =>
+        {
+            var attributes = await client.GetAttributesAsync(path.Path, cancellationToken).ConfigureAwait(false);
+            // SFTP gives the numbers of the owner and the group, not their names
+            return new FilePermissions
+            {
+                Kind = PermissionKind.Unix, Mode = ModeOf(attributes), NumericOwner = true,
+                Owner = attributes.UserId.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                Group = attributes.GroupId.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            };
+        }, cancellationToken);
+
+    public Task SetPermissionsAsync(VfsPath path, bool isDirectory, PermissionChange change, CancellationToken cancellationToken) =>
+        UseAsync(path, async client =>
+        {
+            var attributes = await client.GetAttributesAsync(path.Path, cancellationToken).ConfigureAwait(false);
+            if (change.Set != 0 || change.Clear != 0)
+            {
+                SetMode(attributes, change.Apply(ModeOf(attributes)));
+            }
+            if (change.Owner is { Length: > 0 } owner)
+            {
+                attributes.UserId = Number(owner) ?? throw new InvalidOperationException("Over SFTP the owner is given by its number (e.g. 1000), not by a name.");
+            }
+            if (change.Group is { Length: > 0 } group)
+            {
+                attributes.GroupId = Number(group) ?? throw new InvalidOperationException("Over SFTP the group is given by its number (e.g. 1000), not by a name.");
+            }
+            client.SetAttributes(path.Path, attributes);
+        }, cancellationToken);
+
+    private static int? Number(string text) =>
+        int.TryParse(text.Trim(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var n) ? n : null;
+
+    /// <summary>Writes the mode bits into SFTP attributes (the special bits too, which SetPermissions leaves out).</summary>
+    internal static void SetMode(SftpFileAttributes a, UnixFileMode mode)
+    {
+        a.OwnerCanRead = mode.HasFlag(UnixFileMode.UserRead);
+        a.OwnerCanWrite = mode.HasFlag(UnixFileMode.UserWrite);
+        a.OwnerCanExecute = mode.HasFlag(UnixFileMode.UserExecute);
+        a.GroupCanRead = mode.HasFlag(UnixFileMode.GroupRead);
+        a.GroupCanWrite = mode.HasFlag(UnixFileMode.GroupWrite);
+        a.GroupCanExecute = mode.HasFlag(UnixFileMode.GroupExecute);
+        a.OthersCanRead = mode.HasFlag(UnixFileMode.OtherRead);
+        a.OthersCanWrite = mode.HasFlag(UnixFileMode.OtherWrite);
+        a.OthersCanExecute = mode.HasFlag(UnixFileMode.OtherExecute);
+        a.IsUIDBitSet = mode.HasFlag(UnixFileMode.SetUser);
+        a.IsGroupIDBitSet = mode.HasFlag(UnixFileMode.SetGroup);
+        a.IsStickyBitSet = mode.HasFlag(UnixFileMode.StickyBit);
+    }
+
+    /// <summary>The mode bits of SFTP attributes.</summary>
+    internal static UnixFileMode ModeOf(SftpFileAttributes a)
+    {
+        var mode = UnixFileMode.None;
+        void Bit(bool on, UnixFileMode flag)
+        {
+            if (on)
+            {
+                mode |= flag;
+            }
+        }
+        Bit(a.OwnerCanRead, UnixFileMode.UserRead);
+        Bit(a.OwnerCanWrite, UnixFileMode.UserWrite);
+        Bit(a.OwnerCanExecute, UnixFileMode.UserExecute);
+        Bit(a.GroupCanRead, UnixFileMode.GroupRead);
+        Bit(a.GroupCanWrite, UnixFileMode.GroupWrite);
+        Bit(a.GroupCanExecute, UnixFileMode.GroupExecute);
+        Bit(a.OthersCanRead, UnixFileMode.OtherRead);
+        Bit(a.OthersCanWrite, UnixFileMode.OtherWrite);
+        Bit(a.OthersCanExecute, UnixFileMode.OtherExecute);
+        Bit(a.IsUIDBitSet, UnixFileMode.SetUser);
+        Bit(a.IsGroupIDBitSet, UnixFileMode.SetGroup);
+        Bit(a.IsStickyBitSet, UnixFileMode.StickyBit);
+        return mode;
+    }
 }
