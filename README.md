@@ -41,7 +41,8 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
 ### Search and tools
 - Find files by name, content, size, date and attributes; also inside Office and OpenDocument files.
   A saved search opens in a panel like a folder of its results, searched again on every refresh.
-- Macros (the commands you run, recorded as a command of your own) and JavaScript scripts as commands and columns.
+- Macros (the commands you run, recorded as a command of your own) and JavaScript scripts as commands, columns and
+  file systems (a web service's files in a panel).
 - An optional file index makes searches and folder sizes nearly instant.
 - Multi-Rename Tool, Synchronize directories, Compare by content, Duplicate files, Folder sizes with a treemap,
   checksums, split and combine, and a built-in terminal.

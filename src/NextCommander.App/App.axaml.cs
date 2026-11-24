@@ -242,6 +242,25 @@ public partial class App : Application
             Log.Information("Plugin {Name}: {FileSystems} file systems, {Columns} column providers, {Packers} packers, {Viewers} viewers",
                 plugin.Name, plugin.FileSystems.Count, plugin.Columns.Count, plugin.Packers.Count, plugin.Viewers.Count);
         }
+        // file systems written in JavaScript (scripts/filesystems): one more plugin of the list
+        var scripts = Path.Combine(store.Directory, "scripts", "filesystems");
+        var scripted = NextCommander.Core.Scripting.ScriptFileSystemProvider.LoadAll(scripts,
+            (file, error) => Log.Warning("File system script {File} not loaded: {Error}", file, error));
+        if (scripted.Count > 0)
+        {
+            var plugin = new NextCommander.Core.Plugins.LoadedPlugin
+            {
+                Folder = scripts,
+                Manifest = new NextCommander.Core.Plugins.PluginManifest { Name = "JavaScript file systems", Description = "scripts/filesystems of the settings folder" },
+            };
+            plugin.FileSystems.AddRange(scripted);
+            vm.Plugins.Add(plugin);
+            foreach (var fileSystem in scripted)
+            {
+                registry.Register(fileSystem);
+                NextCommander.App.Services.OperationLog.PluginSchemes.Add(fileSystem.Scheme);
+            }
+        }
         vm.ApplyPluginSettings(); // their own settings, before anything uses them
     }
 

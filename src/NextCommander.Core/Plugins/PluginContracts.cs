@@ -110,6 +110,39 @@ public interface IPluginEntryActions
     IReadOnlyList<PluginAction> ActionsFor(Vfs.VfsEntry entry);
 }
 
+/// <summary>
+/// The dialogs the program lends a plugin's actions (user's request, 24 November 2026): a text asked, one of a list
+/// chosen, a yes / no, a long text shown (a difference, a log) in the program's viewer. Texts are English; their
+/// translations go into the plugin's languages folder.
+/// </summary>
+public interface IPluginDialogs
+{
+    /// <summary>A line of text, or null when cancelled.</summary>
+    Task<string?> PromptAsync(string title, string message, string initialText);
+
+    /// <summary>One of <paramref name="choices"/> (the text chosen), or null when cancelled.</summary>
+    Task<string?> ChooseAsync(string title, IReadOnlyList<string> choices);
+
+    Task<bool> ConfirmAsync(string title, string message);
+
+    /// <summary>A long text in the viewer; <paramref name="fileName"/> gives its kind ("changes.diff" is colored as a difference).</summary>
+    Task ShowTextAsync(string fileName, string text);
+}
+
+/// <summary>
+/// A plugin's actions for the folder of the active panel and its selected entries, wherever the folder is (e.g. Git's
+/// stage, commit and switch branch in a repository's working folder). Implemented by a plugin's
+/// <see cref="Vfs.IFileSystemProvider"/>; listed in the Plugins menu and the file list's menu.
+/// </summary>
+public interface IPluginFolderActions
+{
+    /// <summary>
+    /// The actions for <paramref name="folder"/> with <paramref name="selected"/> (the marked entries, or the one under the
+    /// cursor; may be empty); cheap, called when a menu opens. Empty when none fit.
+    /// </summary>
+    IReadOnlyList<PluginAction> ActionsFor(Vfs.VfsPath folder, IReadOnlyList<Vfs.VfsEntry> selected, IPluginDialogs dialogs);
+}
+
 /// <summary>Packer and viewer plugins loaded in this process (file systems and columns have their own registries).</summary>
 public static class PluginCatalog
 {
