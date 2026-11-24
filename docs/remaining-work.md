@@ -260,6 +260,12 @@ built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC l
   ~/Library/Logs/NextCommander/crash.log and ~/Library/Logs/DiagnosticReports (a signature problem leaves its report
   there, not in the program's log).
 
+- [x] macOS, Samsung phone (24 November 2026): "The device is not connected: SAMSUNG Android" while the phone was in
+  the drive list. libmtp searched only when the USB devices changed and kept what it found; a phone coming back under
+  a new USB address (file transfer just allowed) was not ready at that one search. Now libmtp searches again every 2 s
+  for 15 s after a USB change, and opening a device the last search missed searches once more
+  (`LibMtpDeviceSource.Settle`, `IMtpDeviceSource.Rescan`). To be tried on the Mac.
+
 ## Disc images (user's request, 21 November 2026)
 - [x] ISO files open like an archive in a panel (Enter on an .iso): browse, view, copy out, search inside, compare,
   checksum; read-only. Read with DiscUtils (MIT; `Vfs.Archive/DiscImage`): UDF when the image has it (DVD / Blu-ray),

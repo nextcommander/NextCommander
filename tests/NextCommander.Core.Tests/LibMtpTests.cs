@@ -49,6 +49,39 @@ public sealed class LibMtpTests : IDisposable
     }
 
     [Fact]
+    public async Task A_phone_that_comes_back_slowly_after_a_USB_change_is_found()
+    {
+        // the user allowed file transfer: the phone leaves and comes back under a new USB address, not ready at once
+        // (user's report on macOS, 24 November 2026: "The device is not connected: SAMSUNG Android")
+        var now = new DateTime(2026, 11, 24, 15, 0, 0, DateTimeKind.Utc);
+        var libMtp = new FakeLibMtp { Devices = [Galaxy] };
+        var usb = new FakeUsb { Devices = [new UsbDeviceInfo(2, 3, 0x04e8, 0x6860, "SAMSUNG", "SAMSUNG_Android", "R58")] };
+        var source = new LibMtpDeviceSource(libMtp, usb) { Clock = () => now };
+        Assert.Equal("SAMSUNG Android", Assert.Single(source.GetDevices()).Name);
+
+        now = now.AddSeconds(20);
+        usb.Signature = "re-enumerated";
+        libMtp.Devices = []; // not ready yet
+        Assert.Empty(source.GetDevices());
+        libMtp.Devices = [Galaxy with { Address = 4 }];
+        usb.Devices = [new UsbDeviceInfo(2, 4, 0x04e8, 0x6860, "SAMSUNG", "SAMSUNG_Android", "R58")];
+        now = now.AddSeconds(1);
+        Assert.Empty(source.GetDevices()); // searched a second ago: not again yet
+        now = now.AddSeconds(2);
+        Assert.Equal("SAMSUNG Android", Assert.Single(source.GetDevices()).Name); // searched again while the USB change settles
+        var searches = libMtp.Detects;
+        now = now.AddSeconds(30);
+        source.GetDevices();
+        Assert.Equal(searches, libMtp.Detects); // settled: what was found is used again
+
+        // opening a device the last search missed looks again once
+        libMtp.Devices = [Galaxy with { Address = 4 }, Pixel];
+        usb.Devices = [.. usb.Devices, new UsbDeviceInfo(1, 7, 0x18d1, 0x4ee1, "Google", "Pixel 8", "3A1")];
+        using var provider = new MtpFileSystemProvider(source);
+        Assert.NotNull(await provider.ListAsync(VfsPath.Parse("mtp://Google Pixel 8/"), CancellationToken.None));
+    }
+
+    [Fact]
     public void Two_devices_of_one_name_get_unique_names_and_open_by_their_id()
     {
         var second = Pixel with { Bus = 3, Address = 1 };
