@@ -96,4 +96,78 @@ public sealed class SettingsBackupTests : IDisposable
         Assert.Equal(new AppSettings().Language, fresh.Load().Language);
         Assert.Null(fresh.RestoredBackup);
     }
+
+    [Fact]
+    public void Own_backups_have_names_pins_and_stay_while_automatic_ones_go()
+    {
+        WriteSettings("en");
+        Store().Load();
+        var own = Store().BackupNow("Before theme experiment")!;
+        var pinnedStart = Store().Backups()[^1];
+        Store().SetPinned(pinnedStart, true);
+        Assert.Throws<InvalidOperationException>(() => Store().DeleteBackup(pinnedStart));
+
+        foreach (var language in new[] { "tr", "de", "es", "fr", "zh", "it", "pt", "nl", "ru" })
+        {
+            WriteSettings(language);
+            Store().Load();
+        }
+        var list = Store().BackupList();
+        Assert.Equal(SettingsStore.BackupCount + 2, list.Count); // seven automatic, the own one and the pinned one
+        var mine = list.Single(b => b.Path == own);
+        Assert.Equal(("manual", "Before theme experiment", true), (mine.Trigger, mine.Label, mine.IsOwn));
+        Assert.True(list.Single(b => b.Path == pinnedStart).Pinned);
+
+        // renamed, then deleted
+        Store().SetLabel(own, "renamed");
+        Assert.Equal("renamed", Store().InfoOf(own).Label);
+        Store().DeleteBackup(own);
+        Assert.DoesNotContain(Store().Backups(), b => b == own);
+
+        // a file chosen by the user joins them (it must load)
+        var file = Path.Combine(_dir.Root, "laptop.json");
+        File.WriteAllText(file, """{ "SettingsVersion": 7, "Language": "sv" }""");
+        var added = Store().AddBackupFromFile(file);
+        Assert.Equal(("file", "laptop.json"), (Store().InfoOf(added).Trigger, Store().InfoOf(added).Label));
+        File.WriteAllText(file, "{ broken");
+        Assert.ThrowsAny<System.Text.Json.JsonException>(() => Store().AddBackupFromFile(file));
+    }
+
+    [Fact]
+    public void Chosen_parts_of_a_backup_are_restored_and_their_changes_listed()
+    {
+        var backup = new AppSettings { PanelFontSize = 11, ColorThemeFile = "graphite" };
+        backup.Hotlist.Add(new HotlistEntry { Name = "Projects", Path = @"D:\Projects" });
+        backup.Connections.Add(new RemoteConnection { Name = "Production web", Protocol = RemoteProtocol.Sftp, Host = "web01" });
+        backup.Hotkeys["Ctrl+Alt+U"] = "nc_Exchange";
+        var current = new AppSettings { PanelFontSize = 13, ColorThemeFile = "dark" };
+        current.Connections.Add(new RemoteConnection { Name = "Production web", Protocol = RemoteProtocol.Sftp, Host = "web02" });
+        current.Connections.Add(new RemoteConnection { Name = "NAS", Protocol = RemoteProtocol.Smb, Host = "nas" });
+        current.Left.Path = @"C:\now";
+
+        // what each part would change
+        Assert.Equal([("chg", "Production web"), ("del", "NAS")], SettingsDiff.Changes(SettingsPart.Connections, backup, current).Select(c => (c.Op, c.Name)));
+        Assert.Equal([new SettingsChange("add", "Projects", null, @"D:\Projects")], SettingsDiff.Changes(SettingsPart.Hotlist, backup, current));
+        Assert.Equal([new SettingsChange("add", "Ctrl+Alt+U", null, "nc_Exchange")], SettingsDiff.Changes(SettingsPart.Shortcuts, backup, current));
+        Assert.Equal([new SettingsChange("chg", "Theme", "dark", "graphite")], SettingsDiff.Changes(SettingsPart.ColorTheme, backup, current));
+        Assert.Contains(new SettingsChange("chg", "Panel font size", "13", "11"), SettingsDiff.Changes(SettingsPart.Settings, backup, current));
+        Assert.DoesNotContain(SettingsDiff.Changes(SettingsPart.Settings, backup, current), c => c.Name.StartsWith("Left", StringComparison.Ordinal)); // the panels' folders are not settings
+        Assert.Empty(SettingsDiff.Changes(SettingsPart.ButtonBars, backup, current));
+
+        // only the Hotlist and the theme come back; the rest and the panels' folders stay
+        var merged = SettingsDiff.Merge(current, backup, [SettingsPart.Hotlist, SettingsPart.ColorTheme]);
+        Assert.Equal((13d, "graphite", 1, 2, @"C:\now"), (merged.PanelFontSize, merged.ColorThemeFile, merged.Hotlist.Count, merged.Connections.Count, merged.Left.Path));
+        Assert.NotEqual(SettingsDiff.Normalized(current), SettingsDiff.Normalized(merged));
+        Assert.Equal(SettingsDiff.Normalized(current), SettingsDiff.Normalized(SettingsDiff.Merge(current, backup, [])));
+
+        // through the store: the settings now are kept first ("before:Restore"), then the parts written
+        Store().Save(backup);
+        Store().Load();
+        var kept = Store().Backups()[0];
+        Store().RestoreParts(kept, [SettingsPart.Settings], current);
+        var restored = Store().Load(backups: false);
+        Assert.Equal((11d, "dark", @"C:\now"), (restored.PanelFontSize, restored.ColorThemeFile, restored.Left.Path));
+        Assert.Contains(Store().BackupList(), b => b.Trigger == "before:Restore" && b.Settings!.PanelFontSize == 13);
+        Assert.Equal("Panel font size", SettingsDiff.Readable("PanelFontSize"));
+    }
 }

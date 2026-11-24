@@ -46,7 +46,8 @@ public sealed class TerminalDropTests
         double Left(Visual v) => v.TranslatePoint(default, window)!.Value.X;
         // one tab: the buttons a short gap after it, far from the actions at the right
         Assert.InRange(Left(add) - Right(tabs), 0, 12);
-        Assert.True(Left(add) < 600, $"+ at {Left(add)}");
+        var alone = Left(add);
+        Assert.True(alone < 600, $"+ at {alone}");
 
         // many tabs: they scroll, the buttons stay at the right end of the room, before the actions
         for (var i = 0; i < 30; i++)
@@ -56,7 +57,7 @@ public sealed class TerminalDropTests
         await SettleAsync();
         var actions = view.GetVisualDescendants().OfType<Button>().First(b => Equals(b.Tag, "log"));
         Assert.True(Right(add) <= Left(actions), $"+ ends at {Right(add)}, the actions start at {Left(actions)}");
-        Assert.True(Left(add) > 600, $"+ at {Left(add)}");
+        Assert.True(Left(add) > alone + 100 && Left(actions) - Right(add) < 60, $"+ at {Left(add)} (alone at {alone}), the actions start at {Left(actions)}");
         window.Close();
     }
 

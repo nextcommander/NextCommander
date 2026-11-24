@@ -212,11 +212,12 @@ public sealed class WorkspaceTabsTests : IDisposable
         await vm.ExecuteAsync("nc_SwitchWorkspaceTab");
         Assert.Equal(WorkspacePage.Files, w.CurrentPage);
 
-        // the × of the terminal: back below the panels, its page goes
+        // the × of the terminal's tab: the terminal closes (not back below the panels), its page goes
         w.ClosePage(WorkspacePage.Terminal);
         await SettleAsync();
         Assert.False(w.Terminal.IsMaximized);
-        Assert.True(terminalHost.IsVisible);
+        Assert.False(terminalHost.IsVisible);
+        Assert.False(vm.IsTerminalOpen);
         Assert.Equal([WorkspacePage.Files, WorkspacePage.Options], w.OpenPages);
         w.Settings!.Close();
         await shown;

@@ -135,6 +135,9 @@ public interface IDialogService
     /// <summary>Settings window (modal); <paramref name="changed"/> runs after each change; <paramref name="search"/> pre-fills the search.</summary>
     Task ShowSettingsAsync(AppSettings settings, Action changed, IReadOnlyList<(string Text, Func<Task> Action)> extraActions, string? search = null);
 
+    /// <summary>Restore settings from a backup: the backup and its parts chosen, or null.</summary>
+    Task<Views.Dialogs.RestoreChoice?> ShowRestoreBackupsAsync(Views.Dialogs.RestoreBackupsRequest request);
+
     /// <summary>The application's own properties dialog (no OS dialog available).</summary>
     Task ShowPropertiesAsync(VfsEntry entry, Func<Task<NextCommander.App.Views.Dialogs.SpaceInfo>>? measure);
 
