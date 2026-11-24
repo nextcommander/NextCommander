@@ -31,7 +31,11 @@ public sealed record CommandBrowserRequest(
     Func<string, Task> Run,
     Action<string, string> AddToButtonBar,
     IReadOnlyDictionary<string, string>? Categories = null,
-    IReadOnlySet<string>? FunctionKeys = null);
+    IReadOnlySet<string>? FunctionKeys = null)
+{
+    /// <summary>A text already in the search box (the command palette's Ctrl+K: the command's name).</summary>
+    public string? Search { get; init; }
+}
 
 /// <summary>
 /// Commands and shortcuts (nc_CommandBrowser): every command by the menu it is in, with favorites, recently run and
@@ -141,7 +145,15 @@ public sealed class CommandBrowserWindow : Window
         AddHandler(KeyDownEvent, OnPreviewKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         _current = _commands.FirstOrDefault()?.Name;
         Render();
-        Opened += (_, _) => _search.Focus();
+        Opened += (_, _) =>
+        {
+            if (!string.IsNullOrEmpty(request.Search))
+            {
+                _search.Text = request.Search;
+                _search.CaretIndex = request.Search.Length;
+            }
+            _search.Focus();
+        };
         Closed += (_, _) => _toastTimer.Stop();
     }
 

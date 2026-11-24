@@ -26,6 +26,12 @@ public sealed record ConnectionManagerRequest(
     /// <summary>Opens with a new connection of this type (Net > New connection).</summary>
     public RemoteProtocol? NewProtocol { get; init; }
 
+    /// <summary>Opens with a new connection made from this address (the command palette's "Save as a new connection").</summary>
+    public string? NewAddress { get; init; }
+
+    /// <summary>Opens with this connection selected (the command palette's Ctrl+E).</summary>
+    public RemoteConnection? RevealConnection { get; init; }
+
     /// <summary>Whether the password store has a secret (the own proxy's password is shown as saved).</summary>
     public Func<string, bool>? HasSecret { get; init; }
 
@@ -169,6 +175,14 @@ public sealed partial class ConnectionManagerView : UserControl
             if (request.NewProtocol is { } protocol)
             {
                 Avalonia.Threading.Dispatcher.UIThread.Post(() => _ = NewConnectionAsync(protocol), Avalonia.Threading.DispatcherPriority.Loaded);
+            }
+            else if (request.NewAddress is { Length: > 0 } address)
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => _ = NewConnectionAsync(address: address), Avalonia.Threading.DispatcherPriority.Loaded);
+            }
+            else if (request.RevealConnection is { } reveal)
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => Reveal(reveal), Avalonia.Threading.DispatcherPriority.Loaded);
             }
             Avalonia.Threading.Dispatcher.UIThread.Post(FocusSelectedRow, Avalonia.Threading.DispatcherPriority.Loaded);
         };

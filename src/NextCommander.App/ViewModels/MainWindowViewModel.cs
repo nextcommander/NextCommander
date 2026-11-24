@@ -2000,7 +2000,8 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>The commands and shortcuts window: categories, search (also by pressing keys), shortcuts, favorites, run.</summary>
-    private Task ShowCommandBrowserAsync() =>
+    /// <summary>Commands and shortcuts, with a text already searched (the command palette's Ctrl+K: a command's name).</summary>
+    public Task ShowCommandBrowserAsync(string? search = null) =>
         _dialogs.ShowCommandBrowserAsync(new Views.Dialogs.CommandBrowserRequest(
             [.. Commands.All], Hotkeys, _settings, SaveSettings, command => ExecuteAsync(command),
             (command, description) =>
@@ -2008,7 +2009,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
                 _settings.ButtonBar.Add(new ButtonDefinition { Command = command, Tooltip = description });
                 ButtonBarsChanged?.Invoke(this, EventArgs.Empty);
                 SaveSettings();
-            }));
+            }) { Search = search });
 
     /// <summary>A directory's children changed through the tree (the views reload that branch).</summary>
     public event EventHandler<VfsPath>? TreeChanged;
@@ -2682,8 +2683,10 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         Views.Dialogs.SettingsView.PluginConfigurations = () => PluginConfigurations;
         Views.Dialogs.SettingsView.SecretSaved = id => _remote?.Secrets?.Contains(id) == true;
         await _dialogs.ShowSettingsAsync(_settings, ApplySettings, extras, search);
-        ApplySettings();
-        SaveSettings();
+        // OK / Apply have applied the changes already (the view's Apply calls ApplySettings); applying everything again
+        // here kept the closed page on the screen for a while (the user's report, 24 November 2026). The settings are
+        // saved once the window has drawn the panels again.
+        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(SaveSettings, Avalonia.Threading.DispatcherPriority.Background);
     }
 
     /// <summary>Re-applies everything that depends on settings (after the settings window).</summary>
@@ -3121,12 +3124,23 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
 
     private Task ConnectAsync() => ShowConnectionManagerAsync(null);
 
+    /// <summary>The connection manager with a saved connection selected (the command palette's Ctrl+E).</summary>
+    public Task EditConnectionAsync(string name) =>
+        ShowConnectionManagerAsync(null, reveal: _settings.Connections.FirstOrDefault(c => string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase)));
+
+    /// <summary>The connection manager with a new connection made from an address (the command palette).</summary>
+    public Task SaveAddressAsConnectionAsync(string address) => ShowConnectionManagerAsync(null, address: address);
+
+    /// <summary>Find files (Alt+F7) started at once for a name in the active panel's folder (the command palette).</summary>
+    public Task FindFilesNamedAsync(string name) =>
+        FindFilesAsync(new SearchOptions { NameMask = name.Contains('*') || name.Contains('?') ? name : "*" + name + "*" }, autoStart: true);
+
     /// <summary>"nc_NewConnection gdrive": the connection manager with a new connection of the type; it is saved and opened.</summary>
     private Task NewConnectionAsync(string? scheme) =>
         ShowConnectionManagerAsync(RemoteProtocols.FromScheme(scheme?.Trim())?.Protocol ?? RemoteProtocol.Sftp);
 
     /// <summary>The connection manager; the connections chosen open in the left or right panel (several: in new tabs).</summary>
-    private async Task ShowConnectionManagerAsync(RemoteProtocol? newProtocol)
+    private async Task ShowConnectionManagerAsync(RemoteProtocol? newProtocol, RemoteConnection? reveal = null, string? address = null)
     {
         var request = new Views.Connections.ConnectionManagerRequest(
             _settings,
@@ -3148,6 +3162,8 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             _dialogs.PickOpenFileAsync)
         {
             NewProtocol = newProtocol,
+            NewAddress = address,
+            RevealConnection = reveal,
             PickSaveFile = _dialogs.PickSaveFileAsync,
             HasSecret = id => Remote?.Secrets.Contains(id) == true,
             StoreSecret = async (id, value) =>
