@@ -358,6 +358,11 @@ public sealed class ListEditor<T> : UserControl where T : class
                     {
                         field.Set(entry, field.Options[combo.SelectedIndex].Value);
                         FieldChanged();
+                        if (_options.Fields.Any(f => f.IsVisibleFor is not null))
+                        {
+                            // other fields may come or go with this choice (a rule's kind): after this event
+                            Avalonia.Threading.Dispatcher.UIThread.Post(ShowForm);
+                        }
                     }
                 };
                 return combo;

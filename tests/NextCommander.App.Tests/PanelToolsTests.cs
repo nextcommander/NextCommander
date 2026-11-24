@@ -140,6 +140,8 @@ public sealed class PanelToolsTests : IDisposable
         await SettleAsync(4);
         var verify = view.GetLogicalDescendants().OfType<CheckBox>().First(c => Equals(c.Content, "Verify after copying"));
         var was = vm.Settings.VerifyCopy;
+        verify.BringIntoView(); // the page is taller than the window
+        await SettleAsync(2);
         var center = verify.TranslatePoint(new Avalonia.Point(verify.Bounds.Width - 10, verify.Bounds.Height / 2), w)!.Value;
         Avalonia.Headless.HeadlessWindowExtensions.MouseDown(w, center, Avalonia.Input.MouseButton.Left);
         Avalonia.Headless.HeadlessWindowExtensions.MouseUp(w, center, Avalonia.Input.MouseButton.Left);

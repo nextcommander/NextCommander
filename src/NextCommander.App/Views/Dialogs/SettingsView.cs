@@ -42,7 +42,7 @@ public sealed partial class SettingsView : UserControl
         "Display", "Display/Icons", "Display/Font", "Display/Color", "Display/Data formats", "Display/Folder tabs", "Display/View modes",
         "Display/Language",
         "Operation", "Operation/Edit and view", "Operation/Copy and delete", "Operation/Quick search", "Operation/FTP", "Operation/Proxy", "Operation/Plugins", "Operation/Thumbnails",
-        "Operation/Associations", "Operation/File index", "Operation/PC link",
+        "Operation/Associations", "Operation/File index", "Operation/PC link", "Operation/Rules",
         "Packer", "Packer/Zip", "Packer/7-Zip",
         "Refresh", "Ignore list", "History", "Log file",
         "Misc.",
@@ -55,7 +55,7 @@ public sealed partial class SettingsView : UserControl
         ["Display/Data formats"] = "MiHash", ["Display/Folder tabs"] = "MiTabs", ["Display/View modes"] = "MiColumns", ["Display/Language"] = "MiGlobe",
         ["Operation"] = "MiGear", ["Operation/Edit and view"] = "MiPencil", ["Operation/Copy and delete"] = "MiCopy", ["Operation/Quick search"] = "MiSearch",
         ["Operation/FTP"] = "MiNetwork", ["Operation/Proxy"] = "MiPlug", ["Operation/Plugins"] = "MiChip", ["Operation/Thumbnails"] = "MiFullView",
-        ["Operation/Associations"] = "MiExchange", ["Operation/File index"] = "MiDrive", ["Operation/PC link"] = "MiMonitor", ["Packer"] = "MiStacked", ["Packer/Zip"] = "MiCombine",
+        ["Operation/Associations"] = "MiExchange", ["Operation/File index"] = "MiDrive", ["Operation/PC link"] = "MiMonitor", ["Operation/Rules"] = "MiHammer", ["Packer"] = "MiStacked", ["Packer/Zip"] = "MiCombine",
         ["Packer/7-Zip"] = "MiSplit", ["Refresh"] = "MiRefresh", ["Ignore list"] = "MiFilter", ["History"] = "MiHistory", ["Log file"] = "MiDoc",
         ["Misc."] = "MiHammer",
     };
@@ -1612,6 +1612,107 @@ public sealed partial class SettingsView : UserControl
 
     private static string? EmptyToNull(string? text) => string.IsNullOrWhiteSpace(text) ? null : text;
 
+    /// <summary>Display > Color: the tags and their color labels.</summary>
+    private static ListEditorOptions<NextCommander.Core.Tags.TagDefinition> TagOptions() => new()
+    {
+        Create = () => new NextCommander.Core.Tags.TagDefinition { Name = "New tag", Color = "#00897B" },
+        Clone = CloneEntry,
+        Summary = t => t.Name,
+        Swatches = t => [t.Color],
+        Validate = t => Workspace.NameProblem(t.Name) ?? (Color.TryParse(t.Color, out _) ? null : $"\"{t.Color}\" is not a color."),
+        AddText = "Add tag",
+        Fields =
+        [
+            new("Name", ListFieldKind.Text, t => t.Name, (t, v) => t.Name = (v ?? string.Empty).Trim()) { PlaceholderText = "e.g. Work" },
+            new("Color", ListFieldKind.Color, t => t.Color, (t, v) => t.Color = v ?? string.Empty),
+        ],
+    };
+
+    /// <summary>Operation > Rules: arriving files moved or copied, folders synchronized every day.</summary>
+    private static ListEditorOptions<NextCommander.Core.Automation.FileRule> RuleOptions()
+    {
+        static bool Arriving(NextCommander.Core.Automation.FileRule r) => r.Kind != NextCommander.Core.Automation.FileRuleKind.Synchronize;
+        return new()
+        {
+            Create = () => new NextCommander.Core.Automation.FileRule
+            {
+                Name = "PDFs to Documents",
+                Folder = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads"),
+                Mask = "*.pdf",
+                Target = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "PDF"),
+            },
+            Clone = CloneEntry,
+            Summary = r => (r.Enabled ? string.Empty : "(off) ") + r.Name + " — " + (Arriving(r) ? $"{r.Mask}: {r.Folder} → {r.Target}" : $"{r.Folder} ⇄ {r.Target} {r.At}"),
+            Validate = r => string.IsNullOrWhiteSpace(r.Name) ? "The name is empty." : r.Problem(),
+            AddText = "Add rule",
+            Fields =
+            [
+                new("Name", ListFieldKind.Text, r => r.Name, (r, v) => r.Name = (v ?? string.Empty).Trim()),
+                new("On", ListFieldKind.Bool, r => r.Enabled.ToString(CultureInfo.InvariantCulture), (r, v) => r.Enabled = v == bool.TrueString),
+                new("What it does", ListFieldKind.Choice, r => r.Kind.ToString(),
+                    (r, v) => r.Kind = Enum.TryParse<NextCommander.Core.Automation.FileRuleKind>(v, out var kind) ? kind : NextCommander.Core.Automation.FileRuleKind.MoveArriving)
+                {
+                    Options =
+                    [
+                        (nameof(NextCommander.Core.Automation.FileRuleKind.MoveArriving), "Move arriving files"),
+                        (nameof(NextCommander.Core.Automation.FileRuleKind.CopyArriving), "Copy arriving files"),
+                        (nameof(NextCommander.Core.Automation.FileRuleKind.Synchronize), "Synchronize every day"),
+                    ],
+                },
+                new("Folder", ListFieldKind.Folder, r => r.Folder, (r, v) => r.Folder = (v ?? string.Empty).Trim()),
+                new("Files", ListFieldKind.Text, r => r.Mask, (r, v) => r.Mask = v ?? string.Empty)
+                    { PlaceholderText = "e.g. *.pdf or *.jpg *.png", IsVisibleFor = Arriving },
+                new("Target folder", ListFieldKind.Folder, r => r.Target, (r, v) => r.Target = (v ?? string.Empty).Trim())
+                    { PlaceholderText = "a folder, or a server's: sftp://server/backup" },
+                new("At (time of day)", ListFieldKind.Text, r => r.At, (r, v) => r.At = (v ?? string.Empty).Trim())
+                    { PlaceholderText = "e.g. 02:30", IsVisibleFor = r => !Arriving(r) },
+                new("One way: only to the target, nothing deleted", ListFieldKind.Bool, r => r.OneWay.ToString(CultureInfo.InvariantCulture), (r, v) => r.OneWay = v == bool.TrueString)
+                    { IsVisibleFor = r => !Arriving(r) },
+            ],
+        };
+    }
+
+    /// <summary>Display > Folder tabs: the saved workspaces (made with Show > Workspaces > Save workspace...).</summary>
+    private static ListEditorOptions<Workspace> WorkspaceOptions() => new()
+    {
+        Create = () => CaptureWorkspace?.Invoke() ?? new Workspace { Name = "Workspace" },
+        Clone = CloneEntry,
+        Summary = w => w.Name + (w.Hotkey.Length > 0 ? "  (" + Services.HotkeyMap.ShownGesture(w.Hotkey) + ")" : string.Empty),
+        Validate = WorkspaceProblem,
+        AddText = "Add the current tabs",
+        Fields =
+        [
+            new("Name", ListFieldKind.Text, w => w.Name, (w, v) => w.Name = (v ?? string.Empty).Trim()),
+            new("Key", ListFieldKind.Text, w => Services.HotkeyMap.ShownGesture(w.Hotkey), (w, v) => w.Hotkey = Services.HotkeyMap.StoredGesture(v))
+                { PlaceholderText = "e.g. Ctrl+Shift+1; empty = none" },
+            new("Terminal", ListFieldKind.Choice, w => w.Terminal.ToString(), (w, v) => w.Terminal = Enum.TryParse<WorkspaceTerminal>(v, out var t) ? t : WorkspaceTerminal.Closed)
+            {
+                Options = [(nameof(WorkspaceTerminal.Closed), "Closed"), (nameof(WorkspaceTerminal.Below), "Below the panels"), (nameof(WorkspaceTerminal.Maximized), "Maximized")],
+            },
+        ],
+    };
+
+    /// <summary>What is wrong with a workspace entry: its name, or a key that is not one.</summary>
+    internal static string? WorkspaceProblem(Workspace workspace)
+    {
+        if (Workspace.NameProblem(workspace.Name) is { } problem)
+        {
+            return problem;
+        }
+        if (workspace.Hotkey.Length > 0)
+        {
+            try
+            {
+                Avalonia.Input.KeyGesture.Parse(workspace.Hotkey);
+            }
+            catch (ArgumentException)
+            {
+                return $"\"{workspace.Hotkey}\" is not a key (e.g. Ctrl+Shift+1).";
+            }
+        }
+        return null;
+    }
+
     /// <summary>Configuration > Color: colors by file type.</summary>
     private static ListEditorOptions<ColorRule> ColorRuleOptions() => new()
     {
@@ -1950,6 +2051,9 @@ public sealed partial class SettingsView : UserControl
     /// <summary>The column fields for the view modes (column providers, plugins); set by the main window.</summary>
     public static Func<IReadOnlyList<NextCommander.Core.Columns.ColumnField>>? ColumnFields { get; set; }
 
+    /// <summary>The current tabs and terminal as a new workspace (its "Add the current tabs" button); set by the main window.</summary>
+    public static Func<Workspace>? CaptureWorkspace { get; set; }
+
     /// <summary>Configuration > View modes: the sets in a list and their editor (columns, automatic folders, colors, commands).</summary>
     private static SettingItem ViewModesItem(string page, string group) =>
         new(page, group, "View modes", "Column sets: their columns, the folders that switch to them automatically, background and tab colors, commands run on entering and leaving.",
@@ -2008,6 +2112,7 @@ public sealed partial class SettingsView : UserControl
         const string assoc = "Operation/Associations";
         const string index = "Operation/File index";
         const string link = "Operation/PC link";
+        const string rules = "Operation/Rules";
         const string packer = "Packer";
         const string sevenZip = "Packer/7-Zip";
         const string misc = "Misc.";
@@ -2143,6 +2248,9 @@ public sealed partial class SettingsView : UserControl
             ThemeEditors(color, "Color"),
             Bool(color, "Color", "File type colors", "Color rules are edited below.", s => s.ColorsEnabled, (s, v) => s.ColorsEnabled = v),
             Bool(color, "Color", "Inverted selection", "Marked files with the mark color as background.", s => s.InvertedSelection, (s, v) => s.InvertedSelection = v),
+            ListItem(color, "Tags", "Tags",
+                "The tags files can have (Mark > Tags); a file's name is shown in the color of its first tag. Renaming a tag here renames it on the files.",
+                s => s.Tags, (s, v) => s.Tags = v, TagOptions()),
             ListItem(color, "Colors by file type", "Color rules",
                 "A color for the light and one for the dark look; optional age and executable conditions. The first matching rule wins (order with ▲ ▼).",
                 s => s.ColorRules, (s, v) => s.ColorRules = v, ColorRuleOptions()),
@@ -2186,6 +2294,9 @@ public sealed partial class SettingsView : UserControl
             Bool(tabs, "Behavior", "Open new tabs next to the current tab", "When off, they are added at the end.", s => s.NewTabNextToCurrent, (s, v) => s.NewTabNextToCurrent = v),
             Bool(tabs, "Behavior", "Clicking a tab activates its panel", "When off, clicking a tab of the other panel only switches the tab.", s => s.TabClickActivatesPanel, (s, v) => s.TabClickActivatesPanel = v),
             Bool(tabs, "Behavior", "Save the file type filter of each tab", null, s => s.SaveTabFilters, (s, v) => s.SaveTabFilters = v),
+            ListItem(tabs, "Workspaces", "Saved workspaces",
+                "Show > Workspaces > Save workspace... saves the tabs of both panels and the terminal under a name; here they are renamed, given a key or deleted.",
+                s => s.Workspaces, (s, v) => s.Workspaces = v, WorkspaceOptions()),
 
             FileChoice(language, "Language", "Language",
                 "Applied at once with Apply or OK.",
@@ -2254,6 +2365,8 @@ public sealed partial class SettingsView : UserControl
 
             Bool(copy, "Deleting", "Delete to Recycle Bin", "F8 / Del moves to the Recycle Bin, Shift+Del deletes permanently. When off, F8 also deletes permanently.", s => s.DeleteToTrash, (s, v) => s.DeleteToTrash = v),
             Bool(copy, "Deleting", "Confirm before deleting", null, s => s.ConfirmDelete, (s, v) => s.ConfirmDelete = v),
+            Number(copy, "Deleting", "Delete securely: times a file is overwritten", "Edit > Delete securely... overwrites the files with random data before deleting them. Once is enough on a hard disk; on an SSD no number of passes is reliable.",
+                1, 7, s => s.SecureDeletePasses, (s, v) => s.SecureDeletePasses = (int)v, 1),
             Bool(copy, "Copying", "Verify after copying", "Default for the option in the Copy dialog.", s => s.VerifyCopy, (s, v) => s.VerifyCopy = v),
             Bool(copy, "Copying", "Copy symbolic links as links", "When off, the contents of the target file are copied.", s => s.CopyFileLinksAsLinks, (s, v) => s.CopyFileLinksAsLinks = v),
             Choice(copy, "Copying", "When a target file exists", "The answer chosen first in the Copy dialog (and used by drag and drop without the dialog).",
@@ -2300,6 +2413,9 @@ public sealed partial class SettingsView : UserControl
             Bool(link, "Sharing", "Share these folders with other computers",
                 "Another NextCommander connected by a cable (USB or Ethernet) or over the network opens them with Net > PC link. The first time, both screens show the same code and this computer allows the other one. Same as Net > Share with PC link.",
                 s => s.LinkSharing, (s, v) => s.LinkSharing = v),
+            ListItem(rules, "Rules", "Rules",
+                "Carried out while the program runs: files arriving in a folder are moved or copied (once nothing writes to them any more), folders are synchronized every day at a time (a missed night at the next start). Commands > Rules > Rules log... shows what was done.",
+                s => s.Rules, (s, v) => s.Rules = v, RuleOptions()),
             ListItem(link, "Sharing", "Shared folders", "Only these folders can be reached; nothing above them. A read-only folder cannot be changed by the other computer.",
                 s => s.LinkShares, (s, v) => s.LinkShares = v, LinkShareOptions()),
             LinkStatusItem(link, "Sharing"),
