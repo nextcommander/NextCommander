@@ -329,7 +329,9 @@ Connections and cloud
 - [x] Git plugin with writing (24 November 2026): stage, unstage, discard, show changes, file history, commit, switch /
   new branch in the Plugins menu and the file list's own menu (`GitActions`; new plugin contracts `IPluginFolderActions`
   and `IPluginDialogs`).
-- [ ] Git, more: push / pull / fetch (credentials through git's own helper), merge and conflicts.
+- [x] Git, more (24 November 2026): fetch, pull, push (upstream on agreement), merge a branch, conflicts listed, finish /
+  abort merge (`GitActions.Remote.cs`, `GitTool.RunFullAsync`; credentials from git's helper, SSH with BatchMode).
+- [ ] To be tried by the user: push / pull against a real server (https with Git Credential Manager, SSH with the agent).
 - [ ] Settings kept in sync between computers through one of the user's own cloud connections.
 
 Automation and extending

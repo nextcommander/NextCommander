@@ -69,7 +69,7 @@ public sealed class GitTool
         return candidates.FirstOrDefault(File.Exists);
     }
 
-    private ProcessStartInfo Start(string repository, IEnumerable<string> arguments)
+    private ProcessStartInfo Start(string repository, IEnumerable<string> arguments, bool remote = false)
     {
         var info = new ProcessStartInfo(Path)
         {
@@ -89,7 +89,36 @@ public sealed class GitTool
         }
         info.Environment["GIT_TERMINAL_PROMPT"] = "0";
         info.Environment["GIT_OPTIONAL_LOCKS"] = "0";
+        if (remote && Environment.GetEnvironmentVariable("GIT_SSH_COMMAND") is null)
+        {
+            // a server over SSH: the keys of the agent, never a question on a terminal nobody sees (git's credential
+            // helper for https, e.g. Git Credential Manager's window or the macOS keychain, still works)
+            info.Environment["GIT_SSH_COMMAND"] = "ssh -o BatchMode=yes";
+        }
         return info;
+    }
+
+    /// <summary>
+    /// Runs git and gives its exit code, output and error text without throwing on a failure (pull, push, merge:
+    /// their messages are read); <paramref name="remote"/>: it talks to a server.
+    /// </summary>
+    public async Task<(int ExitCode, string Output, string Error)> RunFullAsync(string repository, IEnumerable<string> arguments, bool remote,
+        CancellationToken cancellationToken)
+    {
+        using var process = Process.Start(Start(repository, arguments, remote)) ?? throw new IOException("git could not be started.");
+        process.StandardInput.Close();
+        var output = process.StandardOutput.ReadToEndAsync(cancellationToken);
+        var error = process.StandardError.ReadToEndAsync(cancellationToken);
+        try
+        {
+            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            Kill(process);
+            throw;
+        }
+        return (process.ExitCode, await output.ConfigureAwait(false), await error.ConfigureAwait(false));
     }
 
     /// <summary>Runs git in <paramref name="repository"/> and gives its output; a failure becomes an IOException with git's message.</summary>

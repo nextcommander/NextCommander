@@ -62,6 +62,12 @@ The Git plugin comes with NextCommander and uses the installed `git` (git-scm.co
   *File history...* for one file (a commit chosen, its changes shown in the Lister), and *Commit...* (with nothing
   staged it offers to commit every change of the files Git knows), *Switch branch...* and *New branch...* for the
   repository. Git's own message is shown when it refuses.
+- **Servers and merging:** *Git: Fetch* (and how far the branch is ahead / behind), *Pull*, *Push* (a branch that is
+  not on the server yet is pushed and followed once you agree) and *Merge branch...*. A pull or merge with conflicts
+  lists the files; while the merge waits, the menu offers *Conflicts...* (a file's two sides in the Lister),
+  *Finish merge* (once the files are edited and staged) and *Abort merge*. User names and passwords come from git's
+  own credential helper (Git Credential Manager on Windows, the keychain on macOS); SSH servers use the keys of the
+  SSH agent. Nothing is asked in a terminal: a server that wants a password git has not stored says so.
 
 ## SQLite
 

@@ -8,7 +8,7 @@ namespace NextCommander.Plugin.Git;
 /// unstaged or put back, a commit is made, a branch is switched to or made, and the changes of a file or its history
 /// are shown. Everything goes through the installed git; its own messages are shown when it refuses.
 /// </summary>
-public sealed class GitActions(Func<GitTool?> tool)
+public sealed partial class GitActions(Func<GitTool?> tool)
 {
     /// <summary>A repository was changed by an action: the Git columns read its status again.</summary>
     public static event Action<string>? RepositoryChanged;
@@ -36,6 +36,7 @@ public sealed class GitActions(Func<GitTool?> tool)
         actions.Add(new PluginAction("Git: Commit...", PluginActionIcon.Start, ct => CommitAsync(repository, dialogs, ct)));
         actions.Add(new PluginAction("Git: Switch branch...", PluginActionIcon.Restart, ct => SwitchAsync(repository, dialogs, ct)));
         actions.Add(new PluginAction("Git: New branch...", PluginActionIcon.Other, ct => NewBranchAsync(repository, dialogs, ct)));
+        actions.AddRange(RemoteActions(repository, dialogs));
         return actions;
     }
 

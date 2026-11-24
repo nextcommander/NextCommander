@@ -90,7 +90,8 @@ public sealed class GitActionsTests : IDisposable
         // outside a repository: nothing
         Assert.Empty(git.ActionsFor(VfsPath.Local(Path.GetTempPath()), [], dialogs));
         // no selection: the repository's actions only
-        Assert.Equal(["Git: Commit...", "Git: Switch branch...", "Git: New branch..."], git.ActionsFor(folder, [], dialogs).Select(x => x.Name));
+        Assert.Equal(["Git: Commit...", "Git: Switch branch...", "Git: New branch...", "Git: Fetch", "Git: Pull", "Git: Push", "Git: Merge branch..."],
+            git.ActionsFor(folder, [], dialogs).Select(x => x.Name));
 
         var actions = git.ActionsFor(folder, [Entry(a), Entry(Path.Combine(_root, "sub"))], dialogs);
         await Run(actions, "Git: Stage");
@@ -137,5 +138,91 @@ public sealed class GitActionsTests : IDisposable
         // git's own refusal comes back as an error
         await Assert.ThrowsAsync<IOException>(() => Run(git.ActionsFor(folder, [Entry(Path.Combine(_root, "missing.txt"))], dialogs), "Git: Stage"));
         _ = b;
+    }
+
+    private async Task<string> GitIn(string folder, params string[] arguments) => await _git!.RunAsync(folder, arguments, CancellationToken.None);
+
+    private async Task Identity(string folder)
+    {
+        await GitIn(folder, "config", "user.name", "Test User");
+        await GitIn(folder, "config", "user.email", "test@example.com");
+        await GitIn(folder, "config", "commit.gpgsign", "false");
+    }
+
+    [Fact]
+    public async Task Push_pull_fetch_and_a_merge_with_conflicts()
+    {
+        if (_git is null)
+        {
+            return;
+        }
+        // a "server" (a bare repository on disk), and two working folders of it
+        var server = Path.Combine(_root, "server.git");
+        var mine = Path.Combine(_root, "mine");
+        var theirs = Path.Combine(_root, "theirs");
+        Directory.CreateDirectory(server);
+        Directory.CreateDirectory(mine);
+        await GitIn(server, "init", "-q", "--bare", "-b", "main");
+        await GitIn(mine, "init", "-q", "-b", "main");
+        await Identity(mine);
+        await GitIn(mine, "remote", "add", "origin", server);
+        File.WriteAllText(Path.Combine(mine, "a.txt"), "one\n");
+        await GitIn(mine, "add", ".");
+        await GitIn(mine, "commit", "-q", "-m", "First");
+
+        var git = new GitFileSystemProvider(_git);
+        var dialogs = new Dialogs();
+        IReadOnlyList<PluginAction> In(string folder) => git.ActionsFor(VfsPath.Local(folder), [], dialogs);
+
+        // the branch is not on the server yet: pushed and followed once the user agrees
+        dialogs.Confirm = false;
+        Assert.Null(await Run(In(mine), "Git: Push"));
+        dialogs.Confirm = true;
+        await Run(In(mine), "Git: Push");
+        Assert.Equal("origin/main", (await GitIn(mine, "rev-parse", "--abbrev-ref", "main@{upstream}")).Trim());
+
+        await GitIn(_root, "clone", "-q", server, theirs);
+        await Identity(theirs);
+        File.WriteAllText(Path.Combine(theirs, "b.txt"), "bee\n");
+        await GitIn(theirs, "add", ".");
+        await GitIn(theirs, "commit", "-q", "-m", "Theirs");
+        await GitIn(theirs, "push", "-q");
+
+        Assert.Contains("behind 1", await Run(In(mine), "Git: Fetch"), StringComparison.Ordinal);
+        await Run(In(mine), "Git: Pull");
+        Assert.True(File.Exists(Path.Combine(mine, "b.txt")));
+
+        // a merge with a conflict: listed, aborted, done again, solved and finished
+        await GitIn(mine, "switch", "-q", "-c", "topic");
+        File.WriteAllText(Path.Combine(mine, "a.txt"), "topic\n");
+        await GitIn(mine, "commit", "-q", "-am", "Topic");
+        await GitIn(mine, "switch", "-q", "main");
+        File.WriteAllText(Path.Combine(mine, "a.txt"), "main\n");
+        await GitIn(mine, "commit", "-q", "-am", "Main");
+        dialogs.Choices.Enqueue("topic");
+        var message = await Run(In(mine), "Git: Merge branch...");
+        Assert.Contains("Conflicts in 1 files: a.txt", message, StringComparison.Ordinal);
+        Assert.DoesNotContain("origin/HEAD", dialogs.Offered[^1]);
+        Assert.Equal(["Git: Conflicts...", "Git: Finish merge", "Git: Abort merge"], In(mine).Select(a => a.Name).Skip(3));
+        dialogs.Choices.Enqueue("a.txt");
+        await Run(In(mine), "Git: Conflicts...");
+        Assert.Contains("<<<<<<<", dialogs.Shown[^1].Text, StringComparison.Ordinal);
+        Assert.Contains("Still conflicted: a.txt", await Run(In(mine), "Git: Finish merge"), StringComparison.Ordinal);
+        await Run(In(mine), "Git: Abort merge");
+        Assert.False(GitActions.IsMerging(mine));
+        Assert.Equal("main", File.ReadAllText(Path.Combine(mine, "a.txt")).Trim());
+
+        dialogs.Choices.Enqueue("topic");
+        await Run(In(mine), "Git: Merge branch...");
+        File.WriteAllText(Path.Combine(mine, "a.txt"), "both\n");
+        await Run(git.ActionsFor(VfsPath.Local(mine), [Entry(Path.Combine(mine, "a.txt"))], dialogs), "Git: Stage");
+        await Run(In(mine), "Git: Finish merge");
+        Assert.False(GitActions.IsMerging(mine));
+        Assert.Equal(2, (await GitIn(mine, "log", "-1", "--format=%P")).Trim().Split(' ').Length); // a merge commit
+
+        // a server that wants a password nobody can type is said plainly
+        Assert.Contains("credential helper", GitActions.Failure("fatal: could not read Username for 'https://x': terminal prompts disabled"), StringComparison.Ordinal);
+        Assert.Contains("SSH agent", GitActions.Failure("git@x: Permission denied (publickey)."), StringComparison.Ordinal);
+        Assert.Equal("git: fatal: boom", GitActions.Failure("hint: x\nfatal: boom"));
     }
 }
