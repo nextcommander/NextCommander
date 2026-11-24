@@ -3521,6 +3521,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             return;
         }
         SaveSettings(complete: true); // the backup holds the settings as they are now
+        _store.BackupBefore("Import");
         try
         {
             NextCommander.Core.Config.SettingsTransfer.Import(source, _store.Directory);
@@ -3539,47 +3540,25 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Configuration > Restore settings from a backup (user's request, 19 November 2026): the last configurations that
-    /// loaded, the newest first; the one chosen becomes the settings (the settings as they are now are kept as a backup
-    /// first) and NextCommander starts again.
+    /// Configuration > Restore settings from a backup (user's request, 19 November 2026; the user's template of 24 November
+    /// 2026): the backups with what restoring each would change, part by part; the chosen parts replace the current ones
+    /// (the settings as they are now are kept as a backup first) and NextCommander starts again.
     /// </summary>
     private async Task RestoreSettingsAsync()
     {
         SaveSettings(complete: true); // the settings as they are now, so that they can be kept and compared
-        var backups = _store.BackupList();
-        if (backups.Count == 0)
+        var choice = await _dialogs.ShowRestoreBackupsAsync(new Views.Dialogs.RestoreBackupsRequest(_store, _settings, _dialogs.PickOpenFileAsync, () =>
         {
-            await _dialogs.ShowMessageAsync("Restore settings", "There is no backup yet: one is kept each time the settings load at the start.");
-            return;
-        }
-        var items = backups.Select(b => new QuickListItem(
-            b.Time.ToString("g", CultureInfo.CurrentCulture),
-            b.Damaged ? NextCommander.Core.Localization.Localizer.T("damaged: it cannot be restored")
-                : NextCommander.Core.Localization.Localizer.T("{0} connections, {1} Hotlist entries")
-                    .Replace("{0}", b.Connections.ToString(CultureInfo.CurrentCulture), StringComparison.Ordinal)
-                    .Replace("{1}", b.HotlistEntries.ToString(CultureInfo.CurrentCulture), StringComparison.Ordinal)
-                  + (b.IsCurrent ? " · " + NextCommander.Core.Localization.Localizer.T("the settings now") : string.Empty),
-            b)).ToList();
-        if (await _dialogs.ShowQuickListAsync("Restore settings from a backup", items) is not { Item.Value: NextCommander.Core.Config.SettingsBackup chosen })
-        {
-            return;
-        }
-        if (chosen.Damaged || chosen.IsCurrent)
-        {
-            await _dialogs.ShowMessageAsync("Restore settings", chosen.Damaged
-                ? "This backup cannot be read any more; choose another one."
-                : "These are the settings in use now.");
-            return;
-        }
-        if (!await _dialogs.ConfirmAsync("Restore settings",
-                NextCommander.Core.Localization.Localizer.T("The settings of {0} replace the current ones (they are kept as a backup too) and NextCommander starts again.").Replace("{0}", chosen.Time.ToString("g", CultureInfo.CurrentCulture), StringComparison.Ordinal),
-                "Restore and restart"))
+            Directory.CreateDirectory(_store.BackupDirectory);
+            _platform.OpenWithDefaultApp(_store.BackupDirectory);
+        }));
+        if (choice is null)
         {
             return;
         }
         try
         {
-            _store.RestoreFrom(chosen.Path);
+            _store.RestoreParts(choice.Backup, choice.Parts, _settings);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or NotSupportedException)
         {

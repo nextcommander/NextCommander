@@ -1,3 +1,4 @@
+using NextCommander.App.Views.Dialogs;
 using System.Text.Json;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
@@ -160,30 +161,32 @@ public sealed class EscRootAndTransferTests : IDisposable
         var store = new SettingsStore(Path.Combine(_fx.Root, "settings"));
         double FontSize() => store.Load(backups: false).PanelFontSize;
 
-        // no backup yet: said so
-        await vm.ExecuteAsync("nc_RestoreSettings");
-        Assert.Contains(_fx.Dialogs.Messages, m => m.StartsWith("There is no backup yet", StringComparison.Ordinal));
-
         // two configurations that loaded (as at two starts), then one more in use now
         vm.Settings.PanelFontSize = 15;
+        vm.Settings.Hotlist = [new HotlistEntry { Name = "Old", Path = _fx.L() }];
         vm.SaveSettings();
         store.Load();
         vm.Settings.PanelFontSize = 17;
+        vm.Settings.Hotlist = [];
         vm.SaveSettings();
         store.Load();
         vm.Settings.PanelFontSize = 21;
 
+        // closed without choosing: nothing happens
+        await vm.ExecuteAsync("nc_RestoreSettings");
+        Assert.NotNull(_fx.Dialogs.LastRestore);
+        Assert.Same(vm.Settings, _fx.Dialogs.LastRestore!.Current);
+
+        // the oldest one, only its settings (not its Hotlist)
         var restarted = false;
         vm.Restart = () => restarted = true;
-        _fx.Dialogs.QuickListHandler = items => new QuickListResult(items[^1], -1); // the oldest
+        _fx.Dialogs.RestoreHandler = request => new RestoreChoice(request.Store.BackupList()[^1].Path, [SettingsPart.Settings]);
         await vm.ExecuteAsync("nc_RestoreSettings");
-        // the list: the two kept, the newest first, with what each holds; the settings now (21) join the backups on restoring
-        Assert.Equal(2, _fx.Dialogs.LastQuickList.Count);
-        Assert.All(_fx.Dialogs.LastQuickList, i => Assert.Contains("connections", i.Detail, StringComparison.Ordinal));
         Assert.True(restarted);
         Assert.True(vm.SettingsImported);
         Assert.Equal(15, FontSize());
-        Assert.Contains(store.Backups(), b => File.ReadAllText(b).Contains("\"PanelFontSize\": 21", StringComparison.Ordinal));
+        Assert.Empty(store.Load(backups: false).Hotlist);
+        Assert.Contains(store.BackupList(), b => b.Trigger == "before:Restore" && b.Settings!.PanelFontSize == 21);
 
         // the running program does not write over the restored settings any more
         vm.SaveSettings();

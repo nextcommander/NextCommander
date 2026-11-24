@@ -495,13 +495,21 @@ public sealed class ButtonBarControl : UserControl
             if (definition.IsSeparator)
             {
                 segment = null;
-                _panel.Children.Add(new Border
+                // the size comes from the styles (a local NaN height left the horizontal bar's line 0 high, centered:
+                // invisible; the user's report, 24 November 2026); without a style a line as high as the bar
+                var separator = new Border { Classes = { "barseparator" } };
+                if (_vertical)
                 {
-                    Classes = { "barseparator" },
-                    Width = _vertical ? double.NaN : 1,
-                    Height = _vertical ? 1 : double.NaN,
-                    HorizontalAlignment = _vertical ? HorizontalAlignment.Stretch : HorizontalAlignment.Center,
-                });
+                    separator.Height = 1;
+                    separator.HorizontalAlignment = HorizontalAlignment.Stretch;
+                }
+                else
+                {
+                    separator.Width = 1;
+                    separator.MinHeight = 16;
+                    separator.HorizontalAlignment = HorizontalAlignment.Center;
+                }
+                _panel.Children.Add(separator);
                 continue;
             }
             var button = CreateButton(definition);

@@ -1632,12 +1632,7 @@ public partial class MainWindow : Window
                 }
             };
             _terminal.MaximizeToggleRequested += (_, _) => ToggleTerminalMaximized();
-            _terminal.CloseRequested += (_, _) =>
-            {
-                _terminal.Stop();
-                _vm.Settings.TerminalTabs = [];
-                HideTerminal();
-            };
+            _terminal.CloseRequested += (_, _) => CloseTerminal();
             TerminalHost.Child = _terminal;
             WireTerminalDock(_terminal);
             Closed += (_, _) => _terminal.Stop();
@@ -1731,6 +1726,18 @@ public partial class MainWindow : Window
             TerminalHost.IsVisible = _vm?.IsTerminalOpen == true;
             ApplyPage();
         }
+    }
+
+    /// <summary>The terminal closed (its ✕, the × of its page's tab): every shell ends, the terminal is hidden.</summary>
+    public void CloseTerminal()
+    {
+        if (_terminal is null || _vm is null)
+        {
+            return;
+        }
+        _terminal.Stop();
+        _vm.Settings.TerminalTabs = [];
+        HideTerminal();
     }
 
     private void HideTerminal()

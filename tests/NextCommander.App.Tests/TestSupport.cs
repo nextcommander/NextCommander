@@ -253,6 +253,17 @@ internal sealed class FakeDialogs : IDialogService
 
     public string? LastSettingsSearch { get; private set; }
 
+    /// <summary>The restore window: what it was given; its answer (null: closed).</summary>
+    public NextCommander.App.Views.Dialogs.RestoreBackupsRequest? LastRestore { get; private set; }
+
+    public Func<NextCommander.App.Views.Dialogs.RestoreBackupsRequest, NextCommander.App.Views.Dialogs.RestoreChoice?>? RestoreHandler { get; set; }
+
+    public Task<NextCommander.App.Views.Dialogs.RestoreChoice?> ShowRestoreBackupsAsync(NextCommander.App.Views.Dialogs.RestoreBackupsRequest request)
+    {
+        LastRestore = request;
+        return Task.FromResult(RestoreHandler?.Invoke(request));
+    }
+
     public Task ShowSettingsAsync(AppSettings settings, Action changed, IReadOnlyList<(string Text, Func<Task> Action)> extraActions, string? search = null)
     {
         LastSettingsSearch = search;
