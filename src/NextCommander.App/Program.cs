@@ -68,12 +68,34 @@ internal static class Program
                 PrimaryPipe = name;
                 return false;
             }
-            // Another instance owns it: it may still be starting, so allow its listener some time to appear.
-            return Services.SingleInstance.TrySend(name, args, timeoutMs: 10_000);
+            // Another instance owns it: it may still be starting, so allow its listener some time to appear. It answers
+            // once its window has shown itself; without an answer this start opens its own window.
+            var handed = Services.SingleInstance.TrySend(name, args, timeoutMs: 10_000, answerMs: 15_000);
+            Note(handed
+                ? "Handed over to the running instance."
+                : "A running instance did not answer (no window, or its window hangs): this start opens its own window.");
+            return handed;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or WaitHandleCannotBeOpenedException)
         {
             return false;
+        }
+    }
+
+    /// <summary>
+    /// A line in &lt;settings&gt;/logs/start.log about how a start went before the program log is up (a start handed
+    /// over to the running instance leaves no other trace).
+    /// </summary>
+    private static void Note(string text)
+    {
+        try
+        {
+            var folder = Path.Combine(new Core.Config.SettingsStore().Directory, "logs");
+            Directory.CreateDirectory(folder);
+            File.AppendAllText(Path.Combine(folder, "start.log"), $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} {Environment.ProcessId} {text}{Environment.NewLine}");
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
+        {
         }
     }
 

@@ -189,12 +189,17 @@ public partial class App : Application
                 Log.Information("Arguments from another start: {Args}", received);
                 await Dispatcher.UIThread.InvokeAsync(async () =>
                 {
-                    await vm.HandleArgumentsAsync(received);
+                    // the window first (hidden or minimized ones too), then what was asked
+                    if (!window.IsVisible)
+                    {
+                        window.Show();
+                    }
                     if (window.WindowState == Avalonia.Controls.WindowState.Minimized)
                     {
                         window.WindowState = Avalonia.Controls.WindowState.Normal;
                     }
                     window.Activate();
+                    await vm.HandleArgumentsAsync(received);
                 });
             }, s_listen.Token));
         }

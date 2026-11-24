@@ -8,7 +8,10 @@ namespace NextCommander.App.Services;
 
 /// <summary>
 /// One window per user and settings folder: a second start sends its arguments (folders, files, --lister / --edit)
-/// over a named pipe (a Unix socket on Linux / macOS) to the running instance and exits.
+/// over a named pipe (a Unix socket on Linux / macOS) to the running instance and exits. The running instance answers
+/// once its window has shown them; without that answer (an instance whose window hangs, or a process left after its
+/// window closed) the second start opens its own window instead of ending silently (user's report, 24 November 2026:
+/// on macOS the program "did not open at all").
 /// </summary>
 public static class SingleInstance
 {
@@ -40,19 +43,29 @@ public static class SingleInstance
     public static string[] Normalize(string[] args) =>
         args.Select(a => a.StartsWith("--", StringComparison.Ordinal) || a.Contains("://", StringComparison.Ordinal) ? a : Path.GetFullPath(a)).ToArray();
 
-    /// <summary>Hands the arguments to a running instance; false when none answers.</summary>
-    public static bool TrySend(string pipeName, string[] args, int timeoutMs = 400)
+    /// <summary>The answer of a running instance that has shown the arguments.</summary>
+    private const byte Shown = 1;
+
+    /// <summary>
+    /// Hands the arguments to a running instance; true only when it answers that its window has shown them (within
+    /// <paramref name="answerMs"/>). False when none listens or none answers.
+    /// </summary>
+    public static bool TrySend(string pipeName, string[] args, int timeoutMs = 400, int answerMs = 8000)
     {
         try
         {
-            using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.Out);
+            using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
             client.Connect(timeoutMs);
             var payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(Normalize(args)));
+            client.Write(BitConverter.GetBytes(payload.Length));
             client.Write(payload);
             client.Flush();
-            return true;
+            var answer = new byte[1];
+            using var wait = new CancellationTokenSource(answerMs);
+            var read = client.ReadAsync(answer, wait.Token).AsTask().GetAwaiter().GetResult();
+            return read == 1 && answer[0] == Shown;
         }
-        catch (Exception ex) when (ex is TimeoutException or IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is TimeoutException or IOException or UnauthorizedAccessException or OperationCanceledException)
         {
             return false;
         }
@@ -65,23 +78,24 @@ public static class SingleInstance
         {
             try
             {
-                await using var server = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+                await using var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
                 await server.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
-                using var ms = new MemoryStream();
-                await server.CopyToAsync(ms, cancellationToken).ConfigureAwait(false);
-                var args = JsonSerializer.Deserialize<string[]>(ms.ToArray()) ?? [];
-                // Handle in the background: the next start must not wait until this one's tab is open.
-                _ = Task.Run(async () =>
+                var length = new byte[4];
+                await server.ReadExactlyAsync(length, cancellationToken).ConfigureAwait(false);
+                var payload = new byte[Math.Clamp(BitConverter.ToInt32(length), 0, 1 << 20)];
+                await server.ReadExactlyAsync(payload, cancellationToken).ConfigureAwait(false);
+                var args = JsonSerializer.Deserialize<string[]>(payload) ?? [];
+                try
                 {
-                    try
-                    {
-                        await received(args).ConfigureAwait(false);
-                    }
-                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
-                    {
-                        Log.Warning(ex, "Arguments from another start could not be opened");
-                    }
-                }, CancellationToken.None);
+                    // the answer goes once the window has taken them (a hanging window gives none: the other start opens its own)
+                    await received(args).ConfigureAwait(false);
+                    await server.WriteAsync(new[] { Shown }, cancellationToken).ConfigureAwait(false);
+                    await server.FlushAsync(cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException)
+                {
+                    Log.Warning(ex, "Arguments from another start could not be opened");
+                }
             }
             catch (OperationCanceledException)
             {
@@ -92,7 +106,7 @@ public static class SingleInstance
                 Log.Warning("Another instance already listens on {Pipe}; not listening.", pipeName);
                 return;
             }
-            catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
+            catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException or EndOfStreamException)
             {
                 Log.Warning(ex, "Single instance pipe");
                 await Task.Delay(1000, cancellationToken).ConfigureAwait(false);
