@@ -9,7 +9,14 @@ namespace NextCommander.App.Services;
 public sealed record UndoResult(int Done, IReadOnlyList<string> Problems);
 
 /// <summary>A file operation that can be undone: what it was (shown before undoing it) and how it is undone.</summary>
-public sealed record UndoStep(string Title, Func<CancellationToken, Task<UndoResult>> RunAsync);
+public sealed record UndoStep(string Title, Func<CancellationToken, Task<UndoResult>> RunAsync)
+{
+    /// <summary>
+    /// What undoing will do, one line each (shown and asked before it runs; user's request, 24 November 2026), already
+    /// in the user's language.
+    /// </summary>
+    public IReadOnlyList<string> Plan { get; init; } = [];
+}
 
 /// <summary>
 /// The file operations of the main window that can be undone, the latest last (nc_Undo, Ctrl+Z; the user's request,
@@ -63,6 +70,71 @@ public static class FileUndo
 {
     private static string Items(int count, string one) => count == 1 ? $"“{one}”" : $"{count} items";
 
+    /// <summary>How many names a plan lists before "... and N more".</summary>
+    private const int Listed = 8;
+
+#pragma warning disable CA1863 // the pattern is the translation of the running language
+    /// <summary>A translated pattern filled in.</summary>
+    private static string T(string pattern, params object[] args) =>
+        string.Format(System.Globalization.CultureInfo.CurrentCulture, Core.Localization.Localizer.T(pattern), args);
+#pragma warning restore CA1863
+
+    /// <summary>The sentence for one item or for several (both are translated patterns).</summary>
+    private static string N(int count, string one, string many, params object[] rest) =>
+        count == 1 ? T(one, rest) : T(many, [count, .. rest]);
+
+    /// <summary>"  • a.txt" lines (at most <see cref="Listed"/>, then "... and N more").</summary>
+    private static IEnumerable<string> Names(IEnumerable<string> names)
+    {
+        var all = names.ToList();
+        foreach (var name in all.Take(Listed))
+        {
+            yield return "  • " + name;
+        }
+        if (all.Count > Listed)
+        {
+            yield return "  " + T("... and {0} more", all.Count - Listed);
+        }
+    }
+
+    /// <summary>What undoing a copy or move will do.</summary>
+    internal static List<string> PlanOf(CopyMoveJob job, IReadOnlyList<CopyMoveDone> done, bool trash)
+    {
+        var plan = new List<string>();
+        var target = job.TargetDirectory.ToDisplayString();
+        var files = done.Where(d => d.Kind == CopyMoveDoneKind.File && !d.Overwrote).ToList();
+        var replaced = done.Count(d => d.Kind == CopyMoveDoneKind.File && d.Overwrote);
+        var aside = done.Where(d => d.Kind == CopyMoveDoneKind.TargetRenamedAside).ToList();
+        if (job.IsMove)
+        {
+            var whole = done.Where(d => d.Kind is CopyMoveDoneKind.File || (d.Kind == CopyMoveDoneKind.Directory && d.Whole)).ToList();
+            var from = whole.FirstOrDefault()?.Source.Parent?.ToDisplayString() ?? "?";
+            plan.Add(N(whole.Count, "1 item goes back from {0} to {1}:", "{0} items go back from {1} to {2}:", target, from));
+            plan.AddRange(Names(whole.Select(d => d.Target.Name)));
+        }
+        else
+        {
+            plan.Add(trash
+                ? N(files.Count, "The copy in {0} is moved to the Recycle Bin:", "The {0} copies in {1} are moved to the Recycle Bin:", target)
+                : N(files.Count, "The copy in {0} is deleted:", "The {0} copies in {1} are deleted:", target));
+            plan.AddRange(Names(files.Select(d => d.Target.Name)));
+            if (done.Count(d => d.Kind == CopyMoveDoneKind.Directory && d.Created) is var folders and > 0)
+            {
+                plan.Add(N(folders, "The folder the copy made is deleted if it is empty.", "The {0} folders the copy made are deleted if they are empty."));
+            }
+            if (replaced > 0)
+            {
+                plan.Add(N(replaced, "1 file the copy replaced stays as it is: what was there before cannot be brought back.",
+                    "{0} files the copy replaced stay as they are: what was there before cannot be brought back."));
+            }
+        }
+        if (aside.Count > 0)
+        {
+            plan.Add(N(aside.Count, "1 file that was renamed to make room gets its name back.", "{0} files that were renamed to make room get their names back."));
+        }
+        return plan;
+    }
+
     /// <summary>
     /// A copy: the copies are removed (to the recycle bin when local), then the folders the copy made, if empty; files it
     /// overwrote are left (what was there is gone). A move: everything goes back where it was (renamed back when it can be,
@@ -77,7 +149,10 @@ public static class FileUndo
         }
         var shown = Items(job.Sources.Count, job.Sources.Count > 0 ? job.Sources[0].Name : "?");
         var title = job.IsMove ? $"Move of {shown} to {job.TargetDirectory.ToDisplayString()}" : $"Copy of {shown} to {job.TargetDirectory.ToDisplayString()}";
-        return new UndoStep(title, ct => job.IsMove ? UndoMoveAsync(registry, done, ct) : UndoCopyAsync(registry, done, trash, ct));
+        return new UndoStep(title, ct => job.IsMove ? UndoMoveAsync(registry, done, ct) : UndoCopyAsync(registry, done, trash, ct))
+        {
+            Plan = PlanOf(job, done, trash is { IsAvailable: true } && job.TargetDirectory.IsLocal),
+        };
     }
 
     private static async Task<UndoResult> UndoCopyAsync(ProviderRegistry registry, IReadOnlyList<CopyMoveDone> done, ITrashService? trash, CancellationToken ct)
@@ -166,7 +241,7 @@ public static class FileUndo
 
     /// <summary>A rename: the new name back to the old one.</summary>
     public static UndoStep ForRename(ProviderRegistry registry, VfsPath from, VfsPath to) =>
-        new($"Rename of “{from.Name}” to “{to.Name}”", async ct =>
+        new UndoStep($"Rename of “{from.Name}” to “{to.Name}”", async ct =>
         {
             try
             {
@@ -177,7 +252,10 @@ public static class FileUndo
             {
                 return new UndoResult(0, [$"{to.ToDisplayString()}: {ex.Message}"]);
             }
-        });
+        })
+        {
+            Plan = [T("“{0}” is renamed back to “{1}” (in {2}).", to.Name, from.Name, to.Parent?.ToDisplayString() ?? "?")],
+        };
 
     /// <summary>A multi-rename: every file back to its name (the job's own undo).</summary>
     public static UndoStep? ForMultiRename(MultiRenameJob job)
@@ -191,7 +269,10 @@ public static class FileUndo
             var undo = job.CreateUndo();
             await undo.RunAsync();
             return new UndoResult(undo.Done.Count, [.. undo.Errors.Select(e => $"{e.Item}: {e.Message}")]);
-        });
+        })
+        {
+            Plan = [N(job.Done.Count, "1 file gets its name back:", "{0} files get their names back:"), .. Names(job.Done.Select(d => $"{d.To.Name} → {d.From.Name}"))],
+        };
     }
 
     /// <summary>New folders: removed again while they are empty (deepest first).</summary>
@@ -201,6 +282,8 @@ public static class FileUndo
         {
             return null;
         }
+        var plan = new List<string> { created.Count == 1 ? T("This folder is deleted if it is still empty:") : T("These folders are deleted if they are still empty:") };
+        plan.AddRange(Names(created.Select(c => c.ToDisplayString())));
         return new UndoStep(created.Count == 1 ? $"New folder “{created[0].Name}”" : $"{created.Count} new folders", async ct =>
         {
             var count = 0;
@@ -224,7 +307,10 @@ public static class FileUndo
                 }
             }
             return new UndoResult(count, problems);
-        });
+        })
+        {
+            Plan = plan,
+        };
     }
 
     /// <summary>
@@ -267,7 +353,11 @@ public static class FileUndo
                 }
             }
             return new UndoResult(count, problems);
-        }, ct));
+        }, ct))
+        {
+            Plan = [N(trashed.Count, "1 item comes back from the Recycle Bin to where it was:", "{0} items come back from the Recycle Bin to where they were:"),
+                .. Names(trashed.Select(t => t.ToDisplayString()))],
+        };
     }
 
     /// <summary>Puts an entry back at its old place: renamed when the provider can, else copied back and removed.</summary>

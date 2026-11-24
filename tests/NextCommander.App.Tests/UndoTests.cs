@@ -61,19 +61,30 @@ public sealed class UndoTests : IDisposable
         _fx.Dialogs.ConfirmAnswer = true;
 
         await vm.ExecuteAsync("nc_Undo");
-        Assert.Contains(_fx.Dialogs.ConfirmMessages, m => m.Contains("deeper", StringComparison.Ordinal) || m.Contains("2 new folders", StringComparison.Ordinal));
+        // the question says what will be done (user's request, 24 November 2026)
+        var asked = _fx.Dialogs.ConfirmMessages[^1];
+        Assert.Contains("This will be done:", asked, StringComparison.Ordinal);
+        Assert.Contains("These folders are deleted if they are still empty:", asked, StringComparison.Ordinal);
+        Assert.Contains(_fx.L("made", "deeper"), asked, StringComparison.Ordinal);
+        Assert.EndsWith("Undo it?", asked, StringComparison.Ordinal);
         Assert.False(Directory.Exists(_fx.L("made")));
 
         await vm.ExecuteAsync("nc_Undo");
+        Assert.Contains("“second.txt” is renamed back to “file2.txt”", _fx.Dialogs.ConfirmMessages[^1], StringComparison.Ordinal);
         Assert.True(File.Exists(_fx.L("file2.txt")));
         Assert.False(File.Exists(_fx.L("second.txt")));
 
         await vm.ExecuteAsync("nc_Undo");
+        Assert.Contains($"1 item goes back from {_fx.R()} to {_fx.L()}:", _fx.Dialogs.ConfirmMessages[^1], StringComparison.Ordinal);
+        Assert.Contains("  • b.log", _fx.Dialogs.ConfirmMessages[^1], StringComparison.Ordinal);
         Assert.True(File.Exists(_fx.L("b.log")));
         Assert.False(File.Exists(_fx.R("b.log")));
         Assert.Equal("BB", File.ReadAllText(_fx.L("b.log")));
 
         await vm.ExecuteAsync("nc_Undo");
+        Assert.Contains("copies in " + _fx.R(), _fx.Dialogs.ConfirmMessages[^1], StringComparison.Ordinal);
+        Assert.Contains("  • inner.txt", _fx.Dialogs.ConfirmMessages[^1], StringComparison.Ordinal);
+        Assert.Contains("The folder the copy made is deleted if it is empty.", _fx.Dialogs.ConfirmMessages[^1], StringComparison.Ordinal);
         Assert.False(File.Exists(_fx.R("a.txt")));
         Assert.False(Directory.Exists(_fx.R("sub")));
         Assert.True(File.Exists(_fx.L("a.txt"))); // the originals stay
@@ -120,6 +131,7 @@ public sealed class FileUndoTests : IDisposable
         Assert.True(File.Exists(R("sub", "inner.txt")));
         var undoMove = FileUndo.ForCopyMove(registry, move, null)!;
         Assert.StartsWith("Move of “sub” to ", undoMove.Title, StringComparison.Ordinal);
+        Assert.Equal([$"1 item goes back from {R()} to {L()}:", "  • sub"], undoMove.Plan);
         var result = await undoMove.RunAsync(CancellationToken.None);
         Assert.Empty(result.Problems);
         Assert.True(File.Exists(L("sub", "inner.txt")));
@@ -131,7 +143,9 @@ public sealed class FileUndoTests : IDisposable
         var copy = new CopyMoveJob(registry, [a], right, move: false, new CopyOptions { ConflictPolicy = ConflictPolicy.Overwrite });
         await copy.RunAsync();
         Assert.Equal("A", File.ReadAllText(R("a.txt")));
-        result = await FileUndo.ForCopyMove(registry, copy, null)!.RunAsync(CancellationToken.None);
+        var undoCopy = FileUndo.ForCopyMove(registry, copy, null)!;
+        Assert.Contains(undoCopy.Plan, line => line.Contains("cannot be brought back", StringComparison.Ordinal)); // said before, not only after
+        result = await undoCopy.RunAsync(CancellationToken.None);
         Assert.Single(result.Problems);
         Assert.True(File.Exists(R("a.txt")));
 

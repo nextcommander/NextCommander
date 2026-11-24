@@ -6,7 +6,7 @@ using NextCommander.Core.Vfs;
 namespace NextCommander.App.ViewModels;
 
 /// <summary>
-/// Rules (Commands > Rules; user's request, 23 November 2026): files arriving in a folder moved or copied elsewhere,
+/// Rules (Tools > Rules; user's request, 23 November 2026): files arriving in a folder moved or copied elsewhere,
 /// folders synchronized every night, while the program runs; the work goes through the job queue (background transfers)
 /// and every step is written to logs/rules.log.
 /// </summary>
@@ -49,7 +49,7 @@ public partial class MainWindowViewModel
         var rules = _settings.Rules.Where(r => r.Enabled && r.Problem() is null).ToList();
         if (rules.Count == 0)
         {
-            await _dialogs.ShowMessageAsync("Rules", "There is no rule to carry out. Commands > Rules > Rules... adds one.");
+            await _dialogs.ShowMessageAsync("Rules", "There is no rule to carry out. Tools > Rules > Rules... adds one.");
             return;
         }
         StartRules();

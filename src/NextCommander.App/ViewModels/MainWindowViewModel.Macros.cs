@@ -4,7 +4,7 @@ using NextCommander.Core.Config;
 namespace NextCommander.App.ViewModels;
 
 /// <summary>
-/// Macro recording (Commands > Record macro; user's request, 24 November 2026): while it records, every command run from
+/// Macro recording (Tools > Record macro; user's request, 24 November 2026): while it records, every command run from
 /// a menu, a key, a button or the command line is noted; at the end the list is saved as a user command (uc_Name), which
 /// gets a key or a button like any other.
 /// </summary>
