@@ -1218,6 +1218,10 @@ public partial class MainWindow : Window
             HandleTabSwitcherKey(e);
             return;
         }
+        if (IsPaletteOpen)
+        {
+            return; // the command palette takes every key (↑ ↓ Enter Tab Esc Ctrl+E/C/K); Ctrl+Shift+P closes it
+        }
         var focused = FocusManager?.GetFocusedElement();
         var inTextBox = focused is TextBox;
 
