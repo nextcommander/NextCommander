@@ -271,6 +271,13 @@ public sealed class DialogService : IDialogService
         return dialog.Result;
     }
 
+    public async Task<(PermissionChange? Change, bool ParentWanted)> ShowAclPermissionsAsync(VfsEntry entry, FilePermissions current)
+    {
+        var window = new AclPermissionsWindow(entry, current);
+        await window.ShowDialog(DialogOwner());
+        return (window.Result, window.ParentRequested);
+    }
+
     public async Task<PermissionChange?> ShowPermissionsDialogAsync(IReadOnlyList<VfsEntry> entries, IReadOnlyList<FilePermissions> current)
     {
         var dialog = new PermissionsDialog(entries, current);

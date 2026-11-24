@@ -3798,6 +3798,31 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             await _dialogs.ShowMessageAsync("Permissions", "The selected items have different kinds of permissions (Windows and Unix): choose items of one place.");
             return;
         }
+        // one Windows item: the window of the user's template (24 November 2026); "Open" of an inherited rule goes up a folder
+        while (entries.Count == 1 && current[0].Kind == PermissionKind.Acl)
+        {
+            var (aclChange, parentWanted) = await _dialogs.ShowAclPermissionsAsync(entries[0], current[0]);
+            if (aclChange is not null)
+            {
+                await RunJobAsync(new PermissionsJob(_registry, entries, aclChange) { Interaction = new UiJobInteraction(_dialogs) }, false, ActivePanel, entries);
+                return;
+            }
+            if (!parentWanted || entries[0].Path.Parent is not { } parent
+                || await _registry.Resolve(parent).GetEntryAsync(parent, CancellationToken.None) is not { } above)
+            {
+                return;
+            }
+            try
+            {
+                current = [await ((IPermissionSupport)_registry.Resolve(parent)).GetPermissionsAsync(parent, CancellationToken.None)];
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException or ArgumentException)
+            {
+                await _dialogs.ShowMessageAsync("Permissions", ex.Message);
+                return;
+            }
+            entries = [above];
+        }
         if (await _dialogs.ShowPermissionsDialogAsync(entries, current) is not { } change)
         {
             return;

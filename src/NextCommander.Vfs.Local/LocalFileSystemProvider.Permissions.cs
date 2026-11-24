@@ -113,10 +113,19 @@ public sealed partial class LocalFileSystemProvider
         var rules = new List<AclEntry>();
         foreach (FileSystemAccessRule rule in security.GetAccessRules(includeExplicit: true, includeInherited: true, typeof(SecurityIdentifier)))
         {
-            rules.Add(new AclEntry(NameOf(rule.IdentityReference), rule.AccessControlType == AccessControlType.Allow, RightsOf(rule.FileSystemRights),
-                rule.IsInherited, rule.InheritanceFlags != InheritanceFlags.None));
+            var mask = AclMask.Normalize((long)(uint)(int)rule.FileSystemRights);
+            var self = !rule.PropagationFlags.HasFlag(PropagationFlags.InheritOnly);
+            rules.Add(new AclEntry(NameOf(rule.IdentityReference), rule.AccessControlType == AccessControlType.Allow, AclMask.NameOf(mask),
+                rule.IsInherited, rule.InheritanceFlags != InheritanceFlags.None)
+            {
+                Mask = mask,
+                Applies = AclMask.AppliesOf(self, rule.InheritanceFlags.HasFlag(InheritanceFlags.ContainerInherit), rule.InheritanceFlags.HasFlag(InheritanceFlags.ObjectInherit)),
+            });
         }
-        return new FilePermissions { Kind = PermissionKind.Acl, Owner = owner, Acl = [.. rules.OrderBy(r => r.Inherited)] };
+        return new FilePermissions
+        {
+            Kind = PermissionKind.Acl, Owner = owner, Acl = [.. rules.OrderBy(r => r.Inherited)], InheritanceProtected = security.AreAccessRulesProtected,
+        };
     }
 
     [SupportedOSPlatform("windows")]
@@ -161,21 +170,42 @@ public sealed partial class LocalFileSystemProvider
     [SupportedOSPlatform("windows")]
     private static void WriteAcl(string path, bool isDirectory, PermissionChange change)
     {
-        if (change.AddRules.Count == 0 && change.RemoveRulesOf.Count == 0 && change.Owner is null)
+        if (change.AddRules.Count == 0 && change.RemoveRulesOf.Count == 0 && change.Owner is null && change.ReplaceRules is null
+            && change.Inherit is null && !change.ResetToInherited)
         {
             return;
         }
         var directory = isDirectory || Directory.Exists(path);
         var sections = AccessControlSections.Access | (change.Owner is null ? 0 : AccessControlSections.Owner);
         FileSystemSecurity security = directory ? new DirectoryInfo(path).GetAccessControl(sections) : new FileInfo(path).GetAccessControl(sections);
+        if (change.ReplaceRules is not null || change.ResetToInherited)
+        {
+            // every explicit rule goes (the inherited ones are not in the list to change)
+            foreach (FileSystemAccessRule own in security.GetAccessRules(includeExplicit: true, includeInherited: false, typeof(SecurityIdentifier)))
+            {
+                security.RemoveAccessRuleSpecific(own);
+            }
+        }
+        if (change.ResetToInherited)
+        {
+            security.SetAccessRuleProtection(isProtected: false, preserveInheritance: false);
+        }
+        else if (change.Inherit is { } inherit)
+        {
+            // turned off: the rules that came from above are already among the new explicit ones when they were kept
+            security.SetAccessRuleProtection(isProtected: !inherit, preserveInheritance: false);
+        }
         foreach (var identity in change.RemoveRulesOf)
         {
             security.PurgeAccessRules(Identity(identity)); // the explicit rules only; inherited ones stay
         }
-        foreach (var rule in change.AddRules)
+        foreach (var rule in (change.ReplaceRules ?? []).Concat(change.AddRules))
         {
-            var inheritance = directory && rule.ToContents ? InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit : InheritanceFlags.None;
-            security.AddAccessRule(new FileSystemAccessRule(Identity(rule.Identity), RightsFor(rule.Rights), inheritance, PropagationFlags.None,
+            var (self, subfolders, files) = AclMask.Reach(directory ? rule.EffectiveApplies : AclApplies.ThisFolderOnly);
+            var inheritance = (subfolders ? InheritanceFlags.ContainerInherit : InheritanceFlags.None) | (files ? InheritanceFlags.ObjectInherit : InheritanceFlags.None);
+            var propagation = self || inheritance == InheritanceFlags.None ? PropagationFlags.None : PropagationFlags.InheritOnly;
+            var rights = rule.Mask != 0 ? (FileSystemRights)(rule.Mask | AclMask.Synchronize) : RightsFor(rule.Rights);
+            security.AddAccessRule(new FileSystemAccessRule(Identity(rule.Identity), rights, inheritance, propagation,
                 rule.Allow ? AccessControlType.Allow : AccessControlType.Deny));
         }
         if (change.Owner is { Length: > 0 } owner)
