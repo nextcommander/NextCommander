@@ -147,7 +147,7 @@ public sealed class MenuTests : IDisposable
         var (w, vm) = await _fx.OpenAsync();
         Assert.Equal(["Folder tree...", "Find files...", "Find files in separate process...", "Volume label...", "System information...", "Synchronize directories...",
             "Hotlist", "Back", "Open command prompt window", "Internal terminal", "Branch View (with subfolders)", "Open Desktop folder",
-            "Background transfer manager...", "Source <-> Target", "Target = Source", "Calculate folder sizes", "Show in system file manager", "Duplicate files...", "Folder sizes...", "Command palette...", "Rules", "Saved searches"], Headers(w, "_Commands"));
+            "Background transfer manager...", "Source <-> Target", "Target = Source", "Calculate folder sizes", "Show in system file manager", "Duplicate files...", "Folder sizes...", "Command palette...", "Rules", "Saved searches", "Record macro", "Scripts"], Headers(w, "_Commands"));
 
         SetCursor(vm.Left, "b.log");
         await vm.ExecuteAsync("nc_MatchSrc");
