@@ -3,7 +3,7 @@ using NextCommander.Core.Vfs;
 namespace NextCommander.Vfs.Local;
 
 /// <summary>Local disks (all platforms).</summary>
-public sealed class LocalFileSystemProvider : IFileSystemProvider, ILinkSupport, IAttributeSupport
+public sealed partial class LocalFileSystemProvider : IFileSystemProvider, ILinkSupport, IAttributeSupport, IPermissionSupport
 {
     public Task SetAttributesAsync(VfsPath path, EntryAttributes attributes, UnixFileMode? unixMode, CancellationToken cancellationToken)
     {

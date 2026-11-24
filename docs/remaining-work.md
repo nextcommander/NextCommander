@@ -300,7 +300,12 @@ File management
 - [x] Delete securely (Edit menu): overwritten with random data (1-7 passes, Operation > Copy and delete), renamed,
   emptied, deleted; local files only; the warning says it is not reliable on SSDs / flash (`SecureDeleteJob`).
 - [ ] To be tried by the user: these six in the app (a rule with a real download, four panels on a big screen).
-- [ ] Permissions editor: chmod / owner and Windows ACLs in a dialog, for remote SFTP files too.
+- [x] Permissions editor (Files > Permissions...; 24 November 2026): Unix mode (owner / group / others, the special
+  bits, the octal value) with owner and group, for everything inside folders too, on Linux / macOS (stat / chown) and
+  SFTP (numbers: the server gives no names); Windows access lists (rules added and removed, inherited ones shown, the
+  owner) on local files (`Core/Vfs/Permissions`, `IPermissionSupport`, `PermissionsJob`, `PermissionsDialog`).
+- [ ] Permissions over SCP / Docker (chmod / chown through their shell) and on SMB shares (their access lists).
+- [ ] To be tried by the user: permissions on Linux / macOS (owner by name) and against a real SFTP server.
 
 Media and documents
 - [ ] Batch picture operations: resize, convert, rotate, rename by the EXIF date.
