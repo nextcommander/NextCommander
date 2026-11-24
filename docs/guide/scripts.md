@@ -5,10 +5,10 @@ as columns of the file list, or as file systems (places opened in a panel).
 
 ## Macros
 
-1. **Commands > Record macro** starts recording. The window title starts with ● while it records.
+1. **Tools > Record macro** starts recording. The window title starts with ● while it records.
 2. Use the program as usual. Every command run from a menu, a key, a button or the command line is noted.
    Moving the cursor or typing in a dialog is not a command and is not recorded.
-3. **Commands > Record macro** again stops. Give the macro a name: it is saved as the user command `uc_<name>`.
+3. **Tools > Record macro** again stops. Give the macro a name: it is saved as the user command `uc_<name>`.
 
 Give the macro a key in **Configuration > Commands and shortcuts**, or a button with the button bar's editor. A macro
 is a list of commands separated by commas, so a command whose parameter contains a comma cannot be part of it; the
@@ -18,7 +18,7 @@ program says how many were left out.
 
 Scripts are the `.js` files of the `scripts` folder in the [settings folder](settings-folder.md).
 
-- **Commands > Scripts** lists them and runs one with a click.
+- **Tools > Scripts** lists them and runs one with a click.
 - **New script...** writes an example (it lists what a script can use) and opens it in the editor.
 - As a command (for a key, a button or a user command): `nc_RunScript name.js words to pass`. The `.js` can be left out;
   a full path runs a script from another folder.
@@ -49,7 +49,7 @@ if (files.length > 0 && nc.confirm("Write " + files.length + " names?")) {
 ## Scripts as columns
 
 The `.js` files of `scripts/columns` give columns for custom column sets (**Show > Display > Edit view modes...**). The
-program reads them when it starts; the field of a column is `js_<file name>.<id>`. **Commands > Scripts > New column
+program reads them when it starts; the field of a column is `js_<file name>.<id>`. **Tools > Scripts > New column
 script...** writes an example that counts the lines of text files.
 
 ```js
@@ -71,7 +71,7 @@ A column script gets 5 seconds for each value; a value that fails stays empty (t
 
 The `.js` files of `scripts/filesystems` are places like a server's: they are listed with the saved connections
 (**Connection > Saved connections**, group *JavaScript*) and open in a panel, where copy, move, view and edit work as
-everywhere. The program reads them when it starts. **Commands > Scripts > New file system script...** writes an
+everywhere. The program reads them when it starts. **Tools > Scripts > New file system script...** writes an
 example that keeps its files in memory and has every function a file system can have.
 
 | Function | What it does |

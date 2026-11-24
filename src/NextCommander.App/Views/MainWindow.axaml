@@ -35,7 +35,6 @@
         </MenuItem>
         <MenuItem Header="Properties..." InputGesture="Alt+Enter" Command="{Binding RunCommandCommand}" CommandParameter="nc_Properties" />
         <MenuItem Header="Calculate occupied space..." InputGesture="Ctrl+L" Command="{Binding RunCommandCommand}" CommandParameter="nc_GetFileSpace" />
-        <MenuItem Header="Multi-Rename Tool..." InputGesture="Ctrl+M" Command="{Binding RunCommandCommand}" CommandParameter="nc_MultiRenameFiles" />
         <MenuItem Header="Edit comment..." InputGesture="Ctrl+Alt+Z" Command="{Binding RunCommandCommand}" CommandParameter="nc_EditComment" />
         <MenuItem Header="Print" Tag="nc_PrintFile">
           <MenuItem Header="File list..." Command="{Binding RunCommandCommand}" CommandParameter="nc_PrintFileList" />
@@ -73,6 +72,7 @@
         <MenuItem Header="New folder in target panel" InputGesture="Shift+F7" Command="{Binding RunCommandCommand}" CommandParameter="nc_MkDirInTarget" />
         <MenuItem Header="Delete" InputGesture="F8" Command="{Binding RunCommandCommand}" CommandParameter="nc_Delete" />
         <MenuItem Header="Delete permanently" InputGesture="Shift+Delete" Command="{Binding RunCommandCommand}" CommandParameter="nc_DeletePermanent" />
+        <MenuItem Header="Delete securely..." Command="{Binding RunCommandCommand}" CommandParameter="nc_SecureDelete" />
         <Separator />
         <MenuItem Header="Copy to clipboard" InputGesture="Ctrl+C" Command="{Binding RunCommandCommand}" CommandParameter="nc_CopyToClipboard" />
         <MenuItem Header="Cut to clipboard" InputGesture="Ctrl+X" Command="{Binding RunCommandCommand}" CommandParameter="nc_CutToClipboard" />
@@ -81,7 +81,6 @@
         <MenuItem Header="Show list file in panel..." Command="{Binding RunCommandCommand}" CommandParameter="LOADLIST" />
         <Separator />
         <MenuItem Header="Undo" InputGesture="Ctrl+Z" Command="{Binding RunCommandCommand}" CommandParameter="nc_Undo" />
-        <MenuItem Header="Delete securely..." Command="{Binding RunCommandCommand}" CommandParameter="nc_SecureDelete" />
       </MenuItem>
       <MenuItem Header="_Mark">
         <MenuItem Header="Select group..." InputGesture="Add" Command="{Binding RunCommandCommand}" CommandParameter="nc_SpreadSelection" />
@@ -115,7 +114,6 @@
         <MenuItem Header="Find files in separate process..." InputGesture="Alt+Shift+F7" Command="{Binding RunCommandCommand}" CommandParameter="nc_SearchStandalone" />
         <MenuItem Header="Volume label..." Command="{Binding RunCommandCommand}" CommandParameter="nc_VolumeLabel" />
         <MenuItem Header="System information..." Command="{Binding RunCommandCommand}" CommandParameter="nc_SysInfo" />
-        <MenuItem Header="Synchronize directories..." Command="{Binding RunCommandCommand}" CommandParameter="nc_SyncDirs" />
         <MenuItem Header="Hotlist" InputGesture="Ctrl+D" Command="{Binding RunCommandCommand}" CommandParameter="nc_DirectoryHotlist" />
         <MenuItem Header="Back" InputGesture="Alt+Left" Command="{Binding RunCommandCommand}" CommandParameter="nc_GoBack" />
         <Separator />
@@ -131,21 +129,9 @@
         <Separator />
         <MenuItem Header="Calculate folder sizes" InputGesture="Alt+Shift+Enter" Command="{Binding RunCommandCommand}" CommandParameter="nc_CountDirContent" />
         <MenuItem Header="Show in system file manager" InputGesture="Ctrl+Shift+E" Command="{Binding RunCommandCommand}" CommandParameter="nc_RevealInExplorer" />
-        <MenuItem Header="Duplicate files..." Command="{Binding RunCommandCommand}" CommandParameter="nc_FindDuplicates" />
-        <MenuItem Header="Folder sizes..." Command="{Binding RunCommandCommand}" CommandParameter="nc_DiskUsage" />
         <MenuItem Header="Command palette..." InputGesture="Ctrl+Shift+P" Command="{Binding RunCommandCommand}" CommandParameter="nc_CommandPalette" />
-        <MenuItem Header="Rules" Tag="nc_Rules">
-          <MenuItem Header="Rules..." Command="{Binding RunCommandCommand}" CommandParameter="nc_Rules" />
-          <MenuItem Header="Carry out the rules now" Command="{Binding RunCommandCommand}" CommandParameter="nc_RunRules" />
-          <MenuItem Header="Rules log..." Command="{Binding RunCommandCommand}" CommandParameter="nc_RuleLog" />
-        </MenuItem>
         <MenuItem x:Name="SavedSearchesMenu" Header="Saved searches" Tag="nc_OpenSavedSearch">
           <MenuItem Header="Open saved search..." Command="{Binding RunCommandCommand}" CommandParameter="nc_OpenSavedSearch" />
-        </MenuItem>
-        <MenuItem Header="Record macro" ToggleType="CheckBox" IsChecked="{Binding IsRecordingMacro, Mode=OneWay}"
-                  Command="{Binding RunCommandCommand}" CommandParameter="nc_RecordMacro" />
-        <MenuItem x:Name="ScriptsMenu" Header="Scripts" Tag="nc_RunScript">
-          <MenuItem Header="Run script..." Command="{Binding RunCommandCommand}" CommandParameter="nc_RunScript" />
         </MenuItem>
       </MenuItem>
       <!-- Connection (was Net; user's request, 22 November 2026): the PC link, tunnels and network tools right below Disconnect -->
@@ -315,6 +301,24 @@
         <MenuItem Header="Import settings..." Command="{Binding RunCommandCommand}" CommandParameter="nc_ImportSettings" />
         <MenuItem Header="Restore settings from a backup..." Command="{Binding RunCommandCommand}" CommandParameter="nc_RestoreSettings" />
       </MenuItem>
+      <!-- Tools (user's request, 24 November 2026): the tool windows, then rules, macros and scripts -->
+      <MenuItem Header="_Tools">
+        <MenuItem Header="Multi-Rename Tool..." InputGesture="Ctrl+M" Command="{Binding RunCommandCommand}" CommandParameter="nc_MultiRenameFiles" />
+        <MenuItem Header="Duplicate files..." Command="{Binding RunCommandCommand}" CommandParameter="nc_FindDuplicates" />
+        <MenuItem Header="Synchronize directories..." Command="{Binding RunCommandCommand}" CommandParameter="nc_SyncDirs" />
+        <MenuItem Header="Folder sizes..." Command="{Binding RunCommandCommand}" CommandParameter="nc_DiskUsage" />
+        <Separator />
+        <MenuItem Header="Rules" Tag="nc_Rules">
+          <MenuItem Header="Rules..." Command="{Binding RunCommandCommand}" CommandParameter="nc_Rules" />
+          <MenuItem Header="Carry out the rules now" Command="{Binding RunCommandCommand}" CommandParameter="nc_RunRules" />
+          <MenuItem Header="Rules log..." Command="{Binding RunCommandCommand}" CommandParameter="nc_RuleLog" />
+        </MenuItem>
+        <MenuItem Header="Record macro" ToggleType="CheckBox" IsChecked="{Binding IsRecordingMacro, Mode=OneWay}"
+                  Command="{Binding RunCommandCommand}" CommandParameter="nc_RecordMacro" />
+        <MenuItem x:Name="ScriptsMenu" Header="Scripts" Tag="nc_RunScript">
+          <MenuItem Header="Run script..." Command="{Binding RunCommandCommand}" CommandParameter="nc_RunScript" />
+        </MenuItem>
+      </MenuItem>
       <MenuItem x:Name="StartMenuRoot" Header="_Start">
         <MenuItem Header="Change start menu..." Command="{Binding RunCommandCommand}" CommandParameter="nc_ConfigStartMenu" />
         <Separator />
@@ -464,7 +468,7 @@
       <views:PanelSideView x:Name="RightSideView" Grid.Column="2" DataContext="{Binding RightSide}" />
       <Border x:Name="QuickViewHost" Grid.Column="2" IsVisible="False" ZIndex="10" BorderThickness="1"
               BorderBrush="{DynamicResource FmActiveAccentBrush}" Background="{DynamicResource SystemControlBackgroundAltHighBrush}" />
-      <!-- Folder sizes (Commands > Folder sizes): in place of the other panel, like Quick View -->
+      <!-- Folder sizes (Tools > Folder sizes): in place of the other panel, like Quick View -->
       <Border x:Name="DiskUsageHost" Grid.Column="2" IsVisible="False" ZIndex="10" BorderThickness="1"
               BorderBrush="{DynamicResource FmActiveAccentBrush}" Background="{DynamicResource SystemControlBackgroundAltHighBrush}" />
       <!-- The configuration (Configuration > Options): in place of both panels, like the maximized internal terminal -->

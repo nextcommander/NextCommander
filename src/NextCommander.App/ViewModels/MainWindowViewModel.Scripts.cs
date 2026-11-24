@@ -5,7 +5,7 @@ using NextCommander.Core.Vfs;
 namespace NextCommander.App.ViewModels;
 
 /// <summary>
-/// JavaScript scripts (Commands > Scripts; user's request, 24 November 2026): the .js files of scripts/ in the settings
+/// JavaScript scripts (Tools > Scripts; user's request, 24 November 2026): the .js files of scripts/ in the settings
 /// folder run as commands (nc_RunScript name [args]), those of scripts/columns give custom columns.
 /// </summary>
 public partial class MainWindowViewModel
@@ -66,7 +66,7 @@ public partial class MainWindowViewModel
             var names = ScriptNames();
             if (names.Count == 0)
             {
-                await _dialogs.ShowMessageAsync("Scripts", "There is no script yet. Commands > Scripts > New script... writes an example.");
+                await _dialogs.ShowMessageAsync("Scripts", "There is no script yet. Tools > Scripts > New script... writes an example.");
                 return;
             }
             var result = await _dialogs.ShowQuickListAsync("Scripts", [.. names.Select(n => new QuickListItem(n, null, n))]);

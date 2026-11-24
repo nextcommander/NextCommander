@@ -5,7 +5,7 @@ namespace NextCommander.App.Views;
 
 /// <summary>
 /// The window side of the file management additions of 23 November 2026: the internal terminal's place for saved
-/// workspaces, and the menus filled when they open (Show > Workspaces, Mark > Tags, Commands > Saved searches, Commands > Scripts).
+/// workspaces, and the menus filled when they open (Show > Workspaces, Mark > Tags, Commands > Saved searches, Tools > Scripts).
 /// </summary>
 public partial class MainWindow
 {
@@ -23,7 +23,7 @@ public partial class MainWindow
         ScriptsMenu.SubmenuOpened += (_, _) => FillScriptsMenu();
     }
 
-    /// <summary>Commands > Scripts: each script of the scripts folder, then new script / new column / the folder.</summary>
+    /// <summary>Tools > Scripts: each script of the scripts folder, then new script / new column / the folder.</summary>
     internal void FillScriptsMenu()
     {
         if (_vm is null)

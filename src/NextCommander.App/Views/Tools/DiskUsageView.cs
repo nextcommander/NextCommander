@@ -98,7 +98,7 @@ public sealed class ShareBar : Control
 }
 
 /// <summary>
-/// Folder sizes (Commands > Folder sizes..., like WinDirStat; the look of the user's template, 20 November 2026): the
+/// Folder sizes (Tools > Folder sizes..., like WinDirStat; the look of the user's template, 20 November 2026): the
 /// path of the folder shown with its totals, the selected item with its actions, the tree sorted by a column with a bar
 /// of the types in each folder, the file types (categories and their extensions, a click highlights them in the map)
 /// and the treemap with the folders' names. A double click on a folder (or Enter) zooms into it; Backspace goes up.

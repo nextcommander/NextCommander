@@ -1,11 +1,11 @@
 namespace NextCommander.App.Services;
 
-/// <summary>The examples a new script starts with (Commands > Scripts > New script / New column script).</summary>
+/// <summary>The examples a new script starts with (Tools > Scripts > New script / New column script).</summary>
 public static class ScriptTemplates
 {
     /// <summary>A command script: what it can use, and a small example that works as it is.</summary>
     public const string Command = """
-        // A NextCommander script. Run it from Commands > Scripts, or as a command: nc_RunScript script.js words to pass
+        // A NextCommander script. Run it from Tools > Scripts, or as a command: nc_RunScript script.js words to pass
         // (a button, a key or a user command can run that command line too).
         //
         //   nc.args                  the words after the script's name

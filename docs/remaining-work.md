@@ -266,6 +266,11 @@ built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC l
   for 15 s after a USB change, and opening a device the last search missed searches once more
   (`LibMtpDeviceSource.Settle`, `IMtpDeviceSource.Rescan`). To be tried on the Mac.
 
+- [x] Undo asks with what it will do (24 November 2026): every undo step has its plan (`UndoStep.Plan`: copies removed
+  or to the Recycle Bin, items going back where, names back, folders deleted if empty, replaced files that cannot come
+  back), shown before it runs (`MainWindowViewModel.UndoQuestion`); Edit > Delete securely... right below Delete
+  permanently (user's request).
+
 ## Disc images (user's request, 21 November 2026)
 - [x] ISO files open like an archive in a panel (Enter on an .iso): browse, view, copy out, search inside, compare,
   checksum; read-only. Read with DiscUtils (MIT; `Vfs.Archive/DiscImage`): UDF when the image has it (DVD / Blu-ray),
