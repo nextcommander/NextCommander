@@ -61,6 +61,11 @@ public interface IMtpDeviceSource
     IReadOnlyList<MtpDeviceInfo> GetDevices();
 
     IMtpDevice Open(string deviceId);
+
+    /// <summary>The next <see cref="GetDevices"/> looks for the devices again instead of using what it found last.</summary>
+    void Rescan()
+    {
+    }
 }
 
 /// <summary>No portable devices (systems where MTP devices appear as folders, or no MTP support).</summary>
