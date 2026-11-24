@@ -72,13 +72,23 @@ public partial class PanelSideView : UserControl
                 _side.PropertyChanged += OnSidePropertyChanged;
             }
             ApplyTabLayout();
+            ApplySplit();
         };
         NewTabButton.Click += (_, _) =>
         {
             Activated?.Invoke(this, EventArgs.Empty);
             CommandRequested?.Invoke(this, "nc_OpenNewTab");
         };
-        FilePanel.Activated += (_, _) => Activated?.Invoke(this, EventArgs.Empty);
+        FilePanel.Activated += (_, _) =>
+        {
+            Side?.FocusPane(Side.FirstPane);
+            Activated?.Invoke(this, EventArgs.Empty);
+        };
+        FilePanel2.Activated += (_, _) =>
+        {
+            Side?.FocusPane(Side.SecondPane);
+            Activated?.Invoke(this, EventArgs.Empty);
+        };
         // The tabs go between the drive line and the path line: move the strip into the panel.
         Root.Children.Remove(TabStripHost);
         TabStripHost[!DataContextProperty] = this[!DataContextProperty];
@@ -87,7 +97,52 @@ public partial class PanelSideView : UserControl
 
     private TabSideViewModel? _side;
 
-    public FilePanelView Panel => FilePanel;
+    /// <summary>The file panel of the side's active tab (of a split side: the one that has the focus).</summary>
+    public FilePanelView Panel => _side is { SecondPane: { } second } && ReferenceEquals(_side.ActiveTab, second) ? FilePanel2 : FilePanel;
+
+    /// <summary>Both file panels of the side (the second shows something only while the side is split).</summary>
+    public IReadOnlyList<FilePanelView> Panels => [FilePanel, FilePanel2];
+
+    /// <summary>The file panel showing <paramref name="tab"/>, or null when it is not shown.</summary>
+    public FilePanelView? PanelOf(PanelViewModel tab) =>
+        _side is null ? null : ReferenceEquals(_side.FirstPane, tab) ? FilePanel : ReferenceEquals(_side.SecondPane, tab) ? FilePanel2 : null;
+
+    /// <summary>One file panel, or two side by side / one above the other with a splitter between.</summary>
+    private void ApplySplit()
+    {
+        var split = _side?.SecondPane is null ? SideSplit.None : _side.Split;
+        PaneGrid.ColumnDefinitions.Clear();
+        PaneGrid.RowDefinitions.Clear();
+        var two = split != SideSplit.None;
+        PaneSplitter.IsVisible = two;
+        FilePanel2.IsVisible = two;
+        if (!two)
+        {
+            foreach (var child in PaneGrid.Children)
+            {
+                Grid.SetColumn(child, 0);
+                Grid.SetRow(child, 0);
+            }
+            return;
+        }
+        var sideBySide = split == SideSplit.SideBySide;
+        if (sideBySide)
+        {
+            PaneGrid.ColumnDefinitions.AddRange([new ColumnDefinition(1, GridUnitType.Star), new ColumnDefinition(6, GridUnitType.Pixel), new ColumnDefinition(1, GridUnitType.Star)]);
+        }
+        else
+        {
+            PaneGrid.RowDefinitions.AddRange([new RowDefinition(1, GridUnitType.Star), new RowDefinition(6, GridUnitType.Pixel), new RowDefinition(1, GridUnitType.Star)]);
+        }
+        PaneSplitter.ResizeDirection = sideBySide ? GridResizeDirection.Columns : GridResizeDirection.Rows;
+        var index = 0;
+        foreach (var child in new Control[] { FilePanel, PaneSplitter, FilePanel2 })
+        {
+            Grid.SetColumn(child, sideBySide ? index : 0);
+            Grid.SetRow(child, sideBySide ? 0 : index);
+            index++;
+        }
+    }
 
     /// <summary>The tool shown in place of the file panel (null: the file panel).</summary>
     public Control? Overlay => OverlayHost.Content as Control;
@@ -97,7 +152,7 @@ public partial class PanelSideView : UserControl
     {
         OverlayHost.Content = content;
         OverlayHost.IsVisible = true;
-        FilePanel.IsVisible = false;
+        PaneGrid.IsVisible = false;
     }
 
     /// <summary>The file panel again (focused).</summary>
@@ -105,8 +160,8 @@ public partial class PanelSideView : UserControl
     {
         OverlayHost.Content = null;
         OverlayHost.IsVisible = false;
-        FilePanel.IsVisible = true;
-        FilePanel.FocusList();
+        PaneGrid.IsVisible = true;
+        Panel.FocusList();
     }
 
     /// <summary>The control sharing the side with the file list (the Quick View; null: none).</summary>
@@ -175,6 +230,10 @@ public partial class PanelSideView : UserControl
         if (e.PropertyName == nameof(TabSideViewModel.TabsMultiline))
         {
             ApplyTabLayout();
+        }
+        else if (e.PropertyName is nameof(TabSideViewModel.Split) or nameof(TabSideViewModel.SecondPane))
+        {
+            ApplySplit();
         }
     }
 

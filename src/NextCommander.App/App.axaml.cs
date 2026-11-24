@@ -200,6 +200,7 @@ public partial class App : Application
         }
         await vm.InitializeAsync();
         vm.StartDriveWatch();
+        vm.StartRules();
         if (store.RestoredBackup is { } backup)
         {
             // the settings file was damaged: say which backup the settings came from

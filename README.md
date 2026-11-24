@@ -15,6 +15,8 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
   (for example photo dimensions, music tags or line counts).
 - Folder history, most frequently used folders and a Hotlist of favorite folders.
 - Quick search and quick filter while you type; Branch View shows the files of all subfolders in one list.
+- A side can be split into two file panels (side by side or one above the other), up to four panels.
+- Saved workspaces: the tabs of both panels and the terminal under a name, opened again with one key.
 
 ### File operations
 - Copy, move, rename and delete with the F keys, by drag and drop or through the clipboard.
@@ -23,6 +25,9 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
 - When an operation fails because of missing rights, NextCommander offers to retry it with administrator
   rights through the system's own dialog.
 - On Windows, a right click can open Windows Explorer's own context menu.
+- Tags with color labels on files and folders, a Tags column and a filter by tag.
+- Rules carried out while the program runs: arriving files moved or copied, folders synchronized every night.
+- Delete securely: files overwritten with random data before they are deleted.
 
 ### Viewer and editor
 - Lister (F3) shows text with syntax colors, binary and hex views, images (including camera RAW previews),
@@ -34,6 +39,7 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
 
 ### Search and tools
 - Find files by name, content, size, date and attributes; also inside Office and OpenDocument files.
+  A saved search opens in a panel like a folder of its results, searched again on every refresh.
 - An optional file index makes searches and folder sizes nearly instant.
 - Multi-Rename Tool, Synchronize directories, Compare by content, Duplicate files, Folder sizes with a treemap,
   checksums, split and combine, and a built-in terminal.

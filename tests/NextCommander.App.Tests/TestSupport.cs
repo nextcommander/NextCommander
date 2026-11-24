@@ -39,11 +39,15 @@ internal sealed class UiFixture : IDisposable
 
     public string R(params string[] parts) => Path.Combine([Root, "right", .. parts]);
 
+    /// <summary>Changes the settings <see cref="OpenAsync"/> starts the window with (a former session's tabs ...).</summary>
+    public Action<AppSettings>? Configure { get; set; }
+
     public async Task<(MainWindow Window, MainWindowViewModel Vm)> OpenAsync(params IFileSystemProvider[] extraProviders)
     {
         var settings = new AppSettings();
         settings.Left.Path = L();
         settings.Right.Path = R();
+        Configure?.Invoke(settings);
         var registry = new ProviderRegistry([new LocalFileSystemProvider(), Archives, .. extraProviders]);
         Archives.Registry = registry;
         Archives.PasswordPrompt = (name, retry) => Dialogs.PromptPasswordAsync("Password", name);

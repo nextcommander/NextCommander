@@ -47,7 +47,7 @@ public sealed class DriveWatchLiveTests
             await WaitUntilAsync(() => Buttons() > 0, 3000);
             Assert.True(Buttons() > 0, "the new drive has no drive button");
             // the drive box's list (opened as with Alt+F1) lists it too
-            var panels = w.GetVisualDescendants().OfType<Views.FilePanelView>().ToList();
+            var panels = w.GetVisualDescendants().OfType<Views.FilePanelView>().Where(p => p.IsEffectivelyVisible).ToList(); // not the hidden second panels
             Assert.NotEmpty(panels);
             foreach (var panel in panels)
             {

@@ -67,7 +67,12 @@
     <!-- the Quick View can share the side with the file list (below or right of it; PanelSideView.ShowPreview) -->
     <Grid x:Name="SplitGrid">
       <Panel x:Name="FileArea">
-        <views:FilePanelView x:Name="FilePanel" DataContext="{Binding ActiveTab}" />
+        <!-- one file panel, or two of the side's tabs at once (Show > Panels > Split; PanelSideView.ApplySplit) -->
+        <Grid x:Name="PaneGrid">
+          <views:FilePanelView x:Name="FilePanel" DataContext="{Binding FirstPane}" />
+          <GridSplitter x:Name="PaneSplitter" IsVisible="False" Background="Transparent" />
+          <views:FilePanelView x:Name="FilePanel2" DataContext="{Binding SecondPane}" IsVisible="False" />
+        </Grid>
         <ContentControl x:Name="OverlayHost" IsVisible="False" />
       </Panel>
       <GridSplitter x:Name="PreviewSplitter" IsVisible="False" Background="Transparent" />

@@ -242,6 +242,22 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
     /// <summary>Shared thumbnail loader (thumbnail view); null in tests that do not need it.</summary>
     public Services.ThumbnailService? Thumbnails { get; init; }
 
+    /// <summary>The tags of files (their color labels and the tag filter); null: none (tests without them).</summary>
+    public Core.Tags.TagStore? Tags { get; init; }
+
+    /// <summary>Show only the files and folders with this tag (Mark > Tags); null: all.</summary>
+    public string? TagFilter
+    {
+        get => _panelSettings.TagFilter;
+        set
+        {
+            _panelSettings.TagFilter = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(FilterMaskText));
+            RebuildItems(CursorItem?.FullName, MarkedNames());
+        }
+    }
+
     /// <summary>Tab caption: custom title or folder name; '*' marks a locked tab.</summary>
     /// <summary>
     /// The name of the drive whose folder <paramref name="path"/> is (Linux / macOS: a disk mounted at
@@ -747,7 +763,7 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
     private HashSet<string>? _onlySelected;
 
     /// <summary>Mask shown at the end of the path line: "*.*", the type filter or "(selected)".</summary>
-    public string FilterMaskText => _onlySelected is not null ? "(selected)" : TypeFilter ?? "*.*";
+    public string FilterMaskText => _onlySelected is not null ? "(selected)" : TagFilter is { } tag ? $"(tag: {tag})" : TypeFilter ?? "*.*";
 
     /// <summary>Navigation/listing errors to show to the user.</summary>
     public event EventHandler<string>? ErrorOccurred;
@@ -1819,11 +1835,14 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
         var hiddenNames = _hiddenNames;
         var typeFilter = TypeFilter is { } mask ? WildcardMatcher.Parse(mask) : null;
         var onlySelected = _onlySelected;
+        var tagFilter = TagFilter;
+        var tags = Tags;
         var ignored = IgnoreMatcher();
         var visible = _entries.Where(e => (showHidden || !e.IsHidden) && (showSystem || !e.IsSystem) && (ignored is null || !ignored(e))
             && (filter is null || filter.IsMatch(DisplayNameOf(e))) && (hiddenNames is null || !hiddenNames.Contains(e.Name))
             && (typeFilter is null || e.IsDirectory || typeFilter.MatchesFile(e.Name))
-            && (onlySelected is null || onlySelected.Contains(DisplayNameOf(e))));
+            && (onlySelected is null || onlySelected.Contains(DisplayNameOf(e)))
+            && (tagFilter is null || (tags is not null && tags.TagsOf(e.Path).Contains(tagFilter, StringComparer.OrdinalIgnoreCase))));
         var sorted = Sort(visible);
 
         var options = DisplayOptions.From(_settings);
@@ -1906,6 +1925,35 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
     }
 
     private Func<VfsEntry, IBrush?> BuildColorizer()
+    {
+        var byType = BuildTypeColorizer();
+        if (Tags is not { IsEmpty: false } tags)
+        {
+            return byType;
+        }
+        // a tag's color label wins over the color of the type (the first tag that has a color)
+        var labels = new Dictionary<string, IBrush>(StringComparer.OrdinalIgnoreCase);
+        foreach (var tag in _settings.Tags)
+        {
+            if (Color.TryParse(tag.Color, out var color))
+            {
+                labels.TryAdd(tag.Name, new ImmutableSolidColorBrush(color));
+            }
+        }
+        return entry =>
+        {
+            foreach (var tag in tags.TagsOf(entry.Path))
+            {
+                if (labels.TryGetValue(tag, out var brush))
+                {
+                    return brush;
+                }
+            }
+            return byType(entry);
+        };
+    }
+
+    private Func<VfsEntry, IBrush?> BuildTypeColorizer()
     {
         if (!_settings.ColorsEnabled || _settings.ColorRules.Count == 0)
         {

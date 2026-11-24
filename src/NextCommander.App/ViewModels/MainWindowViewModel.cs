@@ -91,14 +91,18 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         Views.Dialogs.CommandPickerDialog.Source = () => [.. Commands.All.Select(c => new Views.Dialogs.CommandPickerDialog.Entry(c.Name, c.Description))];
         FileClipboard = fileClipboard ?? new FileClipboard();
         Hotkeys = new HotkeyMap(settings);
+        Tags = new NextCommander.Core.Tags.TagStore(Path.Combine(store.Directory, "tags.json"));
+        NextCommander.Core.Tags.TagStore.Current = Tags;
+        _tagNames = [.. settings.Tags.Select(t => t.Name)];
         ColumnValues = new ColumnValueService(new NextCommander.Core.Columns.ColumnRegistry(
         [
             new NextCommander.Core.Columns.FileInfoColumns(), new NextCommander.Core.Columns.TextColumns(), new NextCommander.Core.Columns.CommentColumns(),
             new NextCommander.Columns.ImageColumns(), new NextCommander.Columns.MediaColumns(), new NextCommander.Platform.Trash.TrashColumns(),
+            new NextCommander.Core.Tags.TagColumns(),
         ]), registry);
 
         thumbnails ??= new ThumbnailService(registry, cacheDirectory: null);
-        PanelViewModel Create(string name, PanelSettings state) => new(name, registry, platform, settings, state, icons) { Thumbnails = thumbnails };
+        PanelViewModel Create(string name, PanelSettings state) => new(name, registry, platform, settings, state, icons) { Thumbnails = thumbnails, Tags = Tags };
         LeftSide = new TabSideViewModel("left", settings, settings.LeftTabs.Count > 0 ? settings.LeftTabs : [settings.Left],
             settings.LeftActiveTab, s => Create("left", s));
         RightSide = new TabSideViewModel("right", settings, settings.RightTabs.Count > 0 ? settings.RightTabs : [settings.Right],
@@ -114,6 +118,8 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         }
         _activeSide = settings.LeftActive ? LeftSide : RightSide;
         _activeSide.IsActiveSide = true;
+        LeftSide.RestoreSplit((SideSplit)settings.LeftSplitMode, settings.LeftSecondTab);
+        RightSide.RestoreSplit((SideSplit)settings.RightSplitMode, settings.RightSecondTab);
 
         _jobs.JobStarted += (_, _) => UpdateBackgroundJobs();
         _jobs.JobFinished += (_, _) => UpdateBackgroundJobs();
@@ -457,7 +463,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         "nc_CopyToClipboard", "nc_CutToClipboard", "nc_SetAttrib", "nc_PackFiles", "nc_UnpackFiles", "nc_TestArchive", "nc_CompareFilesByContent",
         "nc_AssociateWith", "nc_MultiRenameFiles", "nc_EditComment", "nc_PrintFile", "nc_SplitFile", "nc_CombineFiles", "nc_UUEncode", "nc_UUDecode",
         "nc_CRCcreate", "nc_CRCcheck", "nc_CopyNamesToClip", "nc_CopyFullNamesToClip", "nc_CopyDetailsToClip", "nc_CopyFullDetailsToClip",
-        "nc_RestoreFromTrash", "nc_MountImage", "nc_UnmountImage",
+        "nc_RestoreFromTrash", "nc_MountImage", "nc_UnmountImage", "nc_SecureDelete",
     };
 
     /// <summary>Whether the active panel has files or folders selected (marked ones, or the one under the cursor that is not [..]).</summary>
@@ -488,6 +494,8 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         }
         _settings.LeftTabs = LeftSide.SnapshotStates();
         _settings.RightTabs = RightSide.SnapshotStates();
+        (_settings.LeftSplitMode, _settings.LeftSecondTab) = (LeftSide.SecondPane is null ? 0 : (int)LeftSide.Split, LeftSide.SecondPane is { } l ? LeftSide.Tabs.IndexOf(l) : -1);
+        (_settings.RightSplitMode, _settings.RightSecondTab) = (RightSide.SecondPane is null ? 0 : (int)RightSide.Split, RightSide.SecondPane is { } r ? RightSide.Tabs.IndexOf(r) : -1);
         _settings.LeftActiveTab = LeftSide.ActiveIndex;
         _settings.RightActiveTab = RightSide.ActiveIndex;
         _settings.Left = Left.State.Clone();
@@ -917,6 +925,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        StopRules();
         _driveWatch?.Dispose();
         _driveWatch = null;
         LeftSide.Dispose();
@@ -1278,6 +1287,12 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         c.Register("nc_DownloadUrl", "Download from URL", _ => DownloadUrlAsync());
         c.Register("nc_CheckForUpdates", "Check for updates", _ => CheckForUpdatesAsync(interactive: true));
         RegisterMenuCommands(c);
+        RegisterWorkspaceCommands(c);
+        RegisterRuleCommands(c);
+        RegisterTagCommands(c);
+        RegisterSavedSearchCommands(c);
+        RegisterSplitCommands(c);
+        c.Register("nc_SecureDelete", "Delete securely: the files are overwritten with random data, then deleted for good", _ => SecureDeleteAsync());
         c.Register("nc_Exit", "Exit", () => ExitRequested?.Invoke(this, EventArgs.Empty));
 
         // Views
@@ -2633,6 +2648,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         Views.Dialogs.SettingsView.AllowLinkThroughFirewall = async port =>
             Services.LinkFirewall.Command(port) is { } command && await _platform.RunElevatedAsync(command.Program, command.Arguments);
         Views.Dialogs.SettingsView.ColumnFields = () => ColumnValues.Columns.AllFields.ToList();
+        Views.Dialogs.SettingsView.CaptureWorkspace = () => CaptureWorkspace("Workspace");
         Views.Dialogs.SettingsView.PluginConfigurations = () => PluginConfigurations;
         Views.Dialogs.SettingsView.SecretSaved = id => _remote?.Secrets?.Contains(id) == true;
         await _dialogs.ShowSettingsAsync(_settings, ApplySettings, extras, search);
@@ -2657,6 +2673,9 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         App.ApplyIconSettings(_settings);
         Services.FileIndexService.Apply(_settings);
         ApplyPluginSettings();
+        Hotkeys.Rebuild(); // the keys of the saved workspaces
+        StartRules();
+        ApplyTagSettings();
         if (Avalonia.Application.Current is { } app)
         {
             Services.UiFonts.Apply(app, _settings);
@@ -4742,6 +4761,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         try
         {
             await provider.MoveAsync(entry.Path, destination, overwrite: false, CancellationToken.None);
+            Tags.Moved(entry.Path, destination);
             Undo.Push(Services.FileUndo.ForRename(_registry, entry.Path, destination));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -4856,6 +4876,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     /// <summary>What a finished job did, kept for Ctrl+Z (copy / move, moving to the recycle bin, multi-rename).</summary>
     public void RecordUndo(FileJob job)
     {
+        CarryTags(job); // the tags go along with what was copied, moved or renamed
         Undo.Push(job switch
         {
             CopyMoveJob copy => Services.FileUndo.ForCopyMove(_registry, copy, _platform),
@@ -4895,6 +4916,36 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             await _dialogs.ShowMessageAsync("Undo", string.Join("\n", result.Problems.Take(20))
                 + (result.Problems.Count > 20 ? $"\n... ({result.Problems.Count - 20} more)" : string.Empty));
         }
+    }
+
+    /// <summary>
+    /// nc_SecureDelete (user's request, 23 November 2026): the selected local files are overwritten, then deleted for
+    /// good, after a warning that says what it cannot promise on SSDs.
+    /// </summary>
+    private async Task SecureDeleteAsync()
+    {
+        var panel = ActivePanel;
+        var sources = panel.GetSelectedEntries();
+        if (sources.Count == 0)
+        {
+            return;
+        }
+        if (sources.Any(s => !s.Path.IsLocal))
+        {
+            await _dialogs.ShowMessageAsync("Delete securely", "Only files of this computer can be deleted securely: a server's or an archive's file cannot be overwritten in place.");
+            return;
+        }
+        var what = sources.Count == 1 ? $"\"{sources[0].Name}\"" : $"{sources.Count} items";
+        var passes = Math.Clamp(_settings.SecureDeletePasses, 1, 7);
+        var message = $"Overwrite {what} with random data ({passes}×) and delete for good? They cannot be brought back, not even from the Recycle Bin.\n\nOn an SSD or a flash drive (USB stick, memory card) the drive may keep copies of the data elsewhere: there the data is not reliably gone. Encrypting the whole drive (BitLocker, FileVault, LUKS) protects it there.";
+        if (!await _dialogs.ConfirmAsync("Delete securely", message, "Delete securely"))
+        {
+            return;
+        }
+        panel.MarkWorkedHere();
+        var job = new SecureDeleteJob(sources, passes) { Interaction = new UiJobInteraction(_dialogs) };
+        Tags.Clear(sources.Select(s => s.Path));
+        await RunJobAsync(job, queue: false, panel, sources);
     }
 
     private async Task DeleteAsync(bool permanent)

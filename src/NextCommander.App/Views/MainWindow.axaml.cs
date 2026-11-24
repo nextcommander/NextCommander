@@ -61,8 +61,10 @@ public partial class MainWindow : Window
         };
         // the shared drive bar marks the active panel's drive
         DriveBarMarks.Watch(SharedDriveBar);
-        LeftPanel.CurrentDriveChanged += (_, _) => MarkSharedDrive();
-        RightPanel.CurrentDriveChanged += (_, _) => MarkSharedDrive();
+        foreach (var pane in LeftSideView.Panels.Concat(RightSideView.Panels))
+        {
+            pane.CurrentDriveChanged += (_, _) => MarkSharedDrive();
+        }
         foreach (var bar in new Control[] { SharedDriveBar, SharedShortcutBar })
         {
             bar.AddHandler(Button.ClickEvent, (_, e) =>
@@ -187,10 +189,12 @@ public partial class MainWindow : Window
                     ActiveSideView.Panel.FocusList();
                 }
             };
-            var panel = sideView.Panel;
-            panel.CommandRequested += (_, c) => _ = _vm?.ExecuteAsync(c);
-            panel.DropRequested += (_, r) => _ = _vm?.DropAsync(r);
-            panel.TreeCommandRequested += (_, t) => _ = _vm?.TreeCommandAsync(t.Command, t.Path);
+            foreach (var panel in sideView.Panels) // both file panels of a split side
+            {
+                panel.CommandRequested += (_, c) => _ = _vm?.ExecuteAsync(c);
+                panel.DropRequested += (_, r) => _ = _vm?.DropAsync(r);
+                panel.TreeCommandRequested += (_, t) => _ = _vm?.TreeCommandAsync(t.Command, t.Path);
+            }
         }
         ActualThemeVariantChanged += (_, _) => _vm?.OnThemeChanged();
         // Progress of long jobs in the title (visible in the task bar / dock too).
@@ -199,6 +203,15 @@ public partial class MainWindow : Window
     }
 
     public FilePanelView LeftPanel => LeftSideView.Panel;
+
+    /// <summary>The tree beside every file panel (the second ones of split sides too), or none.</summary>
+    private void SetTreeVisible(bool visible)
+    {
+        foreach (var pane in LeftSideView.Panels.Concat(RightSideView.Panels))
+        {
+            pane.IsTreeVisible = visible;
+        }
+    }
 
     public FilePanelView RightPanel => RightSideView.Panel;
 
@@ -317,6 +330,8 @@ public partial class MainWindow : Window
         _vm.CommandLineFocusRequested += (_, _) => FocusCommandLine();
         _vm.CommandLineHistoryRequested += (_, _) => ShowCommandHistory();
         _vm.TerminalToggleRequested += (_, _) => ToggleTerminalPage();
+        WireWorkspaces();
+        _vm.PaneFocusRequested += (_, _) => ActiveView.FocusList();
         _vm.CommandPaletteRequested += (_, _) => OpenCommandPalette();
         _vm.TerminalMaximizeRequested += (_, _) => ToggleTerminalMaximized();
         _vm.EditPathRequested += (_, _) => ActiveView.BeginEditPath();
@@ -324,7 +339,7 @@ public partial class MainWindow : Window
         var main = _vm;
         _vm.BeginInlineRename = (panel, item, selectBaseName) =>
         {
-            var view = ReferenceEquals(panel, main.LeftSide.ActiveTab) ? LeftPanel : ReferenceEquals(panel, main.RightSide.ActiveTab) ? RightPanel : null;
+            var view = LeftSideView.PanelOf(panel) ?? RightSideView.PanelOf(panel);
             return view?.BeginRename(item, selectBaseName, (renamed, name) => main.RenameEntryAsync(panel, renamed.Entry!, name)) == true;
         };
         _vm.QuickSearchRequested += (_, filter) => ActiveView.BeginQuickSearch(null, filter);
@@ -345,8 +360,10 @@ public partial class MainWindow : Window
         };
         _vm.TreeChanged += (_, path) =>
         {
-            LeftPanel.InvalidateTree(path);
-            RightPanel.InvalidateTree(path);
+            foreach (var pane in LeftSideView.Panels.Concat(RightSideView.Panels))
+            {
+                pane.InvalidateTree(path);
+            }
         };
         _vm.Clipboard = Clipboard;
         _vm.FileClipboard.Storage = StorageProvider;
@@ -360,7 +377,7 @@ public partial class MainWindow : Window
         }
         UpdateButtonBars();
         UpdatePanelLayout();
-        LeftPanel.IsTreeVisible = RightPanel.IsTreeVisible = _vm.ShowTreePane;
+        SetTreeVisible(_vm.ShowTreePane);
     }
 
     protected override void OnOpened(EventArgs e)
@@ -631,7 +648,7 @@ public partial class MainWindow : Window
                 ScheduleQuickViewLoad();
                 break;
             case nameof(MainWindowViewModel.ShowTreePane):
-                LeftPanel.IsTreeVisible = RightPanel.IsTreeVisible = _vm.ShowTreePane;
+                SetTreeVisible(_vm.ShowTreePane);
                 break;
             case nameof(MainWindowViewModel.IsSinglePanel):
             case nameof(MainWindowViewModel.LeftPanelPercent):
@@ -1358,7 +1375,7 @@ public partial class MainWindow : Window
         {
             return;
         }
-        if (_suppressTextInput || LeftPanel.LastKeyHandled || RightPanel.LastKeyHandled)
+        if (_suppressTextInput || LeftSideView.Panels.Concat(RightSideView.Panels).Any(p => p.LastKeyHandled))
         {
             _suppressTextInput = false;
             e.Handled = !focusedTextBox;

@@ -248,7 +248,7 @@ built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC l
   without it, and the message names DOCKER_HOST when it still fails. The installed program (18 November 2026) has no
   Docker plugin yet: it needs a new setup.
 - [ ] To be tried by the user: these in the app (right button drag with the selection mode on, C:\ProgramData\Application Data,
-  duplicates in C:\Windows, Docker with Docker Desktop).
+  duplicates in C:\Windows). Docker with Docker Desktop works (user, 24 November 2026).
 
 ## Disc images (user's request, 21 November 2026)
 - [x] ISO files open like an archive in a panel (Enter on an .iso): browse, view, copy out, search inside, compare,
@@ -269,8 +269,8 @@ built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC l
 - [ ] Secret settings (`PluginSettingKind.Secret`, password store): no shipped plugin uses one yet; tested only.
 - [x] Docker: volumes tried by the user on Windows (22 November 2026). Containers, files in and out, a stopped
   container (read-only through docker cp) and the container menu are tested against a real Docker (`FM_TEST_DOCKER=1`).
-- [ ] Docker: the container menu (start / stop / restart / pause / resume) and a stopped container in the app, to be
-  tried by the user.
+- [x] Docker: the container menu (start / stop / restart / pause / resume) and a stopped container tried by the user
+  in the app (24 November 2026): they work.
 - [x] Viewers: CSV / TSV table, JSON tree and programs (.exe / .dll) tried by the user on Windows (22 November 2026).
 - [ ] Viewers still to be tried in the app: XML / YAML trees, .eml / .msg (a real Outlook message), .epub, .ipynb,
   certificates, fonts, .vcf / .ics. Tested with files made in the tests.
@@ -278,19 +278,28 @@ built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC l
 
 ## Feature ideas (to be evaluated)
 
-Proposed on 23 November 2026 at the user's request; nothing decided yet. Undo (Ctrl+Z), the command palette
-(Ctrl+Shift+P) and the Quick View below / right of the file list from the same list are done.
+Proposed on 23 November 2026 at the user's request. Undo (Ctrl+Z), the command palette (Ctrl+Shift+P) and the Quick
+View below / right of the file list from the same list are done; the first six of "File management" were made on
+24 November 2026 (user's request):
 
 File management
-- [ ] Saved workspaces: the tabs of both panels, their view modes and the terminal layout saved under a name and opened
-  with one key ("Project X", "Server maintenance").
-- [ ] Rules: "a .pdf arriving in Downloads goes to Documents/PDF", "this folder synchronized with the server every
-  night"; carried out by the existing copy / move jobs and the synchronize tool, with a log of what was done.
-- [ ] Tags and color labels for files (NTFS alternate data stream, xattr, or a side file), a tag column and a filter
-  by tag.
-- [ ] Saved searches as virtual folders: opened in a panel like a folder and read again each time.
-- [ ] Four panels, or a side split horizontally / vertically, to work with more than two folders.
-- [ ] Secure delete: files overwritten before deleting (with a note that it is not reliable on SSDs).
+- [x] Saved workspaces (Show > Workspaces): the tabs of both panels (view mode, sorting, filters), the active panel and
+  the terminal (closed / below / maximized, its shells) under a name; Ctrl+Shift+1...9 given to new ones; the list with
+  keys in Display > Folder tabs (`Core/Config/Workspace`, `MainWindowViewModel.Workspaces.cs`, `HotkeyMap`).
+- [x] Rules (Commands > Rules, settings page Operation > Rules): arriving files moved / copied once nothing writes to
+  them (a download renamed from .part counts), folders synchronized every day at a time (one way: nothing deleted; a
+  missed night at the next start), through the job queue; logs/rules.log (`Core/Automation`).
+- [x] Tags and color labels (Mark > Tags): kept by full path in tags.json of the settings folder (works the same on
+  every system and on servers; the program's copy / move / rename take them along, a file moved by another program
+  loses them); the name in the first tag's color, a "Tags" custom column, a filter by tag; the tags (names, colors) in
+  Display > Color (`Core/Tags/TagStore`).
+- [x] Saved searches as folders (Commands > Saved searches): a search saved in Find files opens in the panel as a list
+  of its results, searched again on every refresh.
+- [x] A side split into two file panels (Show > Panels: side by side, one above the other, four panels); the panel
+  with the focus is its side's active tab; kept between sessions (`TabSideViewModel.FirstPane` / `SecondPane`).
+- [x] Delete securely (Edit menu): overwritten with random data (1-7 passes, Operation > Copy and delete), renamed,
+  emptied, deleted; local files only; the warning says it is not reliable on SSDs / flash (`SecureDeleteJob`).
+- [ ] To be tried by the user: these six in the app (a rule with a real download, four panels on a big screen).
 - [ ] Permissions editor: chmod / owner and Windows ACLs in a dialog, for remote SFTP files too.
 
 Media and documents
