@@ -9,6 +9,7 @@ This file gathers what is needed to continue the project on another machine or i
 - Features and usage: [README.md](README.md)
 - History, decisions, lessons: [docs/history-and-decisions.md](docs/history-and-decisions.md)
 - Remaining work: [docs/remaining-work.md](docs/remaining-work.md)
+- How the work is done (the user's short requests, git, tests before a commit, new texts): [docs/working-notes.md](docs/working-notes.md)
 - Screenshots of the app: [docs/screenshots/](docs/screenshots/)
 
 ## Requirements
@@ -33,6 +34,7 @@ dotnet run --project src/NextCommander.App
 python build/make_icons.py                     # application icons (Assets) from the design files in build/icons
 python build/make_menu_icons.py src/NextCommander.App/Styles/MenuIcons.axaml   # menu glyphs
 python build/extract_strings.py missing.json   # UI texts of the code missing from en.json, with suggested keys (and literals still holding Turkish letters)
+python build/add_l10n_keys.py keys.json src/NextCommander.App/Localization   # add keys with their six texts to every language file
 ```
 Tests that take screenshots write PNGs when `FM_SCREENSHOT_DIR=<folder>` is set.
 The documentation screenshots (`docs/screenshots`, 1920x1080, English, sample files only, nothing of the machine: own drive letter with `subst`, fixed drive list / free space / file times, en-US) are made by `DocScreenshots` (Windows): `FM_DOC_SCREENSHOTS=<folder> dotnet test tests/NextCommander.App.Tests --filter DocScreenshots`, then copy the PNGs to `docs/screenshots`.
