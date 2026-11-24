@@ -11,11 +11,127 @@ public enum AclRights
     Special,
 }
 
+/// <summary>Where a folder's rule applies (Explorer's "Applies to").</summary>
+public enum AclApplies
+{
+    ThisFolderSubfoldersFiles,
+    ThisFolderOnly,
+    SubfoldersAndFilesOnly,
+    FilesOnly,
+    ThisFolderAndSubfolders,
+    ThisFolderAndFiles,
+    SubfoldersOnly,
+}
+
+/// <summary>
+/// The bits of Windows file rights (the values of FileSystemRights, kept here so the core needs no Windows types) and
+/// how the usual names map to them.
+/// </summary>
+public static class AclMask
+{
+    public const int ListDirectory = 0x1, CreateFiles = 0x2, CreateDirectories = 0x4, ReadExtendedAttributes = 0x8, WriteExtendedAttributes = 0x10,
+        Traverse = 0x20, DeleteSubdirectoriesAndFiles = 0x40, ReadAttributes = 0x80, WriteAttributes = 0x100, Delete = 0x10000,
+        ReadPermissions = 0x20000, ChangePermissions = 0x40000, TakeOwnership = 0x80000, Synchronize = 0x100000;
+
+    public const int Read = ListDirectory | ReadExtendedAttributes | ReadAttributes | ReadPermissions;
+    public const int Write = CreateFiles | CreateDirectories | WriteExtendedAttributes | WriteAttributes;
+    public const int ReadAndExecute = Read | Traverse;
+    public const int Modify = ReadAndExecute | Write | Delete;
+    public const int FullControl = 0x1F01FF;
+
+    /// <summary>The generic rights (in rules made for what is inside) as the file rights they stand for.</summary>
+    public static int Normalize(long mask)
+    {
+        const long genericAll = 0x10000000, genericExecute = 0x20000000, genericWrite = 0x40000000, genericRead = 0x80000000;
+        var result = (int)(mask & 0x1FFFFF);
+        if ((mask & genericAll) != 0)
+        {
+            result |= FullControl;
+        }
+        if ((mask & genericRead) != 0)
+        {
+            result |= Read;
+        }
+        if ((mask & genericWrite) != 0)
+        {
+            result |= Write;
+        }
+        if ((mask & genericExecute) != 0)
+        {
+            result |= Traverse | ReadAttributes | ReadPermissions;
+        }
+        return result;
+    }
+
+    /// <summary>Whether a mask holds every right of another (Synchronize, which Windows adds by itself, aside).</summary>
+    public static bool Has(int mask, int rights) => (mask & rights & ~Synchronize) == (rights & ~Synchronize);
+
+    /// <summary>The bits of a named set of rights.</summary>
+    public static int Of(AclRights rights) => rights switch
+    {
+        AclRights.FullControl => FullControl,
+        AclRights.Modify => Modify,
+        AclRights.ReadAndExecute => ReadAndExecute,
+        AclRights.Read => Read,
+        AclRights.Write => Write,
+        _ => 0,
+    };
+
+    /// <summary>The usual name of a set of bits (Special: another mix).</summary>
+    public static AclRights NameOf(int mask)
+    {
+        var bare = mask & ~Synchronize;
+        return Has(bare, FullControl) ? AclRights.FullControl
+            : Has(bare, Modify) ? AclRights.Modify
+            : bare == ReadAndExecute ? AclRights.ReadAndExecute
+            : bare == Read ? AclRights.Read
+            : bare == Write ? AclRights.Write
+            : AclRights.Special;
+    }
+
+    /// <summary>What a rule reaches: the folder itself, its subfolders, its files.</summary>
+    public static (bool This, bool Subfolders, bool Files) Reach(AclApplies applies) => applies switch
+    {
+        AclApplies.ThisFolderOnly => (true, false, false),
+        AclApplies.SubfoldersAndFilesOnly => (false, true, true),
+        AclApplies.FilesOnly => (false, false, true),
+        AclApplies.ThisFolderAndSubfolders => (true, true, false),
+        AclApplies.ThisFolderAndFiles => (true, false, true),
+        AclApplies.SubfoldersOnly => (false, true, false),
+        _ => (true, true, true),
+    };
+
+    /// <summary>The "Applies to" of what a rule reaches.</summary>
+    public static AclApplies AppliesOf(bool self, bool subfolders, bool files) => (self, subfolders, files) switch
+    {
+        (true, false, false) => AclApplies.ThisFolderOnly,
+        (false, true, true) => AclApplies.SubfoldersAndFilesOnly,
+        (false, false, true) => AclApplies.FilesOnly,
+        (true, true, false) => AclApplies.ThisFolderAndSubfolders,
+        (true, false, true) => AclApplies.ThisFolderAndFiles,
+        (false, true, false) => AclApplies.SubfoldersOnly,
+        _ => AclApplies.ThisFolderSubfoldersFiles,
+    };
+}
+
 /// <summary>
 /// One rule of a Windows access list: who, allow or deny, which rights; an inherited rule comes from a folder above and
 /// is changed there; <paramref name="ToContents"/>: a folder's rule also goes to what is inside.
 /// </summary>
-public sealed record AclEntry(string Identity, bool Allow, AclRights Rights, bool Inherited = false, bool ToContents = true);
+public sealed record AclEntry(string Identity, bool Allow, AclRights Rights, bool Inherited = false, bool ToContents = true)
+{
+    /// <summary>The exact rights (<see cref="AclMask"/> bits; 0: those of <see cref="Rights"/>).</summary>
+    public int Mask { get; init; }
+
+    /// <summary>Where a folder's rule applies (<see cref="ToContents"/> false: this folder only).</summary>
+    public AclApplies Applies { get; init; } = AclApplies.ThisFolderSubfoldersFiles;
+
+    /// <summary>The rights as bits.</summary>
+    public int EffectiveMask => Mask != 0 ? Mask : AclMask.Of(Rights);
+
+    /// <summary>Where the rule applies, <see cref="ToContents"/> taken into account.</summary>
+    public AclApplies EffectiveApplies => ToContents ? Applies : AclApplies.ThisFolderOnly;
+}
 
 /// <summary>Which kind of permissions a place has.</summary>
 public enum PermissionKind
@@ -48,6 +164,9 @@ public sealed class FilePermissions
 
     /// <summary>Owner and group are numbers here (SFTP: the server gives no names).</summary>
     public bool NumericOwner { get; init; }
+
+    /// <summary>Windows: the rules of the folders above do not reach here (inheritance turned off).</summary>
+    public bool InheritanceProtected { get; init; }
 }
 
 /// <summary>
@@ -73,7 +192,23 @@ public sealed record PermissionChange
     /// <summary>Also everything inside the selected folders.</summary>
     public bool Recursive { get; init; }
 
-    public bool IsEmpty => Set == 0 && Clear == 0 && Owner is null && Group is null && AddRules.Count == 0 && RemoveRulesOf.Count == 0;
+    /// <summary>Windows: every explicit rule replaced by these (null: the explicit rules stay, apart from Add / Remove).</summary>
+    public IReadOnlyList<AclEntry>? ReplaceRules { get; init; }
+
+    /// <summary>Windows: the rules of the folders above reach here (true) or not (false); null: as it is.</summary>
+    public bool? Inherit { get; init; }
+
+    /// <summary>
+    /// Windows: what is inside the folders loses its own rules and takes this folder's (Explorer's "Replace all child
+    /// object permission entries"); done by <c>PermissionsJob</c> with <see cref="ResetToInherited"/>.
+    /// </summary>
+    public bool ReplaceChildren { get; init; }
+
+    /// <summary>Windows: the item's own rules go and the rules of the folders above reach it again.</summary>
+    public bool ResetToInherited { get; init; }
+
+    public bool IsEmpty => Set == 0 && Clear == 0 && Owner is null && Group is null && AddRules.Count == 0 && RemoveRulesOf.Count == 0
+        && ReplaceRules is null && Inherit is null && !ReplaceChildren && !ResetToInherited;
 
     /// <summary>The mode after the change.</summary>
     public UnixFileMode Apply(UnixFileMode mode) => (mode | Set) & ~Clear;

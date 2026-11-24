@@ -111,6 +111,9 @@ public interface IDialogService
     /// <summary>Files > Permissions: the change of permissions chosen for the entries (null: cancelled).</summary>
     Task<PermissionChange?> ShowPermissionsDialogAsync(IReadOnlyList<VfsEntry> entries, IReadOnlyList<FilePermissions> current);
 
+    /// <summary>The permissions of one Windows item: the change (null: none), or the folder above wanted instead.</summary>
+    Task<(PermissionChange? Change, bool ParentWanted)> ShowAclPermissionsAsync(VfsEntry entry, FilePermissions current);
+
     /// <summary>Algorithm and target of new checksum files; SingleFileName null = one file per source.</summary>
     /// <summary>Create checksums: the dialog reads the files itself; the job that ran, or null when closed without it.</summary>
     Task<NextCommander.Core.Tools.CreateChecksumsJob?> ShowChecksumDialogAsync(Views.Dialogs.ChecksumDialogRequest request);

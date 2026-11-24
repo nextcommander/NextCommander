@@ -92,4 +92,62 @@ public sealed class PermissionsTests : IDisposable
         Assert.Empty(job.Errors);
         Assert.Equal(3, job.Progress.Snapshot().DoneFiles); // the folder, sub and b.txt
     }
+
+    [Fact]
+    public void Rights_masks_have_their_names_and_reach()
+    {
+        Assert.Equal(AclRights.FullControl, AclMask.NameOf(AclMask.FullControl));
+        Assert.Equal(AclRights.FullControl, AclMask.NameOf(AclMask.FullControl & ~AclMask.Synchronize)); // Windows' own bit aside
+        Assert.Equal(AclRights.Modify, AclMask.NameOf(AclMask.Modify | AclMask.Synchronize));
+        Assert.Equal(AclRights.ReadAndExecute, AclMask.NameOf(AclMask.ReadAndExecute));
+        Assert.Equal(AclRights.Special, AclMask.NameOf(AclMask.Read | AclMask.Delete));
+        Assert.Equal(AclMask.FullControl, AclMask.Normalize(0x10000000)); // GENERIC_ALL
+        Assert.Equal(AclMask.Read, AclMask.Normalize(0x80000000) & AclMask.Read);
+        foreach (var applies in Enum.GetValues<AclApplies>())
+        {
+            var (self, sub, files) = AclMask.Reach(applies);
+            Assert.Equal(applies, AclMask.AppliesOf(self, sub, files));
+        }
+    }
+
+    [Fact]
+    public async Task Windows_rules_are_replaced_inheritance_turned_off_and_what_is_inside_reset()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+        _dir.Write("top/inner/c.txt", "c");
+        var top = _dir.VPath("top");
+        var inner = _dir.VPath("top/inner");
+        const string users = "S-1-5-32-545";
+        await _local.SetPermissionsAsync(inner, true, new PermissionChange { AddRules = [new AclEntry(users, true, AclRights.Read)] }, CancellationToken.None);
+
+        // the folder's own rules replaced, inheritance off: only those rules stay
+        var registry = new ProviderRegistry([_local]);
+        var folder = (await _local.GetEntryAsync(top, CancellationToken.None))!;
+        var me = System.Security.Principal.WindowsIdentity.GetCurrent().User!.Value;
+        var job = new PermissionsJob(registry, [folder], new PermissionChange
+        {
+            ReplaceRules =
+            [
+                new AclEntry(me, true, AclRights.FullControl) { Mask = AclMask.FullControl },
+                new AclEntry(users, true, AclRights.Special) { Mask = AclMask.Read | AclMask.Write, Applies = AclApplies.FilesOnly },
+            ],
+            Inherit = false,
+            ReplaceChildren = true,
+        });
+        await job.RunAsync();
+        Assert.Empty(job.Errors);
+        var now = await _local.GetPermissionsAsync(top, CancellationToken.None);
+        Assert.True(now.InheritanceProtected);
+        Assert.DoesNotContain(now.Acl, r => r.Inherited);
+        Assert.Contains(now.Acl, r => r.Applies == AclApplies.FilesOnly && AclMask.Has(r.EffectiveMask, AclMask.Read | AclMask.Write));
+
+        // inside: its own rule went, the folder's rules reach it
+        var below = await _local.GetPermissionsAsync(inner, CancellationToken.None);
+        Assert.False(below.InheritanceProtected);
+        Assert.DoesNotContain(below.Acl, r => !r.Inherited);
+        Assert.Contains(below.Acl, r => r.Inherited && r.Rights == AclRights.FullControl);
+    }
 }

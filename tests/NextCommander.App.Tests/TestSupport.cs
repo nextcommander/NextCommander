@@ -233,6 +233,12 @@ internal sealed class FakeDialogs : IDialogService
     /// <summary>The answer of the permissions dialog (null: cancelled); it gets the entries and their permissions.</summary>
     public Func<IReadOnlyList<VfsEntry>, IReadOnlyList<FilePermissions>, PermissionChange?>? PermissionsHandler { get; set; }
 
+    /// <summary>The answer of the Windows permissions window (null: closed).</summary>
+    public Func<VfsEntry, FilePermissions, PermissionChange?>? AclPermissionsHandler { get; set; }
+
+    public Task<(PermissionChange? Change, bool ParentWanted)> ShowAclPermissionsAsync(VfsEntry entry, FilePermissions current) =>
+        Task.FromResult((AclPermissionsHandler is { } handler ? handler(entry, current) : PermissionsHandler?.Invoke([entry], [current]), false));
+
     public Task<PermissionChange?> ShowPermissionsDialogAsync(IReadOnlyList<VfsEntry> entries, IReadOnlyList<FilePermissions> current) =>
         Task.FromResult(PermissionsHandler?.Invoke(entries, current));
 
