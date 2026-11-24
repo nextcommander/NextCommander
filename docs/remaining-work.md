@@ -276,6 +276,44 @@ built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC l
   certificates, fonts, .vcf / .ics. Tested with files made in the tests.
 - [ ] SQLite plugin to be tried in the app with real databases (Enter, F3, copying a table out as CSV / JSON).
 
+## Feature ideas (to be evaluated)
+
+Proposed on 23 November 2026 at the user's request; nothing decided yet. Undo (Ctrl+Z), the command palette
+(Ctrl+Shift+P) and the Quick View below / right of the file list from the same list are done.
+
+File management
+- [ ] Saved workspaces: the tabs of both panels, their view modes and the terminal layout saved under a name and opened
+  with one key ("Project X", "Server maintenance").
+- [ ] Rules: "a .pdf arriving in Downloads goes to Documents/PDF", "this folder synchronized with the server every
+  night"; carried out by the existing copy / move jobs and the synchronize tool, with a log of what was done.
+- [ ] Tags and color labels for files (NTFS alternate data stream, xattr, or a side file), a tag column and a filter
+  by tag.
+- [ ] Saved searches as virtual folders: opened in a panel like a folder and read again each time.
+- [ ] Four panels, or a side split horizontally / vertically, to work with more than two folders.
+- [ ] Secure delete: files overwritten before deleting (with a note that it is not reliable on SSDs).
+- [ ] Permissions editor: chmod / owner and Windows ACLs in a dialog, for remote SFTP files too.
+
+Media and documents
+- [ ] Batch picture operations: resize, convert, rotate, rename by the EXIF date.
+- [ ] Map view of photos with GPS data.
+- [ ] Picture compare: two pictures side by side, overlaid or as their difference.
+- [ ] Hex editor: the Lister's hex view made editable.
+
+Connections and cloud
+- [ ] Copy a share link: S3 presigned URL, Azure SAS, cloud drive share link.
+- [ ] Kubernetes pods as a plugin (on the model of the Docker plugin).
+- [ ] Git plugin with writing: stage, commit, switch branch, the differences of a file in its history.
+- [ ] Settings kept in sync between computers through one of the user's own cloud connections.
+
+Automation and extending
+- [ ] Macro recording: a sequence of keys and commands recorded as a uc_ command.
+- [ ] Scripting: commands and plugins written in JavaScript (Jint is already used for PAC scripts).
+- [ ] Plugin catalog: finding, installing and updating plugins from inside the program.
+
+Usability
+- [ ] Accessibility: screen reader support, a high-contrast theme, a check that everything can be reached by keyboard.
+- [ ] A short tour at the first start showing the main shortcuts.
+
 ## AI support (ideas, to be evaluated)
 
 Collected on 19 November 2026 at the user's request; nothing decided yet. The idea throughout: AI fills in the options of
