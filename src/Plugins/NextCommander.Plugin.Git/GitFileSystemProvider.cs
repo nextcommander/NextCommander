@@ -12,7 +12,7 @@ namespace NextCommander.Plugin.Git;
 /// with its separators as <c>|</c> (<c>git://C:|Projects|NextCommander/branches/main/src</c>). The Plugins menu offers
 /// "Git history" while the active panel is in a repository; ".." from its root goes back to the repository's folder.
 /// </summary>
-public sealed class GitFileSystemProvider : IFileSystemProvider, IPluginFolderEntry, IOriginProvider
+public sealed class GitFileSystemProvider : IFileSystemProvider, IPluginFolderEntry, IOriginProvider, IPluginFolderActions
 {
     public const string GitScheme = "git";
 
@@ -55,6 +55,12 @@ public sealed class GitFileSystemProvider : IFileSystemProvider, IPluginFolderEn
     internal static string Encode(string repository) => repository.TrimEnd('\\', '/').Replace('\\', '|').Replace('/', '|');
 
     internal static string Decode(string authority) => authority.Replace('|', OperatingSystem.IsWindows() ? '\\' : '/');
+
+    /// <summary>Stage, commit, switch branch ... in a repository's working folder (<see cref="GitActions"/>).</summary>
+    public IReadOnlyList<PluginAction> ActionsFor(VfsPath folder, IReadOnlyList<VfsEntry> selected, IPluginDialogs dialogs) =>
+        (_actions ??= new GitActions(() => CurrentTool)).ActionsFor(folder, selected, dialogs);
+
+    private GitActions? _actions;
 
     public VfsPath? RootFor(VfsPath folder) =>
         folder.IsLocal && GitTool.RepositoryOf(folder.Path) is { } repository ? RootOf(repository) : null;

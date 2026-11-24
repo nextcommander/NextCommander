@@ -316,7 +316,10 @@ Media and documents
 Connections and cloud
 - [ ] Copy a share link: S3 presigned URL, Azure SAS, cloud drive share link.
 - [ ] Kubernetes pods as a plugin (on the model of the Docker plugin).
-- [ ] Git plugin with writing: stage, commit, switch branch, the differences of a file in its history.
+- [x] Git plugin with writing (24 November 2026): stage, unstage, discard, show changes, file history, commit, switch /
+  new branch in the Plugins menu and the file list's own menu (`GitActions`; new plugin contracts `IPluginFolderActions`
+  and `IPluginDialogs`).
+- [ ] Git, more: push / pull / fetch (credentials through git's own helper), merge and conflicts.
 - [ ] Settings kept in sync between computers through one of the user's own cloud connections.
 
 Automation and extending
@@ -325,7 +328,10 @@ Automation and extending
 - [x] Scripting (24 November 2026): JavaScript commands (`scripts/*.js`, nc_RunScript, Commands > Scripts; the `nc`
   object of `Services/ScriptRunner`) and columns (`scripts/columns/*.js`, `Core/Scripting/ScriptColumnProvider`);
   docs/guide/scripts.md.
-- [ ] Scripting, more: file system plugins (a folder of a server or a service) written in JavaScript.
+- [x] File systems written in JavaScript (24 November 2026): `scripts/filesystems/*.js` with list / read (write, mkdir,
+  remove, rename optional) and `http(...)`, opened from the saved connections (`Core/Scripting/ScriptFileSystemProvider`,
+  loaded as the plugin "JavaScript file systems" in `App.LoadPlugins`).
+- [ ] To be tried by the user: Git writing in a real repository; a JavaScript file system against a real web service.
 - [ ] Plugin catalog: finding, installing and updating plugins from inside the program (put off by the user,
   24 November 2026: no catalog is published yet; where it is read from is to be decided).
 

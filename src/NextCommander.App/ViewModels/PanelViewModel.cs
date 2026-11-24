@@ -2148,20 +2148,29 @@ public sealed partial class PanelViewModel : ObservableObject, IDisposable
     /// <summary>What the plugin of this folder can do with the entry under the cursor (start a container ...); empty when nothing.</summary>
     public IReadOnlyList<NextCommander.Core.Plugins.PluginAction> PluginActionsForCursor()
     {
-        if (CursorItem is not { IsParent: false, IsError: false, Entry: { } entry }
-            || _registry.Providers.FirstOrDefault(p => p.CanHandle(entry.Path)) is not NextCommander.Core.Plugins.IPluginEntryActions actions)
-        {
-            return [];
-        }
+        var result = new List<NextCommander.Core.Plugins.PluginAction>();
         try
         {
-            return actions.ActionsFor(entry);
+            if (CursorItem is { IsParent: false, IsError: false, Entry: { } entry }
+                && _registry.Providers.FirstOrDefault(p => p.CanHandle(entry.Path)) is NextCommander.Core.Plugins.IPluginEntryActions actions)
+            {
+                result.AddRange(actions.ActionsFor(entry));
+            }
+            // the plugins' actions for this folder and the selection (Git: stage, commit ...)
+            if (CurrentPath is { } folder && FolderActions is { } folderActions)
+            {
+                result.AddRange(folderActions(folder, GetSelectedEntries()));
+            }
         }
-        catch (Exception ex) when (ex is IOException or InvalidOperationException or NotSupportedException)
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or NotSupportedException or UnauthorizedAccessException)
         {
-            return [];
+            // a plugin that cannot tell adds nothing
         }
+        return result;
     }
+
+    /// <summary>The plugins' actions for a folder and the selected entries (set by the main window's view model).</summary>
+    public Func<VfsPath, IReadOnlyList<VfsEntry>, IReadOnlyList<NextCommander.Core.Plugins.PluginAction>>? FolderActions { get; init; }
 
     /// <summary>Runs a plugin's action; its message (or error) is shown, and the folder is read again.</summary>
     public async Task RunPluginActionAsync(NextCommander.Core.Plugins.PluginAction action)

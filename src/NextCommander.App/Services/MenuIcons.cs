@@ -213,6 +213,7 @@ public static class MenuIcons
         ["nc_RunScript"] = new("MiDoc", Yellow, "OvArrowRight", Green),
         ["nc_NewScript"] = new("MiDoc", Yellow, "OvPlus", Green),
         ["nc_NewColumnScript"] = new("MiColumns", Yellow, "OvPlus", Green),
+        ["nc_NewFileSystemScript"] = new("MiDrive", Yellow, "OvPlus", Green),
         ["nc_OpenScriptsFolder"] = new("MiFolderOpen", Yellow),
         ["nc_Tag"] = new("MiTag", Blue),
         ["nc_TagFilter"] = new("MiTag", Blue, "OvSearch", Gray),

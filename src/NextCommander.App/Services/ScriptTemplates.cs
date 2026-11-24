@@ -33,6 +33,62 @@ public static class ScriptTemplates
         }
         """;
 
+    /// <summary>A file system script: a scratch place kept in memory (it shows every function a file system can have).</summary>
+    public const string FileSystem = """
+        // A file system in JavaScript. It is opened from Connection > Saved connections (group "JavaScript") or the
+        // button bar's connections menu; the program reads the scripts of this folder when it starts.
+        //
+        //   list(path)             the entries of a folder: [{ name, isDir, size, modified }]  (modified: ISO text or ms)
+        //   read(path)             a file's content: a text, or { base64: "..." }
+        //   write(path, data)      (optional) data.text / data.base64: without it the place is read-only
+        //   mkdir(path), remove(path, isDir), rename(from, to)   (optional)
+        //
+        // Paths are "/" separated and start with "/". The program gives:
+        //   http(method, url, body, headers) -> { status, body, headers }   e.g. http("GET", "https://example.com/api")
+        //   toBase64(text), fromBase64(base64), readText(localPath, maxChars)
+        // Throw an Error to report a problem: its message is shown.
+
+        var title = "Scratch (in memory)";
+        var files = { "/": { dir: true }, "/readme.txt": { text: "Files written here stay until the program closes.\n" } };
+
+        function parentOf(path) { return path.substring(0, path.lastIndexOf("/")) || "/"; }
+
+        function list(path) {
+          var result = [];
+          for (var key in files) {
+            if (key !== "/" && parentOf(key) === path) {
+              var f = files[key];
+              result.push({ name: key.substring(key.lastIndexOf("/") + 1), isDir: !!f.dir, size: f.dir ? 0 : f.text.length, modified: f.modified });
+            }
+          }
+          return result;
+        }
+
+        function read(path) {
+          if (!files[path] || files[path].dir) throw new Error("No such file: " + path);
+          return files[path].text;
+        }
+
+        function write(path, data) { files[path] = { text: data.text, modified: new Date().toISOString() }; }
+
+        function mkdir(path) { files[path] = { dir: true }; }
+
+        function remove(path, isDir) {
+          for (var key in files) {
+            if (key === path || key.indexOf(path + "/") === 0) delete files[key];
+          }
+        }
+
+        function rename(from, to) {
+          for (var key in files) {
+            if (key === from || key.indexOf(from + "/") === 0) {
+              files[to + key.substring(from.length)] = files[key];
+              delete files[key];
+            }
+          }
+        }
+        """;
+
     /// <summary>A column script: the number of lines of text files.</summary>
     public const string Column = """
         // A custom column in JavaScript. Choose it in Show > Display > Edit view modes... (field "js_<file name>.<id>");
