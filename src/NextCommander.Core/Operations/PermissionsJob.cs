@@ -16,16 +16,42 @@ public sealed class PermissionsJob(ProviderRegistry registry, IReadOnlyList<VfsE
         {
             await CollectAsync(entry, plan, ct).ConfigureAwait(false);
         }
-        Progress.SetTotals(0, plan.Count);
-        foreach (var entry in plan)
+        // Windows' "replace on everything inside": the selected items get the change, what is inside takes their rules
+        var children = new List<VfsEntry>();
+        if (change.ReplaceChildren && !change.Recursive)
+        {
+            foreach (var entry in entries.Where(e => e.IsDirectory && !e.IsLink))
+            {
+                await CollectInsideAsync(entry, children, ct).ConfigureAwait(false);
+            }
+        }
+        var reset = new PermissionChange { ResetToInherited = true };
+        Progress.SetTotals(0, plan.Count + children.Count);
+        foreach (var (entry, itsChange) in plan.Select(e => (e, change)).Concat(children.Select(c => (c, reset))))
         {
             await CheckpointAsync(ct).ConfigureAwait(false);
             Progress.BeginItem(entry.Name, 0);
             await WithErrorHandlingAsync(entry.Path.ToDisplayString(), () =>
                 registry.Resolve(entry.Path) is IPermissionSupport support
-                    ? support.SetPermissionsAsync(entry.Path, entry.IsDirectory, change, ct)
+                    ? support.SetPermissionsAsync(entry.Path, entry.IsDirectory, itsChange, ct)
                     : throw new NotSupportedException("This place has no permissions to change."), ct).ConfigureAwait(false);
             Progress.CompleteFile();
+        }
+    }
+
+    /// <summary>Everything inside a folder (not the folder itself); links to folders are not followed.</summary>
+    private async Task CollectInsideAsync(VfsEntry folder, List<VfsEntry> found, CancellationToken ct)
+    {
+        IReadOnlyList<VfsEntry> children = [];
+        await WithErrorHandlingAsync(folder.Path.ToDisplayString(), async () =>
+            children = await registry.Resolve(folder.Path).ListAsync(folder.Path, ct).ConfigureAwait(false), ct).ConfigureAwait(false);
+        foreach (var child in children)
+        {
+            found.Add(child);
+            if (child.IsDirectory && !child.IsLink)
+            {
+                await CollectInsideAsync(child, found, ct).ConfigureAwait(false);
+            }
         }
     }
 

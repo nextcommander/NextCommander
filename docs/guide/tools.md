@@ -310,6 +310,18 @@ panel is next to it, *Folder...* scans another folder (chosen in the folder tree
 
 - **Change attributes...** (*Files*): read-only, hidden, system and archive flags, and the modification time,
   also for subfolders.
+- **Permissions...** (*Files*): who may do what with the selected items.
+  - On Linux, macOS and SFTP: read / write / execute for owner, group and others, the special bits, the octal value,
+    owner and group, and for folders everything inside too.
+  - A Windows file or folder opens a window of its own. On the left is who has access: the item's own rules, then those
+    inherited from the folder above (each user or group once), with a level such as *Modify* or *Deny · Write*. On the
+    right is the chosen rule: *Allow* or *Deny*, where it applies (this folder, subfolders, files), the access level, the
+    basic rights as check boxes and the advanced rights they include. An inherited rule is changed at the folder above
+    (*Open*), or inheritance is turned off here: the inherited rules are then kept as the item's own rules or removed.
+  - Also in that window: *Add* (a user or group, offered while typing; an unknown name is said), *Remove*, the owner
+    (*Change*, needs administrator rights), and the effective access of the signed-in user.
+  - *Also replace on all subfolders and files* makes everything inside lose its own rules and take the folder's.
+    Nothing changes before *Apply*; *Reset* undoes the edits.
 - **Properties...** (Alt+Enter): on Windows the Explorer properties window; elsewhere NextCommander's own window
   with dates, attributes, Unix permissions and the folder size.
 - **Calculate occupied space...** (Ctrl+L): total size and file and folder count of the selection.
