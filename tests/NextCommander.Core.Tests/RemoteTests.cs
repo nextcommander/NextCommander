@@ -233,6 +233,20 @@ public sealed class RemoteIntegrationTests : IDisposable
         Assert.InRange((File.GetLastWriteTime(Path.Combine(back, renamed)) - new DateTime(2021, 6, 7, 8, 9, 10)).Duration().TotalSeconds, 0, 2);
         Assert.Equal(300_000, new FileInfo(Path.Combine(back, "deep", "b.bin")).Length);
 
+        if (provider is IPermissionSupport permissions)
+        {
+            // SFTP: the mode bits are changed and read back; the owner is a number
+            var file = root.Combine("sub").Combine(renamed);
+            // (the write bit: a test server on Windows applies only that one)
+            await permissions.SetPermissionsAsync(file, false, new PermissionChange { Clear = UnixFileMode.UserWrite }, CancellationToken.None);
+            var after = await permissions.GetPermissionsAsync(file, CancellationToken.None);
+            Assert.False(after.Mode!.Value.HasFlag(UnixFileMode.UserWrite));
+            Assert.True(after.NumericOwner);
+            await permissions.SetPermissionsAsync(file, false, new PermissionChange { Set = UnixFileMode.UserWrite }, CancellationToken.None);
+            Assert.True((await permissions.GetPermissionsAsync(file, CancellationToken.None)).Mode!.Value.HasFlag(UnixFileMode.UserWrite));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => permissions.SetPermissionsAsync(file, false, new PermissionChange { Owner = "root" }, CancellationToken.None));
+        }
+
         await provider.DeleteAsync(root, recursive: true, CancellationToken.None);
         Assert.Null(await provider.GetEntryAsync(root, CancellationToken.None));
     }

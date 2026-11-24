@@ -466,7 +466,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         "nc_CopyToClipboard", "nc_CutToClipboard", "nc_SetAttrib", "nc_PackFiles", "nc_UnpackFiles", "nc_TestArchive", "nc_CompareFilesByContent",
         "nc_AssociateWith", "nc_MultiRenameFiles", "nc_EditComment", "nc_PrintFile", "nc_SplitFile", "nc_CombineFiles", "nc_UUEncode", "nc_UUDecode",
         "nc_CRCcreate", "nc_CRCcheck", "nc_CopyNamesToClip", "nc_CopyFullNamesToClip", "nc_CopyDetailsToClip", "nc_CopyFullDetailsToClip",
-        "nc_RestoreFromTrash", "nc_MountImage", "nc_UnmountImage", "nc_SecureDelete",
+        "nc_RestoreFromTrash", "nc_MountImage", "nc_UnmountImage", "nc_SecureDelete", "nc_Permissions",
     };
 
     /// <summary>Whether the active panel has files or folders selected (marked ones, or the one under the cursor that is not [..]).</summary>
@@ -1270,6 +1270,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         c.Register("nc_SplitFile", "Split file into parts", _ => SplitFileAsync());
         c.Register("nc_CombineFiles", "Combine files (.001)", _ => CombineFilesAsync());
         c.Register("nc_SetAttrib", "Change attributes / date", _ => ChangeAttributesAsync());
+        c.Register("nc_Permissions", "Permissions: Unix mode, owner and group, or the Windows access list", _ => PermissionsAsync());
         c.Register("nc_PackFiles", "Pack selected files (Alt+F5)", _ => PackAsync());
         c.Register("nc_UnpackFiles", "Unpack selected archives (Alt+F9)", _ => UnpackAsync());
         c.Register("nc_TestArchive", "Test selected archives (Alt+Shift+F9)", _ => TestArchivesAsync());
@@ -3743,6 +3744,47 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         {
             await _dialogs.ShowMessageAsync("Combine", $"{job.Result?.Name} created" + (job.Verified ? ", size and CRC32 verified." : " (no .crc file, not verified)."));
         }
+    }
+
+    /// <summary>
+    /// nc_Permissions (user's request, 24 November 2026): the permissions of the selected items (Unix mode and owner, or the
+    /// Windows access list) in a dialog, changed by a job.
+    /// </summary>
+    private async Task PermissionsAsync()
+    {
+        var entries = ActivePanel.GetSelectedEntries();
+        if (entries.Count == 0)
+        {
+            return;
+        }
+        if (entries.Any(e => _registry.Resolve(e.Path) is not IPermissionSupport support || support.PermissionKindOf(e.Path) == PermissionKind.None))
+        {
+            await _dialogs.ShowMessageAsync("Permissions", "Permissions can be changed on this computer's files and on SFTP servers; this place has none the program can change.");
+            return;
+        }
+        var current = new List<FilePermissions>();
+        try
+        {
+            foreach (var entry in entries.Take(200))
+            {
+                current.Add(await ((IPermissionSupport)_registry.Resolve(entry.Path)).GetPermissionsAsync(entry.Path, CancellationToken.None));
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException or ArgumentException)
+        {
+            await _dialogs.ShowMessageAsync("Permissions", ex.Message);
+            return;
+        }
+        if (current.Select(c => c.Kind).Distinct().Count() > 1)
+        {
+            await _dialogs.ShowMessageAsync("Permissions", "The selected items have different kinds of permissions (Windows and Unix): choose items of one place.");
+            return;
+        }
+        if (await _dialogs.ShowPermissionsDialogAsync(entries, current) is not { } change)
+        {
+            return;
+        }
+        await RunJobAsync(new PermissionsJob(_registry, entries, change) { Interaction = new UiJobInteraction(_dialogs) }, false, ActivePanel, entries);
     }
 
     private async Task ChangeAttributesAsync()

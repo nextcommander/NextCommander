@@ -28,6 +28,7 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
 - Tags with color labels on files and folders, a Tags column and a filter by tag.
 - Rules carried out while the program runs: arriving files moved or copied, folders synchronized every night.
 - Delete securely: files overwritten with random data before they are deleted.
+- Permissions: Unix mode, owner and group (also over SFTP) and Windows access lists in one dialog.
 
 ### Viewer and editor
 - Lister (F3) shows text with syntax colors, binary and hex views, images (including camera RAW previews),
