@@ -4958,6 +4958,23 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>nc_Undo (Ctrl+Z): asks, then undoes the latest file operation and says what could not be undone.</summary>
+#pragma warning disable CA1863 // the pattern is the translation of the running language
+    /// <summary>
+    /// "Undo: Copy of 3 items to D:\x" with what it will do, line by line, and the question (the parts translated here:
+    /// the whole text is put together).
+    /// </summary>
+    internal static string UndoQuestion(Services.UndoStep step)
+    {
+        string T(string text) => NextCommander.Core.Localization.Localizer.T(text);
+        var text = new System.Text.StringBuilder(string.Format(CultureInfo.CurrentCulture, T("Undo: {0}"), T(step.Title)));
+        if (step.Plan.Count > 0)
+        {
+            text.Append("\n\n").Append(T("This will be done:")).Append('\n').AppendJoin('\n', step.Plan);
+        }
+        return text.Append("\n\n").Append(T("Undo it?")).ToString();
+    }
+#pragma warning restore CA1863
+
     private async Task UndoAsync()
     {
         if (Undo.Next is not { } next)
@@ -4965,7 +4982,8 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             await _dialogs.ShowMessageAsync("Undo", "There is nothing to undo.");
             return;
         }
-        if (!await _dialogs.ConfirmAsync("Undo", $"Undo: {next.Title}?", "Undo"))
+        // what undoing will do, before it is done (user's request, 24 November 2026)
+        if (!await _dialogs.ConfirmAsync("Undo", UndoQuestion(next), "Undo"))
         {
             return;
         }

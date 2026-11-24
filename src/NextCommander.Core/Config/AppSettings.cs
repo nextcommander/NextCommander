@@ -337,7 +337,7 @@ public sealed class AppSettings
     /// <summary>The tags files can have, with their color labels (Mark > Tags; the files' tags are in tags.json).</summary>
     public List<Tags.TagDefinition> Tags { get; set; } = NextCommander.Core.Tags.TagDefinition.Defaults();
 
-    /// <summary>Rules carried out while the program runs (Commands > Rules): arriving files moved or copied, nightly synchronizations.</summary>
+    /// <summary>Rules carried out while the program runs (Tools > Rules): arriving files moved or copied, nightly synchronizations.</summary>
     public List<Automation.FileRule> Rules { get; set; } = [];
 
     /// <summary>Show the tab strip even with a single tab.</summary>

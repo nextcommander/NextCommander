@@ -2414,7 +2414,7 @@ public sealed partial class SettingsView : UserControl
                 "Another NextCommander connected by a cable (USB or Ethernet) or over the network opens them with Net > PC link. The first time, both screens show the same code and this computer allows the other one. Same as Net > Share with PC link.",
                 s => s.LinkSharing, (s, v) => s.LinkSharing = v),
             ListItem(rules, "Rules", "Rules",
-                "Carried out while the program runs: files arriving in a folder are moved or copied (once nothing writes to them any more), folders are synchronized every day at a time (a missed night at the next start). Commands > Rules > Rules log... shows what was done.",
+                "Carried out while the program runs: files arriving in a folder are moved or copied (once nothing writes to them any more), folders are synchronized every day at a time (a missed night at the next start). Tools > Rules > Rules log... shows what was done.",
                 s => s.Rules, (s, v) => s.Rules = v, RuleOptions()),
             ListItem(link, "Sharing", "Shared folders", "Only these folders can be reached; nothing above them. A read-only folder cannot be changed by the other computer.",
                 s => s.LinkShares, (s, v) => s.LinkShares = v, LinkShareOptions()),

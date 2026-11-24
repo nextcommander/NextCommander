@@ -91,7 +91,9 @@ lists what you used last.
 
 ## Undo (Ctrl+Z)
 
-Ctrl+Z (Edit > Undo) undoes the last file operation, after asking; pressed again it undoes the one before (up to 30):
+Ctrl+Z (Edit > Undo) undoes the last file operation; pressed again it undoes the one before (up to 30). Before it does
+anything it says what will be done (which copies are removed, what goes back where, which names come back, files
+that cannot be brought back) and asks:
 
 - **Copy**: the copies are removed (into the recycle bin for local files), then the folders the copy made. A file the
   copy overwrote cannot be brought back; its copy is kept and you are told.
@@ -169,7 +171,7 @@ Renames many files at once. The list shows the old and new names live as you typ
 
 ## Synchronize directories
 
-*Commands > Synchronize directories...* compares two folders and makes them equal. It opens in place of the panels as a
+*Tools > Synchronize directories...* compares two folders and makes them equal. It opens in place of the panels as a
 page of its own, with a **Synchronize** tab next to the files tab: the files tab takes you back to the panels while the
 comparison stays open; the tab's `×`, the `×` at its top right or Esc close it.
 
@@ -217,7 +219,7 @@ two panels.
 
 ## Duplicate files
 
-*Commands > Duplicate files...* finds files that exist more than once. It opens as a page of its own with a
+*Tools > Duplicate files...* finds files that exist more than once. It opens as a page of its own with a
 **Duplicates** tab next to the files tab (like *Synchronize directories*): the files tab takes you back to the
 panels while it stays open; its ✕, its tab's × or Esc closes it. **Go to file** and **Feed to panel** show the files.
 
@@ -237,7 +239,7 @@ panels while it stays open; its ✕, its tab's × or Esc closes it. **Go to file
 
 ## Folder sizes
 
-*Commands > Folder sizes...* shows what takes up the space in a folder, also on servers and cloud drives. It opens in
+*Tools > Folder sizes...* shows what takes up the space in a folder, also on servers and cloud drives. It opens in
 place of the other panel and shows the folder of the panel next to it: go to another folder there and it is scanned
 anew. *Rescan* (F5) reads it again; the ✕ button or Esc puts the panel back. The **Maximize** button of its title line moves it, scan and all, to a page of
 its own with a tab (like duplicate files): both panels are back under the files tab, and *Back into the panel* (the
