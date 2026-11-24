@@ -393,8 +393,14 @@ public sealed class MtpFileSystemProvider(IMtpDeviceSource source) : IFileSystem
 
     private Session Open(string name)
     {
-        var device = source.GetDevices().FirstOrDefault(d => string.Equals(d.Name, name, StringComparison.OrdinalIgnoreCase))
-            ?? throw new DirectoryNotFoundException($"The device is not connected: {name}");
+        var device = source.GetDevices().FirstOrDefault(d => string.Equals(d.Name, name, StringComparison.OrdinalIgnoreCase));
+        if (device is null)
+        {
+            // what was found last may be old (the phone came back under a new USB address): look again once
+            source.Rescan();
+            device = source.GetDevices().FirstOrDefault(d => string.Equals(d.Name, name, StringComparison.OrdinalIgnoreCase))
+                ?? throw new DirectoryNotFoundException($"The device is not connected (or another program uses it now): {name}");
+        }
         return new Session(source.Open(device.Id), device.Id);
     }
 

@@ -49,7 +49,32 @@ public sealed class NativeLibMtp : ILibMtp
 public sealed class LibMtpDeviceSource(ILibMtp libMtp, IUsbDevices usb, Func<string?, bool>? isTaken = null) : IMtpDeviceSource
 {
     private readonly Lock _lock = new();
+    private readonly Func<DateTime> _now = () => DateTime.UtcNow;
     private string? _signature;
+
+    /// <summary>When the USB devices changed last, and when libmtp searched last.</summary>
+    private DateTime _changedAt;
+    private DateTime _searchedAt;
+
+    /// <summary>
+    /// After the USB devices change, libmtp searches again for this long (at most every <see cref="SearchEvery"/>): a phone
+    /// whose user just allowed file transfer comes back under a new USB address and is not ready at once (user's report,
+    /// 24 November 2026: "The device is not connected: SAMSUNG Android" while it was in the drive list).
+    /// </summary>
+    internal static TimeSpan Settle { get; set; } = TimeSpan.FromSeconds(15);
+
+    internal static TimeSpan SearchEvery { get; set; } = TimeSpan.FromSeconds(2);
+
+    /// <summary>A clock for tests.</summary>
+    internal Func<DateTime> Clock { init => _now = value; }
+
+    public void Rescan()
+    {
+        lock (_lock)
+        {
+            _signature = null;
+        }
+    }
     private IReadOnlyList<MtpDeviceInfo> _devices = [];
     private Dictionary<string, (RawMtpDevice Raw, string? Serial)> _found = new(StringComparer.Ordinal);
 
@@ -60,9 +85,15 @@ public sealed class LibMtpDeviceSource(ILibMtp libMtp, IUsbDevices usb, Func<str
             return [];
         }
         var signature = usb.Signature();
+        var now = _now();
         lock (_lock)
         {
-            if (signature == _signature)
+            if (signature != _signature && _signature is not null)
+            {
+                _changedAt = now;
+            }
+            var settling = now - _changedAt < Settle && now - _searchedAt >= SearchEvery;
+            if (signature == _signature && !settling)
             {
                 return Usable(_devices, _found);
             }
@@ -81,7 +112,12 @@ public sealed class LibMtpDeviceSource(ILibMtp libMtp, IUsbDevices usb, Func<str
             }
             lock (_lock)
             {
+                if (_signature is null && signature != _signature)
+                {
+                    _changedAt = now; // the first search (or after Rescan): the devices may still be coming
+                }
                 _signature = signature;
+                _searchedAt = now;
                 _devices = devices;
                 _found = found;
             }
