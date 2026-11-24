@@ -83,11 +83,22 @@ line between the list and the view can be dragged. The place is kept (*Configura
 
 ## Command palette (Ctrl+Shift+P)
 
-Ctrl+Shift+P (Commands > Command palette...) opens a box at the top of the window. Type a few words: it finds every
-command with its description and shortcut, your most used folders, the Hotlist entries and the saved connections.
-Each word you type has to appear (the start of a word counts most, then a part of a word, then its letters in order:
-`nmk` finds *nc_MkDir*); case and accents do not matter. ↑ / ↓ choose, Enter runs, Esc closes. With nothing typed it
-lists what you used last.
+Ctrl+Shift+P (Commands > Command palette...) dims the window and opens a box at its top. Type a few words: it finds
+every command (with its menu and shortcut), your macros (with their steps), the Hotlist and the most used folders, and
+the saved connections. Each word has to match the title, the name, the menu or the type; the start of a word counts
+most, then a part of it, then its letters in order (`nmk` finds *nc_MkDir*); a shortcut typed whole (`f5`,
+`ctrl+p`) finds its command. Case and accents do not matter; the letters found are highlighted.
+
+- **Groups:** with nothing typed, what you used last, then a few commands, folders and connections; with words, the
+  best match first, then the best of each kind ("Show all" lists every one).
+- **Scopes:** All, Commands, Folders, Connections; Tab goes round them, or start with `>` (commands), `/` (folders) or
+  `@` (connections).
+- **A path** (`D:\Projects`, `\\nas\share`, `~/docs`) offers *Go to* and the folders under it; **an address**
+  (`sftp://host`) offers *Connect* (not saved) or *Save as a new connection*; anything else can be searched as a file
+  name (*Find files named ...*).
+- **Keys:** ↑ / ↓ choose, Enter runs; for a folder Ctrl+Enter opens it in a new tab and Shift+Enter in the other panel;
+  for a connection Ctrl+E edits it; for a command Ctrl+C copies its name and Ctrl+K opens *Commands and shortcuts* at it
+  to change its key. Esc clears the text, then closes; a click on the dimmed window closes too.
 
 ## Undo (Ctrl+Z)
 

@@ -145,9 +145,9 @@ public sealed class MenuTests : IDisposable
     public async Task Commands_menu_order_and_commands()
     {
         var (w, vm) = await _fx.OpenAsync();
-        Assert.Equal(["Folder tree...", "Find files...", "Find files in separate process...", "Volume label...", "System information...",
+        Assert.Equal(["Folder tree...", "Find files...", "Find files in separate process...", "Saved searches", "Volume label...", "System information...",
             "Hotlist", "Back", "Open command prompt window", "Internal terminal", "Branch View (with subfolders)", "Open Desktop folder",
-            "Background transfer manager...", "Source <-> Target", "Target = Source", "Calculate folder sizes", "Show in system file manager", "Command palette...", "Saved searches"], Headers(w, "_Commands"));
+            "Background transfer manager...", "Source <-> Target", "Target = Source", "Calculate folder sizes", "Show in system file manager", "Command palette..."], Headers(w, "_Commands"));
         // the tools in a menu of their own before Start (user's request, 24 November 2026)
         Assert.Equal(["Multi-Rename Tool...", "Duplicate files...", "Synchronize directories...", "Folder sizes...", "Rules", "Record macro", "Scripts"],
             Headers(w, "_Tools"));
@@ -221,8 +221,8 @@ public sealed class MenuTests : IDisposable
         var top = w.GetLogicalDescendants().OfType<Menu>().First().Items.OfType<MenuItem>().Select(m => (string)m.Header!).ToList();
         Assert.Equal(["_Files", "_Edit", "_Mark", "_Commands", "Co_nnection", "_Show", "C_onfiguration", "_Tools", "_Start", "_Help"], top);
         // related options in submenus; navigation and tabs (formerly under "Other") on the menu itself
-        Assert.Equal(["Display", "Tree", "Quick view panel", "Panels", "File filter", "Sort", "Group by", "What is shown", "Navigation", "Tabs",
-            "Workspaces", "Reread source"], Headers(w, "_Show"));
+        Assert.Equal(["Display", "Tree", "Panels", "File filter", "Sort", "Group by", "What is shown", "Navigation", "Tabs",
+            "Workspaces", "Quick view panel", "Reread source"], Headers(w, "_Show"));
         Assert.Equal(["Brief", "Full", "Comments", "Thumbnails view", "Custom columns mode", "Custom view modes", "Choose column set..."], Headers(w, "Display"));
         Assert.Equal(["Name", "Extension", "Time", "Size", "Unsorted", "Reversed order"], Headers(w, "Sort"));
         Assert.Equal(["No groups", "Type", "Date", "First letter of the name"], Headers(w, "Group by"));

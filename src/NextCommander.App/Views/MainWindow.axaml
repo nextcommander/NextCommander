@@ -104,6 +104,7 @@
         <Separator />
         <MenuItem Header="Compare folders" InputGesture="Shift+F2" Command="{Binding RunCommandCommand}" CommandParameter="nc_CompareDirs" />
         <MenuItem Header="Mark newer, hide identical" Command="{Binding RunCommandCommand}" CommandParameter="nc_CompareDirsHideSame" />
+        <Separator />
         <MenuItem x:Name="TagsMenu" Header="Tags" Tag="nc_Tags">
           <MenuItem Header="Tags..." Command="{Binding RunCommandCommand}" CommandParameter="nc_Tags" />
         </MenuItem>
@@ -112,6 +113,9 @@
         <MenuItem Header="Folder tree..." InputGesture="Alt+F10" Command="{Binding RunCommandCommand}" CommandParameter="nc_DirTree" />
         <MenuItem Header="Find files..." InputGesture="Alt+F7" Command="{Binding RunCommandCommand}" CommandParameter="nc_SearchFor" />
         <MenuItem Header="Find files in separate process..." InputGesture="Alt+Shift+F7" Command="{Binding RunCommandCommand}" CommandParameter="nc_SearchStandalone" />
+        <MenuItem x:Name="SavedSearchesMenu" Header="Saved searches" Tag="nc_OpenSavedSearch">
+          <MenuItem Header="Open saved search..." Command="{Binding RunCommandCommand}" CommandParameter="nc_OpenSavedSearch" />
+        </MenuItem>
         <MenuItem Header="Volume label..." Command="{Binding RunCommandCommand}" CommandParameter="nc_VolumeLabel" />
         <MenuItem Header="System information..." Command="{Binding RunCommandCommand}" CommandParameter="nc_SysInfo" />
         <MenuItem Header="Hotlist" InputGesture="Ctrl+D" Command="{Binding RunCommandCommand}" CommandParameter="nc_DirectoryHotlist" />
@@ -130,9 +134,6 @@
         <MenuItem Header="Calculate folder sizes" InputGesture="Alt+Shift+Enter" Command="{Binding RunCommandCommand}" CommandParameter="nc_CountDirContent" />
         <MenuItem Header="Show in system file manager" InputGesture="Ctrl+Shift+E" Command="{Binding RunCommandCommand}" CommandParameter="nc_RevealInExplorer" />
         <MenuItem Header="Command palette..." InputGesture="Ctrl+Shift+P" Command="{Binding RunCommandCommand}" CommandParameter="nc_CommandPalette" />
-        <MenuItem x:Name="SavedSearchesMenu" Header="Saved searches" Tag="nc_OpenSavedSearch">
-          <MenuItem Header="Open saved search..." Command="{Binding RunCommandCommand}" CommandParameter="nc_OpenSavedSearch" />
-        </MenuItem>
       </MenuItem>
       <!-- Connection (was Net; user's request, 22 November 2026): the PC link, tunnels and network tools right below Disconnect -->
       <MenuItem Header="Co_nnection">
@@ -183,7 +184,6 @@
           <MenuItem Header="Show / hide tree panel" InputGesture="Ctrl+F8" Command="{Binding RunCommandCommand}" CommandParameter="nc_ShowTreePane" />
           <MenuItem Header="Folder tree window..." InputGesture="Alt+F10" Command="{Binding RunCommandCommand}" CommandParameter="nc_DirTree" />
         </MenuItem>
-        <MenuItem Header="Quick view panel" InputGesture="Ctrl+Q" Command="{Binding RunCommandCommand}" CommandParameter="nc_QuickView" />
         <MenuItem Header="Panels" Tag="nc_VerticalPanels">
           <MenuItem Header="Vertical arrangement" ToggleType="CheckBox" IsChecked="{Binding VerticalPanels, Mode=OneWay}"
                     Command="{Binding RunCommandCommand}" CommandParameter="nc_VerticalPanels" />
@@ -272,6 +272,7 @@
           <MenuItem Header="Save workspace..." Command="{Binding RunCommandCommand}" CommandParameter="nc_SaveWorkspace" />
         </MenuItem>
         <Separator />
+        <MenuItem Header="Quick view panel" InputGesture="Ctrl+Q" Command="{Binding RunCommandCommand}" CommandParameter="nc_QuickView" />
         <MenuItem Header="Reread source" InputGesture="Ctrl+R" Command="{Binding RunCommandCommand}" CommandParameter="nc_RereadSource" />
       </MenuItem>
       <MenuItem Header="C_onfiguration">
