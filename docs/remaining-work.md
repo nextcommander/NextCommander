@@ -250,6 +250,16 @@ built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC l
 - [ ] To be tried by the user: these in the app (right button drag with the selection mode on, C:\ProgramData\Application Data,
   duplicates in C:\Windows). Docker with Docker Desktop works (user, 24 November 2026).
 
+## User's report (24 November 2026): macOS, the program does not open
+- [x] A second start that handed its arguments to a running instance ended silently even when that instance's window
+  hung or was gone (the pipe listener answers from the thread pool): the running instance now answers once its window
+  has shown them (shown again when hidden), and without an answer within 15 s the new start opens its own window.
+  Each hand-over is written to logs/start.log (`SingleInstance.TrySend` / `ListenAsync`, `Program.Note`).
+- [ ] Not proven to be the cause: to be tried on the Mac with a new build; if it still does not open, the output of
+  starting `NextCommander.app/Contents/MacOS/NextCommander` from Terminal, `pgrep -lf NextCommander`,
+  ~/Library/Logs/NextCommander/crash.log and ~/Library/Logs/DiagnosticReports (a signature problem leaves its report
+  there, not in the program's log).
+
 ## Disc images (user's request, 21 November 2026)
 - [x] ISO files open like an archive in a panel (Enter on an .iso): browse, view, copy out, search inside, compare,
   checksum; read-only. Read with DiscUtils (MIT; `Vfs.Archive/DiscImage`): UDF when the image has it (DVD / Blu-ray),

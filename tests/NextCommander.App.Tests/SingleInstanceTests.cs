@@ -33,4 +33,32 @@ public sealed class SingleInstanceTests
         await listening.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.False(SingleInstance.TrySend(name, ["c"], timeoutMs: 100));
     }
+
+    [Fact]
+    public async Task A_running_instance_that_does_not_answer_lets_the_start_open_its_own_window()
+    {
+        // its window hangs: the arguments arrive, but the answer never comes
+        var name = "NextCommander-test-" + Guid.NewGuid().ToString("N")[..8];
+        var arrived = new TaskCompletionSource<string[]>();
+        using var cts = new CancellationTokenSource();
+        var listening = Task.Run(() => SingleInstance.ListenAsync(name, async args =>
+        {
+            arrived.TrySetResult(args);
+            await Task.Delay(Timeout.Infinite, cts.Token);
+        }, cts.Token));
+        await Task.Delay(300);
+
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        Assert.False(await Task.Run(() => SingleInstance.TrySend(name, ["x"], timeoutMs: 3000, answerMs: 1000)));
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(6), watch.Elapsed.ToString());
+        Assert.Equal([Path.GetFullPath("x")], await arrived.Task.WaitAsync(TimeSpan.FromSeconds(5)));
+        cts.Cancel();
+        try
+        {
+            await listening.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
 }
