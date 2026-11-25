@@ -111,35 +111,26 @@ public partial class PanelSideView : UserControl
     private void ApplySplit()
     {
         var split = _side?.SecondPane is null ? SideSplit.None : _side.Split;
-        PaneGrid.ColumnDefinitions.Clear();
-        PaneGrid.RowDefinitions.Clear();
         var two = split != SideSplit.None;
+        var sideBySide = split == SideSplit.SideBySide;
         PaneSplitter.IsVisible = two;
         FilePanel2.IsVisible = two;
-        if (!two)
+        // the grid keeps its three rows and three columns, only their sizes change (removing and adding definitions
+        // crashed a later layout pass: see ShowPreview)
+        GridLength[] alone = [new(1, GridUnitType.Star), new(0), new(0)];
+        GridLength[] halves = [new(1, GridUnitType.Star), new(6), new(1, GridUnitType.Star)];
+        for (var i = 0; i < 3; i++)
         {
-            foreach (var child in PaneGrid.Children)
-            {
-                Grid.SetColumn(child, 0);
-                Grid.SetRow(child, 0);
-            }
-            return;
-        }
-        var sideBySide = split == SideSplit.SideBySide;
-        if (sideBySide)
-        {
-            PaneGrid.ColumnDefinitions.AddRange([new ColumnDefinition(1, GridUnitType.Star), new ColumnDefinition(6, GridUnitType.Pixel), new ColumnDefinition(1, GridUnitType.Star)]);
-        }
-        else
-        {
-            PaneGrid.RowDefinitions.AddRange([new RowDefinition(1, GridUnitType.Star), new RowDefinition(6, GridUnitType.Pixel), new RowDefinition(1, GridUnitType.Star)]);
+            PaneGrid.ColumnDefinitions[i].Width = two && sideBySide ? halves[i] : alone[i];
+            PaneGrid.RowDefinitions[i].Height = two && !sideBySide ? halves[i] : alone[i];
         }
         PaneSplitter.ResizeDirection = sideBySide ? GridResizeDirection.Columns : GridResizeDirection.Rows;
         var index = 0;
         foreach (var child in new Control[] { FilePanel, PaneSplitter, FilePanel2 })
         {
-            Grid.SetColumn(child, sideBySide ? index : 0);
-            Grid.SetRow(child, sideBySide ? 0 : index);
+            var used = two ? index : 0;
+            Grid.SetColumn(child, sideBySide ? used : 0);
+            Grid.SetRow(child, sideBySide ? 0 : used);
             index++;
         }
     }
@@ -180,7 +171,7 @@ public partial class PanelSideView : UserControl
                 return 0;
             }
             var defs = PreviewIsRight ? SplitGrid.ColumnDefinitions.Select(c => c.ActualWidth).ToArray() : SplitGrid.RowDefinitions.Select(r => r.ActualHeight).ToArray();
-            var total = defs.Length == 3 ? defs[0] + defs[2] : 0;
+            var total = defs[0] + defs[2];
             return total > 0 ? defs[2] / total : 0;
         }
     }
@@ -195,32 +186,24 @@ public partial class PanelSideView : UserControl
         PreviewHost.IsVisible = content is not null;
         PreviewSplitter.IsVisible = content is not null;
         PreviewIsRight = right;
-        if (content is null)
+        // the grid keeps its three rows and three columns; only their sizes change (unused ones 0)
+        GridLength[] alone = [new(1, GridUnitType.Star), new(0), new(0)];
+        GridLength[] sizes = alone;
+        if (content is not null)
         {
-            SplitGrid.RowDefinitions.Clear();
-            SplitGrid.ColumnDefinitions.Clear();
-            return;
+            ratio = Math.Clamp(ratio, 0.15, 0.85);
+            sizes = [new(1 - ratio, GridUnitType.Star), new(5), new(ratio, GridUnitType.Star)];
         }
-        ratio = Math.Clamp(ratio, 0.15, 0.85);
-        GridLength[] sizes = [new(1 - ratio, GridUnitType.Star), new(5), new(ratio, GridUnitType.Star)];
-        // the definitions are changed in place (a new collection set on the grid kept the old layout)
-        SplitGrid.RowDefinitions.Clear();
-        SplitGrid.ColumnDefinitions.Clear();
-        foreach (var size in sizes)
+        for (var i = 0; i < 3; i++)
         {
-            if (right)
-            {
-                SplitGrid.ColumnDefinitions.Add(new ColumnDefinition(size));
-            }
-            else
-            {
-                SplitGrid.RowDefinitions.Add(new RowDefinition(size));
-            }
+            SplitGrid.RowDefinitions[i].Height = content is not null && !right ? sizes[i] : alone[i];
+            SplitGrid.ColumnDefinitions[i].Width = content is not null && right ? sizes[i] : alone[i];
         }
         foreach (var (control, index) in new (Control, int)[] { (FileArea, 0), (PreviewSplitter, 1), (PreviewHost, 2) })
         {
-            Grid.SetRow(control, right ? 0 : index);
-            Grid.SetColumn(control, right ? index : 0);
+            var used = content is not null || index == 0 ? index : 0;
+            Grid.SetRow(control, right ? 0 : used);
+            Grid.SetColumn(control, right ? used : 0);
         }
         PreviewSplitter.ResizeDirection = right ? GridResizeDirection.Columns : GridResizeDirection.Rows;
     }

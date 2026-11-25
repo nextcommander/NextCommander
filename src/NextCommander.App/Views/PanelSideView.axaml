@@ -65,10 +65,12 @@
     </Border>
     <!-- the file panel; a tool such as the connection manager can take its place for a while -->
     <!-- the Quick View can share the side with the file list (below or right of it; PanelSideView.ShowPreview) -->
-    <Grid x:Name="SplitGrid">
+    <!-- always three rows and three columns (only their sizes change: a grid whose definitions were removed and added
+         crashed in a later layout pass, the user's report of 25 November 2026) -->
+    <Grid x:Name="SplitGrid" RowDefinitions="*,0,0" ColumnDefinitions="*,0,0">
       <Panel x:Name="FileArea">
         <!-- one file panel, or two of the side's tabs at once (Show > Panels > Split; PanelSideView.ApplySplit) -->
-        <Grid x:Name="PaneGrid">
+        <Grid x:Name="PaneGrid" RowDefinitions="*,0,0" ColumnDefinitions="*,0,0">
           <views:FilePanelView x:Name="FilePanel" DataContext="{Binding FirstPane}" />
           <GridSplitter x:Name="PaneSplitter" IsVisible="False" Background="Transparent" />
           <views:FilePanelView x:Name="FilePanel2" DataContext="{Binding SecondPane}" IsVisible="False" />
