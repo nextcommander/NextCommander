@@ -24,19 +24,22 @@ namespace NextCommander.App.Views.Tools;
 
 /// <summary>
 /// Compare by content (user's design, 15 November 2026): a bar with the file, the counts of changes and the controls
-/// (side by side / inline, ignore case and whitespace, previous / next difference with a counter, edit both files,
-/// compare again); the two file names tagged Original and Current; the aligned lines with their numbers, − / + signs,
-/// syntax colors, the changed characters marked, the missing side hatched and the current difference framed; an
-/// overview of all differences on the right edge (click to go there); a status line. F2 / Shift+F2 (or j / k) go
-/// through the differences, F5 compares again, Esc closes. Binary files get a list of differing offsets.
+/// (side by side / inline, ignore case and whitespace, previous / next difference with a counter, copy a difference to
+/// the other side, undo / redo, save, compare again); the two file names tagged Original and Current; the aligned lines
+/// with their numbers, − / + signs, syntax colors, the changed characters marked, the missing side hatched and the
+/// current difference framed; an overview of all differences on the right edge (click to go there); a status line.
+/// F2 / Shift+F2 (Alt+↓ / Alt+↑) go through the differences, F5 compares again, Esc closes. Binary files get a list of
+/// differing offsets. As in the compare and merge plan (25 November 2026, phase 2): both sides are edited in place, a
+/// difference is copied to the other side (Alt+→ / Alt+←, the arrows in the margin), undo / redo cover both sides, and
+/// saving keeps each file's encoding, byte order mark and line ends (CompareWindow.Sides.cs, CompareWindow.Merge.cs).
 /// </summary>
-public sealed class CompareWindow : Window
+public sealed partial class CompareWindow : Window
 {
     private const long MaxTextBytes = 64L * 1024 * 1024;
 
     private readonly ToolContext _context;
-    private readonly VfsEntry _left;
-    private readonly VfsEntry _right;
+    private Side _l;
+    private Side _r;
 
     // the bar
     private readonly TextBlock _badge = new() { FontWeight = FontWeight.Bold, FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Classes = { "noloc" } };
@@ -50,7 +53,12 @@ public sealed class CompareWindow : Window
     private readonly Button _previous = new();
     private readonly Button _next = new();
     private readonly TextBlock _counter = new() { MinWidth = 52, TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center, FontSize = 12.5, Classes = { "noloc" } };
-    private readonly ToggleButton _edit = new();
+    private readonly Button _copyLeft = new();
+    private readonly Button _copyRight = new();
+    private readonly Button _undo = new();
+    private readonly Button _redo = new();
+    private readonly Button _save = new();
+    private readonly Button _more = new();
     private readonly Button _compare = new() { Classes = { "accent" } };
     private readonly List<Border> _groups = [];
 
@@ -62,9 +70,6 @@ public sealed class CompareWindow : Window
     private readonly DiffPane _rightPane;
     private readonly DiffPane _inlinePane;
     private readonly OverviewRuler _ruler;
-    private readonly Grid _editor = new() { ColumnDefinitions = new ColumnDefinitions("*,*"), IsVisible = false };
-    private readonly TextEditor _leftSource = SourceEditor();
-    private readonly TextEditor _rightSource = SourceEditor();
     private readonly ListBox _binaryList = new() { IsVisible = false };
     private readonly TextBlock _empty = new() { IsVisible = false, TextAlignment = TextAlignment.Center, Margin = new Thickness(16, 48), TextWrapping = TextWrapping.Wrap };
 
@@ -75,10 +80,6 @@ public sealed class CompareWindow : Window
     private readonly TextBlock _toastText = new() { FontSize = 13 };
     private readonly DispatcherTimer _toastTimer = new() { Interval = TimeSpan.FromSeconds(1.8) };
 
-    private string? _leftText;
-    private string? _rightText;
-    private bool _edited;
-    private string _encoding = "UTF-8";
     private IReadOnlyList<DiffLine> _rows = [];
     private List<Hunk> _hunks = [];
     private int _currentBlock = -1;
@@ -87,10 +88,10 @@ public sealed class CompareWindow : Window
 
     public CompareWindow(VfsEntry left, VfsEntry right, ToolContext context)
     {
-        _left = left;
-        _right = right;
+        _l = new Side(left);
+        _r = new Side(right);
         _context = context;
-        Title = $"Compare: {left.Name} ↔ {right.Name}";
+        UpdateTitle();
         Width = 1200;
         Height = 760;
         MinWidth = 640;
@@ -100,18 +101,10 @@ public sealed class CompareWindow : Window
 
         var font = new FontFamily(context.Settings.ListerFont);
         var size = context.Settings.ListerFontSize;
-        var highlighting = HighlightingManager.Instance.GetDefinitionByExtension("." + right.Extension);
-        _leftPane = new DiffPane(this, font, size, highlighting, numberColumns: 1);
-        _rightPane = new DiffPane(this, font, size, highlighting, numberColumns: 1);
-        _inlinePane = new DiffPane(this, font, size, highlighting, numberColumns: 2);
+        _leftPane = new DiffPane(this, font, size, Highlighting(left), numberColumns: 1, isLeft: true);
+        _rightPane = new DiffPane(this, font, size, Highlighting(right), numberColumns: 1, isLeft: false);
+        _inlinePane = new DiffPane(this, font, size, Highlighting(right), numberColumns: 2, isLeft: null);
         _ruler = new OverviewRuler(this);
-        foreach (var source in new[] { _leftSource, _rightSource })
-        {
-            source.FontFamily = font;
-            source.FontSize = size;
-            source.SyntaxHighlighting = highlighting;
-            ThemeAwareColors.Attach(source);
-        }
         foreach (var (pane, other) in new[] { (_leftPane, _rightPane), (_rightPane, _leftPane) })
         {
             // the two sides scroll together (their lines are aligned)
@@ -135,29 +128,29 @@ public sealed class CompareWindow : Window
         _ignoreSpace.IsCheckedChanged += (_, _) => _ = CompareAsync();
         _previous.Click += (_, _) => MoveToBlock(-1);
         _next.Click += (_, _) => MoveToBlock(+1);
-        _edit.Click += (_, _) =>
-        {
-            if (_editor.IsVisible)
-            {
-                _ = RecompareAsync(); // the second press compares the edited texts
-            }
-            else
-            {
-                SetEditing(true);
-            }
-        };
+        _copyLeft.Click += (_, _) => _ = CopyBlockAsync(_currentBlock, toRight: false);
+        _copyRight.Click += (_, _) => _ = CopyBlockAsync(_currentBlock, toRight: true);
+        _undo.Click += (_, _) => _ = UndoAsync();
+        _redo.Click += (_, _) => _ = RedoAsync();
+        _save.Click += (_, _) => _ = SaveAllAsync();
+        _more.Click += (_, _) => OpenMoreMenu();
         _compare.Click += (_, _) => _ = RecompareAsync();
         _toastTimer.Tick += (_, _) =>
         {
             _toastTimer.Stop();
             _toast.IsVisible = false;
         };
+        WireEditing();
 
         Content = BuildLayout();
         ActualThemeVariantChanged += (_, _) => ApplyPalette();
         ApplyPalette();
+        AddHandler(KeyDownEvent, OnTunnelKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         Opened += async (_, _) => await CompareAsync();
+        Closed += (_, _) => StopWatching();
     }
+
+    private static IHighlightingDefinition? Highlighting(VfsEntry entry) => HighlightingManager.Instance.GetDefinitionByExtension("." + entry.Extension);
 
     // ---------------------------------------------------------------- what tests and callers see
 
@@ -182,8 +175,20 @@ public sealed class CompareWindow : Window
     /// <summary>Side by side (false) or one column (true).</summary>
     public bool IsInline => _inline.IsChecked == true;
 
-    /// <summary>The two files are being edited.</summary>
-    public bool IsEditing => _editor.IsVisible;
+    /// <summary>The lines of the left / right file as they are now (edits included once compared).</summary>
+    public IReadOnlyList<string> LeftLines => _l.Lines;
+
+    public IReadOnlyList<string> RightLines => _r.Lines;
+
+    /// <summary>The left / right file has changes not saved.</summary>
+    public bool LeftModified => _l.Dirty;
+
+    public bool RightModified => _r.Dirty;
+
+    /// <summary>The editors of the left and right side (side by side).</summary>
+    public TextEditor LeftEditor => _leftPane.Editor;
+
+    public TextEditor RightEditor => _rightPane.Editor;
 
     /// <summary>The last message of the toast ("Compared · 2 differences").</summary>
     public string LastToast => _toastText.Text ?? string.Empty;
@@ -193,13 +198,6 @@ public sealed class CompareWindow : Window
     // ---------------------------------------------------------------- layout
 
     private static ToggleSwitch Switch(string text) => new() { OnContent = text, OffContent = text, MinWidth = 0, Margin = new Thickness(8, 0), VerticalAlignment = VerticalAlignment.Center };
-
-    private static TextEditor SourceEditor()
-    {
-        var editor = new TextEditor { ShowLineNumbers = true, Padding = new Thickness(12, 8), BorderThickness = new Thickness(0) };
-        editor.Options.EnableHyperlinks = false;
-        return editor;
-    }
 
     private Border Group(params Control[] children)
     {
@@ -275,22 +273,37 @@ public sealed class CompareWindow : Window
         _next.Content = Glyph("M4 6l4 4 4-4");
         ToolTip.SetTip(_previous, "Previous difference (Shift+F2)");
         ToolTip.SetTip(_next, "Next difference (F2)");
-        _edit.Content = IconText(Glyph("M10.5 2.5l3 3-8 8H2.5v-3z"), "Edit");
-        ToolTip.SetTip(_edit, "Edit both files");
+        _copyLeft.Content = Glyph("M13 8H3.5M7 4.5L3.5 8 7 11.5");
+        _copyRight.Content = Glyph("M3 8h9.5M9 4.5L12.5 8 9 11.5");
+        ToolTip.SetTip(_copyLeft, "Copy the difference to the left (Alt+Left)");
+        ToolTip.SetTip(_copyRight, "Copy the difference to the right (Alt+Right)");
+        _undo.Content = Glyph("M5.5 4L2.5 7l3 3M2.5 7h7a4 4 0 0 1 0 8h-2");
+        _redo.Content = Glyph("M10.5 4l3 3-3 3M13.5 7h-7a4 4 0 0 0 0 8h2");
+        ToolTip.SetTip(_undo, "Undo (Ctrl+Z)");
+        ToolTip.SetTip(_redo, "Redo (Ctrl+Y)");
+        _save.Content = IconText(Glyph("M3 2.5h8l2.5 2.5v8.5H3zM5.5 2.5v3h5v-3M5.5 13.5V9.5h5v4"), "Save");
+        ToolTip.SetTip(_save, "Save the changed files (Ctrl+S saves the side being edited)");
+        _more.Content = Glyph("M4 8h.01M8 8h.01M12 8h.01");
+        ToolTip.SetTip(_more, "More");
         _compare.Content = IconText(Glyph("M13.5 8a5.5 5.5 0 1 1-1.6-3.9M12.5 1.5v3h-3"), "Compare", "F5");
         ToolTip.SetTip(_compare, "Compare again (F5)");
-        foreach (var button in new Button[] { _split, _inline, _edit, _compare })
+        foreach (var button in new Button[] { _split, _inline, _save, _compare })
         {
             Style(button);
         }
-        Style(_previous, 30);
-        Style(_next, 30);
+        foreach (var button in new[] { _previous, _next, _copyLeft, _copyRight, _undo, _redo, _more })
+        {
+            Style(button, 30);
+        }
         var controls = new WrapPanel { ItemSpacing = 8, LineSpacing = 8, VerticalAlignment = VerticalAlignment.Center };
         controls.Children.AddRange([
             Group(_split, _inline),
             Group(_ignoreCase, _ignoreSpace),
             Group(_previous, _counter, _next),
-            _edit,
+            Group(_copyLeft, _copyRight),
+            Group(_undo, _redo),
+            _save,
+            _more,
             _compare,
         ]);
         var bar = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
@@ -309,18 +322,16 @@ public sealed class CompareWindow : Window
         Grid.SetColumn(divider, 1);
         _body.Children.Add(divider);
         _inlinePane.Editor.IsVisible = false;
-        _editor.Children.AddRange([_leftSource, _rightSource]);
-        Grid.SetColumn(_rightSource, 1);
         _binaryList.FontFamily = new FontFamily("Cascadia Mono,Consolas,Menlo,monospace");
         var content = new Panel();
-        content.Children.AddRange([_body, _editor, _binaryList]);
+        content.Children.AddRange([_body, _binaryList]);
         var panelRoot = new DockPanel();
         DockPanel.SetDock(_files, Dock.Top);
         panelRoot.Children.AddRange([_files, content]);
         _panel.Child = panelRoot;
 
         // below: the summary and the keys
-        _keys.Children.AddRange([KeyHint("F2", "next"), KeyHint("Shift+F2", "previous"), KeyHint("F5", "compare")]);
+        _keys.Children.AddRange([KeyHint("F2", "next"), KeyHint("Alt+→", "copy right"), KeyHint("F5", "compare")]);
         var footer = new DockPanel { Margin = new Thickness(4, 12, 4, 0) };
         DockPanel.SetDock(_keys, Dock.Right);
         footer.Children.AddRange([_keys, _summary]);
@@ -358,10 +369,11 @@ public sealed class CompareWindow : Window
         var inline = IsInline;
         _files.ColumnDefinitions = inline ? new ColumnDefinitions("*") : new ColumnDefinitions("*,*");
         _files.RowDefinitions = inline ? new RowDefinitions("Auto,Auto") : new RowDefinitions("Auto");
-        var sides = new[] { (_left, "Original", false), (_right, "Current", true) };
+        var sides = new[] { (_l, "Original", false), (_r, "Current", true) };
         for (var i = 0; i < sides.Length; i++)
         {
-            var (entry, tag, isRight) = sides[i];
+            var (side, tag, isRight) = sides[i];
+            var entry = side.Entry;
             var label = new Border
             {
                 Child = new TextBlock { Text = tag, FontSize = 10.5, FontWeight = FontWeight.SemiBold, Foreground = new SolidColorBrush(isRight ? _palette.AddFg : _palette.DelFg) },
@@ -383,11 +395,39 @@ public sealed class CompareWindow : Window
             };
             path.Inlines!.Add(new Run(folder));
             path.Inlines.Add(new Run(entry.Name) { FontWeight = FontWeight.Medium, Foreground = new SolidColorBrush(_palette.Text) });
+            if (side.Dirty)
+            {
+                path.Inlines.Add(new Run(" ●") { Foreground = new SolidColorBrush(_palette.Mod) });
+            }
             ToolTip.SetTip(path, display);
             var row = new DockPanel();
             DockPanel.SetDock(label, Dock.Left);
             label.Margin = new Thickness(0, 0, 10, 0);
-            row.Children.AddRange([label, path]);
+            // the side's own: read-only, its encoding and line ends (a menu), another file
+            var tools = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, Margin = new Thickness(8, 0, 0, 0) };
+            if (side.ReadOnly)
+            {
+                tools.Children.Add(new Border
+                {
+                    Child = new TextBlock { Text = "Read-only", FontSize = 10.5, Foreground = new SolidColorBrush(_palette.Muted) },
+                    Background = new SolidColorBrush(_palette.Surface), CornerRadius = new CornerRadius(5), Padding = new Thickness(7, 2), VerticalAlignment = VerticalAlignment.Center,
+                });
+            }
+            var format = new Button
+            {
+                Content = new TextBlock { Text = side.FormatText, FontSize = 11.5, Foreground = new SolidColorBrush(_palette.Muted), Classes = { "noloc" } },
+                Padding = new Thickness(6, 1), MinHeight = 0, VerticalAlignment = VerticalAlignment.Center, IsEnabled = !side.ReadOnly && !IsBinary,
+            };
+            ToolTip.SetTip(format, "Encoding and line ends of the saved file");
+            var formatSide = side;
+            format.Click += (_, _) => OpenFormatMenu(format, formatSide);
+            var browse = new Button { Content = Glyph("M2 4.5h4l1.5 1.5H14v6.5H2z"), Padding = new Thickness(4), MinHeight = 0, VerticalAlignment = VerticalAlignment.Center };
+            SetStroke(browse, _palette.Muted);
+            ToolTip.SetTip(browse, isRight ? "Choose the right file..." : "Choose the left file...");
+            browse.Click += (_, _) => _ = BrowseAsync(isRight);
+            tools.Children.AddRange([format, browse]);
+            DockPanel.SetDock(tools, Dock.Right);
+            row.Children.AddRange([label, tools, path]);
             var cell = new Border
             {
                 Child = row,
@@ -485,13 +525,6 @@ public sealed class CompareWindow : Window
         _toast.Background = new SolidColorBrush(p.Text);
         _toastText.Foreground = new SolidColorBrush(p.Bg);
         _empty.Foreground = new SolidColorBrush(p.Muted);
-        foreach (var source in new[] { _leftSource, _rightSource })
-        {
-            source.Background = new SolidColorBrush(p.Surface);
-            source.Foreground = new SolidColorBrush(p.Text);
-        }
-        _rightSource.BorderBrush = new SolidColorBrush(p.Line);
-        _rightSource.BorderThickness = new Thickness(1, 0, 0, 0);
         foreach (var pane in new[] { _leftPane, _rightPane, _inlinePane })
         {
             pane.ApplyColors();
@@ -529,12 +562,12 @@ public sealed class CompareWindow : Window
     private void UpdateToggles()
     {
         var p = _palette;
-        foreach (var toggle in new[] { _split, _inline, _edit })
+        foreach (var toggle in new[] { _split, _inline })
         {
             var on = toggle.IsChecked == true;
             SetStroke(toggle, on ? p.Accent : p.Text);
         }
-        foreach (var button in new[] { _previous, _next })
+        foreach (var button in new[] { _previous, _next, _copyLeft, _copyRight, _undo, _redo, _save, _more })
         {
             SetStroke(button, button.IsEnabled ? p.Text : p.Faint);
         }
@@ -557,19 +590,16 @@ public sealed class CompareWindow : Window
         return Comparing;
     }
 
-    /// <summary>F5 / Compare: the edited texts when editing (or edited before), otherwise the files again.</summary>
+    /// <summary>
+    /// F5 / Compare: the files read again when neither side has unsaved changes, otherwise the texts as they are now
+    /// compared again.
+    /// </summary>
     private async Task RecompareAsync()
     {
-        if (_editor.IsVisible)
+        CommitEdits();
+        if (!_l.Dirty && !_r.Dirty)
         {
-            _leftText = _leftSource.Text;
-            _rightText = _rightSource.Text;
-            _edited = true;
-            SetEditing(false);
-        }
-        else if (!_edited)
-        {
-            _leftText = null; // read again
+            _l.Loaded = _r.Loaded = false; // read again
         }
         await CompareAsync();
         ShowToast(_hunks.Count == 0 ? "Compared · files match"
@@ -578,37 +608,59 @@ public sealed class CompareWindow : Window
 
     private async Task CompareCoreAsync()
     {
-        _title.Text = _right.Name;
-        _badge.Text = Badge(_right.Extension);
-        if (_leftText is null || _rightText is null)
+        _title.Text = _r.Entry.Name;
+        _badge.Text = Badge(_r.Entry.Extension);
+        if (!_l.Loaded || !_r.Loaded)
         {
-            byte[] a, b;
+            // only the side(s) not read yet: the other keeps its unsaved changes
+            byte[]? a = null, b = null;
             try
             {
-                a = await ReadAsync(_left);
-                b = await ReadAsync(_right);
+                a = _l.Loaded ? null : await ReadAsync(_l.Entry);
+                b = _r.Loaded ? null : await ReadAsync(_r.Entry);
+                static bool Binary(byte[]? data) => data is not null && EncodingDetector.LooksBinary(data.AsSpan(0, Math.Min(data.Length, 8192)));
+                IsBinary = Binary(a) || Binary(b);
+                if (IsBinary)
+                {
+                    ShowBinary(a ?? await ReadAsync(_l.Entry), b ?? await ReadAsync(_r.Entry));
+                    return;
+                }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 _summary.Text = ex.Message;
                 return;
             }
-            IsBinary = EncodingDetector.LooksBinary(a.AsSpan(0, Math.Min(a.Length, 8192))) || EncodingDetector.LooksBinary(b.AsSpan(0, Math.Min(b.Length, 8192)));
-            if (IsBinary)
+            if (a is not null)
             {
-                ShowBinary(a, b);
-                return;
+                _l.Load(a, WritableOf(_l.Entry));
             }
-            _leftText = Decode(a, out _);
-            _rightText = Decode(b, out var encoding);
-            _encoding = encoding.WebName.ToUpperInvariant();
+            if (b is not null)
+            {
+                _r.Load(b, WritableOf(_r.Entry));
+            }
+            _undoStack.Clear();
+            _redoStack.Clear();
+            ShowText();
+            Watch();
+            BuildFileHeaders();
         }
         var options = new DiffOptions { IgnoreCase = _ignoreCase.IsChecked == true, IgnoreWhitespace = _ignoreSpace.IsChecked == true };
-        var leftLines = SplitLines(_leftText);
-        var rightLines = SplitLines(_rightText);
-        _rows = await Task.Run(() => TextDiff.Compare(leftLines, rightLines, options));
+        var leftLines = _l.Lines.ToList();
+        var rightLines = _r.Lines.ToList();
+        var version = _editVersion;
+        var rows = await Task.Run(() => TextDiff.Compare(leftLines, rightLines, options));
+        if (version != _editVersion)
+        {
+            return; // typed meanwhile: the next compare shows it
+        }
+        var caret = SaveCaret();
+        _rows = rows;
         _hunks = Hunk.Of(_rows);
         BuildPanes();
+        RestoreCaret(caret);
+        UpdateTitle();
+        UpdateButtons();
 
         var added = _rows.Count(r => r.Kind is DiffKind.Added or DiffKind.Changed);
         var removed = _rows.Count(r => r.Kind is DiffKind.Removed or DiffKind.Changed);
@@ -620,12 +672,12 @@ public sealed class CompareWindow : Window
         ]);
         _summary.Text = $"{leftLines.Count} lines → {rightLines.Count} lines · {added} added, {removed} removed";
         UpdateLanguage();
-        _empty.IsVisible = _hunks.Count == 0;
-        _empty.Text = _rows.Count == 0
-            ? "Both files are empty. Paste content with Edit to compare."
-            : "No differences. The two files match with the current options.";
-        _currentBlock = _hunks.Count > 0 ? 0 : -1;
-        Highlight(scroll: true);
+        _empty.IsVisible = _rows.Count == 0;
+        _empty.Text = "Both files are empty.";
+        var keep = _keepBlock;
+        _keepBlock = null;
+        _currentBlock = _hunks.Count == 0 ? -1 : keep is { } k ? Math.Clamp(k, 0, _hunks.Count - 1) : caret is null ? 0 : Math.Clamp(_currentBlock, 0, _hunks.Count - 1);
+        Highlight(scroll: keep is not null || caret is null);
     }
 
     private static Border Chip(string text, Color foreground, Color background) => new()
@@ -667,13 +719,31 @@ public sealed class CompareWindow : Window
         var e => e.ToUpperInvariant(),
     };
 
+    private readonly TextBlock _position = new() { FontSize = 12, VerticalAlignment = VerticalAlignment.Center, Classes = { "noloc" } };
+
     private void UpdateLanguage()
     {
-        if (_keys.Children.Count > 3)
+        while (_keys.Children.Count > 3)
         {
             _keys.Children.RemoveAt(3);
         }
-        _keys.Children.Add(new TextBlock { Text = $"{Language(_right.Extension)} · {_encoding}", FontSize = 12, Foreground = new SolidColorBrush(_palette.Muted), VerticalAlignment = VerticalAlignment.Center, Classes = { "noloc" } });
+        _position.Foreground = new SolidColorBrush(_palette.Muted);
+        _keys.Children.Add(_position);
+        _keys.Children.Add(new TextBlock { Text = $"{Language(_r.Entry.Extension)} · {_r.FormatText}", FontSize = 12, Foreground = new SolidColorBrush(_palette.Muted), VerticalAlignment = VerticalAlignment.Center, Classes = { "noloc" } });
+    }
+
+    /// <summary>The caret's line and column in the file of the side being edited ("Ln 12, Col 4").</summary>
+    private void UpdatePosition()
+    {
+        var pane = FocusedPane();
+        if (pane is null)
+        {
+            _position.Text = string.Empty;
+            return;
+        }
+        var caret = pane.Editor.TextArea.Caret;
+        var fileLine = pane.FileLineOf(caret.Line - 1);
+        _position.Text = fileLine < 0 ? string.Empty : $"Ln {fileLine + 1}, Col {caret.Column}";
     }
 
     private async Task<byte[]> ReadAsync(VfsEntry entry)
@@ -688,20 +758,16 @@ public sealed class CompareWindow : Window
         return ms.ToArray();
     }
 
-    private static string Decode(byte[] data, out Encoding encoding)
-    {
-        encoding = EncodingDetector.Detect(data, out var bom, complete: true);
-        return encoding.GetString(data, bom, data.Length - bom);
-    }
 
-    private static List<string> SplitLines(string text)
+    /// <summary>The text view again (after a binary file was replaced by a text file).</summary>
+    private void ShowText()
     {
-        var lines = text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n').Split('\n').ToList();
-        if (lines.Count > 0 && lines[^1].Length == 0)
+        _binaryList.IsVisible = false;
+        _body.IsVisible = true;
+        foreach (var control in new Control[] { _split, _inline, _ignoreCase, _ignoreSpace })
         {
-            lines.RemoveAt(lines.Count - 1); // the final line break does not start a new line
+            control.IsEnabled = true;
         }
-        return lines;
     }
 
     private void ShowBinary(byte[] a, byte[] b)
@@ -727,8 +793,7 @@ public sealed class CompareWindow : Window
         _binaryList.ItemsSource = diffs;
         _binaryList.IsVisible = true;
         _body.IsVisible = false;
-        _editor.IsVisible = false;
-        foreach (var control in new Control[] { _split, _inline, _edit, _ignoreCase, _ignoreSpace, _previous, _next })
+        foreach (var control in new Control[] { _split, _inline, _ignoreCase, _ignoreSpace, _previous, _next, _copyLeft, _copyRight, _undo, _redo, _save })
         {
             control.IsEnabled = false;
         }
@@ -788,6 +853,8 @@ public sealed class CompareWindow : Window
         _leftPane.SetLines(left);
         _rightPane.SetLines(right);
         _inlinePane.SetLines(inline);
+        _leftPane.SetEditable(!_l.ReadOnly);
+        _rightPane.SetEditable(!_r.ReadOnly);
         _ruler.InvalidateVisual();
     }
 
@@ -806,24 +873,6 @@ public sealed class CompareWindow : Window
         Highlight(scroll: true);
     }
 
-    private void SetEditing(bool on)
-    {
-        if (on)
-        {
-            _leftSource.Document = new TextDocument(_leftText ?? string.Empty);
-            _rightSource.Document = new TextDocument(_rightText ?? string.Empty);
-        }
-        _editor.IsVisible = on;
-        _body.IsVisible = !on;
-        _files.IsVisible = !on;
-        _edit.IsChecked = on;
-        UpdateToggles();
-        if (on)
-        {
-            _leftSource.Focus();
-        }
-    }
-
     /// <summary>Goes to the next (+1) or previous (-1) difference, around from the last to the first.</summary>
     public void MoveToBlock(int direction)
     {
@@ -840,7 +889,7 @@ public sealed class CompareWindow : Window
     {
         _counter.Text = _hunks.Count > 0 ? $"{_currentBlock + 1} / {_hunks.Count}" : "0 / 0";
         _previous.IsEnabled = _next.IsEnabled = _hunks.Count > 0 && !IsBinary;
-        UpdateToggles();
+        UpdateButtons();
         foreach (var pane in new[] { _leftPane, _rightPane, _inlinePane })
         {
             pane.Redraw();
@@ -873,43 +922,6 @@ public sealed class CompareWindow : Window
         _toast.IsVisible = true;
         _toastTimer.Stop();
         _toastTimer.Start();
-    }
-
-    protected override void OnKeyDown(KeyEventArgs e)
-    {
-        base.OnKeyDown(e);
-        if (e.Handled)
-        {
-            return;
-        }
-        var typing = _editor.IsVisible; // j / k are letters while the files are edited
-        switch (e.Key)
-        {
-            case Key.F2 when e.KeyModifiers == KeyModifiers.Shift:
-                MoveToBlock(-1);
-                e.Handled = true;
-                break;
-            case Key.F2:
-                MoveToBlock(+1);
-                e.Handled = true;
-                break;
-            case Key.F5:
-                _ = RecompareAsync();
-                e.Handled = true;
-                break;
-            case Key.J when e.KeyModifiers == KeyModifiers.None && !typing:
-                MoveToBlock(+1);
-                e.Handled = true;
-                break;
-            case Key.K when e.KeyModifiers == KeyModifiers.None && !typing:
-                MoveToBlock(-1);
-                e.Handled = true;
-                break;
-            case Key.Escape:
-                Close();
-                e.Handled = true;
-                break;
-        }
     }
 
     // ---------------------------------------------------------------- the model of the lines
@@ -968,10 +980,14 @@ public sealed class CompareWindow : Window
         private readonly CompareWindow _owner;
         private readonly LineMargin _margin;
         private List<PaneLine> _lines = [];
+        private readonly List<TextAnchor> _fillers = [];
+        private HashSet<int>? _fillerOffsets;
+        private bool _settingLines;
 
-        public DiffPane(CompareWindow owner, FontFamily font, double size, IHighlightingDefinition? highlighting, int numberColumns)
+        public DiffPane(CompareWindow owner, FontFamily font, double size, IHighlightingDefinition? highlighting, int numberColumns, bool? isLeft)
         {
             _owner = owner;
+            IsLeft = isLeft;
             Editor = new TextEditor
             {
                 IsReadOnly = true,
@@ -989,31 +1005,127 @@ public sealed class CompareWindow : Window
             _margin = new LineMargin(this, numberColumns);
             Editor.TextArea.LeftMargins.Insert(0, _margin);
             Editor.TextArea.TextView.BackgroundRenderers.Add(new LineColors(this));
-            Editor.TextArea.PointerPressed += (_, e) =>
+            Editor.TextArea.AddHandler(InputElement.PointerPressedEvent, (_, e) =>
             {
                 // a click on a line of a difference makes it the current one
                 if (Editor.GetPositionFromPoint(e.GetPosition(Editor)) is { } position && position.Line - 1 < _lines.Count && _lines[position.Line - 1].Hunk >= 0)
                 {
                     _owner.Select(_lines[position.Line - 1].Hunk, scroll: false);
                 }
-            };
+            }, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+            if (isLeft is not null)
+            {
+                // a side of its own: edited in place, the missing lines kept as they are
+                _guard = new FillerGuard(this);
+                Search = AvaloniaEdit.Search.SearchPanel.Install(Editor);
+                Editor.TextArea.Caret.PositionChanged += (_, _) => _owner.UpdatePosition();
+                Editor.GotFocus += (_, _) => _owner.UpdatePosition();
+            }
         }
 
         public TextEditor Editor { get; }
+
+        private readonly FillerGuard? _guard;
+
+        /// <summary>
+        /// A side that can be written is edited in place (the guard set after IsReadOnly, which puts AvaloniaEdit's own
+        /// provider in its place).
+        /// </summary>
+        public void SetEditable(bool writable)
+        {
+            var editable = writable && _guard is not null;
+            Editor.IsReadOnly = !editable;
+            if (editable)
+            {
+                Editor.TextArea.ReadOnlySectionProvider = _guard!;
+            }
+        }
+
+        /// <summary>The left (true) or right (false) side; null: the one-column view (read-only).</summary>
+        public bool? IsLeft { get; }
+
+        public AvaloniaEdit.Search.SearchPanel? Search { get; }
 
         public IReadOnlyList<PaneLine> Lines => _lines;
 
         public Palette Colors => _owner.Colors;
 
+        public CompareWindow Owner => _owner;
+
         public int CurrentHunk => _owner._currentBlock;
+
+        /// <summary>Whether the target side of this pane's arrows can be written (the arrows are drawn then).</summary>
+        public bool CanCopyFromHere => IsLeft is { } left && !(left ? _owner._r : _owner._l).ReadOnly && !_owner.IsBinary;
 
         public void SetLines(List<PaneLine> lines)
         {
             _lines = lines;
-            Editor.Document = new TextDocument(string.Join('\n', lines.Select(l => l.Text)));
+            _settingLines = true;
+            var document = new TextDocument(string.Join('\n', lines.Select(l => l.Text)));
+            _fillers.Clear();
+            _fillerOffsets = null;
+            for (var i = 0; i < lines.Count; i++)
+            {
+                if (lines[i].Look == Look.Fill)
+                {
+                    _fillers.Add(document.CreateAnchor(document.GetLineByNumber(i + 1).Offset));
+                }
+            }
+            document.Changed += (_, _) =>
+            {
+                _fillerOffsets = null;
+                if (!_settingLines)
+                {
+                    _owner.OnPaneEdited(this);
+                }
+            };
+            Editor.Document = document;
+            _settingLines = false;
             _margin.InvalidateMeasure();
             Redraw();
         }
+
+        /// <summary>A line of the pane that stands for lines the other side has (hatched, not part of the file).</summary>
+        public bool IsFiller(DocumentLine line)
+        {
+            _fillerOffsets ??= [.. _fillers.Where(a => !a.IsDeleted).Select(a => a.Offset)];
+            return line.Length == 0 && _fillerOffsets.Contains(line.Offset);
+        }
+
+        /// <summary>The lines of the file this pane shows (its text without the filler lines).</summary>
+        public List<string> FileLines()
+        {
+            var document = Editor.Document;
+            var lines = new List<string>(document.LineCount);
+            foreach (var line in document.Lines)
+            {
+                if (!IsFiller(line))
+                {
+                    lines.Add(document.GetText(line));
+                }
+            }
+            return lines;
+        }
+
+        /// <summary>The file line (0-based) of a line of the pane; -1 for a filler line.</summary>
+        public int FileLineOf(int paneLine)
+        {
+            var document = Editor.Document;
+            if (paneLine < 0 || paneLine >= document.LineCount || IsFiller(document.GetLineByNumber(paneLine + 1)))
+            {
+                return -1;
+            }
+            var count = 0;
+            for (var i = 1; i <= paneLine; i++)
+            {
+                count += IsFiller(document.GetLineByNumber(i)) ? 0 : 1;
+            }
+            return count;
+        }
+
+        /// <summary>The line of the pane (0-based) that shows a file line; -1 when there is none.</summary>
+        public int PaneLineOf(int fileLine) =>
+            _lines.FindIndex(l => l.Look != Look.Fill && (IsLeft == false ? l.RightNumber : l.LeftNumber ?? l.RightNumber) == fileLine + 1);
 
         public void ApplyColors()
         {
@@ -1044,6 +1156,35 @@ public sealed class CompareWindow : Window
             var visible = view.Bounds.Height > 0 ? view.Bounds.Height : Editor.Bounds.Height;
             Editor.ScrollToVerticalOffset(Math.Max(0, top - Math.Max(0, (visible - height) / 2)));
             Editor.TextArea.Caret.Line = first + 1;
+        }
+    }
+
+    /// <summary>
+    /// Keeps the filler lines as they are while a side is edited: nothing is typed on them, and no deletion takes their
+    /// line or joins a line of the file with one (deleting whole lines above one is fine).
+    /// </summary>
+    private sealed class FillerGuard(DiffPane pane) : IReadOnlySectionProvider
+    {
+        public bool CanInsert(int offset) => !pane.IsFiller(pane.Editor.Document.GetLineByOffset(offset));
+
+        public IEnumerable<ISegment> GetDeletableSegments(ISegment segment)
+        {
+            var document = pane.Editor.Document;
+            int start = segment.Offset, end = segment.EndOffset;
+            var startsAtLine = document.GetLineByOffset(start).Offset == start;
+            for (var line = document.GetLineByOffset(start); line is not null && line.Offset <= end; line = line.NextLine)
+            {
+                if (!pane.IsFiller(line))
+                {
+                    continue;
+                }
+                if (end == line.Offset && startsAtLine)
+                {
+                    continue; // whole lines above it go; the filler line stays a line of its own
+                }
+                return [];
+            }
+            return [segment];
         }
     }
 
@@ -1137,11 +1278,35 @@ public sealed class CompareWindow : Window
     {
         private const double SignWidth = 22;
 
+        /// <summary>The column of the copy arrows on the first line of each difference (the two sides only).</summary>
+        private double ArrowWidth => pane.IsLeft is null ? 0 : 18;
+
         private double NumberWidth => Math.Max(3, pane.Lines.Count.ToString(CultureInfo.InvariantCulture).Length) * CharWidth + 16;
 
         private double CharWidth => (TextView?.WideSpaceWidth ?? 8) * 0.95;
 
-        protected override Size MeasureOverride(Size availableSize) => new(NumberWidth * columns + SignWidth, 0);
+        protected override Size MeasureOverride(Size availableSize) => new(ArrowWidth + NumberWidth * columns + SignWidth, 0);
+
+        private bool IsFirstOfHunk(int index) =>
+            index < pane.Lines.Count && pane.Lines[index].Hunk >= 0 && (index == 0 || pane.Lines[index - 1].Hunk != pane.Lines[index].Hunk);
+
+        protected override void OnPointerPressed(PointerPressedEventArgs e)
+        {
+            base.OnPointerPressed(e);
+            var view = TextView;
+            var point = e.GetPosition(this);
+            if (view is null || pane.IsLeft is not { } left || !pane.CanCopyFromHere || point.X > ArrowWidth)
+            {
+                return;
+            }
+            var visual = view.GetVisualLineFromVisualTop(point.Y + view.ScrollOffset.Y);
+            var index = visual is null ? -1 : visual.FirstDocumentLine.LineNumber - 1;
+            if (index >= 0 && IsFirstOfHunk(index))
+            {
+                _ = pane.Owner.CopyBlockAsync(pane.Lines[index].Hunk, toRight: left);
+                e.Handled = true;
+            }
+        }
 
         protected override void OnTextViewChanged(TextView? oldTextView, TextView? newTextView)
         {
@@ -1188,14 +1353,21 @@ public sealed class CompareWindow : Window
                     if (numbers[c] is { } n)
                     {
                         var text = new FormattedText(n.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, size, faint);
-                        context.DrawText(text, new Point((c + 1) * NumberWidth - 10 - text.Width, rect.Top + (rect.Height - text.Height) / 2));
+                        context.DrawText(text, new Point(ArrowWidth + (c + 1) * NumberWidth - 10 - text.Width, rect.Top + (rect.Height - text.Height) / 2));
                     }
                 }
                 if (line.Sign != ' ')
                 {
                     var sign = new FormattedText(line.Sign.ToString(), CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, pane.Editor.FontSize,
                         new SolidColorBrush(line.Look == Look.Del ? p.DelFg : p.AddFg));
-                    context.DrawText(sign, new Point(columns * NumberWidth + (SignWidth - sign.Width) / 2, rect.Top + (rect.Height - sign.Height) / 2));
+                    context.DrawText(sign, new Point(ArrowWidth + columns * NumberWidth + (SignWidth - sign.Width) / 2, rect.Top + (rect.Height - sign.Height) / 2));
+                }
+                if (pane.IsLeft is { } isLeft && pane.CanCopyFromHere && IsFirstOfHunk(index))
+                {
+                    // the copy arrow: this side's lines of the difference go to the other side
+                    var arrow = new FormattedText(isLeft ? "→" : "←", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, pane.Editor.FontSize,
+                        new SolidColorBrush(p.Accent));
+                    context.DrawText(arrow, new Point((ArrowWidth - arrow.Width) / 2 + 2, rect.Top + (rect.Height - arrow.Height) / 2));
                 }
                 Frame(context, lines, index, rect, pane.CurrentHunk, p);
                 if (pane.CurrentHunk >= 0 && line.Hunk == pane.CurrentHunk)
