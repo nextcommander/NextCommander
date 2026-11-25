@@ -91,6 +91,16 @@ public sealed class MergeWindow : Window
             return dialog.Result;
         };
         Opened += (_, _) => Loading = LoadAsync();
+        // another color theme: its conflict color
+        EventHandler themeApplied = (_, _) =>
+        {
+            foreach (var pane in _panes)
+            {
+                pane.TextArea.TextView.InvalidateLayer(KnownLayer.Background);
+            }
+        };
+        ColorThemes.Applied += themeApplied;
+        Closed += (_, _) => ColorThemes.Applied -= themeApplied;
     }
 
     // ---------------------------------------------------------------- what tests and callers see
@@ -486,7 +496,9 @@ public sealed class MergeWindow : Window
             {
                 return;
             }
-            var conflict = owner.Tint("#FDEDEF", "#3A1C20");
+            // the color theme's (key Compare.Conflict), else the design's
+            var conflict = owner.TryFindResource("FmCompareConflictBrush", owner.ActualThemeVariant, out var themed) && themed is IBrush brush
+                ? brush : owner.Tint("#FDEDEF", "#3A1C20");
             var change = owner.Tint("#FFF6E5", "#3A3020");
             foreach (var visual in textView.VisualLines)
             {

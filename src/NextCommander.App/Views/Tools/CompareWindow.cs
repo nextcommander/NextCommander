@@ -159,6 +159,10 @@ public sealed partial class CompareWindow : Window
 
         Content = BuildLayout();
         ActualThemeVariantChanged += (_, _) => ApplyPalette();
+        // another color theme of the same light / dark: its compare colors
+        EventHandler themeApplied = (_, _) => ApplyPalette();
+        ColorThemes.Applied += themeApplied;
+        Closed += (_, _) => ColorThemes.Applied -= themeApplied;
         ApplyPalette();
         AddHandler(KeyDownEvent, OnTunnelKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         Opened += async (_, _) => await CompareAsync();
@@ -475,6 +479,11 @@ public sealed partial class CompareWindow : Window
             Hex("#58a6ff"), Hex("#16263d"), Hex("#08111d"), Color.FromArgb(33, 46, 160, 67), Color.FromArgb(102, 63, 185, 80), Hex("#63d27e"),
             Color.FromArgb(31, 248, 81, 73), Color.FromArgb(102, 248, 81, 73), Hex("#ff7b72"), Hex("#e3b341"), Hex("#1a2029"), Hex("#58a6ff"));
 
+        /// <summary>Moved lines: their background and their sign.</summary>
+        public Color Moved { get; init; } = Hex("#F1ECFB");
+
+        public Color MovedFg { get; init; } = Hex("#7A4FD6");
+
         private static Color Hex(string value) => Color.Parse(value);
     }
 
@@ -483,12 +492,40 @@ public sealed partial class CompareWindow : Window
     /// <summary>The compare settings (the window's switches change them too).</summary>
     private CompareSettings Options => _context.Settings.CompareOptions;
 
+    /// <summary>The background of added and of moved lines now (tests: the theme's colors).</summary>
+    public Color AddedColor => _palette.AddBg;
+
+    public Color MovedColor => _palette.Moved;
+
     /// <summary>The compare settings this window follows (tests).</summary>
     public CompareSettings Settings => Options;
 
+    /// <summary>
+    /// The design's colors with those of the color theme (keys Compare.*; App.axaml has the design's own as defaults, so
+    /// a theme without them looks as before).
+    /// </summary>
+    private Palette Themed(Palette p)
+    {
+        Color Of(string key, Color fallback) =>
+            this.TryFindResource(key, ActualThemeVariant, out var value) && value is ISolidColorBrush brush ? brush.Color : fallback;
+        return p with
+        {
+            AddBg = Of("FmCompareAddedBrush", p.AddBg),
+            AddHl = Of("FmCompareAddedMarkBrush", p.AddHl),
+            AddFg = Of("FmCompareAddedTextBrush", p.AddFg),
+            DelBg = Of("FmCompareRemovedBrush", p.DelBg),
+            DelHl = Of("FmCompareRemovedMarkBrush", p.DelHl),
+            DelFg = Of("FmCompareRemovedTextBrush", p.DelFg),
+            Mod = Of("FmCompareChangedBrush", p.Mod),
+            Current = Of("FmCompareCurrentBrush", p.Current),
+            Moved = Of("FmCompareMovedBrush", p.Moved),
+            MovedFg = Of("FmCompareMovedTextBrush", p.MovedFg),
+        };
+    }
+
     private void ApplyPalette()
     {
-        _palette = ActualThemeVariant == ThemeVariant.Dark ? Palette.Dark : Palette.Light;
+        _palette = Themed(ActualThemeVariant == ThemeVariant.Dark ? Palette.Dark : Palette.Light);
         var p = _palette;
         // the buttons of the design: flat, a light fill on hover, a pressed toggle in the soft accent (not Fluent's full accent)
         var transparent = new SolidColorBrush(Avalonia.Media.Colors.Transparent);
@@ -844,8 +881,8 @@ public sealed partial class CompareWindow : Window
             // a moved line has ↕ for its sign (it is added or removed elsewhere); an ignored difference is faint
             var leftSign = row.Kind == DiffKind.Equal ? ' ' : row.MovedTo is not null ? '↕' : '−';
             var rightSign = row.Kind == DiffKind.Equal ? ' ' : row.MovedTo is not null ? '↕' : '+';
-            var leftLook = row.Kind == DiffKind.Equal ? Look.Equal : row.Ignored ? Look.Ignored : Look.Del;
-            var rightLook = row.Kind == DiffKind.Equal ? Look.Equal : row.Ignored ? Look.Ignored : Look.Add;
+            var leftLook = row.Kind == DiffKind.Equal ? Look.Equal : row.Ignored ? Look.Ignored : row.MovedTo is not null ? Look.Moved : Look.Del;
+            var rightLook = row.Kind == DiffKind.Equal ? Look.Equal : row.Ignored ? Look.Ignored : row.MovedTo is not null ? Look.Moved : Look.Add;
             left.Add(row.Left is null
                 ? PaneLine.Filler(hunk)
                 : new PaneLine(row.Left, row.LeftNumber, null, leftSign, leftLook, hunk, leftSpans));
@@ -873,11 +910,11 @@ public sealed partial class CompareWindow : Window
             // one column: the removed lines of a difference first, then the added ones
             if (row.Left is not null)
             {
-                dels.Add(new PaneLine(row.Left, row.LeftNumber, null, leftSign, Look.Del, hunk, leftSpans));
+                dels.Add(new PaneLine(row.Left, row.LeftNumber, null, leftSign, leftLook, hunk, leftSpans));
             }
             if (row.Right is not null)
             {
-                adds.Add(new PaneLine(row.Right, null, row.RightNumber, rightSign, Look.Add, hunk, rightSpans));
+                adds.Add(new PaneLine(row.Right, null, row.RightNumber, rightSign, rightLook, hunk, rightSpans));
             }
             if (i == _hunks[hunk].End)
             {
@@ -972,6 +1009,9 @@ public sealed partial class CompareWindow : Window
 
         /// <summary>A difference the options ignore (blank lines, the line filters): shown faintly.</summary>
         Ignored,
+
+        /// <summary>A line removed in one place and added in another.</summary>
+        Moved,
     }
 
     /// <summary>One line of a pane: its text, the numbers of the files, the sign, its look, its difference and marked characters.</summary>
@@ -1280,6 +1320,9 @@ public sealed partial class CompareWindow : Window
             case Look.Add:
                 context.FillRectangle(new SolidColorBrush(p.AddBg), rect);
                 break;
+            case Look.Moved:
+                context.FillRectangle(new SolidColorBrush(p.Moved), rect);
+                break;
             case Look.Ignored:
                 context.FillRectangle(new SolidColorBrush(p.Surface2), rect);
                 break;
@@ -1402,7 +1445,7 @@ public sealed partial class CompareWindow : Window
                 if (line.Sign != ' ')
                 {
                     var sign = new FormattedText(line.Sign.ToString(), CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, pane.Editor.FontSize,
-                        new SolidColorBrush(line.Look == Look.Del ? p.DelFg : p.AddFg));
+                        new SolidColorBrush(line.Look switch { Look.Del => p.DelFg, Look.Moved => p.MovedFg, _ => p.AddFg }));
                     context.DrawText(sign, new Point(ArrowWidth + columns * NumberWidth + (SignWidth - sign.Width) / 2, rect.Top + (rect.Height - sign.Height) / 2));
                 }
                 if (pane.IsLeft is { } isLeft && pane.CanCopyFromHere && IsFirstOfHunk(index))
