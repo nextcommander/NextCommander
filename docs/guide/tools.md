@@ -217,15 +217,27 @@ two panels.
   of each difference above the added ones. The left file is tagged *Original*, the right one *Current*.
 - Each line has its number in its file and a − / + sign; removed lines are red, added lines green, the changed
   characters inside a line are marked, a missing line on one side is hatched. The code keeps its syntax colors.
-- The current difference is framed; the counter shows which one it is (2 / 5). F2 / Shift+F2 (or j / k, or the
-  arrows) go to the next / previous one, around from the last to the first. A click on a line of a difference makes
-  it the current one.
+- The current difference is framed; the counter shows which one it is (2 / 5). F2 / Shift+F2, Alt+↓ / Alt+↑ (or j / k
+  outside the text, or the arrows) go to the next / previous one, around from the last to the first. A click on a line
+  of a difference makes it the current one. Lines that are alike sit side by side, even when lines were added above
+  them.
 - The strip on the right edge shows every difference in its place in the file (green added, red removed, amber
   changed); a click goes there.
 - **Ignore case** and **Ignore whitespace** compare again at once.
-- **Edit** opens both files as text: change them and press **Edit** or **Compare** again to compare the edited
-  texts (the files themselves are not changed). **Compare** (F5) otherwise reads the files again.
-- The status line shows the number of lines of both files, the language and the encoding. Esc closes the window.
+- Both sides are edited in place: type in either file and the two are compared again after a short
+  pause. The hatched lines stand for lines of the other file and cannot be typed on.
+- **Copy a difference to the other side**: Alt+→ (left to right) / Alt+← (right to left), the arrow buttons of the
+  bar, or the → / ← arrow in the margin at the first line of each difference. The *⋯* menu also copies every
+  difference at once, swaps the sides, loads a file again, finds text (Ctrl+F) and goes to a line (Ctrl+G).
+- **Undo / Redo** (Ctrl+Z / Ctrl+Y) go back and forth over both files together; a run of typing is one step.
+- **Save** writes the changed files (Ctrl+S the side being edited, Ctrl+Shift+S both), each with its own encoding,
+  byte order mark and line ends. The button beside each file name (*UTF-8 · CRLF*) changes how it is written. A file
+  that cannot be written there (inside an archive, for one) is marked *Read-only*. Closing with unsaved changes asks
+  first; a file another program changes is loaded again (asked first when it has unsaved changes).
+- The folder button beside each file name chooses another file for that side.
+- **Compare** (F5) reads the files again when nothing is unsaved, otherwise compares the texts as they are now.
+- The status line shows the number of lines of both files, the caret's line and column, the language and the
+  encoding. Esc closes the window (or the search).
 - Binary files show a list of the differing bytes.
 
 ## Duplicate files
