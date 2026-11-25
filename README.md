@@ -109,6 +109,8 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
 | ![Find files](docs/screenshots/find-files.png)<br>Find files | ![Multi-Rename Tool](docs/screenshots/multi-rename.png)<br>Multi-Rename Tool | ![Synchronize directories](docs/screenshots/synchronize.png)<br>Synchronize directories |
 | ![Folder sizes](docs/screenshots/disk-usage.png)<br>Folder sizes | ![Duplicate files](docs/screenshots/duplicates.png)<br>Duplicate files | ![Configuration](docs/screenshots/configuration.png)<br>Configuration |
 | ![Compare by content](docs/screenshots/compare.png)<br>Compare by content | ![Connection manager](docs/screenshots/connections.png)<br>Connection manager | ![About](docs/screenshots/about.png)<br>About |
+| ![Command palette](docs/screenshots/command-palette.png)<br>Command palette | ![Quick View right of the file list](docs/screenshots/quick-view-right.png)<br>Quick View right of the file list | ![Picture metadata](docs/screenshots/picture-metadata.png)<br>Picture metadata |
+| ![Windows permissions](docs/screenshots/permissions.png)<br>Windows permissions | ![Restore settings from a backup](docs/screenshots/restore-backups.png)<br>Restore settings from a backup | |
 
 ## Guides
 

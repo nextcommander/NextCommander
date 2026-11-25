@@ -59,6 +59,8 @@ Each part shows how many changes it has and, opened, each change (added back, re
 parts ticked are restored; the rest stays as it is. *Restore...* asks first, keeps the settings in use as a backup and
 starts NextCommander again; that backup ("before Restore") is how a restore is undone.
 
+![Restore settings from a backup](../screenshots/restore-backups.png)
+
 - **Back up now** keeps the settings as they are, under a name you type; **Open file...** adds a settings file (for
   example one from another computer) to the backups.
 - F2 or the pencil names the chosen backup, the lock pins it (never removed automatically), Del or the bin deletes it
