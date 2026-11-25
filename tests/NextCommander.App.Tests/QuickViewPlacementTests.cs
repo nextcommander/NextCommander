@@ -84,4 +84,38 @@ public sealed class QuickViewPlacementTests : IDisposable
         Assert.True(host.IsVisible);
         vm.Dispose();
     }
+
+    [AvaloniaFact]
+    public async Task Moving_the_Quick_View_again_and_again_and_resizing_the_window_lays_out()
+    {
+        // the user's report (25 November 2026): after a few moves, making the window small threw in the grid's layout
+        var (w, vm) = await _fx.OpenAsync();
+        vm.Left.CursorItem = vm.Left.Items.First(i => i.FullName == "a.txt");
+        await vm.ExecuteAsync("nc_QuickView");
+        await SettleAsync(2);
+        var sizes = new[] { (1100d, 600d), (400d, 260d), (1, 1), (900d, 500d), (640d, 400d) };
+        for (var round = 0; round < 9; round++)
+        {
+            vm.SetQuickViewPlacement((QuickViewPlacement)(round % 3));
+            if (round % 4 == 3)
+            {
+                vm.ActivateSide(round % 8 == 3 ? vm.RightSide : vm.LeftSide);
+            }
+            await SettleAsync(1);
+            foreach (var (width, height) in sizes)
+            {
+                w.Width = width;
+                w.Height = height;
+                w.UpdateLayout();
+            }
+        }
+        await vm.ExecuteAsync("nc_QuickView"); // closed: the sides are their file lists again
+        await SettleAsync(2);
+        w.Width = 300;
+        w.UpdateLayout();
+        w.Width = 1100;
+        w.UpdateLayout();
+        Assert.Null(w.FindControl<PanelSideView>("LeftSideView")!.Preview);
+        vm.Dispose();
+    }
 }
