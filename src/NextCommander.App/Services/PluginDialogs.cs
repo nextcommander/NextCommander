@@ -19,6 +19,17 @@ public sealed class PluginDialogs(IDialogService dialogs, Func<ToolContext> tool
 
     public Task<bool> ConfirmAsync(string title, string message) => dialogs.ConfirmAsync(title, message);
 
+    public async Task<bool> ResolveConflictsAsync(string path)
+    {
+        var info = new FileInfo(path);
+        if (!info.Exists)
+        {
+            return false;
+        }
+        var entry = new VfsEntry { Name = info.Name, Path = VfsPath.Local(path), Size = info.Length, LastWriteTime = info.LastWriteTime };
+        return await dialogs.ShowMergeAsync(entry, null, tools());
+    }
+
     public async Task ShowTextAsync(string fileName, string text)
     {
         var folder = Path.Combine(Path.GetTempPath(), "NextCommander", "plugin-texts");

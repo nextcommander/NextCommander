@@ -45,6 +45,8 @@
   "Git.GitError": "git : {0}",
   "Git.GitFailed": "git a échoué.",
   "Git.HistoryTitle": "Git : {0}",
+  "Git.IsResolvedAndStagedNo": "{0} est résolu et indexé. Plus aucun conflit : Git : Terminer la fusion crée le commit de fusion.",
+  "Git.IsResolvedAndStagedStill": "{0} est résolu et indexé. Encore en conflit : {1}.",
   "Git.MergeBranch": "Git : Fusionner une branche...",
   "Git.MergeInto": "Git : Fusionner dans {0}",
   "Git.MergeStopped": "La fusion s'est arrêtée. Git : Terminer la fusion ou Git : Annuler la fusion.",

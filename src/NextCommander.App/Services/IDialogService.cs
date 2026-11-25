@@ -176,6 +176,12 @@ public interface IDialogService
     /// <summary>The most frequently used folders (nc_FrequentDirectories): search, open, remove from the list.</summary>
     Task ShowFrequentFoldersAsync(Views.Dialogs.FrequentFoldersRequest request);
 
+    /// <summary>
+    /// The 3-way merge window (until it is closed): three files merged into <paramref name="output"/>, or (no sources)
+    /// the conflict markers of <paramref name="output"/> resolved. True when it was saved with no conflict left.
+    /// </summary>
+    Task<bool> ShowMergeAsync(VfsEntry output, Views.Tools.MergeSources? sources, ToolContext context);
+
     /// <summary>The recorded macros (nc_Macros): their steps, run or delete one.</summary>
     Task ShowMacrosAsync(Views.Dialogs.MacrosRequest request);
 

@@ -127,6 +127,12 @@ public interface IPluginDialogs
 
     /// <summary>A long text in the viewer; <paramref name="fileName"/> gives its kind ("changes.diff" is colored as a difference).</summary>
     Task ShowTextAsync(string fileName, string text);
+
+    /// <summary>
+    /// The merge window for a local file with conflict markers (as git leaves it); true when it was saved with no
+    /// conflict left. A program without one answers false.
+    /// </summary>
+    Task<bool> ResolveConflictsAsync(string path) => Task.FromResult(false);
 }
 
 /// <summary>

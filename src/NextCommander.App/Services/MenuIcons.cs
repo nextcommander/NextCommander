@@ -223,6 +223,7 @@ public static class MenuIcons
         ["compare.report"] = new("MiGlobe", Blue, "OvArrowDown", Green),
         ["sync.exportpatch"] = new("MiDoc", Orange, "OvArrowDown", Green),
         ["nc_ApplyPatch"] = new("MiDoc", Orange, "OvCheck", Green),
+        ["nc_MergeFiles"] = new("MiCombine", Blue, "OvCheck", Green),
         ["compare.previousfile"] = new("MiDoc", Blue, "OvArrowLeft", Green),
         ["sync.preset"] = new("MiStar", Yellow),
         ["sync.savepreset"] = new("MiStar", Yellow, "OvPlus", Green),

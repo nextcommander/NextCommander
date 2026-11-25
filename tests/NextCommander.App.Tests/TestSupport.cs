@@ -446,6 +446,17 @@ internal sealed class FakeDialogs : IDialogService
         return Task.CompletedTask;
     }
 
+    /// <summary>The last merge window asked for; its answer (resolved and saved).</summary>
+    public (VfsEntry Output, NextCommander.App.Views.Tools.MergeSources? Sources)? LastMerge { get; private set; }
+
+    public bool NextMergeResolved { get; set; }
+
+    public Task<bool> ShowMergeAsync(VfsEntry output, NextCommander.App.Views.Tools.MergeSources? sources, ToolContext context)
+    {
+        LastMerge = (output, sources);
+        return Task.FromResult(NextMergeResolved);
+    }
+
     public NextCommander.App.Views.Dialogs.MacrosRequest? LastMacros { get; private set; }
 
     public Task ShowMacrosAsync(NextCommander.App.Views.Dialogs.MacrosRequest request)
