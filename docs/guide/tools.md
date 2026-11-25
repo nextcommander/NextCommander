@@ -276,13 +276,19 @@ list asks which one is the ancestor): the changes made on only one side are merg
 sides changed differently are **conflicts**, marked in the result as git marks them. Or place the cursor on a file with
 conflict markers (a git merge that stopped) to resolve them in place.
 
-- The three files are shown above the result, their changes colored (conflicts red); the current conflict is brought
-  into view in each of them.
-- For the current conflict take the **Left** (Alt+1), the **Base** (Alt+2), the **Right** (Alt+3) side or **Both**
-  (Alt+4, the left one first). F2 / Shift+F2 (Alt+↓ / Alt+↑) go to the next / previous conflict. The result is a normal
-  editor: edit it freely, Ctrl+Z takes a choice back.
+- The bar says how many conflicts are left. ↑ / ↓ (Alt+↑ / Alt+↓) go from change to change ("Change 2 of 4"),
+  **Next conflict** (F8) to the next one not resolved yet.
+- The three files are shown block by block, aligned (the lines a side has not are hatched): changes of the left side
+  blue, of the right side purple, the same change on both sides green, conflicts orange. Each change says what the
+  result takes: *Auto* (what the merge took by itself) or *Took Left / Base / Right / Both*. A click on a change makes it
+  the current one.
+- **Take** the **Left** (Ctrl+1), the **Base** (Ctrl+2), the **Right** (Ctrl+3) side or **Both** (Ctrl+4, the left one
+  first) for the current change, also for a change the merge took by itself; a resolved conflict goes on to the next
+  one. **Undo** (Ctrl+Z) takes a choice back.
+- The result below shows each block in the color of where it comes from; an unresolved conflict keeps its markers.
 - **Save** (Ctrl+S) writes the result into the first of the two versions (or the file with the markers) in its own
-  encoding and line ends; with conflicts left it asks first. Closing with unsaved changes asks too.
+  encoding and line ends; unresolved conflicts stay in it with their markers (the message says how many). Closing with
+  unsaved changes asks first. The colors of the merge are in the color themes (keys `Merge.*`).
 - The Git plugin's *Conflicts...* opens a conflicted file here and stages it once it is saved without conflicts.
 
 ## Duplicate files
