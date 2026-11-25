@@ -65,6 +65,9 @@
     "Compare.Moved": "#26B48CFF",               // Compare: background of moved lines
     "Compare.MovedText": "#B48CFF",             // Compare: ↕ signs of moved lines
     "Compare.Current": "#58A6FF",               // Compare: frame of the current difference
-    "Compare.Conflict": "#3A1C20"               // Merge: conflicts in the three files
+    "Merge.Left": "#4EA1FF",                    // Merge: changes of the left side (the backgrounds are made lighter from it)
+    "Merge.Right": "#C08BFF",                   // Merge: changes of the right side
+    "Merge.Both": "#4CC38A",                    // Merge: the same change on both sides, nothing left to resolve
+    "Merge.Conflict": "#F0A23B"                 // Merge: conflicts
   }
 }

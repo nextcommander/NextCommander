@@ -110,7 +110,10 @@ The parts of the window the theme editor lists:
 | `Compare.Moved` | Compare: background of moved lines |
 | `Compare.MovedText` | Compare: ↕ signs of moved lines |
 | `Compare.Current` | Compare: frame of the current difference |
-| `Compare.Conflict` | Merge: conflicts in the three files |
+| `Merge.Left` | Merge: changes of the left side (the backgrounds are made lighter from it) |
+| `Merge.Right` | Merge: changes of the right side |
+| `Merge.Both` | Merge: the same change on both sides, nothing left to resolve |
+| `Merge.Conflict` | Merge: conflicts |
 
 ## File type colors
 

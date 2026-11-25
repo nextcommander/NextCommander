@@ -90,7 +90,10 @@ public static class ColorThemes
         new("Compare.Moved", "Compare: background of moved lines", "FmCompareMovedBrush"),
         new("Compare.MovedText", "Compare: ↕ signs of moved lines", "FmCompareMovedTextBrush"),
         new("Compare.Current", "Compare: frame of the current difference", "FmCompareCurrentBrush"),
-        new("Compare.Conflict", "Merge: conflicts in the three files", "FmCompareConflictBrush"),
+        new("Merge.Left", "Merge: changes of the left side (the backgrounds are made lighter from it)", "FmMergeLeftBrush"),
+        new("Merge.Right", "Merge: changes of the right side", "FmMergeRightBrush"),
+        new("Merge.Both", "Merge: the same change on both sides, nothing left to resolve", "FmMergeBothBrush"),
+        new("Merge.Conflict", "Merge: conflicts", "FmMergeConflictBrush"),
     ];
 
     /// <summary>A theme was applied (windows that draw with theme colors themselves draw again).</summary>

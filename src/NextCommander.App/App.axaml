@@ -42,7 +42,10 @@
           <SolidColorBrush x:Key="FmCompareMovedBrush" Color="#F1ECFB" />
           <SolidColorBrush x:Key="FmCompareMovedTextBrush" Color="#7A4FD6" />
           <SolidColorBrush x:Key="FmCompareCurrentBrush" Color="#1F6FEB" />
-          <SolidColorBrush x:Key="FmCompareConflictBrush" Color="#FDEDEF" />
+          <SolidColorBrush x:Key="FmMergeLeftBrush" Color="#0F6CDB" />
+          <SolidColorBrush x:Key="FmMergeRightBrush" Color="#7A4FD6" />
+          <SolidColorBrush x:Key="FmMergeBothBrush" Color="#17804F" />
+          <SolidColorBrush x:Key="FmMergeConflictBrush" Color="#B86E00" />
         </ResourceDictionary>
         <!-- Dark: only the defaults under a dark theme file (Themes/dark.json sets the real colors) -->
         <ResourceDictionary x:Key="Dark">
@@ -80,7 +83,10 @@
           <SolidColorBrush x:Key="FmCompareMovedBrush" Color="#26B48CFF" />
           <SolidColorBrush x:Key="FmCompareMovedTextBrush" Color="#B48CFF" />
           <SolidColorBrush x:Key="FmCompareCurrentBrush" Color="#58A6FF" />
-          <SolidColorBrush x:Key="FmCompareConflictBrush" Color="#3A1C20" />
+          <SolidColorBrush x:Key="FmMergeLeftBrush" Color="#4EA1FF" />
+          <SolidColorBrush x:Key="FmMergeRightBrush" Color="#C08BFF" />
+          <SolidColorBrush x:Key="FmMergeBothBrush" Color="#4CC38A" />
+          <SolidColorBrush x:Key="FmMergeConflictBrush" Color="#F0A23B" />
         </ResourceDictionary>
       </ResourceDictionary.ThemeDictionaries>
       <ResourceDictionary.MergedDictionaries>
