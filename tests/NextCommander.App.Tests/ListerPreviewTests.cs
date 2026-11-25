@@ -133,6 +133,33 @@ public sealed class ListerPreviewTests : IDisposable
         }
     }
 
+    /// <summary>A view next to the Lister's own (picture metadata): the picture opens first, key 6 shows the metadata.</summary>
+    [AvaloniaFact]
+    public async Task Picture_metadata_is_the_plugin_view_next_to_the_picture()
+    {
+        var (_, vm) = await _fx.OpenAsync();
+        var plugin = new Core.Plugins.LoadedPlugin { Folder = _fx.Root };
+        plugin.Viewers.Add(new NextCommander.Plugin.Viewers.ImageMetadataViewer());
+        Core.Plugins.PluginCatalog.Add(plugin);
+        try
+        {
+            var file = _fx.L("galata.jpg");
+            File.WriteAllBytes(file, ViewersPluginTests.PhotoWithExif());
+            var lister = await OpenAsync(vm, file);
+            Assert.Equal(ListerMode.Image, lister.View.Mode);
+
+            Press(lister, Key.D6);
+            await WaitUntilAsync(() => lister.View.PreviewHtml is not null);
+            Assert.Equal(ListerMode.Plugin, lister.View.Mode);
+            Assert.Contains("Canon EOS R5", lister.View.PreviewHtml, StringComparison.Ordinal);
+            Assert.Contains("openstreetmap.org", lister.View.PreviewHtml, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Core.Plugins.PluginCatalog.Clear();
+        }
+    }
+
     [AvaloniaFact]
     public void Media_positions_are_remembered()
     {

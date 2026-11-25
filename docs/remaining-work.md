@@ -329,7 +329,11 @@ The plan in phases: [docs/plans/compare-merge.md](plans/compare-merge.md).
 ## Shipped plugins (22 November 2026)
 - [x] Plugin settings drawn by the program (`IConfigurablePlugin`): **Configure...** in the plugins window tried by
   the user on Windows (22 November 2026).
-- [ ] Secret settings (`PluginSettingKind.Secret`, password store): no shipped plugin uses one yet; tested only.
+- [x] Secret settings (`PluginSettingKind.Secret`, password store): the GitHub / GitLab repositories plugin keeps its
+  access tokens as secrets (25 November 2026).
+- [ ] GitHub / GitLab repositories plugin to be tried in the app: a token typed in the settings and used, a private
+  repository, GitHub Enterprise / a self-hosted GitLab, Open in browser and Clone on Linux / macOS. Tested with fake
+  APIs and the public github.com (`FM_TEST_GITHUB=1`).
 - [x] Docker: volumes tried by the user on Windows (22 November 2026). Containers, files in and out, a stopped
   container (read-only through docker cp) and the container menu are tested against a real Docker (`FM_TEST_DOCKER=1`).
 - [x] Docker: the container menu (start / stop / restart / pause / resume) and a stopped container tried by the user

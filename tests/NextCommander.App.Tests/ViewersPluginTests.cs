@@ -352,4 +352,165 @@ public sealed class ViewersPluginTests
         var earlier = ContactViewer.ParseLine("DTSTART:20261122T070000Z")!;
         Assert.Equal(new DateTime(2026, 11, 22, 7, 0, 0, DateTimeKind.Utc).ToLocalTime(), ContactViewer.Time(earlier));
     }
+
+    /// <summary>A TIFF field: tag, type (1 byte, 2 ASCII, 3 short, 4 long, 5 rational), count and its bytes (little-endian).</summary>
+    private sealed record TiffField(ushort Tag, ushort Type, uint Count, byte[] Value);
+
+    private static TiffField Ascii(ushort tag, string text) => new(tag, 2, (uint)text.Length + 1, Encoding.ASCII.GetBytes(text + "\0"));
+
+    private static TiffField Short(ushort tag, ushort value) => new(tag, 3, 1, BitConverter.GetBytes(value));
+
+    private static TiffField Long(ushort tag, uint value) => new(tag, 4, 1, BitConverter.GetBytes(value));
+
+    private static TiffField Rationals(ushort tag, params (uint Numerator, uint Denominator)[] values) =>
+        new(tag, 5, (uint)values.Length, [.. values.SelectMany(v => BitConverter.GetBytes(v.Numerator).Concat(BitConverter.GetBytes(v.Denominator)))]);
+
+    private static int IfdSize(List<TiffField> fields) => 2 + 12 * fields.Count + 4 + fields.Where(f => f.Value.Length > 4).Sum(f => (f.Value.Length + 1) & ~1);
+
+    /// <summary>One IFD at <paramref name="offset"/> (from the TIFF header): its entries, no next IFD, then the values that do not fit in an entry.</summary>
+    private static void WriteIfd(BinaryWriter writer, int offset, List<TiffField> fields)
+    {
+        var data = offset + 2 + 12 * fields.Count + 4;
+        using var extra = new MemoryStream();
+        writer.Write((ushort)fields.Count);
+        foreach (var field in fields.OrderBy(f => f.Tag))
+        {
+            writer.Write(field.Tag);
+            writer.Write(field.Type);
+            writer.Write(field.Count);
+            if (field.Value.Length <= 4)
+            {
+                var inline = new byte[4];
+                field.Value.CopyTo(inline, 0);
+                writer.Write(inline);
+            }
+            else
+            {
+                writer.Write((uint)(data + extra.Length));
+                extra.Write(field.Value);
+                if (field.Value.Length % 2 == 1)
+                {
+                    extra.WriteByte(0);
+                }
+            }
+        }
+        writer.Write(0u);
+        writer.Write(extra.ToArray());
+    }
+
+    private static byte[] Segment(byte marker, byte[] content) =>
+        [0xFF, marker, (byte)((content.Length + 2) >> 8), (byte)(content.Length + 2), .. content];
+
+    /// <summary>
+    /// A real JPEG (8 × 6, Skia) with an Exif APP1 segment written here: camera, lens, date taken, exposure, GPS at
+    /// 41° 0' 36" N, 28° 58' 30" E, 100 m; and an XMP segment with a title, keywords, a rating and a label.
+    /// </summary>
+    internal static byte[] PhotoWithExif()
+    {
+        List<TiffField> ifd0 = [Ascii(0x010F, "Canon"), Ascii(0x0110, "Canon EOS R5"), Short(0x0112, 1)];
+        List<TiffField> exif =
+        [
+            Ascii(0x9003, "2026:07:14 15:30:45"), Rationals(0x829A, (1, 250)), Rationals(0x829D, (28, 10)), Short(0x8827, 200),
+            Rationals(0x920A, (50, 1)), Ascii(0xA434, "RF24-105mm F4 L IS USM"), Short(0xA001, 1),
+        ];
+        List<TiffField> gps =
+        [
+            Ascii(0x0001, "N"), Rationals(0x0002, (41, 1), (0, 1), (3600, 100)), Ascii(0x0003, "E"), Rationals(0x0004, (28, 1), (58, 1), (30, 1)),
+            new(0x0005, 1, 1, [0]), Rationals(0x0006, (100, 1)), Ascii(0x0010, "T"), Rationals(0x0011, (2705, 10)),
+        ];
+        // IFD0 (with its two pointers, 24 bytes) is followed by the Exif IFD, then the GPS IFD
+        var exifOffset = 8 + IfdSize(ifd0) + 24;
+        var gpsOffset = exifOffset + IfdSize(exif);
+        ifd0.Add(Long(0x8769, (uint)exifOffset));
+        ifd0.Add(Long(0x8825, (uint)gpsOffset));
+        using var tiff = new MemoryStream();
+        using (var writer = new BinaryWriter(tiff, Encoding.ASCII, leaveOpen: true))
+        {
+            writer.Write("II"u8);
+            writer.Write((ushort)42);
+            writer.Write(8u);
+            WriteIfd(writer, 8, ifd0);
+            WriteIfd(writer, exifOffset, exif);
+            WriteIfd(writer, gpsOffset, gps);
+        }
+
+        using var bitmap = new SkiaSharp.SKBitmap(8, 6);
+        bitmap.Erase(SkiaSharp.SKColors.Teal);
+        var jpeg = bitmap.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 90).ToArray();
+        var packet = """
+            <x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+            <rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmp:Rating="4" xmp:Label="Red">
+            <dc:title><rdf:Alt><rdf:li xml:lang="x-default">Galata Kulesi</rdf:li></rdf:Alt></dc:title>
+            <dc:subject><rdf:Bag><rdf:li>istanbul</rdf:li><rdf:li>kule</rdf:li></rdf:Bag></dc:subject>
+            </rdf:Description></rdf:RDF></x:xmpmeta>
+            """;
+        return
+        [
+            .. jpeg[..2], // SOI
+            .. Segment(0xE1, [.. "Exif\0\0"u8, .. tiff.ToArray()]),
+            .. Segment(0xE1, [.. "http://ns.adobe.com/xap/1.0/\0"u8, .. Encoding.UTF8.GetBytes(packet)]),
+            .. jpeg[2..],
+        ];
+    }
+
+    [AvaloniaFact]
+    public async Task A_photo_shows_its_camera_date_location_and_every_tag()
+    {
+        var viewer = new ImageMetadataViewer();
+        Assert.True(viewer.CanView("IMG_0001.JPG", []));
+        Assert.True(viewer.CanView("raw.cr3", []));
+        Assert.False(viewer.CanView("notes.txt", []));
+        Assert.False(((NextCommander.Core.Plugins.IViewerPlugin)viewer).IsDefaultView); // next to the picture, not instead of it
+
+        var content = await viewer.ViewAsync(new MemoryStream(PhotoWithExif()), "galata.jpg", dark: false, CancellationToken.None);
+        var html = content.Html!;
+        Assert.Contains("Canon EOS R5", html, StringComparison.Ordinal); // the make is not repeated
+        Assert.DoesNotContain("Canon Canon", html, StringComparison.Ordinal);
+        Assert.Contains("RF24-105mm F4 L IS USM", html, StringComparison.Ordinal);
+        Assert.Contains(ViewerHtml.E(new DateTime(2026, 7, 14, 15, 30, 45).ToString("F", System.Globalization.CultureInfo.CurrentCulture)), html, StringComparison.Ordinal);
+        Assert.Contains("1/250 sec", html, StringComparison.Ordinal);
+        Assert.Contains("8 × 6 pixels", html, StringComparison.Ordinal);
+
+        // the place: decimal degrees, degrees / minutes / seconds, altitude, direction and the map's address
+        Assert.Contains("41.01, 28.975", html, StringComparison.Ordinal);
+        Assert.Contains(ViewerHtml.E("41° 0' 36\" N"), html, StringComparison.Ordinal);
+        Assert.Contains(ViewerHtml.E("28° 58' 30\" E"), html, StringComparison.Ordinal);
+        Assert.Contains("100 m", html, StringComparison.Ordinal);
+        Assert.Contains("(true north)", html, StringComparison.Ordinal);
+        var map = "https://www.openstreetmap.org/?mlat=41.01&mlon=28.975#map=16/41.01/28.975";
+        Assert.Equal(map, ImageMetadataViewer.MapAddress(41.01, 28.975));
+        Assert.Contains($"<a href=\"{map}\">", html, StringComparison.Ordinal);
+
+        // XMP: title, keywords, rating, label
+        Assert.Contains("Galata Kulesi", html, StringComparison.Ordinal);
+        Assert.Contains("istanbul; kule", html, StringComparison.Ordinal);
+        Assert.Contains("4 / 5", html, StringComparison.Ordinal);
+        Assert.Contains(">Red<", html, StringComparison.Ordinal);
+
+        // the full list: every directory with its tags, e.g. the ISO speed under its id
+        Assert.Contains("All metadata", html, StringComparison.Ordinal);
+        Assert.Contains("<h3>Exif SubIFD</h3>", html, StringComparison.Ordinal);
+        Assert.Contains("<h3>GPS</h3>", html, StringComparison.Ordinal);
+        Assert.Contains("0x8827", html, StringComparison.Ordinal);
+        Assert.Contains("Canon EOS R5", content.Status, StringComparison.Ordinal);
+        Assert.Contains("41.01, 28.975", content.Status, StringComparison.Ordinal);
+        Assert.DoesNotContain("holds no metadata", html, StringComparison.Ordinal);
+    }
+
+    [AvaloniaFact]
+    public void A_picture_without_metadata_says_so()
+    {
+        using var bitmap = new SkiaSharp.SKBitmap(5, 4);
+        bitmap.Erase(SkiaSharp.SKColors.Orange);
+        var png = bitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100).ToArray();
+        var (html, _) = ImageMetadataViewer.Describe(new MemoryStream(png), "plain.png", dark: true);
+        Assert.Contains("The picture holds no metadata (no EXIF, IPTC or XMP).", html, StringComparison.Ordinal);
+        Assert.Contains("5 × 4 pixels", html, StringComparison.Ordinal); // from its own header
+        Assert.DoesNotContain("Location", html, StringComparison.Ordinal);
+
+        // not a picture at all: says it cannot be read
+        var (broken, status) = ImageMetadataViewer.Describe(new MemoryStream([1, 2, 3, 4]), "broken.jpg", dark: false);
+        Assert.Contains("cannot be read", broken, StringComparison.Ordinal);
+        Assert.Equal("Not readable", status);
+    }
 }

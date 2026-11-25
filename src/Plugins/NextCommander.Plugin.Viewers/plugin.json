@@ -1,6 +1,6 @@
 {
   "Name": "viewers",
   "Assembly": "NextCommander.Plugin.Viewers.dll",
-  "Description": "Lister viewers: CSV and TSV as a sortable table; JSON, XML and YAML as a tree; e-mails (.eml, .msg), e-books (.epub) and Jupyter notebooks; certificates and programs (.exe, .dll); fonts; contacts (.vcf) and calendars (.ics).",
+  "Description": "Lister viewers: CSV and TSV as a sortable table; JSON, XML and YAML as a tree; e-mails (.eml, .msg), e-books (.epub) and Jupyter notebooks; certificates and programs (.exe, .dll); fonts; contacts (.vcf) and calendars (.ics); the metadata of photos and pictures (EXIF, GPS location, IPTC, XMP).",
   "Version": "1.0"
 }

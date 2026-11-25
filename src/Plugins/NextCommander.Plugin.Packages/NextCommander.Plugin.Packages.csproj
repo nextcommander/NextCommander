@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Packages and installers as a plugin: .deb, .rpm, .cab, .msi and container image archives (docker save / OCI) open
+    like folders of their files (read-only), and the Lister shows an overview. The readers are the plugin's own; the
+    decompressors (xz, bzip2, zstd) come from the application's SharpCompress. The application builds it and copies it,
+    plugin.json and its languages folder into plugins/packages next to the program.
+  -->
+  <PropertyGroup>
+    <RootNamespace>NextCommander.Plugin.Packages</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- the application's own (shared, not copied): the Core and SharpCompress -->
+    <ProjectReference Include="..\..\NextCommander.Core\NextCommander.Core.csproj" Private="false" ExcludeAssets="runtime;native" />
+    <PackageReference Include="SharpCompress" ExcludeAssets="runtime;native" />
+  </ItemGroup>
+  <!-- plugin.json and languages are taken from this folder by the application's build (not copied here: they would land next to the program too) -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="NextCommander.Core.Tests" />
+  </ItemGroup>
+</Project>

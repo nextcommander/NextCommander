@@ -1,0 +1,6 @@
+{
+  "Name": "kubernetes",
+  "Assembly": "NextCommander.Plugin.Kubernetes.dll",
+  "Description": "Kubernetes: the files of the containers of a cluster's pods in a panel (k8s://), to view, copy in and out, edit, rename and delete; pod logs, description, deletion and deployment restart. Uses the installed kubectl.",
+  "Version": "1.0"
+}
