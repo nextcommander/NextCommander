@@ -260,7 +260,14 @@ two panels.
   new one) or as an **HTML report** (side by side, the changed characters marked).
 - The status line shows the number of lines of both files, the caret's line and column, the language and the
   encoding. Esc closes the window (or the search).
-- Binary files show a list of the differing bytes.
+- **Binary files** are shown as hex dumps side by side: 16 bytes a row at the same offset on both sides, the differing
+  bytes marked; the rows with differences are visited like any difference (files larger than 8 MB are shown up to
+  there).
+- **Documents** (Word, Excel, PowerPoint, OpenDocument, older .doc / .xls / .ppt, PDF) are compared by their text:
+  paragraphs, table rows (cells separated by tabs), PDF pages marked `── n ──`. Read-only.
+- **Pictures** (PNG, JPEG, BMP, GIF, WebP, ICO): side by side, overlaid (a slider between the left and the right one)
+  or their difference (the differing pixels red on the faded left picture, with a tolerance for small color
+  changes); the status line counts the differing pixels.
 
 ## Duplicate files
 

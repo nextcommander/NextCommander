@@ -67,6 +67,20 @@ public sealed partial class CompareWindow
             ReadOnly = !writable;
         }
 
+        /// <summary>Lines that are not the file's text (a document's text, nothing for hex and pictures): read-only.</summary>
+        public void LoadLines(List<string> lines)
+        {
+            Encoding = EncodingDetector.Utf8NoBom;
+            Bom = false;
+            NewLine = "\n";
+            EndsWithNewline = true;
+            Lines = lines;
+            SavedLines = [.. lines];
+            FormatChanged = false;
+            Loaded = true;
+            ReadOnly = true;
+        }
+
         private static List<string> Split(string text)
         {
             var lines = text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n').Split('\n').ToList();
@@ -385,6 +399,13 @@ public sealed partial class CompareWindow
     /// <summary>Reads one side's file again (its changes here are dropped).</summary>
     public async Task ReloadSideAsync(bool right)
     {
+        if (Mode != CompareMode.Text)
+        {
+            // hex, documents, pictures: both files read again
+            _l.Loaded = _r.Loaded = false;
+            await CompareAsync();
+            return;
+        }
         var side = right ? _r : _l;
         byte[] data;
         try

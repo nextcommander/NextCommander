@@ -234,7 +234,10 @@ The plan in phases: [docs/plans/compare-merge.md](plans/compare-merge.md).
   a list with what fits, a preview in the compare window, writing with `TextContent`). Tests: `PatchReportTests`,
   App `PatchTests`.
 - [ ] Phase 6: 3-way compare and merge (Git conflicts).
-- [ ] Phase 7: hex, picture and document (Office / PDF as text) compare.
+- [x] Phase 7: hex, picture and document compare (`CompareWindow.Modes.cs`: `CompareMode`; `Core/Compare/HexCompare`
+  rows through the same panes, `DocumentText` (OfficeHtml / PDFium text, read-only), `PictureCompareView` +
+  `PictureDifference` (SkiaSharp, tolerance, side by side / overlay / difference)). Tests: `HexDocumentCompareTests`,
+  App `CompareModesTests`.
 
 ## Other
 - [x] New application icon (dark package) verified on Windows (exe, window, taskbar; the old icon came from Windows' icon cache).
@@ -364,7 +367,8 @@ File management
 Media and documents
 - [ ] Batch picture operations: resize, convert, rotate, rename by the EXIF date.
 - [ ] Map view of photos with GPS data.
-- [ ] Picture compare: two pictures side by side, overlaid or as their difference.
+- [x] Picture compare: two pictures side by side, overlaid or as their difference (the compare window, 25 November
+  2026).
 - [ ] Hex editor: the Lister's hex view made editable.
 
 Connections and cloud
