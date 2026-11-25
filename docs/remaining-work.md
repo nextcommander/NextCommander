@@ -203,6 +203,22 @@ built-in X11 server and XDMCP, Mosh, the built-in servers (TFTP, HTTP, SSH; PC l
 - [x] Folder sizes window (like WinDirStat): tree, extension statistics, treemap; deleting.
 - [x] Find files content search: several files read at the same time (local: up to 8, others: 2), the line of the first match under each result (in the file's own encoding), F3 opens the Lister at the match, *Skip binary files*.
 
+## Compare and merge (user's request, 25 November 2026)
+The plan in phases: [docs/plans/compare-merge.md](plans/compare-merge.md).
+- [x] Phase 1, the engine (`Core/Compare`): Myers in linear space (GNU diff's middle snake, divided and conquered, its
+  heuristic when a part is too expensive: no more giving up at 10,000 edits), alike lines of a difference side by side
+  (`MatchSimilarLines`), options: blank lines, every space, line ends, ignore filters (regex), substitutions; moved lines
+  (`DiffLine.MovedTo`), word level in-line differences (`InlineLevel.Word`), `TextDiff.Blocks` / `Hunks`, `DiffMerge`
+  (copy differences to the other side), `ThreeWayDiff` (diff3 chunks, merge with conflict markers), `UnifiedDiff`
+  (patch written, read, applied with moved hunks found, rejected hunks reported). Tests: `TextDiffTests`.
+- [ ] Phase 2: editing, copying differences and saving in the compare window.
+- [ ] Phase 3: compare settings (options kept, filters, colors, font, an external compare program).
+- [ ] Phase 4: the folder compare window (folder results, file difference, back); Synchronize directories is merged
+  into it (the user's choice, 25 November 2026).
+- [ ] Phase 5: patches and HTML reports in the UI.
+- [ ] Phase 6: 3-way compare and merge (Git conflicts).
+- [ ] Phase 7: hex, picture and document (Office / PDF as text) compare.
+
 ## Other
 - [x] New application icon (dark package) verified on Windows (exe, window, taskbar; the old icon came from Windows' icon cache).
 - [-] Master password lock with Windows Hello / Touch ID — not planned (user's decision, 20 November 2026; it would need a separate Windows-specific build target of the application).
