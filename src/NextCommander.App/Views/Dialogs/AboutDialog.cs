@@ -26,7 +26,7 @@ public sealed record AboutInfo(
     Func<string, Task> OpenFolder)
 {
     /// <summary>The project page of the application.</summary>
-    public const string Website = "https://github.com/nextcommander/nextcommander";
+    public const string Website = "https://nextcommander.github.io/NextCommander/";
 
     /// <summary>The details as plain text (Copy button).</summary>
     public string Text =>
