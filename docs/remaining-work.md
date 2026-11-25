@@ -216,7 +216,13 @@ The plan in phases: [docs/plans/compare-merge.md](plans/compare-merge.md).
   (Alt+→ / Alt+←, the bar, the margin arrows, all at once), undo / redo of both sides, saves with each file's encoding,
   BOM and line ends (`CompareWindow.Sides.cs`; the format menu of each side), asks on closing, reloads a file changed
   elsewhere, swaps the sides, chooses another file, Find / Go to line. Tests: `CompareMergeTests`.
-- [ ] Phase 3: compare settings (options kept, filters, colors, font, an external compare program).
+- [x] Phase 3: compare settings (`Core/Config/CompareSettings`, `AppSettings.CompareOptions`, page Operation/Compare):
+  what is ignored, moved lines, alike lines, words / characters, font, line filters and substitutions (`ListEditor`,
+  checked as regular expressions), a backup at the first save, an external compare program for two local files; the
+  window's switches and its *Compare options* menu change the same settings; `nc_Config <page>` opens a page.
+  Tests: `CompareSettingsTests`, `CompareMergeTests`.
+- [ ] Compare colors of their own (added / removed / changed / moved) in the color themes; the window has the colors
+  of its design for light and dark now.
 - [ ] Phase 4: the folder compare window (folder results, file difference, back); Synchronize directories is merged
   into it (the user's choice, 25 November 2026).
 - [ ] Phase 5: patches and HTML reports in the UI.

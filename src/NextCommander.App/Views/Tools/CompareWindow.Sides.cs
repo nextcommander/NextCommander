@@ -38,6 +38,9 @@ public sealed partial class CompareWindow
 
         public bool Loaded { get; set; }
 
+        /// <summary>The backup of the file as it was (name.bak) was written at the first save.</summary>
+        public bool BackedUp { get; set; }
+
         public bool ReadOnly { get; set; }
 
         /// <summary>The time of the file after this window saved it (its own change is not "changed by another program").</summary>
@@ -173,6 +176,17 @@ public sealed partial class CompareWindow
         try
         {
             var provider = _context.Registry.Resolve(side.Entry.Path);
+            if (_context.Settings.CompareOptions.Backup && !side.BackedUp && side.Entry.Path.Parent is { } folder)
+            {
+                // the file as it was before the first save: name.bak next to it
+                var backup = folder.Combine(side.Entry.Name + ".bak");
+                await using (var original = await provider.OpenReadAsync(side.Entry.Path, CancellationToken.None))
+                await using (var copy = await provider.OpenWriteAsync(backup, overwrite: true, CancellationToken.None))
+                {
+                    await original.CopyToAsync(copy);
+                }
+                side.BackedUp = true;
+            }
             await using (var stream = await provider.OpenWriteAsync(side.Entry.Path, overwrite: true, CancellationToken.None))
             {
                 await stream.WriteAsync(bytes);

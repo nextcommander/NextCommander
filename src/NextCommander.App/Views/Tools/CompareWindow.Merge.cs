@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Threading;
 using NextCommander.App.Services;
 using NextCommander.Core.Compare;
+using NextCommander.Core.Config;
 
 namespace NextCommander.App.Views.Tools;
 
@@ -112,7 +113,7 @@ public sealed partial class CompareWindow
         {
             await CompareAsync(); // the differences of the text as it is now
         }
-        var blocks = TextDiff.Blocks(_rows);
+        var blocks = TextDiff.Blocks(_rows).Where(b => !b.Ignored).ToList(); // as the differences are visited
         if (IsBinary || block < 0 || block >= blocks.Count)
         {
             return;
@@ -388,6 +389,8 @@ public sealed partial class CompareWindow
         menu.Items.Add(Item("Load the left file again", "editor.reload", () => ReloadSideAsync(false), text));
         menu.Items.Add(Item("Load the right file again", "editor.reload", () => ReloadSideAsync(true), text));
         menu.Items.Add(new Separator());
+        menu.Items.Add(OptionsMenu());
+        menu.Items.Add(new Separator());
         menu.Items.Add(Item("Find...", "editor.find", () => Run(OpenSearch), text, "Ctrl+F"));
         menu.Items.Add(Item("Go to line...", "editor.gotoline", GoToLineAsync, text, "Ctrl+G"));
         if (!_context.Settings.ShowMenuIcons)
@@ -401,6 +404,50 @@ public sealed partial class CompareWindow
             action();
             return Task.CompletedTask;
         }
+    }
+
+    /// <summary>
+    /// The options of the comparison (the same as Configuration > Operation/Compare, kept there), then the settings page
+    /// itself.
+    /// </summary>
+    private MenuItem OptionsMenu()
+    {
+        var options = new MenuItem { Header = "Compare options", Icon = MenuIcons.Create("compare.options") };
+        void Toggle(string header, bool on, Action<bool> set)
+        {
+            var item = new MenuItem { Header = header, ToggleType = MenuItemToggleType.CheckBox, IsChecked = on };
+            item.Click += (_, _) =>
+            {
+                set(!on);
+                SyncSwitches();
+                _ = CompareAsync();
+            };
+            options.Items.Add(item);
+        }
+        Toggle("Ignore blank lines", Options.IgnoreBlankLines, v => Options.IgnoreBlankLines = v);
+        Toggle("Ignore line ends (CRLF / LF)", Options.IgnoreLineEndings, v => Options.IgnoreLineEndings = v);
+        Toggle("Ignore all spaces", Options.Whitespace == CompareWhitespace.IgnoreAll,
+            v => Options.Whitespace = v ? CompareWhitespace.IgnoreAll : CompareWhitespace.Compare);
+        Toggle("Mark moved lines", Options.DetectMoved, v => Options.DetectMoved = v);
+        Toggle("Put alike lines side by side", Options.MatchSimilarLines, v => Options.MatchSimilarLines = v);
+        Toggle("Mark differences by words", Options.WordLevel, v => Options.WordLevel = v);
+        if (Options.LineFilters.Count + Options.Substitutions.Count > 0)
+        {
+            var filters = Options.LineFilters.Where(f => f.Enabled).Count() + Options.Substitutions.Where(f => f.Enabled).Count();
+            options.Items.Add(new MenuItem { Header = $"Filters on: {filters}", IsEnabled = false });
+        }
+        options.Items.Add(new Separator());
+        var settings = new MenuItem { Header = "Compare settings...", Icon = MenuIcons.Create("nc_Config"), IsEnabled = _context.RunCommand is not null };
+        settings.Click += (_, _) => _ = _context.RunCommand?.Invoke("nc_Config Operation/Compare");
+        options.Items.Add(settings);
+        return options;
+    }
+
+    /// <summary>The two switches of the bar as the settings are now.</summary>
+    private void SyncSwitches()
+    {
+        _ignoreCase.IsChecked = Options.IgnoreCase;
+        _ignoreSpace.IsChecked = Options.Whitespace != CompareWhitespace.Compare;
     }
 
     /// <summary>The search of the side being edited (the left one when none is).</summary>
