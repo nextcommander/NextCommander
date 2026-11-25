@@ -223,8 +223,11 @@ The plan in phases: [docs/plans/compare-merge.md](plans/compare-merge.md).
   Tests: `CompareSettingsTests`, `CompareMergeTests`.
 - [ ] Compare colors of their own (added / removed / changed / moved) in the color themes; the window has the colors
   of its design for light and dark now.
-- [ ] Phase 4: the folder compare window (folder results, file difference, back); Synchronize directories is merged
-  into it (the user's choice, 25 November 2026).
+- [x] Phase 4: the folder compare is Synchronize directories (the user's choice to merge them, 25 November 2026):
+  `SyncOptions.Method` (date and size / content / text with the compare settings: `DirectoryComparer.SameTextAsync`),
+  a flat list, presets (`AppSettings.SyncPresets`), the export (`SyncReport` HTML / CSV), the compare window going
+  to the next / previous different file (`CompareWindow.Neighbor`, Ctrl+Alt+↓ / ↑) and its saves updating the row
+  (`Saved`, `DirectoryComparer.StatusOfAsync`; `SyncDirsView.Compare.cs`). Tests: Core and App `FolderCompareTests`.
 - [ ] Phase 5: patches and HTML reports in the UI.
 - [ ] Phase 6: 3-way compare and merge (Git conflicts).
 - [ ] Phase 7: hex, picture and document (Office / PDF as text) compare.

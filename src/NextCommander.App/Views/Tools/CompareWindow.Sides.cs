@@ -208,6 +208,7 @@ public sealed partial class CompareWindow
         BuildFileHeaders();
         UpdateButtons();
         ShowToast($"Saved {side.Entry.Name}");
+        Saved?.Invoke(this, EventArgs.Empty);
         return true;
     }
 
@@ -407,4 +408,51 @@ public sealed partial class CompareWindow
 
     /// <summary>The side object of the left or right file (tests: <see cref="ExternalChangeAsync"/>).</summary>
     internal object SideOf(bool right) => right ? _r : _l;
+
+    /// <summary>The files compared now (after a save: as they are on disk).</summary>
+    public VfsEntry LeftEntry => _l.Entry;
+
+    public VfsEntry RightEntry => _r.Entry;
+
+    /// <summary>A file of the window was saved (the folder compare updates its row).</summary>
+    public event EventHandler? Saved;
+
+    /// <summary>
+    /// The next (+1) or previous (-1) pair of different files of the folder compare that opened this window; null when
+    /// there is none (the window was opened for two files alone).
+    /// </summary>
+    public Func<int, Task<(VfsEntry Left, VfsEntry Right)?>>? Neighbor { get; set; }
+
+    /// <summary>Ctrl+Alt+↓ / ↑: the next / previous different files of the folder compare (unsaved changes asked about first).</summary>
+    public async Task<bool> OtherFileAsync(int direction)
+    {
+        if (Neighbor is null)
+        {
+            return false;
+        }
+        CommitEdits();
+        if (_l.Dirty || _r.Dirty)
+        {
+            var names = string.Join(" and ", new[] { _l, _r }.Where(s => s.Dirty).Select(s => s.Entry.Name));
+            var choice = await AskSaveOnClose(names);
+            if (choice == SaveChoice.Cancel || (choice == SaveChoice.Save && !await SaveAllAsync()))
+            {
+                return false;
+            }
+        }
+        if (await Neighbor(direction) is not { } pair)
+        {
+            ShowToast(direction > 0 ? "No more different files" : "No different files before this one");
+            return false;
+        }
+        _l = new Side(pair.Left);
+        _r = new Side(pair.Right);
+        _leftPane.Editor.SyntaxHighlighting = Highlighting(pair.Left);
+        _rightPane.Editor.SyntaxHighlighting = Highlighting(pair.Right);
+        _inlinePane.Editor.SyntaxHighlighting = Highlighting(pair.Right);
+        _currentBlock = -1;
+        await CompareAsync();
+        UpdateTitle();
+        return true;
+    }
 }

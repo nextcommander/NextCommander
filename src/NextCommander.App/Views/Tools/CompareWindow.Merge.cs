@@ -274,6 +274,12 @@ public sealed partial class CompareWindow
             case Key.Up when mods == KeyModifiers.Alt:
                 MoveToBlock(-1);
                 break;
+            case Key.Down when mods == (KeyModifiers.Control | KeyModifiers.Alt):
+                _ = OtherFileAsync(+1);
+                break;
+            case Key.Up when mods == (KeyModifiers.Control | KeyModifiers.Alt):
+                _ = OtherFileAsync(-1);
+                break;
             case Key.F2 when mods == KeyModifiers.None:
             case Key.Down when mods == KeyModifiers.Alt:
                 MoveToBlock(+1);
@@ -372,6 +378,11 @@ public sealed partial class CompareWindow
         var text = !IsBinary;
         menu.Items.Add(Item("Next difference", "compare.next", () => Run(() => MoveToBlock(+1)), text && _hunks.Count > 0, "Alt+Down"));
         menu.Items.Add(Item("Previous difference", "compare.previous", () => Run(() => MoveToBlock(-1)), text && _hunks.Count > 0, "Alt+Up"));
+        if (Neighbor is not null)
+        {
+            menu.Items.Add(Item("Next different file", "compare.nextfile", () => OtherFileAsync(+1), true, "Ctrl+Alt+Down"));
+            menu.Items.Add(Item("Previous different file", "compare.previousfile", () => OtherFileAsync(-1), true, "Ctrl+Alt+Up"));
+        }
         menu.Items.Add(new Separator());
         menu.Items.Add(Item("Copy to the right", "compare.copyright", () => CopyBlockAsync(_currentBlock, toRight: true), _copyRight.IsEnabled, "Alt+Right"));
         menu.Items.Add(Item("Copy to the left", "compare.copyleft", () => CopyBlockAsync(_currentBlock, toRight: false), _copyLeft.IsEnabled, "Alt+Left"));

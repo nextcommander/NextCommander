@@ -1341,6 +1341,9 @@ public sealed class AppSettings
 
     public Compare.SyncOptions SyncOptions { get; set; } = new();
 
+    /// <summary>Folder compares kept under a name (two folders and their options).</summary>
+    public List<Compare.SyncPreset> SyncPresets { get; set; } = [];
+
     /// <summary>Compare by content: options, filters, font, backup, an external program.</summary>
     public CompareSettings CompareOptions { get; set; } = new();
 
