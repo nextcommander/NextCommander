@@ -54,6 +54,17 @@
     "FileList.GridLines": "#38383A",             // Grid lines
     "FunctionKeys.Border": "#48484A",            // Line between the function keys (F3 ... F8)
     "Lister.Background": "#1E1E1E",              // Background of Lister (F3) and the editor
-    "Lister.Text": "#E5E5E7"                     // Text of Lister (F3) and the editor
+    "Lister.Text": "#E5E5E7",                    // Text of Lister (F3) and the editor
+    "Compare.Added": "#212EA043",               // Compare: background of added lines
+    "Compare.AddedMark": "#663FB950",           // Compare: added characters inside a changed line
+    "Compare.AddedText": "#63D27E",             // Compare: + signs and the tag of the right file
+    "Compare.Removed": "#1FF85149",             // Compare: background of removed lines
+    "Compare.RemovedMark": "#66F85149",         // Compare: removed characters inside a changed line
+    "Compare.RemovedText": "#FF7B72",           // Compare: − signs and the tag of the left file
+    "Compare.Changed": "#E3B341",               // Compare: changed differences in the overview strip
+    "Compare.Moved": "#26B48CFF",               // Compare: background of moved lines
+    "Compare.MovedText": "#B48CFF",             // Compare: ↕ signs of moved lines
+    "Compare.Current": "#58A6FF",               // Compare: frame of the current difference
+    "Compare.Conflict": "#3A1C20"               // Merge: conflicts in the three files
   }
 }

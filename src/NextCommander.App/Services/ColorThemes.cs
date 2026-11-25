@@ -80,7 +80,21 @@ public static class ColorThemes
         new("FunctionKeys.Border", "Line between the function keys (F3 ... F8); the keys take the window's background", "FmFunctionKeyBorderBrush"),
         new("Lister.Background", "Background of Lister (F3) and the editor", "FmListerBackgroundBrush"),
         new("Lister.Text", "Text of Lister (F3) and the editor", "FmListerTextBrush"),
+        new("Compare.Added", "Compare: background of added lines", "FmCompareAddedBrush"),
+        new("Compare.AddedMark", "Compare: added characters inside a changed line", "FmCompareAddedMarkBrush"),
+        new("Compare.AddedText", "Compare: + signs and the tag of the right file", "FmCompareAddedTextBrush"),
+        new("Compare.Removed", "Compare: background of removed lines", "FmCompareRemovedBrush"),
+        new("Compare.RemovedMark", "Compare: removed characters inside a changed line", "FmCompareRemovedMarkBrush"),
+        new("Compare.RemovedText", "Compare: − signs and the tag of the left file", "FmCompareRemovedTextBrush"),
+        new("Compare.Changed", "Compare: changed differences in the overview strip", "FmCompareChangedBrush"),
+        new("Compare.Moved", "Compare: background of moved lines", "FmCompareMovedBrush"),
+        new("Compare.MovedText", "Compare: ↕ signs of moved lines", "FmCompareMovedTextBrush"),
+        new("Compare.Current", "Compare: frame of the current difference", "FmCompareCurrentBrush"),
+        new("Compare.Conflict", "Merge: conflicts in the three files", "FmCompareConflictBrush"),
     ];
+
+    /// <summary>A theme was applied (windows that draw with theme colors themselves draw again).</summary>
+    public static event EventHandler? Applied;
 
     private const string PalettePrefix = "Palette:";
 
@@ -207,6 +221,7 @@ public static class ColorThemes
         ApplyTheme(app, themeId);
         // the colors of the tool windows that are made from the theme's (accent tints, text on the accent)
         Design.DesignColors.Update(app);
+        Applied?.Invoke(null, EventArgs.Empty);
     }
 
     private static void ApplyTheme(Application app, string? themeId)

@@ -221,8 +221,10 @@ The plan in phases: [docs/plans/compare-merge.md](plans/compare-merge.md).
   checked as regular expressions), a backup at the first save, an external compare program for two local files; the
   window's switches and its *Compare options* menu change the same settings; `nc_Config <page>` opens a page.
   Tests: `CompareSettingsTests`, `CompareMergeTests`.
-- [ ] Compare colors of their own (added / removed / changed / moved) in the color themes; the window has the colors
-  of its design for light and dark now.
+- [x] Compare colors in the color themes (user's request, 25 November 2026): keys `Compare.*` (added / removed and their
+  marked characters and signs, changed, moved, the current difference, merge conflicts) → `FmCompare*Brush`, the
+  design's colors as the defaults in App.axaml; the theme editor's group "Compare and merge"; the windows draw again on
+  `ColorThemes.Applied`. Test: `CompareColorsTests`.
 - [x] Phase 4: the folder compare is Synchronize directories (the user's choice to merge them, 25 November 2026):
   `SyncOptions.Method` (date and size / content / text with the compare settings: `DirectoryComparer.SameTextAsync`),
   a flat list, presets (`AppSettings.SyncPresets`), the export (`SyncReport` HTML / CSV), the compare window going
