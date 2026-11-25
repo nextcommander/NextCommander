@@ -223,6 +223,8 @@ themselves for their files (the picture metadata view excepted: it is next to th
 | `.vcf`, `.ics` | Contacts as cards (photo, phones, e-mails, addresses, notes); events in order of time with their place, organizer, attendees and repetition. |
 | `.jpg`, `.jpeg`, `.png`, `.tif`, `.tiff`, `.heic`, `.heif`, `.webp`, `.gif`, `.bmp`; camera RAW: `.cr2`, `.cr3`, `.nef`, `.nrw`, `.arw`, `.orf`, `.rw2`, `.dng`, `.raf`, `.pef`, `.srw` | The picture's metadata, **next to the picture**: a picture the Lister can show still opens as the picture (key 4), key 6 shows its metadata (HEIC and the RAW files the Lister cannot draw open in it). A summary (camera, lens, date taken in your language's format, exposure, f-number, ISO, focal length, flash, picture size, orientation, color space); the location (latitude and longitude in decimal degrees and in degrees, minutes and seconds, altitude, direction, GPS time, and the OpenStreetMap address of the place as a link that opens in the browser); the description (IPTC / XMP title, caption, keywords, creator, copyright, XMP rating and label); the other EXIF tags; then every directory and tag the file holds, each in a table with its id. A picture without EXIF, IPTC or XMP says so. |
 
+![Picture metadata in the Lister](../screenshots/picture-metadata.png)
+
 ## GitHub and GitLab repositories
 
 The repositories plugin comes with NextCommander and browses repositories on GitHub and GitLab through their web
