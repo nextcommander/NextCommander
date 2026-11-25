@@ -49,7 +49,8 @@ public sealed class TextDiffTests
         a[100] = b[200] = "a line both have";
         var watch = System.Diagnostics.Stopwatch.StartNew();
         var rows = TextDiff.Compare(a, b, new DiffOptions { MatchSimilarLines = false });
-        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(10), watch.Elapsed.ToString());
+        // generous: the full suite slows it down (alone about 2 s)
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(30), watch.Elapsed.ToString());
         var (left, right) = Sides(rows);
         Assert.Equal(a, left);
         Assert.Equal(b, right);

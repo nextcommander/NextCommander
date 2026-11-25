@@ -339,7 +339,7 @@ public sealed partial class CompareWindow : Window
         _inlinePane.Editor.IsVisible = false;
         _binaryList.FontFamily = new FontFamily("Cascadia Mono,Consolas,Menlo,monospace");
         var content = new Panel();
-        content.Children.AddRange([_body, _binaryList]);
+        content.Children.AddRange([_body, _binaryList, _pictureHost]);
         var panelRoot = new DockPanel();
         DockPanel.SetDock(_files, Dock.Top);
         panelRoot.Children.AddRange([_files, content]);
@@ -432,6 +432,7 @@ public sealed partial class CompareWindow : Window
             {
                 Content = new TextBlock { Text = side.FormatText, FontSize = 11.5, Foreground = new SolidColorBrush(_palette.Muted), Classes = { "noloc" } },
                 Padding = new Thickness(6, 1), MinHeight = 0, VerticalAlignment = VerticalAlignment.Center, IsEnabled = !side.ReadOnly && !IsBinary,
+                IsVisible = Mode == CompareMode.Text, // hex, documents, pictures are not written here
             };
             ToolTip.SetTip(format, "Encoding and line ends of the saved file");
             var formatSide = side;
@@ -633,38 +634,20 @@ public sealed partial class CompareWindow : Window
         _badge.Text = Badge(_r.Entry.Extension);
         if (!_l.Loaded || !_r.Loaded)
         {
-            // only the side(s) not read yet: the other keeps its unsaved changes
-            byte[]? a = null, b = null;
-            try
+            // what the files are decides how they are compared (CompareWindow.Modes.cs)
+            if (await LoadAsync())
             {
-                a = _l.Loaded ? null : await ReadAsync(_l.Entry);
-                b = _r.Loaded ? null : await ReadAsync(_r.Entry);
-                static bool Binary(byte[]? data) => data is not null && EncodingDetector.LooksBinary(data.AsSpan(0, Math.Min(data.Length, 8192)));
-                IsBinary = Binary(a) || Binary(b);
-                if (IsBinary)
-                {
-                    ShowBinary(a ?? await ReadAsync(_l.Entry), b ?? await ReadAsync(_r.Entry));
-                    return;
-                }
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                _summary.Text = ex.Message;
                 return;
             }
-            if (a is not null)
-            {
-                _l.Load(a, WritableOf(_l.Entry));
-            }
-            if (b is not null)
-            {
-                _r.Load(b, WritableOf(_r.Entry));
-            }
-            _undoStack.Clear();
-            _redoStack.Clear();
-            ShowText();
-            Watch();
-            BuildFileHeaders();
+        }
+        else if (Mode == CompareMode.Hex)
+        {
+            ShowHex(); // the options do not change bytes
+            return;
+        }
+        else if (Mode == CompareMode.Picture)
+        {
+            return;
         }
         var options = Options.ToOptions();
         var leftLines = _l.Lines.ToList();
@@ -705,7 +688,9 @@ public sealed partial class CompareWindow : Window
             Chip($"+{added}", _palette.AddFg, _palette.AddBg),
             Chip($"−{removed}", _palette.DelFg, _palette.DelBg),
         ]);
-        _summary.Text = $"{leftLines.Count} lines → {rightLines.Count} lines · {added} added, {removed} removed";
+        _summary.Text = Mode == CompareMode.Document
+            ? $"The text of the documents (read-only) · {leftLines.Count} lines → {rightLines.Count} lines · {added} added, {removed} removed"
+            : $"{leftLines.Count} lines → {rightLines.Count} lines · {added} added, {removed} removed";
         UpdateLanguage();
         _empty.IsVisible = _rows.Count == 0;
         _empty.Text = "Both files are empty.";
@@ -798,6 +783,7 @@ public sealed partial class CompareWindow : Window
     private void ShowText()
     {
         _binaryList.IsVisible = false;
+        _pictureHost.IsVisible = false;
         _body.IsVisible = true;
         foreach (var control in new Control[] { _split, _inline, _ignoreCase, _ignoreSpace })
         {
@@ -825,19 +811,17 @@ public sealed partial class CompareWindow : Window
         {
             diffs.Add($"Sizes differ: {a.Length:N0} / {b.Length:N0} bytes");
         }
+        // the list of the differing bytes is kept for the tests; the hex dumps are shown (ShowHex)
         _binaryList.ItemsSource = diffs;
-        _binaryList.IsVisible = true;
-        _body.IsVisible = false;
-        foreach (var control in new Control[] { _split, _inline, _ignoreCase, _ignoreSpace, _previous, _next, _copyLeft, _copyRight, _undo, _redo, _save })
-        {
-            control.IsEnabled = false;
-        }
         _stats.Children.Clear();
         _stats.Children.Add(Chip($"{count:N0} different bytes", _palette.Muted, _palette.Surface2));
-        _counter.Text = "–";
-        _summary.Text = count == 0 && a.Length == b.Length
-            ? "The binary files are identical."
-            : $"Binary comparison: {count:N0} different bytes" + (a.Length != b.Length ? ", sizes differ." : ".");
+        // whole sentences, each translated (a text put together from pieces is not)
+        var summary = count == 0 && a.Length == b.Length ? "The binary files are identical."
+            : a.Length != b.Length ? $"Binary comparison: {count:N0} different bytes, sizes differ."
+            : $"Binary comparison: {count:N0} different bytes.";
+        _summary.Text = Math.Max(a.Length, b.Length) > HexCompare.MaxShownBytes
+            ? Core.Localization.Localizer.T(summary) + " " + Core.Localization.Localizer.T($"The first {HexCompare.MaxShownBytes / 1024 / 1024} MB are shown.")
+            : summary;
     }
 
     /// <summary>The panes of the current rows: left and right side by side, and the one-column view.</summary>
