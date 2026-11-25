@@ -31,6 +31,18 @@
           <SolidColorBrush x:Key="FmListBackground2Brush" Color="Transparent" />
           <SolidColorBrush x:Key="FmTabPassiveLineBrush" Color="#732F6FDB" />
           <SolidColorBrush x:Key="FmFunctionKeyBorderBrush" Color="#33000000" />
+          <!-- compare and merge windows (theme keys Compare.*) -->
+          <SolidColorBrush x:Key="FmCompareAddedBrush" Color="#E9F7EE" />
+          <SolidColorBrush x:Key="FmCompareAddedMarkBrush" Color="#B4E6C3" />
+          <SolidColorBrush x:Key="FmCompareAddedTextBrush" Color="#1A7F37" />
+          <SolidColorBrush x:Key="FmCompareRemovedBrush" Color="#FDEDEF" />
+          <SolidColorBrush x:Key="FmCompareRemovedMarkBrush" Color="#F6C0C7" />
+          <SolidColorBrush x:Key="FmCompareRemovedTextBrush" Color="#C32A3D" />
+          <SolidColorBrush x:Key="FmCompareChangedBrush" Color="#B7791F" />
+          <SolidColorBrush x:Key="FmCompareMovedBrush" Color="#F1ECFB" />
+          <SolidColorBrush x:Key="FmCompareMovedTextBrush" Color="#7A4FD6" />
+          <SolidColorBrush x:Key="FmCompareCurrentBrush" Color="#1F6FEB" />
+          <SolidColorBrush x:Key="FmCompareConflictBrush" Color="#FDEDEF" />
         </ResourceDictionary>
         <!-- Dark: only the defaults under a dark theme file (Themes/dark.json sets the real colors) -->
         <ResourceDictionary x:Key="Dark">
@@ -58,6 +70,17 @@
           <SolidColorBrush x:Key="FmListBackground2Brush" Color="Transparent" />
           <SolidColorBrush x:Key="FmTabPassiveLineBrush" Color="#8C4C9AFF" />
           <SolidColorBrush x:Key="FmFunctionKeyBorderBrush" Color="#33FFFFFF" />
+          <SolidColorBrush x:Key="FmCompareAddedBrush" Color="#212EA043" />
+          <SolidColorBrush x:Key="FmCompareAddedMarkBrush" Color="#663FB950" />
+          <SolidColorBrush x:Key="FmCompareAddedTextBrush" Color="#63D27E" />
+          <SolidColorBrush x:Key="FmCompareRemovedBrush" Color="#1FF85149" />
+          <SolidColorBrush x:Key="FmCompareRemovedMarkBrush" Color="#66F85149" />
+          <SolidColorBrush x:Key="FmCompareRemovedTextBrush" Color="#FF7B72" />
+          <SolidColorBrush x:Key="FmCompareChangedBrush" Color="#E3B341" />
+          <SolidColorBrush x:Key="FmCompareMovedBrush" Color="#26B48CFF" />
+          <SolidColorBrush x:Key="FmCompareMovedTextBrush" Color="#B48CFF" />
+          <SolidColorBrush x:Key="FmCompareCurrentBrush" Color="#58A6FF" />
+          <SolidColorBrush x:Key="FmCompareConflictBrush" Color="#3A1C20" />
         </ResourceDictionary>
       </ResourceDictionary.ThemeDictionaries>
       <ResourceDictionary.MergedDictionaries>

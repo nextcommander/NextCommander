@@ -100,6 +100,17 @@ The parts of the window the theme editor lists:
 | `FunctionKeys.Border` | Line between the function keys (F3 … F8) |
 | `Lister.Background` | Background of Lister (F3) and the editor |
 | `Lister.Text` | Text of Lister (F3) and the editor |
+| `Compare.Added` | Compare: background of added lines |
+| `Compare.AddedMark` | Compare: added characters inside a changed line |
+| `Compare.AddedText` | Compare: + signs and the tag of the right file |
+| `Compare.Removed` | Compare: background of removed lines |
+| `Compare.RemovedMark` | Compare: removed characters inside a changed line |
+| `Compare.RemovedText` | Compare: − signs and the tag of the left file |
+| `Compare.Changed` | Compare: changed differences in the overview strip |
+| `Compare.Moved` | Compare: background of moved lines |
+| `Compare.MovedText` | Compare: ↕ signs of moved lines |
+| `Compare.Current` | Compare: frame of the current difference |
+| `Compare.Conflict` | Merge: conflicts in the three files |
 
 ## File type colors
 

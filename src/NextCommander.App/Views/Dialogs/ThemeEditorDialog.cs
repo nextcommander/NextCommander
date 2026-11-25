@@ -32,6 +32,7 @@ public sealed class ThemeEditorDialog : Window
         ("Accent", "Accent"), ("Window", "Window"), ("Controls", "Controls"), ("Lists", "Lists"), ("MenuBar", "Main menu bar"),
         ("Menu", "Menus"), ("ButtonBar", "Button bar"), ("Drives", "Drive buttons"), ("Tabs", "Folder tabs"), ("Panel", "Panels"),
         ("FileList", "File list"), ("FunctionKeys", "Function keys"), ("Lister", "Lister and editor"),
+        ("Compare", "Compare and merge"),
     ];
 
     /// <summary>Readability: the key, the background it is read on, the minimum contrast (WCAG: 4.5 text, 3 large / UI).</summary>
