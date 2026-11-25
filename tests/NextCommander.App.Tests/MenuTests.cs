@@ -145,11 +145,11 @@ public sealed class MenuTests : IDisposable
     public async Task Commands_menu_order_and_commands()
     {
         var (w, vm) = await _fx.OpenAsync();
-        Assert.Equal(["Folder tree...", "Find files...", "Find files in separate process...", "Saved searches", "Volume label...", "System information...",
+        Assert.Equal(["Command palette...", "Folder tree...", "Find files...", "Find files in separate process...", "Saved searches", "Volume label...", "System information...",
             "Hotlist", "Back", "Open command prompt window", "Internal terminal", "Branch View (with subfolders)", "Open Desktop folder",
-            "Background transfer manager...", "Source <-> Target", "Target = Source", "Calculate folder sizes", "Show in system file manager", "Command palette..."], Headers(w, "_Commands"));
+            "Background transfer manager...", "Source <-> Target", "Target = Source", "Calculate folder sizes", "Show in system file manager"], Headers(w, "_Commands"));
         // the tools in a menu of their own before Start (user's request, 24 November 2026)
-        Assert.Equal(["Multi-Rename Tool...", "Duplicate files...", "Synchronize directories...", "Folder sizes...", "Rules", "Record macro", "Macros", "Scripts"],
+        Assert.Equal(["Multi-Rename Tool...", "Duplicate files...", "Synchronize directories...", "Folder sizes...", "Rules", "Macros", "Scripts"],
             Headers(w, "_Tools"));
 
         SetCursor(vm.Left, "b.log");

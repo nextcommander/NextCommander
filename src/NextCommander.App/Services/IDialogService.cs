@@ -176,6 +176,9 @@ public interface IDialogService
     /// <summary>The most frequently used folders (nc_FrequentDirectories): search, open, remove from the list.</summary>
     Task ShowFrequentFoldersAsync(Views.Dialogs.FrequentFoldersRequest request);
 
+    /// <summary>The recorded macros (nc_Macros): their steps, run or delete one.</summary>
+    Task ShowMacrosAsync(Views.Dialogs.MacrosRequest request);
+
     /// <summary>Help > System information: the program, the system and the drives; "open folder" shows the settings folder.</summary>
     Task ShowSystemInfoAsync(Views.Dialogs.SystemInfo info, Func<Task> openSettingsFolder);
 

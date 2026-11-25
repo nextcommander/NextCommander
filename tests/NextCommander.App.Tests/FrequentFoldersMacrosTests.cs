@@ -90,10 +90,11 @@ public sealed class FrequentFoldersMacrosTests : IDisposable
     {
         var (w, vm) = await _fx.OpenAsync();
         await vm.ExecuteAsync("nc_Macros");
-        Assert.Contains(_fx.Dialogs.Messages, m => m.StartsWith("No macro has been recorded", StringComparison.Ordinal));
+        Assert.Empty(_fx.Dialogs.LastMacros!.Macros); // the window says "No macros yet"
 
         await vm.ExecuteAsync("nc_RecordMacro");
         await vm.ExecuteAsync("nc_SrcByExt");
+        await vm.ExecuteAsync("nc_PanelsSplitPercent 40");
         _fx.Dialogs.NextPrompt = "ByExt";
         await vm.ExecuteAsync("nc_RecordMacro");
         // a user command that is not a macro is not listed
@@ -103,41 +104,56 @@ public sealed class FrequentFoldersMacrosTests : IDisposable
         vm.Commands.Register("uc_Old", "Macro: 2 commands", _ => vm.ExecuteAsync("nc_SrcByExt, nc_SrcByName"));
         Assert.Equal(["uc_ByExt", "uc_Old"], vm.Macros().Select(m => m.Command));
 
+        // Tools > Macros: Record macro at the top, the macros, the window
         w.FillMacrosMenu();
         var headers = w.MacrosMenu.Items.OfType<Avalonia.Controls.MenuItem>().Select(i => i.Header as string).ToList();
-        Assert.Equal(["ByExt", "Old", "Macros..."], headers);
+        Assert.Equal(["Record macro", "ByExt", "Old", "Macros..."], headers);
+        w.FillMacrosMenu(); // again: Record macro is kept once
+        Assert.Single(w.MacrosMenu.Items.OfType<Avalonia.Controls.MenuItem>(), i => i.Header as string == "Record macro");
 
         vm.Settings.Hotkeys["Ctrl+Alt+E"] = "uc_ByExt";
         vm.Hotkeys.Rebuild();
         vm.Settings.ButtonBar.Add(new ButtonDefinition { Command = "uc_ByExt" });
 
-        // the list: Delete asks, the macro goes with its key and button, the list comes back (cancelled here)
-        var lists = 0;
-        _fx.Dialogs.QuickListHandler = items =>
-        {
-            lists++;
-            return lists == 1 ? new Services.QuickListResult(items.First(i => (string)i.Value! == "uc_ByExt"), 0) : null;
-        };
-        _fx.Dialogs.ConfirmAnswer = true;
         await vm.ExecuteAsync("nc_Macros");
-        Assert.Equal(2, lists);
+        var request = _fx.Dialogs.LastMacros!;
+        var byExt = request.Macros.Single(m => m.Command == "uc_ByExt");
+        Assert.Equal(["nc_SrcByExt", "nc_PanelsSplitPercent 40"], byExt.Steps);
+
+        // the window: search over names, commands and steps; Delete asks in the window
+        var dialog = _fx.Track(new MacrosDialog(request));
+        dialog.Show();
+        Assert.Equal("2 macros", dialog.CountText);
+        Shot(dialog, "macros");
+        dialog.Search("split");
+        Assert.Equal(["uc_ByExt"], dialog.Shown);
+        Assert.Equal("1 of 2", dialog.CountText);
+        dialog.AskDelete();
+        Assert.True(dialog.IsConfirming);
+        Shot(dialog, "macros-delete");
+        dialog.ConfirmDelete();
+        Assert.Empty(dialog.Shown);
+        dialog.Search(string.Empty);
+        Assert.Equal(["uc_Old"], dialog.Shown);
+
         Assert.False(vm.Settings.UserCommands.ContainsKey("uc_ByExt"));
         Assert.False(vm.Commands.Contains("uc_ByExt"));
         Assert.False(vm.Settings.Hotkeys.ContainsKey("Ctrl+Alt+E"));
         Assert.DoesNotContain(vm.Settings.ButtonBar, b => b.Command == "uc_ByExt");
-        Assert.Contains(_fx.Dialogs.ConfirmMessages, m => m.Contains("uc_ByExt", StringComparison.Ordinal));
 
-        // Enter in the list runs the macro
+        // Run: the macro runs
         vm.Left.SetSort(SortColumn.Extension);
-        _fx.Dialogs.QuickListHandler = items => new Services.QuickListResult(items.Single(), -1);
         vm.ActivateSide(vm.LeftSide);
-        await vm.ExecuteAsync("nc_Macros");
+        await request.Run("uc_Old");
         Assert.Equal(SortColumn.Name, vm.Left.SortColumn);
 
-        // a "no" keeps it; a name that is not a macro is said so
+        // nc_DeleteMacro asks; a "no" keeps it; a name that is not a macro is said so
         _fx.Dialogs.ConfirmAnswer = false;
         await vm.ExecuteAsync("nc_DeleteMacro uc_Old");
         Assert.True(vm.Settings.UserCommands.ContainsKey("uc_Old"));
+        _fx.Dialogs.ConfirmAnswer = true;
+        await vm.ExecuteAsync("nc_DeleteMacro uc_Old");
+        Assert.False(vm.Settings.UserCommands.ContainsKey("uc_Old"));
         await vm.ExecuteAsync("nc_DeleteMacro uc_Plain");
         Assert.True(vm.Settings.UserCommands.ContainsKey("uc_Plain"));
         Assert.Contains(_fx.Dialogs.Messages, m => m.Contains("no macro named uc_Plain", StringComparison.Ordinal));

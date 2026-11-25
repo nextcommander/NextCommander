@@ -1,5 +1,4 @@
 using NextCommander.Core.Commands;
-using NextCommander.App.Services;
 using NextCommander.Core.Config;
 
 namespace NextCommander.App.ViewModels;
@@ -101,36 +100,15 @@ public partial class MainWindowViewModel
             .Select(p => (Command: p.Key.StartsWith("uc_", StringComparison.OrdinalIgnoreCase) ? p.Key : "uc_" + p.Key, Definition: p.Value))
             .OrderBy(p => p.Command, StringComparer.CurrentCultureIgnoreCase)];
 
-    private static readonly string[] s_macroActions = ["Delete"];
-
-    /// <summary>Tools > Macros > Macros...: the list; Enter runs one, Delete deletes it (asked first) and the list comes back.</summary>
+    /// <summary>Tools > Macros > Macros...: the macros window (the user's template, 25 November 2026): run or delete one.</summary>
     private async Task ShowMacrosAsync()
     {
-        while (true)
-        {
-            var macros = Macros();
-            if (macros.Count == 0)
-            {
-                await _dialogs.ShowMessageAsync("Macros", "No macro has been recorded yet. Tools > Record macro starts one; the same item again stops it and saves it.");
-                return;
-            }
-            var items = macros.Select(m => new QuickListItem(m.Definition.Label ?? StripUserPrefix(m.Command),
-                $"{m.Command}  ·  {string.Join(" → ", CommandRegistry.Parse(m.Definition.Command).Select(s => s.Name))}", m.Command)).ToList();
-            var result = await _dialogs.ShowQuickListAsync("Macros", items, s_macroActions);
-            if (result?.Item.Value is not string command)
-            {
-                return;
-            }
-            if (result.Action != 0)
-            {
-                await ExecuteAsync(command);
-                return;
-            }
-            await DeleteMacroAsync(command);
-        }
+        var macros = Macros().Select(m => new Views.Dialogs.MacroInfo(m.Definition.Label ?? StripUserPrefix(m.Command), m.Command,
+            [.. CommandRegistry.Parse(m.Definition.Command).Select(s => s.Parameter is null ? s.Name : s.Name + " " + s.Parameter)])).ToList();
+        await _dialogs.ShowMacrosAsync(new Views.Dialogs.MacrosRequest(macros, command => ExecuteAsync(command), RemoveMacro));
     }
 
-    /// <summary>Deletes a macro after asking: the user command, its keys and its buttons on the button bars.</summary>
+    /// <summary>nc_DeleteMacro uc_...: deletes a macro after asking, with its keys and its buttons on the button bars.</summary>
     internal async Task DeleteMacroAsync(string? command)
     {
         var macro = Macros().FirstOrDefault(m => string.Equals(m.Command, command?.Trim(), StringComparison.OrdinalIgnoreCase));
@@ -140,7 +118,17 @@ public partial class MainWindowViewModel
             return;
         }
         var name = macro.Definition.Label ?? StripUserPrefix(macro.Command);
-        if (!await _dialogs.ConfirmAsync("Macros", $"Delete the macro \"{name}\" ({macro.Command})? Its keys and buttons go with it.", "Delete"))
+        if (await _dialogs.ConfirmAsync("Macros", $"Delete the macro \"{name}\" ({macro.Command})? Its keys and buttons go with it.", "Delete"))
+        {
+            RemoveMacro(macro.Command);
+        }
+    }
+
+    /// <summary>The macro's user command, its keys and its buttons go (asked already).</summary>
+    private void RemoveMacro(string command)
+    {
+        var macro = Macros().FirstOrDefault(m => string.Equals(m.Command, command.Trim(), StringComparison.OrdinalIgnoreCase));
+        if (macro.Definition is null)
         {
             return;
         }

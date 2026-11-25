@@ -24,7 +24,10 @@ public partial class MainWindow
         MacrosMenu.SubmenuOpened += (_, _) => FillMacrosMenu();
     }
 
-    /// <summary>Tools > Macros: each recorded macro (runs it, with its key), then the list where one is deleted.</summary>
+    /// <summary>
+    /// Tools > Macros: Record macro at the top (the item of the XAML, user's request 25 November 2026), each recorded
+    /// macro (runs it, with its key), then the macros window where one is deleted.
+    /// </summary>
     internal void FillMacrosMenu()
     {
         if (_vm is null)
@@ -32,7 +35,11 @@ public partial class MainWindow
             return;
         }
         var items = MacrosMenu.Items;
-        items.Clear();
+        while (items.Count > 2)
+        {
+            items.RemoveAt(2); // Record macro and its separator stay
+        }
+        var first = items.Count;
         foreach (var (command, definition) in _vm.Macros())
         {
             Avalonia.Input.KeyGesture? gesture = null;
@@ -51,7 +58,7 @@ public partial class MainWindow
             item.Click += (_, _) => _ = _vm.ExecuteAsync(run);
             items.Add(item);
         }
-        if (items.Count == 0)
+        if (items.Count == first)
         {
             items.Add(new MenuItem { Header = "(none)", IsEnabled = false });
         }
@@ -61,7 +68,7 @@ public partial class MainWindow
         items.Add(manage);
         if (!_vm.Settings.ShowMenuIcons)
         {
-            Services.MenuIcons.Clear(items);
+            Services.MenuIcons.Clear(items.Skip(first));
         }
     }
 

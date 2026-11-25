@@ -446,6 +446,14 @@ internal sealed class FakeDialogs : IDialogService
         return Task.CompletedTask;
     }
 
+    public NextCommander.App.Views.Dialogs.MacrosRequest? LastMacros { get; private set; }
+
+    public Task ShowMacrosAsync(NextCommander.App.Views.Dialogs.MacrosRequest request)
+    {
+        LastMacros = request;
+        return Task.CompletedTask;
+    }
+
     public Task ShowSystemInfoAsync(NextCommander.App.Views.Dialogs.SystemInfo info, Func<Task> openSettingsFolder)
     {
         LastSystemInfo = info;
