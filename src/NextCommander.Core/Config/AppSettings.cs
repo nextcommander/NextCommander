@@ -1341,6 +1341,9 @@ public sealed class AppSettings
 
     public Compare.SyncOptions SyncOptions { get; set; } = new();
 
+    /// <summary>Compare by content: options, filters, font, backup, an external program.</summary>
+    public CompareSettings CompareOptions { get; set; } = new();
+
     public Tools.ChecksumKind ChecksumKind { get; set; } = Tools.ChecksumKind.Sha256;
 
     /// <summary>Create checksums: BSD style lines ("SHA256 (name) = hash") the last time (the dialog's line format).</summary>

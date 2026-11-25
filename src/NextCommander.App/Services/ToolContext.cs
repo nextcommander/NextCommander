@@ -15,6 +15,9 @@ public sealed record ToolContext(
 {
     /// <summary>A file operation a tool window ran itself is over (the main window keeps it for Ctrl+Z).</summary>
     public Action<Core.Operations.FileJob>? JobDone { get; init; }
+
+    /// <summary>Runs a command of the main window ("nc_Config compare" from the compare window).</summary>
+    public Func<string, Task>? RunCommand { get; init; }
 }
 
 /// <summary>F3: files of the panel (for N/P) and the one to show.</summary>

@@ -1237,7 +1237,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         c.Register("nc_Edit", "Edit file (F4)", EditAsync);
         c.Register("nc_EditNewFile", "Create and edit new file", NewFileAsync);
         c.Register("nc_QuickView", "Quick View panel (Ctrl+Q)", ToggleQuickView);
-        c.Register("nc_Config", "Settings", _ => ShowSettingsAsync());
+        c.Register("nc_Config", "Settings", search => ShowSettingsAsync(string.IsNullOrWhiteSpace(search) ? null : search));
         c.Register("nc_SearchStandalone", "Find files in separate process (Alt+Shift+F7)", _ => SearchStandaloneAsync());
         c.Register("nc_VolumeLabel", "Change volume label", _ => VolumeLabelAsync());
         c.Register("nc_RestoreFromTrash", "Restore from the trash", _ => RestoreFromTrashAsync());
@@ -3664,6 +3664,14 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
             await _dialogs.ShowMessageAsync("Compare", "Mark two files, or place the cursor on a file in each panel.");
             return;
         }
+        var compare = _settings.CompareOptions;
+        if (compare.UseExternal && !string.IsNullOrWhiteSpace(compare.ExternalProgram) && p.Item1.Path.IsLocal && p.Item2.Path.IsLocal)
+        {
+            // the external program of the settings (files on a connection or in an archive: the own window)
+            var (program, arguments) = compare.ExternalCommand(p.Item1.Path.Path, p.Item2.Path.Path);
+            _platform.StartProgram(program, arguments, Path.GetDirectoryName(p.Item1.Path.Path)!);
+            return;
+        }
         _dialogs.ShowCompare(p.Item1, p.Item2, Tools);
     }
 
@@ -4106,7 +4114,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>Lister, editor and find files need these from the main window.</summary>
-    public ToolContext Tools => _tools ??= new ToolContext(_registry, _settings, _platform, _dialogs, EditEntryAsync) { JobDone = RecordUndo };
+    public ToolContext Tools => _tools ??= new ToolContext(_registry, _settings, _platform, _dialogs, EditEntryAsync) { JobDone = RecordUndo, RunCommand = ExecuteAsync };
 
     private ToolContext? _tools;
 
