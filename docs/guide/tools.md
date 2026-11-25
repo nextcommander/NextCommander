@@ -198,7 +198,13 @@ comparison stays open; the tab's `×`, the `×` at its top right or Esc close it
 - **Options** are chips: *Subfolders*, *Ignore date*, *One-way (left → right)* (right-only files are not copied back),
   *Skip hidden*, *Flat list* (every file with its whole path, no folders), and a file **Mask** (`*.cs *.md`).
 - **Presets** keep the two folders and the options under a name (*Save as preset...*), and bring them back with a
-  click; **Export** saves the list shown as an HTML report or a CSV file.
+  click; **Export** saves the list shown as an HTML report, a CSV file or one **patch** of the different files (the
+  left folder the old state, the right one the new; binary files are named only).
+- **Tools > Apply patch...** applies a patch (.patch / .diff, also git's): with the cursor on a patch file it goes to
+  the other panel's folder, otherwise a patch is chosen for the active panel's folder. A list shows each file of the
+  patch and how many of its changes fit (changes are found also where the file has moved on); Enter shows a file's
+  result in the compare window, *Apply the patch* writes what fits in each file's own encoding and line ends, and
+  tells what did not.
 - **Filters** with their counts show or hide *Different*, *Left only*, *Right only* and *Identical* files;
   **Filter by name** narrows the list.
 - **The list is a tree**: folders open and close, and show how many changes they hold. Each line has the size and
@@ -250,6 +256,8 @@ two panels.
   first; a file another program changes is loaded again (asked first when it has unsaved changes).
 - The folder button beside each file name chooses another file for that side.
 - **Compare** (F5) reads the files again when nothing is unsaved, otherwise compares the texts as they are now.
+- The *⋯* menu saves the differences as a **patch** (a unified diff: the left file the old one, the right one the
+  new one) or as an **HTML report** (side by side, the changed characters marked).
 - The status line shows the number of lines of both files, the caret's line and column, the language and the
   encoding. Esc closes the window (or the search).
 - Binary files show a list of the differing bytes.

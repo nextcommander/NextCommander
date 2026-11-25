@@ -324,6 +324,7 @@
         <MenuItem x:Name="ScriptsMenu" Header="Scripts" Tag="nc_RunScript">
           <MenuItem Header="Run script..." Command="{Binding RunCommandCommand}" CommandParameter="nc_RunScript" />
         </MenuItem>
+        <MenuItem Header="Apply patch..." Command="{Binding RunCommandCommand}" CommandParameter="nc_ApplyPatch" />
       </MenuItem>
       <MenuItem x:Name="StartMenuRoot" Header="_Start">
         <MenuItem Header="Change start menu..." Command="{Binding RunCommandCommand}" CommandParameter="nc_ConfigStartMenu" />

@@ -400,6 +400,9 @@ public sealed partial class CompareWindow
         menu.Items.Add(Item("Load the left file again", "editor.reload", () => ReloadSideAsync(false), text));
         menu.Items.Add(Item("Load the right file again", "editor.reload", () => ReloadSideAsync(true), text));
         menu.Items.Add(new Separator());
+        menu.Items.Add(Item("Save as patch...", "compare.patch", () => SaveTextAsync("Save the differences as a patch", Path.GetFileNameWithoutExtension(_r.Entry.Name) + ".patch", PatchText()), text && _hunks.Count > 0));
+        menu.Items.Add(Item("Save as HTML report...", "compare.report", () => SaveTextAsync("Save the comparison as HTML", Path.GetFileNameWithoutExtension(_r.Entry.Name) + "-compare.html", ReportHtml()), text));
+        menu.Items.Add(new Separator());
         menu.Items.Add(OptionsMenu());
         menu.Items.Add(new Separator());
         menu.Items.Add(Item("Find...", "editor.find", () => Run(OpenSearch), text, "Ctrl+F"));
@@ -459,6 +462,41 @@ public sealed partial class CompareWindow
     {
         _ignoreCase.IsChecked = Options.IgnoreCase;
         _ignoreSpace.IsChecked = Options.Whitespace != CompareWhitespace.Compare;
+    }
+
+    /// <summary>
+    /// The differences as a unified diff (a patch: the left file the old one, the right one the new one); exact, the
+    /// ignore options left out, so that it applies to the left file.
+    /// </summary>
+    public string PatchText()
+    {
+        CommitEdits();
+        var oldName = "a/" + _l.Entry.Name;
+        var newName = "b/" + _r.Entry.Name;
+        return UnifiedDiff.Create(oldName, newName, _l.Lines, _r.Lines, context: 3, new DiffOptions { MatchSimilarLines = false },
+            _l.EndsWithNewline, _r.EndsWithNewline);
+    }
+
+    /// <summary>The comparison as an HTML page (side by side, every line, with the options and marks of the window).</summary>
+    public string ReportHtml() =>
+        DiffReport.Html(_rows, _l.Entry.Path.ToDisplayString(), _r.Entry.Path.ToDisplayString(), DateTime.Now,
+            level: Options.WordLevel ? InlineLevel.Word : InlineLevel.Character);
+
+    private async Task SaveTextAsync(string title, string suggestedName, string text)
+    {
+        if (await _context.Dialogs.PickSaveFileAsync(title, suggestedName) is not { } path)
+        {
+            return;
+        }
+        try
+        {
+            await File.WriteAllTextAsync(path, text, new System.Text.UTF8Encoding(false));
+            ShowToast($"Saved {Path.GetFileName(path)}");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            await ShowMessage(ex.Message);
+        }
     }
 
     /// <summary>The search of the side being edited (the left one when none is).</summary>
