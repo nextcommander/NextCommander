@@ -173,6 +173,32 @@ public static partial class UnifiedDiff
         return files;
     }
 
+    /// <summary>Where a patch's file is: a new file is at its new path, a deleted one at its old path.</summary>
+    public static bool IsNewFile(FilePatch patch) => patch.OldPath == "/dev/null";
+
+    public static bool IsDeletedFile(FilePatch patch) => patch.NewPath == "/dev/null";
+
+    /// <summary>
+    /// The places a patch's file may be under a folder, the most likely first: the path as written by git ("a/x" →
+    /// "x"), as it is, then without one more leading folder each time (a patch made one level higher).
+    /// </summary>
+    public static IReadOnlyList<string> Candidates(FilePatch patch)
+    {
+        var path = (IsDeletedFile(patch) ? patch.OldPath : patch.NewPath).Replace('\\', '/');
+        var candidates = new List<string>();
+        if (path.StartsWith("a/", StringComparison.Ordinal) || path.StartsWith("b/", StringComparison.Ordinal))
+        {
+            candidates.Add(path[2..]);
+        }
+        candidates.Add(path.TrimStart('/'));
+        for (var rest = path.TrimStart('/'); rest.IndexOf('/', StringComparison.Ordinal) is var slash and >= 0;)
+        {
+            rest = rest[(slash + 1)..];
+            candidates.Add(rest);
+        }
+        return [.. candidates.Where(c => c.Length > 0).Distinct(StringComparer.Ordinal)];
+    }
+
     /// <summary>"a/src/x.cs\t2026-..." → "a/src/x.cs".</summary>
     private static string PathOf(string text)
     {
