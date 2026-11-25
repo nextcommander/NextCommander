@@ -1,5 +1,6 @@
 using NextCommander.Core.Matching;
 using NextCommander.Core.Operations;
+using NextCommander.Core.Text;
 using NextCommander.Core.Vfs;
 
 namespace NextCommander.Core.Compare;
@@ -15,6 +16,19 @@ public enum SyncStatus
     RightOnly,
     /// <summary>A file on one side, a folder with the same name on the other.</summary>
     TypeMismatch,
+}
+
+/// <summary>What makes two files the same in a folder compare (the compare and merge plan, phase 4; 25 November 2026).</summary>
+public enum SyncCompareMethod
+{
+    /// <summary>Size and date (and the bytes too when <see cref="SyncOptions.ByContent"/> is on and both are the same).</summary>
+    DateAndSize,
+
+    /// <summary>The bytes of every pair (the date only tells which one is newer when they differ).</summary>
+    Content,
+
+    /// <summary>Text files as Compare by content sees them (its options: spaces, case, line ends, filters); others by bytes.</summary>
+    Text,
 }
 
 public enum SyncAction
@@ -33,6 +47,9 @@ public sealed class SyncOptions
 
     /// <summary>Compare file contents of files with equal size (slow, exact).</summary>
     public bool ByContent { get; set; }
+
+    /// <summary>What makes two files the same.</summary>
+    public SyncCompareMethod Method { get; set; } = SyncCompareMethod.DateAndSize;
 
     /// <summary>Ignore the date: only size (and content) decide.</summary>
     public bool IgnoreDate { get; set; }
@@ -57,9 +74,10 @@ public sealed class SyncItem
 {
     public required string RelativePath { get; init; }
 
-    public VfsEntry? Left { get; init; }
+    /// <summary>The left file (set again when it was saved in the compare window).</summary>
+    public VfsEntry? Left { get; set; }
 
-    public VfsEntry? Right { get; init; }
+    public VfsEntry? Right { get; set; }
 
     public SyncStatus Status { get; set; }
 
@@ -68,9 +86,15 @@ public sealed class SyncItem
     public bool IsDirectory => (Left ?? Right)!.IsDirectory;
 }
 
-/// <summary>Compares two folder trees (Synchronize dirs).</summary>
-public sealed class DirectoryComparer(ProviderRegistry registry, SyncOptions options)
+/// <summary>
+/// Compares two folder trees (Synchronize dirs). <paramref name="textOptions"/>: how text files are compared by the
+/// <see cref="SyncCompareMethod.Text"/> method (the compare settings).
+/// </summary>
+public sealed class DirectoryComparer(ProviderRegistry registry, SyncOptions options, DiffOptions? textOptions = null)
 {
+    /// <summary>Text files larger than this are compared by their bytes.</summary>
+    private const long MaxTextBytes = 32L * 1024 * 1024;
+
     private readonly WildcardMatcher _mask = WildcardMatcher.Parse(options.Mask);
 
     public async Task<IReadOnlyList<SyncItem>> CompareAsync(VfsPath left, VfsPath right, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
@@ -143,11 +167,27 @@ public sealed class DirectoryComparer(ProviderRegistry registry, SyncOptions opt
         _ => SyncAction.None,
     };
 
+    /// <summary>The status of one pair of files (a row refreshed after its files were saved).</summary>
+    public Task<SyncStatus> StatusOfAsync(VfsEntry left, VfsEntry right, CancellationToken ct = default) => CompareFilesAsync(left, right, ct);
+
+    /// <summary>The action the options give a status.</summary>
+    public SyncAction ActionFor(SyncStatus status) => DefaultAction(status);
+
     private async Task<SyncStatus> CompareFilesAsync(VfsEntry left, VfsEntry right, CancellationToken ct)
     {
         var delta = (left.LastWriteTime - right.LastWriteTime).TotalSeconds;
         var sameTime = Math.Abs(delta) <= options.ToleranceSeconds
             || (options.IgnoreDstHour && Math.Abs(Math.Abs(delta) - 3600) <= options.ToleranceSeconds);
+        if (options.Method != SyncCompareMethod.DateAndSize)
+        {
+            // the content decides; the date only tells which one is newer
+            var same = options.Method == SyncCompareMethod.Text
+                ? await SameTextAsync(left, right, ct).ConfigureAwait(false)
+                : await SameContentAsync(left, right, ct).ConfigureAwait(false);
+            return same ? SyncStatus.Equal
+                : options.IgnoreDate || sameTime ? SyncStatus.Different
+                : delta > 0 ? SyncStatus.LeftNewer : SyncStatus.RightNewer;
+        }
         if (left.Size == right.Size && (options.IgnoreDate || sameTime))
         {
             if (!options.ByContent || await SameContentAsync(left, right, ct).ConfigureAwait(false))
@@ -161,6 +201,57 @@ public sealed class DirectoryComparer(ProviderRegistry registry, SyncOptions opt
             return SyncStatus.Different;
         }
         return delta > 0 ? SyncStatus.LeftNewer : SyncStatus.RightNewer;
+    }
+
+    /// <summary>
+    /// Whether two files are the same text with the compare options (spaces, case, line ends, filters); binary or very
+    /// large files by their bytes.
+    /// </summary>
+    public async Task<bool> SameTextAsync(VfsEntry left, VfsEntry right, CancellationToken ct)
+    {
+        if (left.Size > MaxTextBytes || right.Size > MaxTextBytes)
+        {
+            return await SameContentAsync(left, right, ct).ConfigureAwait(false);
+        }
+        var a = await ReadAllAsync(left, ct).ConfigureAwait(false);
+        var b = await ReadAllAsync(right, ct).ConfigureAwait(false);
+        if (a.AsSpan().SequenceEqual(b))
+        {
+            return true;
+        }
+        if (EncodingDetector.LooksBinary(a) || EncodingDetector.LooksBinary(b))
+        {
+            return false;
+        }
+        var options = textOptions ?? new DiffOptions();
+        var leftLines = Lines(a, !options.IgnoreLineEndings);
+        var rightLines = Lines(b, !options.IgnoreLineEndings);
+        return TextDiff.Compare(leftLines, rightLines, options).All(r => r.Kind == DiffKind.Equal || r.Ignored);
+    }
+
+    private async Task<byte[]> ReadAllAsync(VfsEntry entry, CancellationToken ct)
+    {
+        await using var stream = await registry.Resolve(entry.Path).OpenReadAsync(entry.Path, ct).ConfigureAwait(false);
+        using var memory = new MemoryStream();
+        await stream.CopyToAsync(memory, ct).ConfigureAwait(false);
+        return memory.ToArray();
+    }
+
+    /// <summary>The lines of a text file (each with its "\r" when the line ends count).</summary>
+    private static List<string> Lines(byte[] data, bool keepEnds)
+    {
+        var encoding = EncodingDetector.Detect(data, out var bom, complete: true);
+        var text = encoding.GetString(data, bom, data.Length - bom);
+        if (!keepEnds)
+        {
+            text = text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+        }
+        var lines = text.Split('\n').ToList();
+        if (lines.Count > 0 && lines[^1].Length == 0)
+        {
+            lines.RemoveAt(lines.Count - 1);
+        }
+        return lines;
     }
 
     /// <summary>Byte comparison of two files (any providers).</summary>

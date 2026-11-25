@@ -182,7 +182,8 @@ Renames many files at once. The list shows the old and new names live as you typ
 
 ## Synchronize directories
 
-*Tools > Synchronize directories...* compares two folders and makes them equal. It opens in place of the panels as a
+*Tools > Synchronize directories...* compares two folders and makes them equal; it is also the folder compare.
+It opens in place of the panels as a
 page of its own, with a **Synchronize** tab next to the files tab: the files tab takes you back to the panels while the
 comparison stays open; the tab's `×`, the `×` at its top right or Esc close it.
 
@@ -190,15 +191,22 @@ comparison stays open; the tab's `×`, the `×` at its top right or Esc close it
 
 - **The folders** are at the top, each with its file count and size; the folder button picks one, ⇄ swaps them.
   The comparison runs when the window opens and again with **Compare** (F5) or when an option changes.
-- **Options** are chips: *Subfolders*, *By content*, *Ignore date*, *One-way (left → right)* (right-only files are
-  not copied back), *Skip hidden*, and a file **Mask** (`*.cs *.md`).
+- **Compare by** says what makes two files the same: *Date and size*, *Date and size, then the bytes*, *Content
+  (bytes)* (every pair is read; the date only tells which one is newer when they differ), or *Text (compare
+  settings)*: text files compared as *Compare by content* does with its settings, so files that differ only in line
+  ends, spaces or what the line filters leave out count as identical.
+- **Options** are chips: *Subfolders*, *Ignore date*, *One-way (left → right)* (right-only files are not copied back),
+  *Skip hidden*, *Flat list* (every file with its whole path, no folders), and a file **Mask** (`*.cs *.md`).
+- **Presets** keep the two folders and the options under a name (*Save as preset...*), and bring them back with a
+  click; **Export** saves the list shown as an HTML report or a CSV file.
 - **Filters** with their counts show or hide *Different*, *Left only*, *Right only* and *Identical* files;
   **Filter by name** narrows the list.
 - **The list is a tree**: folders open and close, and show how many changes they hold. Each line has the size and
   date on both sides (the newer date is marked), the status (left only, right only, left newer, right newer,
   different, identical) and the **action**: click it to go to the next action that fits (copy to the right, copy
   to the left, skip, delete); on a folder it sets the action of all its files. ← / → and Delete do the same for
-  the line under the cursor; double click (or Enter) compares a file's contents.
+  the line under the cursor; double click (or Enter) compares a file's contents in the compare window. There
+  Ctrl+Alt+↓ / ↑ go to the next / previous different file of the list, and saving a file updates its line here.
 - **Check boxes** select files (a folder: all its files, Ctrl+A: all). With files selected, a bar offers *Copy →*,
   *Copy ←*, *Skip*, *Delete left*, *Delete right* and *Compare by content* for all of them.
 - Below, the plan tells how much goes to each side and how much is deleted. **Synchronize** shows a summary first
