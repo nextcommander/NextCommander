@@ -228,7 +228,11 @@ The plan in phases: [docs/plans/compare-merge.md](plans/compare-merge.md).
   a flat list, presets (`AppSettings.SyncPresets`), the export (`SyncReport` HTML / CSV), the compare window going
   to the next / previous different file (`CompareWindow.Neighbor`, Ctrl+Alt+↓ / ↑) and its saves updating the row
   (`Saved`, `DirectoryComparer.StatusOfAsync`; `SyncDirsView.Compare.cs`). Tests: Core and App `FolderCompareTests`.
-- [ ] Phase 5: patches and HTML reports in the UI.
+- [x] Phase 5: patches and HTML reports in the UI: the compare window's *Save as patch* / *Save as HTML report*
+  (`DiffReport`), the folder compare's patch of the different files (new / deleted files with /dev/null, binary ones
+  named), `nc_ApplyPatch` (Tools menu; `MainWindowViewModel.Patches.cs`: where each file is (`UnifiedDiff.Candidates`),
+  a list with what fits, a preview in the compare window, writing with `TextContent`). Tests: `PatchReportTests`,
+  App `PatchTests`.
 - [ ] Phase 6: 3-way compare and merge (Git conflicts).
 - [ ] Phase 7: hex, picture and document (Office / PDF as text) compare.
 

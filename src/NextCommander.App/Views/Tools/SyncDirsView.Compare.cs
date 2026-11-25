@@ -165,8 +165,11 @@ public sealed partial class SyncDirsView
         html.Click += async (_, _) => await ExportAsync(csv: false);
         var csv = new MenuItem { Header = "CSV file...", Icon = MenuIcons.Create("sync.exportcsv"), IsEnabled = _all2.Count > 0 };
         csv.Click += async (_, _) => await ExportAsync(csv: true);
+        var patch = new MenuItem { Header = "Patch of the different files...", Icon = MenuIcons.Create("sync.exportpatch"), IsEnabled = _all2.Count > 0 };
+        patch.Click += async (_, _) => await ExportPatchAsync();
         menu.Items.Add(html);
         menu.Items.Add(csv);
+        menu.Items.Add(patch);
         if (!_context.Settings.ShowMenuIcons)
         {
             MenuIcons.Clear(menu.Items);
@@ -191,6 +194,58 @@ public sealed partial class SyncDirsView
         try
         {
             await File.WriteAllTextAsync(path, Report(csv), new System.Text.UTF8Encoding(csv));
+            _status.Text = $"Saved {Path.GetFileName(path)}.";
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _status.Text = ex.Message;
+        }
+    }
+
+    /// <summary>
+    /// One patch for the files shown that differ (the left folder the old state, the right one the new): changed files,
+    /// files only on the right (new) and only on the left (deleted); binary files are named, not patched.
+    /// </summary>
+    public async Task<string> PatchTextAsync()
+    {
+        var patch = new System.Text.StringBuilder();
+        var rows = _all2.Where(r => !r.Item.IsDirectory && r.Item.Status != SyncStatus.Equal && Shown(CategoryOf(r.Item.Status)));
+        foreach (var item in rows.Select(r => r.Item))
+        {
+            var oldText = item.Left is null ? null : await ReadTextAsync(item.Left);
+            var newText = item.Right is null ? null : await ReadTextAsync(item.Right);
+            if ((item.Left is not null && oldText is null) || (item.Right is not null && newText is null))
+            {
+                patch.Append("Binary files a/").Append(item.RelativePath).Append(" and b/").Append(item.RelativePath).Append(" differ\n");
+                continue;
+            }
+            var old = oldText ?? Core.Compare.TextContent.Empty();
+            var @new = newText ?? Core.Compare.TextContent.Empty();
+            patch.Append(UnifiedDiff.Create(item.Left is null ? "/dev/null" : "a/" + item.RelativePath, item.Right is null ? "/dev/null" : "b/" + item.RelativePath,
+                old.Lines, @new.Lines, context: 3, new DiffOptions { MatchSimilarLines = false }, old.EndsWithNewline, @new.EndsWithNewline));
+        }
+        return patch.ToString();
+    }
+
+    /// <summary>A file's text; null for a binary file.</summary>
+    private async Task<Core.Compare.TextContent?> ReadTextAsync(VfsEntry entry)
+    {
+        await using var stream = await _context.Registry.Resolve(entry.Path).OpenReadAsync(entry.Path, CancellationToken.None);
+        using var memory = new MemoryStream();
+        await stream.CopyToAsync(memory);
+        var data = memory.ToArray();
+        return Core.Text.EncodingDetector.LooksBinary(data.AsSpan(0, Math.Min(data.Length, 8192))) ? null : Core.Compare.TextContent.Read(data);
+    }
+
+    private async Task ExportPatchAsync()
+    {
+        if (await _context.Dialogs.PickSaveFileAsync("Save the differences as a patch", "folders.patch") is not { } path)
+        {
+            return;
+        }
+        try
+        {
+            await File.WriteAllTextAsync(path, await PatchTextAsync(), new System.Text.UTF8Encoding(false));
             _status.Text = $"Saved {Path.GetFileName(path)}.";
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
