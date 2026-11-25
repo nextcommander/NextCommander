@@ -78,6 +78,23 @@ function New-Zip([string]$Folder, [string]$Destination) {
     }
 }
 
+# Python 3 as a command line (the program, then its arguments), or $null. Each candidate is run once: on Windows
+# "python3" / "python" can be the Microsoft Store's placeholders, which only print that Python is not installed;
+# the py launcher (py -3) is tried after them.
+function Find-Python {
+    foreach ($candidate in @(@('python3'), @('python'), @('py', '-3'))) {
+        $command = Get-Command $candidate[0] -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+        if (-not $command) { continue }
+        $line = @($command.Source) + @($candidate | Select-Object -Skip 1)
+        $previous = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try { $answer = (& $line[0] @($line | Select-Object -Skip 1) --version 2>&1 | Out-String) } catch { $answer = '' }
+        finally { $ErrorActionPreference = $previous }
+        if ($LASTEXITCODE -eq 0 -and $answer -match '^\s*Python 3\.') { return ,$line }
+    }
+    return $null
+}
+
 # Download of a build tool package. Windows PowerShell 5.1 may not offer TLS 1.2 by itself, and some networks only let
 # curl.exe through (it takes the system's proxy settings the same way as a browser): both are tried.
 function Get-Download([string]$Uri, [string]$Destination, [hashtable]$Headers = @{}) {
@@ -370,7 +387,7 @@ switch -Wildcard ($Rid) {
         # The codesign below (on a Mac) signs them with the bundle. Without them the app uses a libmtp installed with
         # Homebrew, else it has no MTP.
         $macOS = "$app/Contents/MacOS"
-        $python = @('python3', 'python') | Where-Object { Get-Command $_ -CommandType Application -ErrorAction SilentlyContinue } | Select-Object -First 1
+        $python = Find-Python
         if ($env:MACOS_LIBMTP_DIR) {
             Copy-Item "$env:MACOS_LIBMTP_DIR/*.dylib" $macOS
         }
@@ -379,7 +396,7 @@ switch -Wildcard ($Rid) {
             $arch = if ($Rid -eq 'osx-arm64') { 'arm64' } else { 'x86_64' }
             $bottles = Join-Path $root "artifacts/tools/libmtp-bottles-$arch"
             if (Get-HomebrewBottles 'libmtp' $arch $bottles) {
-                & $python "$PSScriptRoot/macos/bundle_libmtp.py" --bottles $bottles --out $macOS
+                & $python[0] @($python | Select-Object -Skip 1) "$PSScriptRoot/macos/bundle_libmtp.py" --bottles $bottles --out $macOS
                 if ($LASTEXITCODE -ne 0) { throw "bundle_libmtp.py failed" }
             }
             else { Write-Warning "libmtp not bundled: the app uses Homebrew's (brew install libmtp) when there is one" }
@@ -423,9 +440,9 @@ switch -Wildcard ($Rid) {
             }
         }
         if (Get-Command ditto -ErrorAction SilentlyContinue) { ditto -c -k --keepParent NextCommander.app "$dist/$name.zip" }
-        elseif (Get-Command python -ErrorAction SilentlyContinue) {
+        elseif ($python) {
             # No ditto (packing on Windows / Linux): a zip with Unix modes, so the program stays executable.
-            python "$PSScriptRoot/macos/zip_app.py" $app "$dist/$name.zip"
+            & $python[0] @($python | Select-Object -Skip 1) "$PSScriptRoot/macos/zip_app.py" $app "$dist/$name.zip"
             if ($LASTEXITCODE -ne 0) { throw "zip_app.py failed" }
         }
         else {
