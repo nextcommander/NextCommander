@@ -1,4 +1,5 @@
 using NextCommander.Core.Commands;
+using NextCommander.App.Services;
 using NextCommander.Core.Config;
 
 namespace NextCommander.App.ViewModels;
@@ -23,6 +24,8 @@ public partial class MainWindowViewModel
     private void RegisterMacroCommands(CommandRegistry c)
     {
         c.Register("nc_RecordMacro", "Record a macro: the commands run from now on, saved as a user command (again: stop)", _ => ToggleMacroAsync());
+        c.Register("nc_Macros", "The recorded macros: run or delete one", _ => ShowMacrosAsync());
+        c.Register("nc_DeleteMacro", "Delete a recorded macro (parameter: its command, uc_...)", name => DeleteMacroAsync(name));
         c.Executing += (_, command) =>
         {
             if (_macro is not null && !s_notRecorded.Contains(command.Name))
@@ -78,6 +81,7 @@ public partial class MainWindowViewModel
             Command = string.Join(", ", steps),
             Label = StripUserPrefix(name.Trim()),
             Tooltip = $"Macro: {steps.Count} commands",
+            IsMacro = true,
         };
         _settings.UserCommands[command] = definition;
         Commands.Register(command, definition.Tooltip, extra => ExecuteButtonAsync(definition, extra));
@@ -85,6 +89,85 @@ public partial class MainWindowViewModel
         await _dialogs.ShowMessageAsync("Record macro", left > 0
             ? $"Saved as {command}. Configuration > Commands and shortcuts gives it a key; the button bar's editor a button.\n\n{left} commands with a comma in their parameter could not be kept."
             : $"Saved as {command}. Configuration > Commands and shortcuts gives it a key; the button bar's editor a button.");
+    }
+
+    /// <summary>
+    /// The recorded macros (user's request, 25 November 2026): their commands (uc_...) by name with their steps. Macros
+    /// recorded before <see cref="ButtonDefinition.IsMacro"/> are known by their tooltip.
+    /// </summary>
+    public IReadOnlyList<(string Command, ButtonDefinition Definition)> Macros() =>
+        [.. _settings.UserCommands
+            .Where(p => p.Value.IsMacro || (p.Value.Tooltip?.StartsWith("Macro: ", StringComparison.Ordinal) == true && p.Value.Command.StartsWith("nc_", StringComparison.OrdinalIgnoreCase)))
+            .Select(p => (Command: p.Key.StartsWith("uc_", StringComparison.OrdinalIgnoreCase) ? p.Key : "uc_" + p.Key, Definition: p.Value))
+            .OrderBy(p => p.Command, StringComparer.CurrentCultureIgnoreCase)];
+
+    private static readonly string[] s_macroActions = ["Delete"];
+
+    /// <summary>Tools > Macros > Macros...: the list; Enter runs one, Delete deletes it (asked first) and the list comes back.</summary>
+    private async Task ShowMacrosAsync()
+    {
+        while (true)
+        {
+            var macros = Macros();
+            if (macros.Count == 0)
+            {
+                await _dialogs.ShowMessageAsync("Macros", "No macro has been recorded yet. Tools > Record macro starts one; the same item again stops it and saves it.");
+                return;
+            }
+            var items = macros.Select(m => new QuickListItem(m.Definition.Label ?? StripUserPrefix(m.Command),
+                $"{m.Command}  ·  {string.Join(" → ", CommandRegistry.Parse(m.Definition.Command).Select(s => s.Name))}", m.Command)).ToList();
+            var result = await _dialogs.ShowQuickListAsync("Macros", items, s_macroActions);
+            if (result?.Item.Value is not string command)
+            {
+                return;
+            }
+            if (result.Action != 0)
+            {
+                await ExecuteAsync(command);
+                return;
+            }
+            await DeleteMacroAsync(command);
+        }
+    }
+
+    /// <summary>Deletes a macro after asking: the user command, its keys and its buttons on the button bars.</summary>
+    internal async Task DeleteMacroAsync(string? command)
+    {
+        var macro = Macros().FirstOrDefault(m => string.Equals(m.Command, command?.Trim(), StringComparison.OrdinalIgnoreCase));
+        if (macro.Definition is null)
+        {
+            await _dialogs.ShowMessageAsync("Macros", $"There is no macro named {command}.");
+            return;
+        }
+        var name = macro.Definition.Label ?? StripUserPrefix(macro.Command);
+        if (!await _dialogs.ConfirmAsync("Macros", $"Delete the macro \"{name}\" ({macro.Command})? Its keys and buttons go with it.", "Delete"))
+        {
+            return;
+        }
+        foreach (var key in _settings.UserCommands.Keys.Where(k => string.Equals(k.StartsWith("uc_", StringComparison.OrdinalIgnoreCase) ? k : "uc_" + k, macro.Command, StringComparison.OrdinalIgnoreCase)).ToList())
+        {
+            _settings.UserCommands.Remove(key);
+        }
+        Commands.Unregister(macro.Command);
+        foreach (var key in _settings.Hotkeys.Where(h => string.Equals(h.Value.Trim(), macro.Command, StringComparison.OrdinalIgnoreCase)).Select(h => h.Key).ToList())
+        {
+            _settings.Hotkeys.Remove(key);
+        }
+        static bool Drop(List<ButtonDefinition> bar, string command)
+        {
+            var removed = bar.RemoveAll(b => string.Equals(b.Command.Trim(), command, StringComparison.OrdinalIgnoreCase)) > 0;
+            foreach (var menu in bar.Where(b => b.Menu is not null))
+            {
+                removed |= Drop(menu.Menu!, command);
+            }
+            return removed;
+        }
+        if (Drop(_settings.ButtonBar, macro.Command) | Drop(_settings.VerticalButtonBar, macro.Command))
+        {
+            ButtonBarsChanged?.Invoke(this, EventArgs.Empty);
+        }
+        Hotkeys.Rebuild();
+        SaveSettings();
     }
 
     private static string StripUserPrefix(string name) => name.StartsWith("uc_", StringComparison.OrdinalIgnoreCase) ? name[3..] : name;

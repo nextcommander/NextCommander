@@ -316,6 +316,9 @@
         </MenuItem>
         <MenuItem Header="Record macro" ToggleType="CheckBox" IsChecked="{Binding IsRecordingMacro, Mode=OneWay}"
                   Command="{Binding RunCommandCommand}" CommandParameter="nc_RecordMacro" />
+        <MenuItem x:Name="MacrosMenu" Header="Macros" Tag="nc_Macros">
+          <MenuItem Header="Macros..." Command="{Binding RunCommandCommand}" CommandParameter="nc_Macros" />
+        </MenuItem>
         <MenuItem x:Name="ScriptsMenu" Header="Scripts" Tag="nc_RunScript">
           <MenuItem Header="Run script..." Command="{Binding RunCommandCommand}" CommandParameter="nc_RunScript" />
         </MenuItem>

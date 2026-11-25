@@ -21,6 +21,48 @@ public partial class MainWindow
         TagsMenu.SubmenuOpened += (_, _) => FillTagsMenu();
         SavedSearchesMenu.SubmenuOpened += (_, _) => FillSavedSearchesMenu();
         ScriptsMenu.SubmenuOpened += (_, _) => FillScriptsMenu();
+        MacrosMenu.SubmenuOpened += (_, _) => FillMacrosMenu();
+    }
+
+    /// <summary>Tools > Macros: each recorded macro (runs it, with its key), then the list where one is deleted.</summary>
+    internal void FillMacrosMenu()
+    {
+        if (_vm is null)
+        {
+            return;
+        }
+        var items = MacrosMenu.Items;
+        items.Clear();
+        foreach (var (command, definition) in _vm.Macros())
+        {
+            Avalonia.Input.KeyGesture? gesture = null;
+            try
+            {
+                gesture = _vm.Hotkeys.GestureFor(command) is { Length: > 0 } key ? Avalonia.Input.KeyGesture.Parse(key) : null;
+            }
+            catch (ArgumentException)
+            {
+                // a key Avalonia cannot show: without it
+            }
+            var item = new MenuItem { Header = definition.Label ?? command, InputGesture = gesture, Icon = Services.MenuIcons.Create("nc_RecordMacro") };
+            ToolTip.SetTip(item, string.Join(" → ", Core.Commands.CommandRegistry.Parse(definition.Command).Select(s => s.Name)));
+            item.Classes.Add("noloc"); // the user's own names
+            var run = command;
+            item.Click += (_, _) => _ = _vm.ExecuteAsync(run);
+            items.Add(item);
+        }
+        if (items.Count == 0)
+        {
+            items.Add(new MenuItem { Header = "(none)", IsEnabled = false });
+        }
+        items.Add(new Separator());
+        var manage = new MenuItem { Header = "Macros...", Icon = Services.MenuIcons.Create("nc_Macros") };
+        manage.Click += (_, _) => _ = _vm.ExecuteAsync("nc_Macros");
+        items.Add(manage);
+        if (!_vm.Settings.ShowMenuIcons)
+        {
+            Services.MenuIcons.Clear(items);
+        }
     }
 
     /// <summary>Tools > Scripts: each script of the scripts folder, then new script / new column / the folder.</summary>

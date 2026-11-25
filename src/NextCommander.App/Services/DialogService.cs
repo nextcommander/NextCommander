@@ -343,6 +343,12 @@ public sealed class DialogService : IDialogService
         await dialog.ShowDialog(DialogOwner());
     }
 
+    public async Task ShowFrequentFoldersAsync(FrequentFoldersRequest request)
+    {
+        var dialog = new FrequentFoldersDialog(request);
+        await dialog.ShowDialog(DialogOwner());
+    }
+
     public async Task ShowSystemInfoAsync(SystemInfo info, Func<Task> openSettingsFolder)
     {
         var dialog = new SystemInfoDialog(info, openSettingsFolder);

@@ -89,6 +89,11 @@ shown:
   were last there and how often. Search it, show one drive only, and per folder: pin it to the top (Ctrl+P), open it
   in the other panel (Shift+Enter) or a new tab (Ctrl+Enter), or remove it (Del). 1–9 open the first nine folders at
   once. Removing a folder or clearing the history can be undone; pinned folders stay.
+- The **most frequently used folders** window ranks the folders by how often you go there (older visits count less),
+  with a bar for each. Type a few letters to find one: the letters may be anywhere in the path, in order ("dl" finds
+  Downloads), and a hit in the folder's own name comes first. Enter opens it, Shift+Enter in the other panel,
+  Ctrl+Enter in a new tab; Del removes it from the list (Undo puts it back). When nothing matches, Enter goes to what
+  you typed as a path.
 - **Alt+F10** opens the **folder tree** window: filter the folders read so far, show or hide hidden folders, jump to
   Home, Desktop, Documents or Downloads, and see the chosen folder's path at the bottom. For a folder of this computer
   it shows every fixed drive (the folder's own one opened down to it); the right click menu makes, renames and deletes
