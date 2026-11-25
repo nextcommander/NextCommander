@@ -17,6 +17,8 @@ internal sealed class ViewerHtml
             .Append("body { font-family: Segoe UI, Ubuntu, Helvetica, Arial, sans-serif; font-size: 10pt; color: ").Append(text).Append("; margin: 12px; }")
             .Append("h1 { font-size: 15pt; margin: 0 0 4px 0; }")
             .Append("h2 { font-size: 12pt; margin: 18px 0 6px 0; color: ").Append(accent).Append("; }")
+            .Append("h3 { font-size: 10pt; margin: 12px 0 4px 0; }")
+            .Append("a { color: ").Append(accent).Append("; }")
             .Append(".muted { color: ").Append(muted).Append("; }")
             .Append("table { border-collapse: collapse; margin: 4px 0 8px 0; }")
             .Append("th, td { border: 1px solid ").Append(line).Append("; padding: 3px 7px; text-align: left; vertical-align: top; }")
@@ -80,6 +82,23 @@ internal sealed class ViewerHtml
             _html.Append("<tr><th>").Append(E(T(name))).Append("</th><td>").Append(E(value)).Append("</td></tr>");
         }
         _html.Append("</table>");
+        return this;
+    }
+
+    /// <summary>A table row whose value is a link (http / https: the Lister opens it in the browser); the address is its text, to copy too.</summary>
+    public ViewerHtml FactLink(string name, string url)
+    {
+        // the address as it is (an &amp; in an href is not decoded by every renderer); only what would end the attribute is encoded
+        var href = url.Replace("\"", "%22", StringComparison.Ordinal).Replace("<", "%3C", StringComparison.Ordinal).Replace(">", "%3E", StringComparison.Ordinal);
+        _html.Append("<table class=\"kv\"><tr><th>").Append(E(T(name))).Append("</th><td><a href=\"").Append(href).Append("\">")
+            .Append(E(url)).Append("</a></td></tr></table>");
+        return this;
+    }
+
+    /// <summary>A smaller title (not translated: it is the file's).</summary>
+    public ViewerHtml Subheading(string? text)
+    {
+        _html.Append("<h3>").Append(E(text)).Append("</h3>");
         return this;
     }
 

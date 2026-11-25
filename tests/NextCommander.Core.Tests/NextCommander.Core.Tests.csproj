@@ -30,7 +30,10 @@
     <ProjectReference Include="..\..\src\Plugins\NextCommander.Plugin.Git\NextCommander.Plugin.Git.csproj" />
     <ProjectReference Include="..\..\src\Plugins\NextCommander.Plugin.Sqlite\NextCommander.Plugin.Sqlite.csproj" />
     <ProjectReference Include="..\..\src\Plugins\NextCommander.Plugin.Docker\NextCommander.Plugin.Docker.csproj" />
+    <ProjectReference Include="..\..\src\Plugins\NextCommander.Plugin.Kubernetes\NextCommander.Plugin.Kubernetes.csproj" />
     <ProjectReference Include="..\..\src\Plugins\NextCommander.Plugin.DiskImage\NextCommander.Plugin.DiskImage.csproj" />
+    <ProjectReference Include="..\..\src\Plugins\NextCommander.Plugin.Packages\NextCommander.Plugin.Packages.csproj" />
+    <ProjectReference Include="..\..\src\Plugins\NextCommander.Plugin.Repositories\NextCommander.Plugin.Repositories.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\Shared\TestDocuments.cs" Link="Shared\TestDocuments.cs" />

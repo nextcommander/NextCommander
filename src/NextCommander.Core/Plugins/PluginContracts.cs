@@ -46,6 +46,12 @@ public interface IViewerPlugin
 
     /// <summary>Builds the view. <paramref name="dark"/>: the application shows the dark theme.</summary>
     Task<ViewerContent> ViewAsync(Stream content, string fileName, bool dark, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Whether the Lister opens the file in this view first. False for a view next to the Lister's own (e.g. a picture's
+    /// metadata): a picture then opens as a picture, and this view is the plugin view (key 6).
+    /// </summary>
+    bool IsDefaultView => true;
 }
 
 /// <summary>

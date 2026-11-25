@@ -53,6 +53,9 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
   (on Windows also .vhd / .vhdx).
 - Virtual machine disks (.vhd, .vhdx, .vmdk, .vdi, .dmg) open like folders of their partitions and files: NTFS,
   FAT, ext, XFS, Btrfs, HFS+ and LVM, read-only, on every system.
+- Packages and installers open like folders, read-only: .deb, .rpm, .cab (MSZIP and LZX), .msi (the files at their
+  install paths) and container image archives (docker save, OCI: each image's layers and their merged file system);
+  F3 shows name, version, dependencies or the image's configuration.
 - SQLite databases open like folders of their tables (copy a table out as CSV or JSON); F3 shows the tables, columns
   and first rows. A Git repository's branches, tags and commits open as folders, and Git columns show each file's
   state and last commit.
@@ -64,6 +67,10 @@ keyboard. The [Getting started](docs/guide/getting-started.md) guide walks you t
 - Web server folder listings (`http://`, `https://`) open like folders; the remotes of an installed rclone too.
 - The files of Docker containers and volumes in a panel (through the installed docker), stopped containers read-only;
   start, stop and restart containers from the right click menu.
+- The files of the containers of Kubernetes pods in a panel (through the installed kubectl), context by context and
+  namespace by namespace; pod logs, description, deletion and deployment restart from the right click menu.
+- GitHub and GitLab repositories (also GitHub Enterprise and self-hosted GitLab) read-only in a panel without
+  cloning: branches, tags, releases and files through the web APIs; open in the browser or clone with git.
 - Android phones over ADB (USB debugging) as drives; shortcuts to the local folders of OneDrive, iCloud Drive,
   Dropbox, Google Drive ... and to WSL distributions.
 - Remote desktop (RDP) sessions in a tab of the main window (Windows, Linux) or the system's client (mstsc, Windows

@@ -30,7 +30,7 @@ Lister shows a file without changing it. The number keys switch between its view
 | 3 | Hex |
 | 4 | Image: fit to the window or zoom, rotate with L / R, camera RAW previews |
 | 5 | Preview of documents: PDF pages, Word / Excel / PowerPoint and OpenDocument files, HTML, Markdown, RTF |
-| 6 | A view added by a plugin |
+| 6 | A view added by a plugin (e.g. a photo's metadata: camera, date taken, GPS location with a map link, IPTC / XMP description, every tag) |
 | 7 | Audio and video |
 
 ![Lister showing source code](../screenshots/lister.png)
