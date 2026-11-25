@@ -18,21 +18,29 @@ A plugin is a .NET assembly that NextCommander loads at start. It can add:
 | Actions for its entries | `IPluginEntryActions` (on the file system) | At the top of the file list's right click menu (start a container ...). |
 | Settings | `IConfigurablePlugin` | A group on the Plugins page of the configuration; **Configure...** in the plugins window. |
 
-The rclone, Git, SQLite, Docker, virtual disk and viewer support of NextCommander are themselves plugins
-([src/Plugins/NextCommander.Plugin.Rclone](../../src/Plugins/NextCommander.Plugin.Rclone),
+The rclone, Git, SQLite, Docker, Kubernetes, virtual disk, package, viewer and GitHub / GitLab support of
+NextCommander are themselves plugins ([src/Plugins/NextCommander.Plugin.Rclone](../../src/Plugins/NextCommander.Plugin.Rclone),
 [src/Plugins/NextCommander.Plugin.Git](../../src/Plugins/NextCommander.Plugin.Git),
 [src/Plugins/NextCommander.Plugin.Sqlite](../../src/Plugins/NextCommander.Plugin.Sqlite),
 [src/Plugins/NextCommander.Plugin.Docker](../../src/Plugins/NextCommander.Plugin.Docker),
+[src/Plugins/NextCommander.Plugin.Kubernetes](../../src/Plugins/NextCommander.Plugin.Kubernetes),
 [src/Plugins/NextCommander.Plugin.DiskImage](../../src/Plugins/NextCommander.Plugin.DiskImage),
-[src/Plugins/NextCommander.Plugin.Viewers](../../src/Plugins/NextCommander.Plugin.Viewers); see [Git](#git),
-[SQLite](#sqlite), [Docker](#docker), [Virtual disks](#virtual-disks) and [Viewers](#viewers) below), and
+[src/Plugins/NextCommander.Plugin.Packages](../../src/Plugins/NextCommander.Plugin.Packages),
+[src/Plugins/NextCommander.Plugin.Viewers](../../src/Plugins/NextCommander.Plugin.Viewers),
+[src/Plugins/NextCommander.Plugin.Repositories](../../src/Plugins/NextCommander.Plugin.Repositories); see
+[Git](#git), [SQLite](#sqlite), [Docker](#docker), [Kubernetes](#kubernetes), [Virtual disks](#virtual-disks),
+[Packages and installers](#packages-and-installers), [Viewers](#viewers) and
+[GitHub and GitLab repositories](#github-and-gitlab-repositories) below), and
 [tests/SamplePlugin](../../tests/SamplePlugin) is a small example with a column and a `hello://` file system.
 
 - [Git](#git)
 - [SQLite](#sqlite)
 - [Docker](#docker)
+- [Kubernetes](#kubernetes)
 - [Virtual disks](#virtual-disks)
+- [Packages and installers](#packages-and-installers)
 - [Viewers](#viewers)
+- [GitHub and GitLab repositories](#github-and-gitlab-repositories)
 - [Using plugins](#using-plugins)
 - [Writing a plugin](#writing-a-plugin)
 - [File systems](#file-systems)
@@ -111,6 +119,38 @@ itself is set to (its current context, `DOCKER_HOST`), so remote engines work to
 - **Limits:** a container without a shell (`sh`, for example a "distroless" image) cannot be listed while it runs
   (stopped, it can). Containers and volumes themselves are made and removed with docker.
 
+## Kubernetes
+
+The Kubernetes plugin comes with NextCommander and uses the installed `kubectl` (`FM_KUBECTL` names another one;
+Docker Desktop and Rancher Desktop bring one). It works with the kubeconfig kubectl reads itself (`KUBECONFIG`, else
+`.kube/config` in the home folder) or the one named in the settings, so every cluster kubectl reaches works, with its
+own login (cloud tools, certificates, tokens).
+
+- **Kubernetes** is listed with the saved connections (Net > Saved connections, and the connections button of the
+  button bar). It opens `k8s:///`: the contexts of the kubeconfig. A `/` in a context's name (an EKS context is an
+  ARN ending in `cluster/name`) is shown as `|`.
+- **One folder per level:** a context lists its namespaces (an account that may not list them sees its context's
+  own namespace, else `default`); a namespace lists its pods, with the time each was made; a pod lists its
+  containers, then a container shows its file system from `/`. The container level is always there, also for a pod
+  with one container: a path says by itself which container it is in, and stays the same when a pod gets a second
+  one (a sidecar). ".." goes back up level by level, from a context to the list of contexts.
+- **A container's files:** view (F3), edit (F4), copy in and out, make folders, rename and delete as in any panel;
+  copied files keep their modification time. Everything runs as the container's user through `kubectl exec`, and a
+  file written over keeps its owner and rights. Only a running container can be opened.
+- **Columns:** *Kubernetes status* (as kubectl's STATUS column: Running, CrashLoopBackOff, Terminating ...; *Current
+  context* for the kubeconfig's current context), *Ready containers*, *Restarts* and *Node* can be added to a view
+  mode (*Show > Display > Custom view modes > Edit view modes...*).
+- **Pod actions** (the file list's own menu and the Plugins menu, for the pods selected in a namespace): **Pod logs**
+  (the last 500 lines, of every container with its name in front; in the Lister), **Describe the pod**
+  (`kubectl describe`), **Restart the deployment** (`kubectl rollout restart`, only for a pod that belongs to a
+  deployment through its replica set), **Delete the pod...** (asks first; a deployment makes it again). Inside a pod
+  the logs (of the container the panel is in) and the description are there too.
+- **Settings** (*Configuration > Plugins > Kubernetes*): the kubectl program, the kubeconfig file, the number of log
+  lines shown.
+- **Errors say what to do:** no kubectl, a cluster that does not answer, a login that has expired, an account without
+  the right (RBAC), a container that is not running, an image without a shell (`sh`, for example a "distroless"
+  one), which cannot be listed. Namespaces, pods and containers themselves are made and removed with kubectl.
+
 ## Virtual disks
 
 The disk image plugin comes with NextCommander and reads virtual machine disks itself (with DiscUtils), on every
@@ -130,10 +170,45 @@ system and without administrator rights.
 - **Mounting** (Windows, `.vhd` / `.vhdx`): *Files > Archive > Mount disc image* lets Windows mount the disk with
   drive letters instead; see [Archives](archives.md).
 
+## Packages and installers
+
+The packages plugin comes with NextCommander and reads software packages and installers itself, on every system,
+without dpkg, rpm, msiexec or docker. Everything is read-only: copy the files out to change them. View (F3), copy
+out, search (Alt+F7) and compare work as in any folder; ".." from the root goes back to the package file.
+
+- **.deb** (Enter; also `.udeb`, `.ddeb`): the members of the package (`debian-binary`, `control.tar.*`,
+  `data.tar.*`); the two tar members are folders of their files (gzip, xz, zstd, bzip2 or not compressed), with
+  their modes, times and links.
+- **.rpm** (Enter): the files of the payload (a cpio archive compressed with gzip, xz, zstd or bzip2) at their
+  installed paths, with sizes, modes and times. Payloads compressed with the old LZMA format, and packages with
+  files of 4 GB or more, are refused with a message.
+- **.cab** (Enter): the files of a Microsoft Cabinet with their folders, times and attributes. Stored, MSZIP and
+  LZX folders are unpacked; Quantum folders (very old cabinets) are listed but their files refuse to open, with a
+  message. Files that continue in the next cabinet of a set are left out.
+- **.msi / .msm** (Ctrl+PgDn: Enter still starts the installer): the files of the cabinets inside the package, at
+  the paths they are installed to (from the File, Component and Directory tables; a folder of the system keeps its
+  name, e.g. `ProgramFilesFolder/My App/app.exe`). A file the tables do not name shows under the cabinet's name with
+  its name in the cabinet. Files the installer takes from next to the package are not there.
+- **Container image archives** (`docker save -o app.tar`, or an OCI image layout in a tar): such a file is a `.tar`,
+  which the program opens as an archive (Enter and Ctrl+PgDn). Inside it, *Plugins > Container image* opens the
+  same file as images: a folder per image (`example_app_1.0` for `example/app:1.0`) with its `config.json`, a
+  folder per layer (`layer 1 (3f4ca61aafcd)`, compressed layers unpacked when opened) and `merged`: the file
+  system the layers make together, later layers winning, with whiteouts (`.wh.name`) and opaque folders
+  (`.wh..wh..opq`) applied. Only a `.tar` with `manifest.json`, or `index.json` and `oci-layout`, at its root
+  offers it.
+- **Lister (F3) on a package:** a .deb's or .rpm's name, version, architecture, description, dependencies (and
+  what an rpm provides) and the .deb's control files; a cabinet's folders with their compression, blocks and
+  sizes; an .msi's product name, version, manufacturer, product and upgrade codes and its cabinets; an image
+  archive's images with their tags, platform, entrypoint, command, environment, ports, labels and layers (size,
+  compression and the command that made each).
+- **Size:** compressed parts are unpacked once when first opened, into memory or, beyond 32 MB, a temporary file
+  deleted when the package is closed (a minute after its last use). An .msi is read into memory as a whole.
+
 ## Viewers
 
 The viewers plugin comes with NextCommander and adds views to the Lister (F3) and Quick View. They open by
-themselves for their files; key 1 shows the plain text (or 3 the bytes) as before.
+themselves for their files (the picture metadata view excepted: it is next to the picture); key 1 shows the plain text
+(or 3 the bytes) as before.
 
 | Files | View |
 |---|---|
@@ -146,6 +221,48 @@ themselves for their files; key 1 shows the plain text (or 3 the bytes) as befor
 | `.exe`, `.dll`, `.sys`, `.ocx`, `.scr`, `.cpl`, `.efi` | The version information, architecture, kind (window, console, driver, library; .NET), build time, sections, and who signed it. The signature is shown, not checked; Windows' own files are often signed in a catalog instead. |
 | `.ttf`, `.otf`, `.ttc`, `.woff`, `.woff2` | The font: family, style, weight, glyphs, sample lines at six sizes (with the Turkish letters) and a table of its characters, drawn from the file (nothing is installed). |
 | `.vcf`, `.ics` | Contacts as cards (photo, phones, e-mails, addresses, notes); events in order of time with their place, organizer, attendees and repetition. |
+| `.jpg`, `.jpeg`, `.png`, `.tif`, `.tiff`, `.heic`, `.heif`, `.webp`, `.gif`, `.bmp`; camera RAW: `.cr2`, `.cr3`, `.nef`, `.nrw`, `.arw`, `.orf`, `.rw2`, `.dng`, `.raf`, `.pef`, `.srw` | The picture's metadata, **next to the picture**: a picture the Lister can show still opens as the picture (key 4), key 6 shows its metadata (HEIC and the RAW files the Lister cannot draw open in it). A summary (camera, lens, date taken in your language's format, exposure, f-number, ISO, focal length, flash, picture size, orientation, color space); the location (latitude and longitude in decimal degrees and in degrees, minutes and seconds, altitude, direction, GPS time, and the OpenStreetMap address of the place as a link that opens in the browser); the description (IPTC / XMP title, caption, keywords, creator, copyright, XMP rating and label); the other EXIF tags; then every directory and tag the file holds, each in a table with its id. A picture without EXIF, IPTC or XMP says so. |
+
+## GitHub and GitLab repositories
+
+The repositories plugin comes with NextCommander and browses repositories on GitHub and GitLab through their web
+APIs, without cloning them. It works with GitHub Enterprise Server and with a GitLab server of your own (their
+addresses are settings), and goes through the program's proxy (*Configuration > Operation > Proxy*).
+
+- **GitHub repositories** and **GitLab repositories** are listed with the saved connections (Connection > Saved
+  connections, and the connections button of the button bar). They open `github:///` and `gitlab:///`: your own
+  repositories (with an access token: the ones you own, collaborate on or reach through an organization; GitLab: the
+  projects you are a member of), the ones named in the settings and the ones opened in this run, as `owner⁄name`
+  (GitLab `group⁄subgroup⁄project`).
+- **Any other repository** opens by its path in the path line, `github://dotnet/runtime` or
+  `gitlab://gitlab-org/gitlab` (a GitLab subgroup's slashes as `|`: `gitlab://group|sub/project`), or with
+  **Open a repository...** of the Plugins menu (and the file list's own menu) in the root: type `owner/name` or paste
+  the repository's address; it is listed at the root afterwards. `github://owner/` lists an owner's repositories
+  (a GitLab group: its subgroups and projects).
+- **A repository** shows the folders **branches**, **tags** and **releases** and the files of its default branch.
+  Each branch and tag holds its files as they are there (a slash in a name is shown as `⁄`: `feature⁄login`); each
+  release is a folder of its assets (GitLab: the release's links). View (F3), compare and copy out as in any folder;
+  a file's time is the time of its commit. A file kept with Git LFS shows its pointer. A submodule is left out, and
+  so is a top-level folder of the default branch named like one of the three folders (open it under
+  `branches/<default branch>`).
+- **Read-only:** nothing is written to the server.
+- **Open in browser** (the file list's right click menu) opens the page of a repository, folder, file or release.
+- **Clone the repository...** (the Plugins menu, inside a repository or with one selected) asks for a folder and runs
+  the installed `git clone` into a new folder there (the branch or tag you are in is checked out). The access token
+  goes to git for this one command only (through the environment, not stored in the clone). The plugin cannot learn
+  the other panel's folder, so the folder is asked for; the last one is offered again.
+- **Settings** (*Configuration > Plugins > GitHub / GitLab repositories*): the GitHub API address
+  (`https://api.github.com`, or `https://<server>/api/v3` for GitHub Enterprise), the GitHub access token, the
+  GitHub repositories to list, the GitLab address (`https://gitlab.com`), the GitLab access token (scope
+  `read_api`), the GitLab projects to list. The tokens are kept in the password store (with the master password
+  when there is one), never in the settings file, and asked for only when a request needs them.
+- **Errors say what to do:** the API's request limit (GitHub allows 60 requests an hour without a token, 5000 with
+  one) is reported with the time it resets; a repository that is not found without a token may be a private one
+  that needs a token; a refused token, and a server that cannot be reached (network, proxy), are named as such.
+- **Limits:** the first 3000 repositories, branches or tags of a list are shown, and the newest 500 releases. A very big tree that GitHub cuts
+  short (or a GitLab tree over 2000 entries) is read folder by folder. GitLab's tree does not give sizes: a file's
+  size is asked for when it is opened or copied, and shows as 0 in the list; GitLab release links have no size.
+  Release source archives (zip / tar.gz) are not listed.
 
 ## Using plugins
 
@@ -188,11 +305,12 @@ a value the plugin cannot use (a program that is not there) is refused with the 
 |---|---|
 | Git | the git program; how often the Git columns read a repository's status; how many commits the history lists |
 | Docker | the docker program (podman works too); the user commands run as inside a container; the image for opening volumes |
+| Kubernetes | the kubectl program; the kubeconfig file; the number of log lines Pod logs shows |
 | rclone | the rclone program; the rclone.conf with the remotes |
 | SQLite | the SQLite library (after a restart); the rows of each table in the F3 overview |
 
-An empty program path means what it meant before: the environment variable (`FM_GIT`, `FM_DOCKER`, `FM_RCLONE`,
-`FM_SQLITE`), then the PATH and the usual folders. The values are kept in the settings file under the plugin's name
+An empty program path means what it meant before: the environment variable (`FM_GIT`, `FM_DOCKER`, `FM_KUBECTL`,
+`FM_RCLONE`, `FM_SQLITE`), then the PATH and the usual folders. The values are kept in the settings file under the plugin's name
 (`PluginSettings`); a value left at its default is not stored.
 
 ### The Plugins menu
@@ -549,7 +667,8 @@ public sealed class LogViewer : IViewerPlugin
 plus a `Status` line. `dark` tells whether the program shows a dark theme. A viewer that returns a `Control`
 references Avalonia: use the same Avalonia version as NextCommander (`Directory.Packages.props`) and do not copy it
 (`Private="false"`); the program's copy is used. The first viewer whose `CanView` says yes gets the file; the Lister
-opens it in its plugin mode (key 6).
+opens it in its plugin mode (key 6). A viewer that adds a view next to the Lister's own sets `IsDefaultView => false`:
+a picture then opens as a picture, and the viewer is its key 6.
 
 ## Settings
 
@@ -597,7 +716,8 @@ public sealed class HelloSettings : IConfigurablePlugin
   program's password store (with the master password when there is one), never in the settings file; the field
   shows whether one is saved and has a **Forget** button. Ask for it with `await values.GetSecretAsync(key)` when
   it is needed (connecting ...), not in `Apply`: a locked store asks for the master password. Keep the values
-  object `Apply` gets. Other kinds are stored as plain text.
+  object `Apply` gets. Other kinds are stored as plain text. The repositories plugin's access tokens are an
+  example (`RepositoriesSettings`: the token is asked for once at the first request and kept until the next `Apply`).
 
 ## Actions in the file list menu
 

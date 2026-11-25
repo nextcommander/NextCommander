@@ -63,10 +63,16 @@
                       ReferenceOutputAssembly="false" OutputItemType="NcShippedPlugin" PluginFolder="sqlite" />
     <ProjectReference Include="..\Plugins\NextCommander.Plugin.Docker\NextCommander.Plugin.Docker.csproj"
                       ReferenceOutputAssembly="false" OutputItemType="NcShippedPlugin" PluginFolder="docker" />
+    <ProjectReference Include="..\Plugins\NextCommander.Plugin.Kubernetes\NextCommander.Plugin.Kubernetes.csproj"
+                      ReferenceOutputAssembly="false" OutputItemType="NcShippedPlugin" PluginFolder="kubernetes" />
     <ProjectReference Include="..\Plugins\NextCommander.Plugin.DiskImage\NextCommander.Plugin.DiskImage.csproj"
                       ReferenceOutputAssembly="false" OutputItemType="NcShippedPlugin" PluginFolder="diskimage" />
     <ProjectReference Include="..\Plugins\NextCommander.Plugin.Viewers\NextCommander.Plugin.Viewers.csproj"
                       ReferenceOutputAssembly="false" OutputItemType="NcShippedPlugin" PluginFolder="viewers" />
+    <ProjectReference Include="..\Plugins\NextCommander.Plugin.Packages\NextCommander.Plugin.Packages.csproj"
+                      ReferenceOutputAssembly="false" OutputItemType="NcShippedPlugin" PluginFolder="packages" />
+    <ProjectReference Include="..\Plugins\NextCommander.Plugin.Repositories\NextCommander.Plugin.Repositories.csproj"
+                      ReferenceOutputAssembly="false" OutputItemType="NcShippedPlugin" PluginFolder="repositories" />
   </ItemGroup>
   <Target Name="NcPluginFiles" DependsOnTargets="ResolveProjectReferences">
     <ItemGroup>

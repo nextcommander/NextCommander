@@ -2,8 +2,9 @@
   <!--
     Viewers for the Lister (F3) as a plugin: data files (CSV / TSV as a sortable table; JSON, XML, YAML as a tree),
     e-mails (.eml, .msg), e-books (.epub), Jupyter notebooks, certificates, programs (.exe / .dll), fonts, contacts
-    (.vcf) and calendars (.ics). The application builds it and copies it, its own package (YamlDotNet), plugin.json and
-    its languages folder into plugins/viewers next to the program.
+    (.vcf), calendars (.ics), and the metadata of pictures (EXIF, GPS, IPTC, XMP). The application builds it and
+    copies it, its own package (YamlDotNet), plugin.json and its languages folder into plugins/viewers next to the
+    program.
   -->
   <PropertyGroup>
     <RootNamespace>NextCommander.Plugin.Viewers</RootNamespace>
@@ -11,12 +12,13 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
-    <!-- the application's own (shared, not copied): the Core, Avalonia with its DataGrid and Skia, Markdig -->
+    <!-- the application's own (shared, not copied): the Core, Avalonia with its DataGrid and Skia, Markdig, MetadataExtractor -->
     <ProjectReference Include="..\..\NextCommander.Core\NextCommander.Core.csproj" Private="false" ExcludeAssets="runtime;native" />
     <PackageReference Include="Avalonia" ExcludeAssets="runtime;native" />
     <PackageReference Include="Avalonia.Controls.DataGrid" ExcludeAssets="runtime;native" />
     <PackageReference Include="Avalonia.Skia" ExcludeAssets="runtime;native" />
     <PackageReference Include="Markdig" ExcludeAssets="runtime;native" />
+    <PackageReference Include="MetadataExtractor" ExcludeAssets="runtime;native" />
     <!-- its own: copied next to it -->
     <PackageReference Include="YamlDotNet" />
   </ItemGroup>

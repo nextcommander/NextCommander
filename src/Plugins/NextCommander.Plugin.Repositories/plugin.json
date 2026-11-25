@@ -1,0 +1,6 @@
+{
+  "Name": "repositories",
+  "Assembly": "NextCommander.Plugin.Repositories.dll",
+  "Description": "GitHub and GitLab repositories in a panel (github://, gitlab://): branches, tags, releases and files, read-only, without cloning. Works with GitHub Enterprise and self-hosted GitLab.",
+  "Version": "1.0"
+}

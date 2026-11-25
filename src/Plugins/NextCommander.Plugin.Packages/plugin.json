@@ -1,0 +1,6 @@
+{
+  "Name": "packages",
+  "Assembly": "NextCommander.Plugin.Packages.dll",
+  "Description": "Packages and installers: .deb, .rpm, .cab and .msi files and container image archives (docker save, OCI) open like folders of their files (read-only), and F3 shows what they are (name, version, dependencies, image configuration).",
+  "Version": "1.0"
+}

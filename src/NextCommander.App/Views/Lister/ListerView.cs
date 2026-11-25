@@ -350,7 +350,8 @@ public sealed class ListerView : UserControl
 
     private ListerMode DefaultMode(VfsEntry entry)
     {
-        if (FindViewer() is not null)
+        // a view next to the Lister's own (a picture's metadata) leaves the picture first
+        if (FindViewer() is { } viewer && (viewer.IsDefaultView || !IsImage(entry)))
         {
             return ListerMode.Plugin;
         }

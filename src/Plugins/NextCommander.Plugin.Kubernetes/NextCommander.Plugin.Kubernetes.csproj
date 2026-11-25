@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Kubernetes as a plugin: the files of a pod's containers in a panel (k8s://<context>/<namespace>/<pod>/<container>/path),
+    through the installed kubectl. The application builds it and copies it with plugin.json and its languages folder
+    into plugins/kubernetes next to the program.
+  -->
+  <PropertyGroup>
+    <RootNamespace>NextCommander.Plugin.Kubernetes</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\NextCommander.Core\NextCommander.Core.csproj" Private="false" />
+  </ItemGroup>
+  <!-- plugin.json and languages are taken from this folder by the application's build (not copied here: they would land next to the program too) -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="NextCommander.Core.Tests" />
+  </ItemGroup>
+</Project>

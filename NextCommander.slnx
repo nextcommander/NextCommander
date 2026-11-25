@@ -13,8 +13,11 @@
     <Project Path="src/Plugins/NextCommander.Plugin.Git/NextCommander.Plugin.Git.csproj" />
     <Project Path="src/Plugins/NextCommander.Plugin.Sqlite/NextCommander.Plugin.Sqlite.csproj" />
     <Project Path="src/Plugins/NextCommander.Plugin.Docker/NextCommander.Plugin.Docker.csproj" />
+    <Project Path="src/Plugins/NextCommander.Plugin.Kubernetes/NextCommander.Plugin.Kubernetes.csproj" />
     <Project Path="src/Plugins/NextCommander.Plugin.DiskImage/NextCommander.Plugin.DiskImage.csproj" />
     <Project Path="src/Plugins/NextCommander.Plugin.Viewers/NextCommander.Plugin.Viewers.csproj" />
+    <Project Path="src/Plugins/NextCommander.Plugin.Packages/NextCommander.Plugin.Packages.csproj" />
+    <Project Path="src/Plugins/NextCommander.Plugin.Repositories/NextCommander.Plugin.Repositories.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/NextCommander.App.Tests/NextCommander.App.Tests.csproj" />

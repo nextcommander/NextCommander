@@ -18,7 +18,8 @@ in place.
 | single files: .gz, .bz2, .xz, .zst | yes | no | no |
 | disc images: .iso (ISO 9660 with Joliet names, UDF) | yes | no | iso (ISO 9660 + Joliet) |
 
-Plugins can add more formats.
+Plugins can add more formats. The packages plugin that comes with NextCommander opens .deb, .rpm, .cab, .msi and
+container image archives (docker save, OCI) read-only; see [Packages and installers](plugins.md#packages-and-installers).
 
 **Split archives:** an archive in volumes (`name.7z.001`, `name.7z.002` ... as 7-Zip's *split into volumes* or a
 file splitter writes them; also `name.zip.001` and the other formats) opens from its first volume like a single
