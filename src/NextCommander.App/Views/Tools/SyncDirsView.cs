@@ -91,7 +91,7 @@ public sealed class SyncNode
 /// <item>Below: what will be copied and deleted, and Synchronize (a summary to confirm first).</item>
 /// </list>
 /// </summary>
-public sealed class SyncDirsView : UserControl
+public sealed partial class SyncDirsView : UserControl
 {
     private enum Look
     {
@@ -109,7 +109,6 @@ public sealed class SyncDirsView : UserControl
     private readonly TextBlock _rightMeta = Meta();
     private readonly TextBox _mask = new() { Width = 160, FontFamily = Mono, FontSize = 12.5, Classes = { "noloc" } };
     private readonly ToggleButton _subdirs = Chip("Subfolders", "MiStacked");
-    private readonly ToggleButton _byContent = Chip("By content", "MiCompare");
     private readonly ToggleButton _ignoreDate = Chip("Ignore date", "MiHistory");
     private readonly ToggleButton _asymmetric = Chip("One-way (left → right)", "MiArrowRight");
     private readonly ToggleButton _skipHidden = Chip("Skip hidden", "MiEye");
@@ -150,29 +149,42 @@ public sealed class SyncDirsView : UserControl
         Focusable = true;
         _leftPath.Text = left.ToDisplayString();
         _rightPath.Text = right.ToDisplayString();
-        var o = context.Settings.SyncOptions;
-        _subdirs.IsChecked = o.Subdirectories;
-        _byContent.IsChecked = o.ByContent;
-        _ignoreDate.IsChecked = o.IgnoreDate;
-        _asymmetric.IsChecked = o.Asymmetric;
-        _skipHidden.IsChecked = o.SkipHidden;
-        _mask.Text = o.Mask;
+        ShowOptions(context.Settings.SyncOptions);
         ToolTip.SetTip(_mask, "File masks separated by spaces, e.g. *.cs *.md");
 
         _list.ItemsSource = Rows;
         _list.ItemTemplate = new FuncDataTemplate<SyncNode>((node, _) => node is null ? new Panel() : RowView(node));
         _list.KeyDown += OnListKeyDown;
         _list.DoubleTapped += (_, _) => CompareSelected();
-        foreach (var chip in new[] { _subdirs, _byContent, _ignoreDate, _asymmetric, _skipHidden })
+        foreach (var chip in new[] { _subdirs, _ignoreDate, _asymmetric, _skipHidden })
         {
             chip.IsCheckedChanged += async (_, _) =>
             {
-                if (_all2.Count > 0)
+                if (_all2.Count > 0 && !_loading)
                 {
                     await CompareAsync(); // the options change the comparison
                 }
             };
         }
+        _method.SelectionChanged += async (_, _) =>
+        {
+            if (_all2.Count > 0 && !_loading)
+            {
+                await CompareAsync();
+            }
+        };
+        ToolTip.SetTip(_method, "What makes two files the same: their size and date, their bytes, or their text as Compare by content sees it (its settings)");
+        _flat.IsCheckedChanged += (_, _) =>
+        {
+            BuildTree();
+            Render();
+        };
+        _presets.Content = WithGlyph("MiStar", "Presets");
+        ToolTip.SetTip(_presets, "Comparisons kept under a name: the two folders and the options");
+        _presets.Click += (_, _) => OpenPresetsMenu();
+        _export.Content = WithGlyph("MiSave", "Export");
+        ToolTip.SetTip(_export, "Save the list as an HTML report or a CSV file");
+        _export.Click += (_, _) => OpenExportMenu();
         foreach (var toggle in new[] { _showEqual, _showDifferent, _showLeft, _showRight })
         {
             toggle.IsCheckedChanged += (_, _) => Render();
@@ -264,11 +276,15 @@ public sealed class SyncDirsView : UserControl
         compare.Click += async (_, _) => await CompareAsync();
         var mask = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
         mask.Children.AddRange([new TextBlock { Text = "Mask", FontSize = 13, Opacity = 0.75, VerticalAlignment = VerticalAlignment.Center }, _mask]);
+        var method = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
+        method.Children.AddRange([new TextBlock { Text = "Compare by", FontSize = 13, Opacity = 0.75, VerticalAlignment = VerticalAlignment.Center }, _method]);
         var chips = new WrapPanel { ItemSpacing = 8, LineSpacing = 8 };
-        chips.Children.AddRange([_subdirs, _byContent, _ignoreDate, _asymmetric, _skipHidden, mask]);
+        chips.Children.AddRange([method, _subdirs, _ignoreDate, _asymmetric, _skipHidden, _flat, mask]);
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Top };
+        buttons.Children.AddRange([_presets, _export, compare]);
         var options = new DockPanel();
-        DockPanel.SetDock(compare, Dock.Right);
-        options.Children.AddRange([compare, chips]);
+        DockPanel.SetDock(buttons, Dock.Right);
+        options.Children.AddRange([buttons, chips]);
         var top = new StackPanel { Spacing = 12, Margin = new Thickness(18, 14, 18, 12) };
         top.Children.AddRange([paths, options]);
 
@@ -503,7 +519,8 @@ public sealed class SyncDirsView : UserControl
     private SyncOptions ReadOptions() => new()
     {
         Subdirectories = _subdirs.IsChecked == true,
-        ByContent = _byContent.IsChecked == true,
+        ByContent = MethodChoice.ByContent,
+        Method = MethodChoice.Method,
         IgnoreDate = _ignoreDate.IsChecked == true,
         Asymmetric = _asymmetric.IsChecked == true,
         SkipHidden = _skipHidden.IsChecked == true,
@@ -530,7 +547,7 @@ public sealed class SyncDirsView : UserControl
         var progress = new Progress<string>(p => _scanText.Text = "Comparing: " + p);
         try
         {
-            var items = await Task.Run(() => new DirectoryComparer(_context.Registry, options).CompareAsync(left, right, progress, cts.Token), cts.Token);
+            var items = await Task.Run(() => Comparer(options).CompareAsync(left, right, progress, cts.Token), cts.Token);
             _all2 = items.Select(i => new SyncRow(i)).ToList();
         }
         catch (OperationCanceledException)
@@ -587,6 +604,16 @@ public sealed class SyncDirsView : UserControl
             parent.Children.Add(node);
             folders[path] = node;
             return node;
+        }
+        if (FlatList)
+        {
+            // a list without the folders: every file (and every folder found on one side only) with its whole path
+            foreach (var row in _all2.Where(r => !r.Item.IsDirectory || r.Item.Left is null || r.Item.Right is null))
+            {
+                root.Children.Add(new SyncNode { Name = row.Item.RelativePath, RelativePath = row.Item.RelativePath, IsDirectory = false, Row = row });
+            }
+            _root = root;
+            return;
         }
         foreach (var row in _all2)
         {
@@ -1100,9 +1127,9 @@ public sealed class SyncDirsView : UserControl
 
     private void CompareSelected()
     {
-        if (_list.SelectedItem is SyncNode { Row.Item: { Left: { IsDirectory: false } l, Right: { IsDirectory: false } r } })
+        if (_list.SelectedItem is SyncNode { Row: { } row })
         {
-            new CompareWindow(l, r, _context).Show((Window)TopLevel.GetTopLevel(this)!);
+            OpenCompare(row);
         }
     }
 
