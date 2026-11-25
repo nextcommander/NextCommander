@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NextCommander</title>
+<meta name="description" content="A dual-pane file manager for Windows, Linux and macOS, driven from the keyboard: two panels, archives, remote and cloud connections, compare and merge, plugins.">
+<meta property="og:title" content="NextCommander">
+<meta property="og:description" content="A dual-pane file manager for Windows, Linux and macOS, driven from the keyboard.">
+<meta property="og:image" content="screenshots/main-light.png">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top wrap">
+  <a class="brand" href="#">
+    <img src="icon.png" alt="" width="32" height="32">
+    <span>NextCommander</span>
+  </a>
+  <nav aria-label="Sections">
+    <a href="#tour">Tour</a>
+    <a href="#connections">Connections</a>
+    <a href="#looks">Looks</a>
+    <a href="#download">Download</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero wrap">
+    <h1>Two panels.<br>Every file within a few keys.</h1>
+    <p class="lead">NextCommander is a dual-pane file manager for Windows, Linux and macOS. Copy between the panels
+      with one key, open archives and servers like folders, and keep your hands on the keyboard the whole time.</p>
+    <div class="actions">
+      <a class="button primary" href="https://github.com/nextcommander/NextCommander/releases">Download</a>
+      <a class="button" href="https://github.com/nextcommander/NextCommander/blob/main/docs/guide/getting-started.md">Read the getting started guide</a>
+    </div>
+
+    <figure class="shot">
+      <img src="screenshots/main-light.png" width="1920" height="1080"
+           alt="NextCommander with two file panels side by side, tabs, a drive bar and the function key bar at the bottom">
+    </figure>
+    <ol class="fkeys" aria-label="The function key bar">
+      <li><kbd>F3</kbd>View</li>
+      <li><kbd>F4</kbd>Edit</li>
+      <li><kbd>F5</kbd>Copy</li>
+      <li><kbd>F6</kbd>Move</li>
+      <li><kbd>F7</kbd>New folder</li>
+      <li><kbd>F8</kbd>Delete</li>
+    </ol>
+  </section>
+
+  <section id="tour" class="tour wrap" aria-labelledby="tour-title">
+    <div class="section-head">
+      <h2 id="tour-title">Look around the way you would in the app</h2>
+      <p>Move the cursor with <kbd>↑</kbd> <kbd>↓</kbd> or click a line; the right side shows it, like Quick View does.</p>
+    </div>
+
+    <div class="panes">
+      <div class="pane list" role="listbox" id="features" tabindex="0" aria-label="Features" aria-activedescendant="f-panels">
+        <div class="list-head" aria-hidden="true"><span>Name</span><span>Key</span></div>
+      </div>
+      <article class="pane preview" aria-live="polite">
+        <img id="preview-img" src="screenshots/main-light.png" width="1920" height="1080" alt="">
+        <div class="preview-text">
+          <h3 id="preview-title"></h3>
+          <p id="preview-body"></p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section id="connections" class="connections wrap" aria-labelledby="conn-title">
+    <div class="section-head">
+      <h2 id="conn-title">Servers, clouds and devices in the same panels</h2>
+      <p>A remote folder is a folder: copy to it with <kbd>F5</kbd>, view with <kbd>F3</kbd>, compare it with a local one.
+        Saved connections live in a connection manager with the options of each type.</p>
+    </div>
+    <dl class="kinds">
+      <div><dt>File servers</dt><dd>FTP, FTPS, SFTP, SCP, WebDAV, SMB, web server folder listings</dd></div>
+      <div><dt>Object storage</dt><dd>Amazon S3 and compatible stores, Azure Blob Storage, Azure Files</dd></div>
+      <div><dt>Cloud drives</dt><dd>Google Drive, OneDrive, Dropbox, Box, rclone remotes</dd></div>
+      <div><dt>Containers and code</dt><dd>Docker containers and volumes, Kubernetes pods, Git history, GitHub and GitLab repositories</dd></div>
+      <div><dt>Devices</dt><dd>Android phones over ADB, phones and cameras over MTP, another PC over a cable with PC link</dd></div>
+      <div><dt>Sessions</dt><dd>Remote desktop in a tab, VNC, SSH, Telnet, rsh and serial consoles in the built-in terminal</dd></div>
+    </dl>
+    <p class="note">Proxies (HTTP, SOCKS, SSH tunnel, PAC) for the whole program or one connection; saved passwords
+      behind an optional master password.</p>
+  </section>
+
+  <section id="looks" class="looks wrap" aria-labelledby="looks-title">
+    <div class="section-head">
+      <h2 id="looks-title">Fits the system it runs on</h2>
+      <p>Follows the system's light or dark mode, or takes a macOS or Ubuntu look. Three icon packs, six languages
+        built in, and every shortcut and button can be changed.</p>
+    </div>
+    <div class="looks-grid">
+      <figure><img src="screenshots/main-dark.png" loading="lazy" width="1920" height="1080" alt="The dark theme"><figcaption>Dark</figcaption></figure>
+      <figure><img src="screenshots/main-ubuntu.png" loading="lazy" width="1920" height="1080" alt="The Ubuntu look with the Files menu open"><figcaption>Ubuntu</figcaption></figure>
+      <figure><img src="screenshots/main-macos-dark.png" loading="lazy" width="1920" height="1080" alt="The macOS dark look with the Files menu open"><figcaption>macOS dark</figcaption></figure>
+    </div>
+  </section>
+
+  <section id="download" class="download wrap" aria-labelledby="dl-title">
+    <div class="section-head">
+      <h2 id="dl-title">Download</h2>
+      <p>Every package is self-contained: nothing else needs to be installed. The packages are on the
+        <a href="https://github.com/nextcommander/NextCommander/releases">Releases page</a>.</p>
+    </div>
+    <div class="platforms">
+      <div>
+        <h3>Windows</h3>
+        <p>A setup program that installs for your user without administrator rights, a zip, and a portable zip that
+          keeps its settings next to it, for a USB stick.</p>
+      </div>
+      <div>
+        <h3>Linux</h3>
+        <p>A <code>.deb</code> for Debian, Ubuntu and Mint, an <code>.rpm</code> for Fedora, RHEL and openSUSE, and a
+          <code>.tar.gz</code>.</p>
+        <pre><code>sudo apt install ./NextCommander-&lt;version&gt;-linux-x64.deb</code></pre>
+      </div>
+      <div>
+        <h3>macOS</h3>
+        <p><code>NextCommander.app</code> in a zip or a disk image. Drag it to Applications. An unsigned copy may first
+          need <em>Privacy &amp; Security &gt; Open Anyway</em>.</p>
+      </div>
+    </div>
+    <p class="note">Optional helpers turn on extra features when they are installed: 7-Zip writes 7z archives, VLC
+      plays audio and video in the viewer, Everything, plocate or Spotlight speed up searches.</p>
+  </section>
+</main>
+
+<footer class="wrap">
+  <nav aria-label="Guides">
+    <a href="https://github.com/nextcommander/NextCommander/blob/main/docs/guide/getting-started.md">Getting started</a>
+    <a href="https://github.com/nextcommander/NextCommander/blob/main/docs/guide/keyboard-shortcuts.md">Keyboard shortcuts</a>
+    <a href="https://github.com/nextcommander/NextCommander/blob/main/docs/guide/tools.md">Tools</a>
+    <a href="https://github.com/nextcommander/NextCommander/blob/main/docs/guide/connections.md">Connections</a>
+    <a href="https://github.com/nextcommander/NextCommander/blob/main/docs/guide/plugins.md">Plugins</a>
+    <a href="https://github.com/nextcommander/NextCommander">Source</a>
+  </nav>
+  <p>NextCommander runs on Windows, Linux and macOS, x64 and Arm.</p>
+</footer>
+
+<script src="tour.js"></script>
+</body>
+</html>
