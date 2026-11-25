@@ -233,7 +233,11 @@ The plan in phases: [docs/plans/compare-merge.md](plans/compare-merge.md).
   named), `nc_ApplyPatch` (Tools menu; `MainWindowViewModel.Patches.cs`: where each file is (`UnifiedDiff.Candidates`),
   a list with what fits, a preview in the compare window, writing with `TextContent`). Tests: `PatchReportTests`,
   App `PatchTests`.
-- [ ] Phase 6: 3-way compare and merge (Git conflicts).
+- [x] Phase 6: 3-way merge (`Core/Compare/ConflictMarkers`: git / diff3 markers found and resolved, a numbered
+  merge; `Views/Tools/MergeWindow`: the three files above the result, take left / base / right / both, save in the
+  output's format; `nc_MergeFiles` (Tools menu); `IPluginDialogs.ResolveConflictsAsync` and Git's *Conflicts...*
+  staging a resolved file). Tests: `ConflictMarkersTests`, App `MergeTests`, `GitActionsTests`.
+- All seven phases of the plan are done (25 November 2026).
 - [x] Phase 7: hex, picture and document compare (`CompareWindow.Modes.cs`: `CompareMode`; `Core/Compare/HexCompare`
   rows through the same panes, `DocumentText` (OfficeHtml / PDFium text, read-only), `PictureCompareView` +
   `PictureDifference` (SkiaSharp, tolerance, side by side / overlay / difference)). Tests: `HexDocumentCompareTests`,

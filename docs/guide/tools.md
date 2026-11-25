@@ -269,6 +269,22 @@ two panels.
   or their difference (the differing pixels red on the faded left picture, with a tolerance for small color
   changes); the status line counts the differing pixels.
 
+## Merge files
+
+*Tools > Merge files...* is a 3-way merge. Mark three files (the common ancestor and the two versions made from it; a
+list asks which one is the ancestor): the changes made on only one side are merged by themselves, the places both
+sides changed differently are **conflicts**, marked in the result as git marks them. Or place the cursor on a file with
+conflict markers (a git merge that stopped) to resolve them in place.
+
+- The three files are shown above the result, their changes colored (conflicts red); the current conflict is brought
+  into view in each of them.
+- For the current conflict take the **Left** (Alt+1), the **Base** (Alt+2), the **Right** (Alt+3) side or **Both**
+  (Alt+4, the left one first). F2 / Shift+F2 (Alt+↓ / Alt+↑) go to the next / previous conflict. The result is a normal
+  editor: edit it freely, Ctrl+Z takes a choice back.
+- **Save** (Ctrl+S) writes the result into the first of the two versions (or the file with the markers) in its own
+  encoding and line ends; with conflicts left it asks first. Closing with unsaved changes asks too.
+- The Git plugin's *Conflicts...* opens a conflicted file here and stages it once it is saved without conflicts.
+
 ## Duplicate files
 
 *Tools > Duplicate files...* finds files that exist more than once. It opens as a page of its own with a

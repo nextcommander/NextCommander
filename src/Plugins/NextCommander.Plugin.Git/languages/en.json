@@ -45,6 +45,8 @@
   "Git.GitError": "git: {0}",
   "Git.GitFailed": "git failed.",
   "Git.HistoryTitle": "Git: {0}",
+  "Git.IsResolvedAndStagedNo": "{0} is resolved and staged. No conflicts left: Git: Finish merge makes the merge commit.",
+  "Git.IsResolvedAndStagedStill": "{0} is resolved and staged. Still conflicted: {1}.",
   "Git.MergeBranch": "Git: Merge branch...",
   "Git.MergeInto": "Git: Merge into {0}",
   "Git.MergeStopped": "The merge stopped. Git: Finish merge or Git: Abort merge.",

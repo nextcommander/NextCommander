@@ -45,6 +45,8 @@
   "Git.GitError": "git: {0}",
   "Git.GitFailed": "git falló.",
   "Git.HistoryTitle": "Git: {0}",
+  "Git.IsResolvedAndStagedNo": "{0} está resuelto y preparado. No quedan conflictos: Git: Terminar combinación crea el commit de combinación.",
+  "Git.IsResolvedAndStagedStill": "{0} está resuelto y preparado. Aún en conflicto: {1}.",
   "Git.MergeBranch": "Git: Fusionar rama...",
   "Git.MergeInto": "Git: Fusionar en {0}",
   "Git.MergeStopped": "La fusión se detuvo. Git: Terminar la fusión o Git: Cancelar la fusión.",

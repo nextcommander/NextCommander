@@ -1323,6 +1323,7 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         RegisterMacroCommands(c);
         RegisterScriptCommands(c);
         RegisterPatchCommands(c);
+        RegisterMergeCommands(c);
         c.Register("nc_SecureDelete", "Delete securely: the files are overwritten with random data, then deleted for good", _ => SecureDeleteAsync());
         c.Register("nc_Exit", "Exit", () => ExitRequested?.Invoke(this, EventArgs.Empty));
 
