@@ -8,12 +8,14 @@ namespace NextCommander.App.ViewModels;
 
 /// <summary>
 /// Tools > Merge files... (the compare and merge plan, phase 6; 25 November 2026): three marked files, one of them the common
-/// ancestor, merged into one of the others; or the conflict markers of the file under the cursor resolved.
+/// ancestor, merged into one of the others; two marked files (or the files under the cursors of both panels) side by side
+/// in the compare window, each difference copied to the other side by hand (the user's request, 25 November 2026: without
+/// a common ancestor nothing tells which side changed a line); or the conflict markers of the file under the cursor resolved.
 /// </summary>
 public partial class MainWindowViewModel
 {
     private void RegisterMergeCommands(CommandRegistry c) =>
-        c.Register("nc_MergeFiles", "Merge files: three marked files (one of them the common ancestor), or a file with conflict markers", _ => MergeFilesAsync());
+        c.Register("nc_MergeFiles", "Merge files: two marked files side by side (each difference copied by hand), three (one of them the common ancestor), or a file with conflict markers", _ => MergeFilesAsync());
 
     private async Task MergeFilesAsync()
     {
@@ -37,6 +39,12 @@ public partial class MainWindowViewModel
             await ActivePanel.RefreshAsync();
             return;
         }
+        if (marked.Count == 2)
+        {
+            // two versions: the compare window, both sides editable (always the program's own: it is a merge)
+            _dialogs.ShowCompare(marked[0], marked[1], Tools);
+            return;
+        }
         var single = marked.Count == 1 ? marked[0] : marked.Count == 0 && ActivePanel.CursorItem?.Entry is { IsDirectory: false } cursor ? cursor : null;
         if (single is not null)
         {
@@ -56,9 +64,15 @@ public partial class MainWindowViewModel
                 await ActivePanel.RefreshAsync();
                 return;
             }
-            await _dialogs.ShowMessageAsync("Merge files", $"{single.Name} has no conflict markers. Mark three files to merge them: the common ancestor and the two versions made from it.");
+            if (marked.Count == 0 && OtherPanel.CursorItem?.Entry is { IsDirectory: false } other)
+            {
+                // the file under the cursor of each panel: side by side (the left panel's on the left)
+                _dialogs.ShowCompare(ReferenceEquals(ActivePanel, Left) ? single : other, ReferenceEquals(ActivePanel, Left) ? other : single, Tools);
+                return;
+            }
+            await _dialogs.ShowMessageAsync("Merge files", $"{single.Name} has no conflict markers. Mark two files to merge them side by side, or three: the common ancestor and the two versions made from it.");
             return;
         }
-        await _dialogs.ShowMessageAsync("Merge files", "Mark three files to merge them (the common ancestor and the two versions made from it), or place the cursor on a file with conflict markers.");
+        await _dialogs.ShowMessageAsync("Merge files", "Mark two files to merge them side by side, three (the common ancestor and the two versions made from it), or place the cursor on a file with conflict markers.");
     }
 }

@@ -132,5 +132,25 @@ public sealed class MergeTests : IDisposable
         vm.Left.MoveCursorTo(vm.Left.Items.ToList().FindIndex(i => i.FullName == "v1.txt"));
         await vm.ExecuteAsync("nc_MergeFiles");
         Assert.Contains(_fx.Dialogs.Messages, m => m.StartsWith("v1.txt has no conflict markers", StringComparison.Ordinal));
+
+        // two marked files: side by side in the compare window (each difference copied by hand)
+        foreach (var item in vm.Left.Items.Where(i => i.FullName is "v1.txt" or "v2.txt"))
+        {
+            item.IsMarked = true;
+        }
+        await vm.ExecuteAsync("nc_MergeFiles");
+        Assert.Equal(("v1.txt", "v2.txt"), (_fx.Dialogs.LastCompare!.Value.Left.Name, _fx.Dialogs.LastCompare!.Value.Right.Name));
+
+        // nothing marked, a file under the cursor of each panel: those two
+        foreach (var item in vm.Left.Items)
+        {
+            item.IsMarked = false;
+        }
+        File.WriteAllText(_fx.R("other.txt"), "d\n");
+        await vm.Right.RefreshAsync();
+        vm.Right.MoveCursorTo(vm.Right.Items.ToList().FindIndex(i => i.FullName == "other.txt"));
+        vm.Left.MoveCursorTo(vm.Left.Items.ToList().FindIndex(i => i.FullName == "v1.txt"));
+        await vm.ExecuteAsync("nc_MergeFiles");
+        Assert.Equal(("v1.txt", "other.txt"), (_fx.Dialogs.LastCompare!.Value.Left.Name, _fx.Dialogs.LastCompare!.Value.Right.Name));
     }
 }
