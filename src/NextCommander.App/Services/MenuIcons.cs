@@ -217,6 +217,7 @@ public static class MenuIcons
         ["compare.copyallright"] = new("MiCompare", Orange, "OvArrowRight", Orange),
         ["compare.copyallleft"] = new("MiCompare", Orange, "OvArrowLeft", Orange),
         ["compare.swap"] = new("MiSwap", Blue),
+        ["compare.options"] = new("MiCompare", Blue, "OvCheck", Green),
         ["nc_DeleteMacro"] = new("MiKeyboard", Blue, "OvX", Red),
         ["nc_Permissions"] = new("MiLock", Blue),
         ["nc_RunScript"] = new("MiDoc", Yellow, "OvArrowRight", Green),

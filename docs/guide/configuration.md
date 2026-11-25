@@ -110,6 +110,7 @@ click it or press Enter. **...** next to it chooses a program instead.
 | Operation › **Thumbnails** | Thumbnail size, the disk cache, fields shown under thumbnails, thumbnails of text files and other files. |
 | Operation › **Associations** | Internal associations: what Enter does for a file type (a program, Lister, the editor, the system's program or a command). |
 | Operation › **File index** | The [file index](tools.md#file-index): on or off, which folders, what to leave out, its state and Rebuild. |
+| Operation › **Compare** | [Compare by content](tools.md#compare-by-content): what is ignored (case, spaces, blank lines, line ends), moved lines, alike lines side by side, differences by words or characters, the font, line filters and substitutions (regular expressions), a backup when saving, an external compare program. |
 | **Packer** | The default archive format, setting the archive date to its newest file, whether Enter opens archives. |
 | Packer › **Zip** | Compression level, UTF-8 file names, the encryption of password-protected zips, temporary files, damaged and partial zips. |
 | Packer › **7-Zip** | Where 7-Zip is, compression level and method, solid archives, CPU threads, encrypting file names, dictionary and word size. |

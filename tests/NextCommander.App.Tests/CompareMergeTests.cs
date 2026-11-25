@@ -1,5 +1,6 @@
 using System.Text;
 using Avalonia.Headless.XUnit;
+using Avalonia.LogicalTree;
 using AvaloniaEdit.Document;
 using NextCommander.App.Views.Editor;
 using NextCommander.App.Views.Tools;
@@ -13,11 +14,14 @@ public sealed class CompareMergeTests : IDisposable
 {
     private readonly UiFixture _fx = new();
 
+    private ViewModels.MainWindowViewModel? _vm;
+
     public void Dispose() => _fx.Dispose();
 
     private async Task<CompareWindow> OpenAsync(string left, string right, Encoding? leftEncoding = null)
     {
         var (_, vm) = await _fx.OpenAsync();
+        _vm = vm;
         File.WriteAllText(_fx.L("a.txt"), left, leftEncoding ?? new UTF8Encoding(false));
         File.WriteAllText(_fx.R("a.txt"), right, new UTF8Encoding(false));
         var l = (await vm.Left.GetEntryAsync(VfsPath.Local(_fx.L("a.txt"))))!;
@@ -149,6 +153,59 @@ public sealed class CompareMergeTests : IDisposable
         File.SetLastWriteTimeUtc(_fx.R("a.txt"), DateTime.UtcNow.AddMinutes(2));
         await window.ExternalChangeAsync(window.SideOf(right: false));
         Assert.Equal(["left"], window.LeftLines);
+    }
+
+    [AvaloniaFact]
+    public async Task The_compare_settings_are_used_and_the_switches_keep_them()
+    {
+        // blank lines only: shown faintly, not a difference to visit
+        var window = await OpenAsync("a\nb\n", "a\n\nb\n");
+        Assert.Equal(1, window.BlockCount);
+        var settings = window.Settings;
+        settings.IgnoreBlankLines = true;
+        await window.CompareAsync();
+        Assert.Equal(0, window.BlockCount);
+        Assert.Contains(window.Rows, r => r.Ignored);
+
+        // line ends that count: CRLF against LF differs on every line
+        await window.OpenSideAsync(right: true, await EntryAsync("crlf.txt", "a\r\nb\r\n"));
+        Assert.Equal(0, window.BlockCount);
+        settings.IgnoreLineEndings = false;
+        await window.CompareAsync();
+        Assert.Equal(1, window.BlockCount);
+        Assert.Equal(["a", "b"], window.Rows.Where(r => r.Right is not null).Select(r => r.Right)); // shown without the line ends
+        settings.IgnoreLineEndings = true;
+
+        // moved lines
+        await window.OpenSideAsync(right: true, await EntryAsync("moved.txt", "b\nfirst line\n"));
+        await window.OpenSideAsync(right: false, await EntryAsync("moved0.txt", "first line\nb\n"));
+        Assert.Contains(window.Rows, r => r.MovedTo is not null);
+
+        // the switch of the bar is the setting
+        var toggle = window.GetLogicalDescendants().OfType<Avalonia.Controls.ToggleSwitch>().First(t => Equals(t.OnContent, "Ignore case"));
+        toggle.IsChecked = true;
+        Assert.True(settings.IgnoreCase);
+    }
+
+    [AvaloniaFact]
+    public async Task Saving_keeps_a_backup_when_asked()
+    {
+        var window = await OpenAsync("old\n", "new\n");
+        window.Settings.Backup = true;
+        await window.CopyBlockAsync(0, toRight: false);
+        Assert.True(await window.SaveSideAsync(right: false));
+        Assert.Equal("old\n", File.ReadAllText(_fx.L("a.txt.bak")));
+        Assert.Equal("new\n", File.ReadAllText(_fx.L("a.txt")));
+        // only the first save keeps the original
+        await window.UndoAsync();
+        Assert.True(await window.SaveSideAsync(right: false));
+        Assert.Equal("old\n", File.ReadAllText(_fx.L("a.txt.bak")));
+    }
+
+    private async Task<VfsEntry> EntryAsync(string name, string text)
+    {
+        File.WriteAllText(_fx.R(name), text);
+        return (await _vm!.Left.GetEntryAsync(VfsPath.Local(_fx.R(name))))!;
     }
 
     [AvaloniaFact]

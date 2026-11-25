@@ -17,6 +17,7 @@ using AvaloniaEdit.Rendering;
 using NextCommander.App.Services;
 using NextCommander.App.Views.Lister;
 using NextCommander.Core.Compare;
+using NextCommander.Core.Config;
 using NextCommander.Core.Text;
 using NextCommander.Core.Vfs;
 
@@ -99,8 +100,12 @@ public sealed partial class CompareWindow : Window
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         EncodingDetector.EnsureCodePages();
 
-        var font = new FontFamily(context.Settings.ListerFont);
-        var size = context.Settings.ListerFontSize;
+        // the compare settings (Configuration > Operation/Compare): the font, and the switches as they were left
+        var options = context.Settings.CompareOptions;
+        var font = new FontFamily(string.IsNullOrWhiteSpace(options.Font) ? context.Settings.ListerFont : options.Font);
+        var size = options.FontSize > 0 ? options.FontSize : context.Settings.ListerFontSize;
+        _ignoreCase.IsChecked = options.IgnoreCase;
+        _ignoreSpace.IsChecked = options.Whitespace != CompareWhitespace.Compare;
         _leftPane = new DiffPane(this, font, size, Highlighting(left), numberColumns: 1, isLeft: true);
         _rightPane = new DiffPane(this, font, size, Highlighting(right), numberColumns: 1, isLeft: false);
         _inlinePane = new DiffPane(this, font, size, Highlighting(right), numberColumns: 2, isLeft: null);
@@ -124,8 +129,18 @@ public sealed partial class CompareWindow : Window
 
         _split.Click += (_, _) => SetView(inline: false);
         _inline.Click += (_, _) => SetView(inline: true);
-        _ignoreCase.IsCheckedChanged += (_, _) => _ = CompareAsync();
-        _ignoreSpace.IsCheckedChanged += (_, _) => _ = CompareAsync();
+        _ignoreCase.IsCheckedChanged += (_, _) =>
+        {
+            Options.IgnoreCase = _ignoreCase.IsChecked == true;
+            _ = CompareAsync();
+        };
+        _ignoreSpace.IsCheckedChanged += (_, _) =>
+        {
+            // on: the spaces as the settings ignore them (changes in their number unless all were chosen)
+            Options.Whitespace = _ignoreSpace.IsChecked != true ? CompareWhitespace.Compare
+                : Options.Whitespace == CompareWhitespace.Compare ? CompareWhitespace.IgnoreChanges : Options.Whitespace;
+            _ = CompareAsync();
+        };
         _previous.Click += (_, _) => MoveToBlock(-1);
         _next.Click += (_, _) => MoveToBlock(+1);
         _copyLeft.Click += (_, _) => _ = CopyBlockAsync(_currentBlock, toRight: false);
@@ -464,6 +479,12 @@ public sealed partial class CompareWindow : Window
 
     private Palette Colors => _palette;
 
+    /// <summary>The compare settings (the window's switches change them too).</summary>
+    private CompareSettings Options => _context.Settings.CompareOptions;
+
+    /// <summary>The compare settings this window follows (tests).</summary>
+    public CompareSettings Settings => Options;
+
     private void ApplyPalette()
     {
         _palette = ActualThemeVariant == ThemeVariant.Dark ? Palette.Dark : Palette.Light;
@@ -645,11 +666,25 @@ public sealed partial class CompareWindow : Window
             Watch();
             BuildFileHeaders();
         }
-        var options = new DiffOptions { IgnoreCase = _ignoreCase.IsChecked == true, IgnoreWhitespace = _ignoreSpace.IsChecked == true };
+        var options = Options.ToOptions();
         var leftLines = _l.Lines.ToList();
         var rightLines = _r.Lines.ToList();
+        // line ends that count: each line compared with its file's line end, shown without it
+        var keepEnds = !options.IgnoreLineEndings;
+        var leftInput = keepEnds ? leftLines.Select(l => l + _l.NewLine).ToList() : leftLines;
+        var rightInput = keepEnds ? rightLines.Select(l => l + _r.NewLine).ToList() : rightLines;
         var version = _editVersion;
-        var rows = await Task.Run(() => TextDiff.Compare(leftLines, rightLines, options));
+        var rows = await Task.Run(() =>
+        {
+            var compared = TextDiff.Compare(leftInput, rightInput, options);
+            return keepEnds
+                ? compared.Select(r => r with
+                {
+                    Left = r.LeftNumber is { } ln ? leftLines[ln - 1] : null,
+                    Right = r.RightNumber is { } rn ? rightLines[rn - 1] : null,
+                }).ToList()
+                : compared;
+        });
         if (version != _editVersion)
         {
             return; // typed meanwhile: the next compare shows it
@@ -662,8 +697,8 @@ public sealed partial class CompareWindow : Window
         UpdateTitle();
         UpdateButtons();
 
-        var added = _rows.Count(r => r.Kind is DiffKind.Added or DiffKind.Changed);
-        var removed = _rows.Count(r => r.Kind is DiffKind.Removed or DiffKind.Changed);
+        var added = _rows.Count(r => r.Kind is DiffKind.Added or DiffKind.Changed && !r.Ignored);
+        var removed = _rows.Count(r => r.Kind is DiffKind.Removed or DiffKind.Changed && !r.Ignored);
         _stats.Children.Clear();
         _stats.Children.AddRange([
             Chip(_hunks.Count == 1 ? "1 change" : $"{_hunks.Count} changes", _palette.Muted, _palette.Surface2),
@@ -820,27 +855,45 @@ public sealed partial class CompareWindow : Window
             IReadOnlyList<InlineSpan>? leftSpans = null, rightSpans = null;
             if (row.Kind == DiffKind.Changed && row.Left is not null && row.Right is not null)
             {
-                (leftSpans, rightSpans) = TextDiff.InlineDiff(row.Left, row.Right);
+                (leftSpans, rightSpans) = TextDiff.InlineDiff(row.Left, row.Right, Options.WordLevel ? InlineLevel.Word : InlineLevel.Character);
             }
+            // a moved line has ↕ for its sign (it is added or removed elsewhere); an ignored difference is faint
+            var leftSign = row.Kind == DiffKind.Equal ? ' ' : row.MovedTo is not null ? '↕' : '−';
+            var rightSign = row.Kind == DiffKind.Equal ? ' ' : row.MovedTo is not null ? '↕' : '+';
+            var leftLook = row.Kind == DiffKind.Equal ? Look.Equal : row.Ignored ? Look.Ignored : Look.Del;
+            var rightLook = row.Kind == DiffKind.Equal ? Look.Equal : row.Ignored ? Look.Ignored : Look.Add;
             left.Add(row.Left is null
                 ? PaneLine.Filler(hunk)
-                : new PaneLine(row.Left, row.LeftNumber, null, row.Kind == DiffKind.Equal ? ' ' : '−', row.Kind == DiffKind.Equal ? Look.Equal : Look.Del, hunk, leftSpans));
+                : new PaneLine(row.Left, row.LeftNumber, null, leftSign, leftLook, hunk, leftSpans));
             right.Add(row.Right is null
                 ? PaneLine.Filler(hunk)
-                : new PaneLine(row.Right, null, row.RightNumber, row.Kind == DiffKind.Equal ? ' ' : '+', row.Kind == DiffKind.Equal ? Look.Equal : Look.Add, hunk, rightSpans));
+                : new PaneLine(row.Right, null, row.RightNumber, rightSign, rightLook, hunk, rightSpans));
             if (row.Kind == DiffKind.Equal)
             {
                 inline.Add(new PaneLine(row.Left ?? string.Empty, row.LeftNumber, row.RightNumber, ' ', Look.Equal, -1, null));
                 continue;
             }
+            if (row.Ignored)
+            {
+                // not a difference that is visited: its lines in place, faint
+                if (row.Left is not null)
+                {
+                    inline.Add(new PaneLine(row.Left, row.LeftNumber, null, ' ', Look.Ignored, -1, null));
+                }
+                if (row.Right is not null)
+                {
+                    inline.Add(new PaneLine(row.Right, null, row.RightNumber, ' ', Look.Ignored, -1, null));
+                }
+                continue;
+            }
             // one column: the removed lines of a difference first, then the added ones
             if (row.Left is not null)
             {
-                dels.Add(new PaneLine(row.Left, row.LeftNumber, null, '−', Look.Del, hunk, leftSpans));
+                dels.Add(new PaneLine(row.Left, row.LeftNumber, null, leftSign, Look.Del, hunk, leftSpans));
             }
             if (row.Right is not null)
             {
-                adds.Add(new PaneLine(row.Right, null, row.RightNumber, '+', Look.Add, hunk, rightSpans));
+                adds.Add(new PaneLine(row.Right, null, row.RightNumber, rightSign, Look.Add, hunk, rightSpans));
             }
             if (i == _hunks[hunk].End)
             {
@@ -932,6 +985,9 @@ public sealed partial class CompareWindow : Window
         Del,
         Add,
         Fill,
+
+        /// <summary>A difference the options ignore (blank lines, the line filters): shown faintly.</summary>
+        Ignored,
     }
 
     /// <summary>One line of a pane: its text, the numbers of the files, the sign, its look, its difference and marked characters.</summary>
@@ -949,7 +1005,7 @@ public sealed partial class CompareWindow : Window
             var start = -1;
             for (var i = 0; i <= rows.Count; i++)
             {
-                var different = i < rows.Count && rows[i].Kind != DiffKind.Equal;
+                var different = i < rows.Count && rows[i].Kind != DiffKind.Equal && !rows[i].Ignored; // ignored ones are not visited
                 if (different && start < 0)
                 {
                     start = i;
@@ -1239,6 +1295,9 @@ public sealed partial class CompareWindow : Window
                 break;
             case Look.Add:
                 context.FillRectangle(new SolidColorBrush(p.AddBg), rect);
+                break;
+            case Look.Ignored:
+                context.FillRectangle(new SolidColorBrush(p.Surface2), rect);
                 break;
             case Look.Fill:
                 context.FillRectangle(new SolidColorBrush(p.Fill), rect);

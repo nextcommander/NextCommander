@@ -42,7 +42,7 @@ public sealed partial class SettingsView : UserControl
         "Display", "Display/Icons", "Display/Font", "Display/Color", "Display/Data formats", "Display/Folder tabs", "Display/View modes",
         "Display/Language",
         "Operation", "Operation/Edit and view", "Operation/Copy and delete", "Operation/Quick search", "Operation/FTP", "Operation/Proxy", "Operation/Plugins", "Operation/Thumbnails",
-        "Operation/Associations", "Operation/File index", "Operation/PC link", "Operation/Rules",
+        "Operation/Associations", "Operation/File index", "Operation/PC link", "Operation/Rules", "Operation/Compare",
         "Packer", "Packer/Zip", "Packer/7-Zip",
         "Refresh", "Ignore list", "History", "Log file",
         "Misc.",
@@ -55,7 +55,7 @@ public sealed partial class SettingsView : UserControl
         ["Display/Data formats"] = "MiHash", ["Display/Folder tabs"] = "MiTabs", ["Display/View modes"] = "MiColumns", ["Display/Language"] = "MiGlobe",
         ["Operation"] = "MiGear", ["Operation/Edit and view"] = "MiPencil", ["Operation/Copy and delete"] = "MiCopy", ["Operation/Quick search"] = "MiSearch",
         ["Operation/FTP"] = "MiNetwork", ["Operation/Proxy"] = "MiPlug", ["Operation/Plugins"] = "MiChip", ["Operation/Thumbnails"] = "MiFullView",
-        ["Operation/Associations"] = "MiExchange", ["Operation/File index"] = "MiDrive", ["Operation/PC link"] = "MiMonitor", ["Operation/Rules"] = "MiHammer", ["Packer"] = "MiStacked", ["Packer/Zip"] = "MiCombine",
+        ["Operation/Associations"] = "MiExchange", ["Operation/File index"] = "MiDrive", ["Operation/PC link"] = "MiMonitor", ["Operation/Rules"] = "MiHammer", ["Operation/Compare"] = "MiCompare", ["Packer"] = "MiStacked", ["Packer/Zip"] = "MiCombine",
         ["Packer/7-Zip"] = "MiSplit", ["Refresh"] = "MiRefresh", ["Ignore list"] = "MiFilter", ["History"] = "MiHistory", ["Log file"] = "MiDoc",
         ["Misc."] = "MiHammer",
     };
@@ -287,6 +287,19 @@ public sealed partial class SettingsView : UserControl
     public bool IsDirty => _apply.IsEnabled;
 
     public void Search(string text) => _search.Text = text;
+
+    /// <summary>The page ("Operation/Compare") or the search a parameter of nc_Config asks for.</summary>
+    public void Show(string pageOrSearch)
+    {
+        if (s_pages.FirstOrDefault(p => string.Equals(p, pageOrSearch, StringComparison.OrdinalIgnoreCase)) is { } page)
+        {
+            SelectPage(page);
+        }
+        else
+        {
+            Search(pageOrSearch);
+        }
+    }
 
     /// <summary>Shows a page by its path ("Display/Color").</summary>
     public void SelectPage(string page)
@@ -1554,6 +1567,10 @@ public sealed partial class SettingsView : UserControl
                     return $"DarkColor is not a valid color: \"{rule.DarkColor}\" (#RRGGBB)";
                 }
                 return rule.MaxAgeMinutes is < 0 ? "MaxAgeMinutes cannot be negative" : null;
+            case CompareLineFilter filter:
+                return CompareSettings.PatternProblem(filter.Pattern);
+            case CompareSubstitution substitution:
+                return CompareSettings.PatternProblem(substitution.Pattern);
             case EditorAssociation editor:
                 return string.IsNullOrWhiteSpace(editor.Mask) ? "Mask is empty"
                     : string.IsNullOrWhiteSpace(editor.Program) ? "Program is empty (a path, \"internal\" or \"system\")" : null;
@@ -1751,6 +1768,37 @@ public sealed partial class SettingsView : UserControl
                 PlaceholderText = "program path",
                 Options = [("internal", "Built-in"), ("system", "System")],
             },
+        ],
+    };
+
+    /// <summary>The line filters of Compare by content (a regular expression each, on / off).</summary>
+    private static ListEditorOptions<CompareLineFilter> LineFilterOptions() => new()
+    {
+        Create = () => new CompareLineFilter { Pattern = @"^\s*//" },
+        Clone = CloneEntry,
+        Summary = f => (f.Enabled ? string.Empty : "(off) ") + f.Pattern,
+        Validate = f => ValidateEntry(f),
+        AddText = "Add filter",
+        Fields =
+        [
+            new("Regular expression", ListFieldKind.Text, f => f.Pattern, (f, v) => f.Pattern = v ?? string.Empty) { PlaceholderText = @"e.g. ^\s*// or ^#" },
+            new("On", ListFieldKind.Bool, f => f.Enabled.ToString(CultureInfo.InvariantCulture), (f, v) => f.Enabled = v == bool.TrueString),
+        ],
+    };
+
+    /// <summary>The substitutions of Compare by content.</summary>
+    private static ListEditorOptions<CompareSubstitution> SubstitutionOptions() => new()
+    {
+        Create = () => new CompareSubstitution { Pattern = @"\d+\.\d+\.\d+", Replacement = "#" },
+        Clone = CloneEntry,
+        Summary = r => (r.Enabled ? string.Empty : "(off) ") + r.Pattern + "  →  " + r.Replacement,
+        Validate = r => ValidateEntry(r),
+        AddText = "Add substitution",
+        Fields =
+        [
+            new("Regular expression", ListFieldKind.Text, r => r.Pattern, (r, v) => r.Pattern = v ?? string.Empty) { PlaceholderText = @"e.g. \d{4}-\d{2}-\d{2}" },
+            new("Replace with", ListFieldKind.Text, r => r.Replacement, (r, v) => r.Replacement = v ?? string.Empty) { PlaceholderText = "e.g. #" },
+            new("On", ListFieldKind.Bool, r => r.Enabled.ToString(CultureInfo.InvariantCulture), (r, v) => r.Enabled = v == bool.TrueString),
         ],
     };
 
@@ -2113,6 +2161,7 @@ public sealed partial class SettingsView : UserControl
         const string index = "Operation/File index";
         const string link = "Operation/PC link";
         const string rules = "Operation/Rules";
+        const string compare = "Operation/Compare";
         const string packer = "Packer";
         const string sevenZip = "Packer/7-Zip";
         const string misc = "Misc.";
@@ -2350,6 +2399,36 @@ public sealed partial class SettingsView : UserControl
             Bool(operation, "Updates", "Check for updates at startup", "At most once a day; notifies only if a new version is available.", s => s.CheckUpdatesOnStart, (s, v) => s.CheckUpdatesOnStart = v),
             Text(operation, "Updates", "Update URL", "URL of a JSON file with version info ({\"version\",\"url\"}) or a GitHub releases/latest API URL. When empty, updates are never checked.",
                 s => s.UpdateCheckUrl, (s, v) => s.UpdateCheckUrl = v ?? string.Empty, "https://api.github.com/repos/<owner>/<repo>/releases/latest"),
+
+            // Compare by content (the compare and merge plan of 25 November 2026, phase 3)
+            Bool(compare, "Compare", "Ignore case", null, s => s.CompareOptions.IgnoreCase, (s, v) => s.CompareOptions.IgnoreCase = v),
+            Choice(compare, "Compare", "Spaces", null,
+                [("Every space counts", CompareWhitespace.Compare), ("Ignore changes in the number of spaces", CompareWhitespace.IgnoreChanges), ("Ignore all spaces", CompareWhitespace.IgnoreAll)],
+                s => s.CompareOptions.Whitespace, (s, v) => s.CompareOptions.Whitespace = v),
+            Bool(compare, "Compare", "Ignore blank lines", "A difference made of blank lines only is shown, but not counted or visited.",
+                s => s.CompareOptions.IgnoreBlankLines, (s, v) => s.CompareOptions.IgnoreBlankLines = v),
+            Bool(compare, "Compare", "Ignore line ends (CRLF / LF)", "When off, a file with other line ends than the other one differs on every line.",
+                s => s.CompareOptions.IgnoreLineEndings, (s, v) => s.CompareOptions.IgnoreLineEndings = v),
+            Bool(compare, "Show", "Mark moved lines", "Lines removed in one place and added in another are marked as moved.",
+                s => s.CompareOptions.DetectMoved, (s, v) => s.CompareOptions.DetectMoved = v),
+            Bool(compare, "Show", "Put alike lines side by side", "The removed and added lines of a difference are paired by how alike they are (otherwise by their order).",
+                s => s.CompareOptions.MatchSimilarLines, (s, v) => s.CompareOptions.MatchSimilarLines = v),
+            Choice(compare, "Show", "Differences inside a changed line", null, [("By characters", false), ("By words", true)],
+                s => s.CompareOptions.WordLevel, (s, v) => s.CompareOptions.WordLevel = v),
+            Font(compare, "Show", "Font", null, s => s.CompareOptions.Font, (s, v) => s.CompareOptions.Font = v, firstChoice: "(as the Lister font)"),
+            Number(compare, "Show", "Font size", "0 = the size of the Lister font.", 0, 48, s => s.CompareOptions.FontSize, (s, v) => s.CompareOptions.FontSize = v),
+            ListItem(compare, "Filters", "Line filters", "A difference whose lines all match one of these regular expressions is ignored (e.g. ^\\s*// for comment lines).",
+                s => s.CompareOptions.LineFilters, (s, v) => s.CompareOptions.LineFilters = v, LineFilterOptions()),
+            ListItem(compare, "Filters", "Substitutions", "Before the lines are compared, what a regular expression matches is replaced (e.g. version numbers by #); the lines shown stay as they are.",
+                s => s.CompareOptions.Substitutions, (s, v) => s.CompareOptions.Substitutions = v, SubstitutionOptions()),
+            Bool(compare, "Saving", "Keep a backup when saving (name.bak)", "The file as it was before the first save is kept next to it.",
+                s => s.CompareOptions.Backup, (s, v) => s.CompareOptions.Backup = v),
+            Bool(compare, "External program", "Use an external compare program", "Files > Compare by content opens it for two local files; files on connections and in archives still open in the own window.",
+                s => s.CompareOptions.UseExternal, (s, v) => s.CompareOptions.UseExternal = v),
+            Text(compare, "External program", "Program", null, s => s.CompareOptions.ExternalProgram, (s, v) => s.CompareOptions.ExternalProgram = v ?? string.Empty,
+                OperatingSystem.IsWindows() ? "e.g. C:\\Program Files\\<program>\\<program>.exe" : "e.g. /usr/bin/<program>", indent: true),
+            Text(compare, "External program", "Parameters", "%1 is the left file, %2 the right one.", s => s.CompareOptions.ExternalArguments,
+                (s, v) => s.CompareOptions.ExternalArguments = v ?? "\"%1\" \"%2\"", "\"%1\" \"%2\"", indent: true),
 
             Bool(edit, "Lister", "Word wrap in Lister", null, s => s.ListerWrap, (s, v) => s.ListerWrap = v),
             Choice(edit, "Lister", "Place of the Quick View (Ctrl+Q)", "Below or right of the file list, both panels stay; the line between them moves.",

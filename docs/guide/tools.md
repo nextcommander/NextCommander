@@ -223,7 +223,13 @@ two panels.
   them.
 - The strip on the right edge shows every difference in its place in the file (green added, red removed, amber
   changed); a click goes there.
-- **Ignore case** and **Ignore whitespace** compare again at once.
+- **Ignore case** and **Ignore whitespace** compare again at once. The *⋯* menu's *Compare options* also ignore blank
+  lines, line ends (CRLF / LF) or all spaces, mark moved lines (↕), put alike lines side by side and mark the
+  differences by words. These are the settings of Configuration › Operation › **Compare** (*Compare settings...*):
+  they stay for the next window. There also: line filters (a difference whose lines all match a regular expression is
+  shown faintly and not visited, e.g. `^\s*//` for comment lines), substitutions (e.g. version numbers counted as
+  equal), the font, a backup (`name.bak`) at the first save, and an external diff / merge program that
+  *Compare by content* opens instead for two local files.
 - Both sides are edited in place: type in either file and the two are compared again after a short
   pause. The hatched lines stand for lines of the other file and cannot be typed on.
 - **Copy a difference to the other side**: Alt+→ (left to right) / Alt+← (right to left), the arrow buttons of the

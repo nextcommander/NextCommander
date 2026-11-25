@@ -383,7 +383,7 @@ public sealed class DialogService : IDialogService
             var view = new SettingsView(settings, changed, extraActions);
             if (search is not null)
             {
-                view.AttachedToVisualTree += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => view.Search(search));
+                view.AttachedToVisualTree += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() => view.Show(search));
             }
             await main.ShowSettingsAsync(view);
             return;
