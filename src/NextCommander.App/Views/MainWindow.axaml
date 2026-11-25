@@ -310,6 +310,9 @@
         <MenuItem Header="Synchronize directories..." Command="{Binding RunCommandCommand}" CommandParameter="nc_SyncDirs" />
         <MenuItem Header="Folder sizes..." Command="{Binding RunCommandCommand}" CommandParameter="nc_DiskUsage" />
         <Separator />
+        <MenuItem Header="Apply patch..." Command="{Binding RunCommandCommand}" CommandParameter="nc_ApplyPatch" />
+        <MenuItem Header="Merge files..." Command="{Binding RunCommandCommand}" CommandParameter="nc_MergeFiles" />
+        <Separator />
         <MenuItem Header="Rules" Tag="nc_Rules">
           <MenuItem Header="Rules..." Command="{Binding RunCommandCommand}" CommandParameter="nc_Rules" />
           <MenuItem Header="Carry out the rules now" Command="{Binding RunCommandCommand}" CommandParameter="nc_RunRules" />
@@ -324,8 +327,6 @@
         <MenuItem x:Name="ScriptsMenu" Header="Scripts" Tag="nc_RunScript">
           <MenuItem Header="Run script..." Command="{Binding RunCommandCommand}" CommandParameter="nc_RunScript" />
         </MenuItem>
-        <MenuItem Header="Apply patch..." Command="{Binding RunCommandCommand}" CommandParameter="nc_ApplyPatch" />
-        <MenuItem Header="Merge files..." Command="{Binding RunCommandCommand}" CommandParameter="nc_MergeFiles" />
       </MenuItem>
       <MenuItem x:Name="StartMenuRoot" Header="_Start">
         <MenuItem Header="Change start menu..." Command="{Binding RunCommandCommand}" CommandParameter="nc_ConfigStartMenu" />
