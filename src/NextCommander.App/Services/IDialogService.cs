@@ -173,6 +173,9 @@ public interface IDialogService
     /// <summary>Alt+Down: the folder history (pins, sections, drives; open here, in the other panel or a new tab).</summary>
     Task ShowFolderHistoryAsync(Views.Dialogs.FolderHistoryRequest request);
 
+    /// <summary>The most frequently used folders (nc_FrequentDirectories): search, open, remove from the list.</summary>
+    Task ShowFrequentFoldersAsync(Views.Dialogs.FrequentFoldersRequest request);
+
     /// <summary>Help > System information: the program, the system and the drives; "open folder" shows the settings folder.</summary>
     Task ShowSystemInfoAsync(Views.Dialogs.SystemInfo info, Func<Task> openSettingsFolder);
 

@@ -38,6 +38,9 @@ public sealed class ButtonDefinition
 
     public List<ButtonDefinition>? Menu { get; set; }
 
+    /// <summary>A user command made by recording a macro (Tools > Macros lists these).</summary>
+    public bool IsMacro { get; set; }
+
     public bool IsSeparator => Command == "-";
 
     public bool IsMenu => Menu is { Count: > 0 };
