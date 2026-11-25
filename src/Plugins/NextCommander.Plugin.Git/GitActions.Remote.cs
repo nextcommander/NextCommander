@@ -164,10 +164,17 @@ public sealed partial class GitActions
         {
             return null;
         }
-        // both sides of the file, as git shows a conflict
-        var diff = await Git.RunAsync(repository, ["diff", "--no-color", "--", chosen], ct).ConfigureAwait(false);
-        await dialogs.ShowTextAsync(Path.GetFileName(chosen) + ".diff", diff).ConfigureAwait(false);
-        return null;
+        // the merge window of the program: a side for each conflict; resolved and saved, the file is staged
+        var path = Path.Combine(repository, chosen.Replace('/', Path.DirectorySeparatorChar));
+        if (await dialogs.ResolveConflictsAsync(path).ConfigureAwait(false))
+        {
+            await Git.RunAsync(repository, ["add", "--", chosen], ct).ConfigureAwait(false);
+            var left = await ConflictedAsync(repository, ct).ConfigureAwait(false);
+            return left.Count == 0
+                ? $"{chosen} is resolved and staged. No conflicts left: Git: Finish merge makes the merge commit."
+                : $"{chosen} is resolved and staged. Still conflicted: {string.Join(", ", left.Take(8))}.";
+        }
+        return null; // closed without resolving it all: still conflicted
     }
 
     internal async Task<string?> FinishMergeAsync(string repository, CancellationToken ct)

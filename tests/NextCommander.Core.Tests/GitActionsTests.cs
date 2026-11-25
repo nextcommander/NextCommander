@@ -52,6 +52,23 @@ public sealed class GitActionsTests : IDisposable
             Shown.Add((fileName, text));
             return Task.CompletedTask;
         }
+
+        /// <summary>The files given to the merge window, with their text then.</summary>
+        public List<(string Path, string Text)> Merged { get; } = [];
+
+        /// <summary>What the merge window saves (null: closed without resolving).</summary>
+        public string? Resolution { get; set; }
+
+        public Task<bool> ResolveConflictsAsync(string path)
+        {
+            Merged.Add((path, File.ReadAllText(path)));
+            if (Resolution is null)
+            {
+                return Task.FromResult(false);
+            }
+            File.WriteAllText(path, Resolution);
+            return Task.FromResult(true);
+        }
     }
 
     private Task<string> Git(params string[] arguments) => _git!.RunAsync(_root, arguments, CancellationToken.None);
@@ -204,18 +221,22 @@ public sealed class GitActionsTests : IDisposable
         Assert.Contains("Conflicts in 1 files: a.txt", message, StringComparison.Ordinal);
         Assert.DoesNotContain("origin/HEAD", dialogs.Offered[^1]);
         Assert.Equal(["Git: Conflicts...", "Git: Finish merge", "Git: Abort merge"], In(mine).Select(a => a.Name).Skip(3));
+        // the conflicted file goes to the merge window; closed unresolved, it stays conflicted
         dialogs.Choices.Enqueue("a.txt");
-        await Run(In(mine), "Git: Conflicts...");
-        Assert.Contains("<<<<<<<", dialogs.Shown[^1].Text, StringComparison.Ordinal);
+        Assert.Null(await Run(In(mine), "Git: Conflicts..."));
+        Assert.EndsWith("a.txt", dialogs.Merged[^1].Path, StringComparison.Ordinal);
+        Assert.Contains("<<<<<<<", dialogs.Merged[^1].Text, StringComparison.Ordinal);
         Assert.Contains("Still conflicted: a.txt", await Run(In(mine), "Git: Finish merge"), StringComparison.Ordinal);
         await Run(In(mine), "Git: Abort merge");
         Assert.False(GitActions.IsMerging(mine));
         Assert.Equal("main", File.ReadAllText(Path.Combine(mine, "a.txt")).Trim());
 
+        // resolved in the merge window: staged at once
         dialogs.Choices.Enqueue("topic");
         await Run(In(mine), "Git: Merge branch...");
-        File.WriteAllText(Path.Combine(mine, "a.txt"), "both\n");
-        await Run(git.ActionsFor(VfsPath.Local(mine), [Entry(Path.Combine(mine, "a.txt"))], dialogs), "Git: Stage");
+        dialogs.Choices.Enqueue("a.txt");
+        dialogs.Resolution = "both\n";
+        Assert.Contains("a.txt is resolved and staged. No conflicts left", await Run(In(mine), "Git: Conflicts..."), StringComparison.Ordinal);
         await Run(In(mine), "Git: Finish merge");
         Assert.False(GitActions.IsMerging(mine));
         Assert.Equal(2, (await GitIn(mine, "log", "-1", "--format=%P")).Trim().Split(' ').Length); // a merge commit

@@ -45,6 +45,8 @@
   "Git.GitError": "git: {0}",
   "Git.GitFailed": "git ist fehlgeschlagen.",
   "Git.HistoryTitle": "Git: {0}",
+  "Git.IsResolvedAndStagedNo": "{0} ist gelöst und vorgemerkt. Keine Konflikte mehr: Git: Zusammenführung abschließen erstellt den Merge-Commit.",
+  "Git.IsResolvedAndStagedStill": "{0} ist gelöst und vorgemerkt. Noch im Konflikt: {1}.",
   "Git.MergeBranch": "Git: Branch zusammenführen...",
   "Git.MergeInto": "Git: In {0} zusammenführen",
   "Git.MergeStopped": "Die Zusammenführung wurde angehalten. Git: Zusammenführung abschließen oder Git: Zusammenführung abbrechen.",

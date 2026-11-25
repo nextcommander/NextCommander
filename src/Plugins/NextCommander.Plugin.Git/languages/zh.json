@@ -45,6 +45,8 @@
   "Git.GitError": "git：{0}",
   "Git.GitFailed": "git 执行失败。",
   "Git.HistoryTitle": "Git：{0}",
+  "Git.IsResolvedAndStagedNo": "{0} 已解决并暂存。没有剩余冲突：Git：完成合并 会创建合并提交。",
+  "Git.IsResolvedAndStagedStill": "{0} 已解决并暂存。仍有冲突：{1}。",
   "Git.MergeBranch": "Git：合并分支...",
   "Git.MergeInto": "Git：合并到 {0}",
   "Git.MergeStopped": "合并已停止。请使用 Git：完成合并 或 Git：中止合并。",

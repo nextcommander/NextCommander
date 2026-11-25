@@ -45,6 +45,8 @@
   "Git.GitError": "git: {0}",
   "Git.GitFailed": "git başarısız oldu.",
   "Git.HistoryTitle": "Git: {0}",
+  "Git.IsResolvedAndStagedNo": "{0} çözüldü ve hazırlandı. Çakışma kalmadı: Git: Birleştirmeyi bitir birleştirme commit'ini yapar.",
+  "Git.IsResolvedAndStagedStill": "{0} çözüldü ve hazırlandı. Hâlâ çakışmalı: {1}.",
   "Git.MergeBranch": "Git: Dal birleştir...",
   "Git.MergeInto": "Git: {0} dalına birleştir",
   "Git.MergeStopped": "Birleştirme durdu. Git: Birleştirmeyi bitir ya da Git: Birleştirmeyi iptal et.",

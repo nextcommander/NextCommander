@@ -349,6 +349,13 @@ public sealed class DialogService : IDialogService
         await dialog.ShowDialog(DialogOwner());
     }
 
+    public async Task<bool> ShowMergeAsync(VfsEntry output, Views.Tools.MergeSources? sources, ToolContext context)
+    {
+        var window = new Views.Tools.MergeWindow(output, sources, context);
+        await window.ShowDialog(DialogOwner());
+        return window.Resolved;
+    }
+
     public async Task ShowMacrosAsync(MacrosRequest request)
     {
         var dialog = new MacrosDialog(request);
