@@ -7,6 +7,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
@@ -89,6 +90,7 @@ public sealed class DocScreenshots
             await ToolWindowsAsync();
             await SettingsAsync();
             await DialogsAsync();
+            await NewScreensAsync();
         }
         finally
         {
@@ -710,6 +712,135 @@ public sealed class DocScreenshots
     // ------------------------------------------------------------------ composing a tool window over the main window
 
     /// <summary>The main window, dimmed a little, with the tool window in the middle: a title bar, a frame and a shadow.</summary>
+    // ------------------------------------------------------------------ the screens of 23 - 25 November 2026
+
+    /// <summary>A tool window over the main window (as <see cref="ToolWindowsAsync"/> does).</summary>
+    private async Task ShotAsync(Bitmap background, Window tool, string name, double width, double height, Func<Task>? prepare = null)
+    {
+        tool.Width = width;
+        tool.Height = height;
+        _windows.Add(tool);
+        tool.Show();
+        await SettleAsync(6);
+        if (prepare is not null)
+        {
+            await prepare();
+        }
+        await SettleAsync(6);
+        Save(Compose(background, tool.CaptureRenderedFrame()!, tool.Title ?? string.Empty), name);
+        tool.Close();
+    }
+
+    private async Task NewScreensAsync()
+    {
+        var site = D("Projects", "Website");
+        var (w, vm) = await OpenAsync(site, D("Backup", "Website 2026-10"));
+        Cursor(vm.Left, "README.md");
+        await SettleAsync();
+
+        // the command palette (Ctrl+Shift+P) with a word typed
+        w.OpenCommandPalette("copy");
+        await SettleAsync(10);
+        Save(w, "command-palette.png");
+        w.Palette!.Close();
+        await SettleAsync(3);
+
+        // the Quick View right of the file list (both panels stay)
+        await vm.Left.NavigateAsync(VfsPath.Local(D("Photos", "Holiday 2026")));
+        Cursor(vm.Left, "IMG_0421.png");
+        vm.Settings.QuickViewPlacement = QuickViewPlacement.Right;
+        await vm.ExecuteAsync("nc_QuickView");
+        await SettleAsync(4);
+        await w.LoadQuickViewAsync();
+        if (w.QuickView?.Loading is { } loading)
+        {
+            await loading;
+        }
+        await SettleAsync(10);
+        Save(w, "quick-view-right.png");
+        await vm.ExecuteAsync("nc_QuickView");
+        vm.Settings.QuickViewPlacement = QuickViewPlacement.OtherPanel;
+        await vm.Left.NavigateAsync(VfsPath.Local(site));
+        Cursor(vm.Left, "README.md");
+        await SettleAsync(6);
+        var background = w.CaptureRenderedFrame()!;
+
+        // restore settings from a backup: a configuration of an older start, the user's own backup (pinned), the settings now
+        var store = new SettingsStore(Path.Combine(_temp, "restore-sample"));
+        var older = new AppSettings { PanelFontSize = 11, ColorThemeFile = "dark" };
+        older.Hotlist.Add(new HotlistEntry { Name = "Projects/Website", Path = site });
+        older.Connections.Add(new RemoteConnection { Name = "Web server", Protocol = RemoteProtocol.Sftp, Host = "server.example.com", User = "user" });
+        older.Connections.Add(new RemoteConnection { Name = "NAS", Protocol = RemoteProtocol.Smb, Host = "nas.local", User = "user" });
+        older.Hotkeys["Ctrl+Alt+U"] = "nc_Exchange";
+        store.Save(older);
+        store.Load();
+        var current = new AppSettings { PanelFontSize = 13 };
+        current.Connections.Add(new RemoteConnection { Name = "Web server", Protocol = RemoteProtocol.Sftp, Host = "server2.example.com", User = "user" });
+        store.Save(current);
+        var mine = store.BackupNow("Before theme experiment")!;
+        store.SetPinned(mine, true);
+        var backups = store.Backups();
+        for (var i = 0; i < backups.Count; i++)
+        {
+            File.SetLastWriteTime(backups[i], s_time.AddDays(-i).AddHours(-i * 3)); // times of the samples, not of this run
+        }
+        var restore = new RestoreBackupsWindow(new RestoreBackupsRequest(store, current, _ => Task.FromResult<string?>(null), () => { }));
+        await ShotAsync(background, restore, "restore-backups.png", 1100, 720, async () =>
+        {
+            restore.Select(restore.Shown[^1].Path);
+            await SettleAsync(4);
+        });
+
+        // the permissions of a Windows folder (sample rules; the signed-in user's effective access left out)
+        var photos = new LocalEntryReader().Read(D("Photos", "Holiday 2026"));
+        var acl = new FilePermissions
+        {
+            Kind = PermissionKind.Acl,
+            Owner = @"BUILTIN\Administrators",
+            Acl =
+            [
+                new AclEntry("Everyone", true, AclRights.ReadAndExecute) { Mask = AclMask.ReadAndExecute },
+                new AclEntry(@"BUILTIN\Administrators", true, AclRights.FullControl, Inherited: true) { Mask = AclMask.FullControl },
+                new AclEntry(@"NT AUTHORITY\SYSTEM", true, AclRights.FullControl, Inherited: true) { Mask = AclMask.FullControl },
+                new AclEntry(@"NT AUTHORITY\Authenticated Users", true, AclRights.Modify, Inherited: true) { Mask = AclMask.Modify },
+                new AclEntry(@"BUILTIN\Users", true, AclRights.ReadAndExecute, Inherited: true) { Mask = AclMask.ReadAndExecute },
+            ],
+        };
+        var permissions = new AclPermissionsWindow(photos, acl);
+        await ShotAsync(background, permissions, "permissions.png", 1100, 720, async () =>
+        {
+            permissions.Select(permissions.Rules[0].Id);
+            await SettleAsync(4);
+            foreach (var effective in permissions.GetVisualDescendants().OfType<Border>().Where(b => Equals(b.Tag, "effective")))
+            {
+                effective.IsVisible = false;
+            }
+        });
+
+        // the metadata of a photo in the Lister (key 6: the viewers plugin's view next to the picture)
+        var photo = D("Photos", "galata.jpg");
+        File.WriteAllBytes(photo, ViewersPluginTests.PhotoWithExif());
+        File.SetLastWriteTime(photo, s_time);
+        var plugin = new NextCommander.Core.Plugins.LoadedPlugin { Folder = _temp };
+        plugin.Viewers.Add(new NextCommander.Plugin.Viewers.ImageMetadataViewer());
+        NextCommander.Core.Plugins.PluginCatalog.Add(plugin);
+        try
+        {
+            var lister = new ListerWindow(new ListerRequest([new LocalEntryReader().Read(photo)], 0, vm.Tools));
+            await ShotAsync(background, lister, "picture-metadata.png", 1200, 800, async () =>
+            {
+                await WaitUntilAsync(() => lister.View.Entry is not null && lister.View.Loading is { IsCompleted: true });
+                Press(lister, Key.D6);
+                await WaitUntilAsync(() => lister.View.PreviewHtml is not null);
+                await SettleAsync(8);
+            });
+        }
+        finally
+        {
+            NextCommander.Core.Plugins.PluginCatalog.Clear();
+        }
+    }
+
     private static Bitmap Compose(Bitmap background, Bitmap window, string title, bool dark = false)
     {
         const double bar = 34;

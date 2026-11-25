@@ -81,6 +81,8 @@ line between the list and the view can be dragged. The place is kept (*Configura
 
 ![Quick View](../screenshots/quick-view.png)
 
+![Quick View right of the file list](../screenshots/quick-view-right.png)
+
 ## Command palette (Ctrl+Shift+P)
 
 Ctrl+Shift+P (Commands > Command palette...) dims the window and opens a box at its top. Type a few words: it finds
@@ -99,6 +101,8 @@ most, then a part of it, then its letters in order (`nmk` finds *nc_MkDir*); a s
 - **Keys:** ↑ / ↓ choose, Enter runs; for a folder Ctrl+Enter opens it in a new tab and Shift+Enter in the other panel;
   for a connection Ctrl+E edits it; for a command Ctrl+C copies its name and Ctrl+K opens *Commands and shortcuts* at it
   to change its key. Esc clears the text, then closes; a click on the dimmed window closes too.
+
+![Command palette](../screenshots/command-palette.png)
 
 ## Undo (Ctrl+Z)
 
@@ -389,6 +393,9 @@ panel is next to it, *Folder...* scans another folder (chosen in the folder tree
     (*Change*, needs administrator rights), and the effective access of the signed-in user.
   - *Also replace on all subfolders and files* makes everything inside lose its own rules and take the folder's.
     Nothing changes before *Apply*; *Reset* undoes the edits.
+
+  ![Windows permissions](../screenshots/permissions.png)
+
 - **Properties...** (Alt+Enter): on Windows the Explorer properties window; elsewhere NextCommander's own window
   with dates, attributes, Unix permissions and the folder size.
 - **Calculate occupied space...** (Ctrl+L): total size and file and folder count of the selection.
