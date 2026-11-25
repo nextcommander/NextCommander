@@ -276,6 +276,10 @@ list asks which one is the ancestor): the changes made on only one side are merg
 sides changed differently are **conflicts**, marked in the result as git marks them. Or place the cursor on a file with
 conflict markers (a git merge that stopped) to resolve them in place.
 
+With **two** marked files (or a file under the cursor of each panel) it opens the compare window: without a common
+ancestor nothing tells which side changed a line, so each difference is copied to the other side by hand (Alt+← /
+Alt+→), both sides can be edited, and *Save* writes them.
+
 - The bar says how many conflicts are left. ↑ / ↓ (Alt+↑ / Alt+↓) go from change to change ("Change 2 of 4"),
   **Next conflict** (F8) to the next one not resolved yet.
 - The three files are shown block by block, aligned (the lines a side has not are hatched): changes of the left side
