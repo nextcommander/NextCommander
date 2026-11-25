@@ -349,6 +349,12 @@ public sealed class DialogService : IDialogService
         await dialog.ShowDialog(DialogOwner());
     }
 
+    public async Task ShowMacrosAsync(MacrosRequest request)
+    {
+        var dialog = new MacrosDialog(request);
+        await dialog.ShowDialog(DialogOwner());
+    }
+
     public async Task ShowSystemInfoAsync(SystemInfo info, Func<Task> openSettingsFolder)
     {
         var dialog = new SystemInfoDialog(info, openSettingsFolder);

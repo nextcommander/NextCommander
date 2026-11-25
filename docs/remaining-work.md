@@ -348,9 +348,10 @@ Connections and cloud
 Automation and extending
 - [x] Macro recording (Commands > Record macro; 24 November 2026): the commands run from menus, keys, buttons and the
   command line (only the outer ones: `CommandRegistry.Executing`) saved as a uc_ command.
-- [x] Macros listed and deleted (user's request, 25 November 2026): Tools > Macros (the macros, `ButtonDefinition.IsMacro`
-  or an older one's "Macro: " tooltip), nc_Macros (run / delete), nc_DeleteMacro (the uc_ command, its keys and buttons;
-  `CommandRegistry.Unregister`).
+- [x] Macros listed and deleted (user's request, 25 November 2026): Tools > Macros (Record macro at its top, the macros:
+  `ButtonDefinition.IsMacro` or an older one's "Macro: " tooltip), nc_Macros (`Views/Dialogs/MacrosDialog` after the
+  user's template: search, steps, copy the command ID, delete asked in the window), nc_DeleteMacro (the uc_ command, its
+  keys and buttons; `CommandRegistry.Unregister`). Command palette first in the Commands menu.
 - [x] Most frequently used folders after the user's template (25 November 2026): `Views/Dialogs/FrequentFoldersDialog`
   (search with the letters in order, rank, kind icon, score bar, Del with Undo through `FrequentDirectories.Restore`,
   Enter / Shift+Enter / Ctrl+Enter, a typed path when nothing matches).

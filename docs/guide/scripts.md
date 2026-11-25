@@ -5,18 +5,19 @@ as columns of the file list, or as file systems (places opened in a panel).
 
 ## Macros
 
-1. **Tools > Record macro** starts recording. The window title starts with ● while it records.
+1. **Tools > Macros > Record macro** starts recording. The window title starts with ● while it records.
 2. Use the program as usual. Every command run from a menu, a key, a button or the command line is noted.
    Moving the cursor or typing in a dialog is not a command and is not recorded.
-3. **Tools > Record macro** again stops. Give the macro a name: it is saved as the user command `uc_<name>`.
+3. **Tools > Macros > Record macro** again stops. Give the macro a name: it is saved as the user command `uc_<name>`.
 
 Give the macro a key in **Configuration > Commands and shortcuts**, or a button with the button bar's editor. A macro
 is a list of commands separated by commas, so a command whose parameter contains a comma cannot be part of it; the
 program says how many were left out.
 
-**Tools > Macros** lists the recorded macros (with their keys; a click runs one). **Macros...** at its end opens
-the list: Enter runs the macro, **Delete** deletes it after asking, together with its keys and its buttons on the
-button bars.
+**Tools > Macros** lists the recorded macros below Record macro (with their keys; a click runs one). **Macros...** at
+its end opens the macros window: search by name, command or step; the selected macro's command ID (to copy) and its
+steps in order on the right. Enter runs the macro; **Delete** asks in the window (Keep / Delete) and deletes it,
+together with its keys and its buttons on the button bars.
 
 ## Scripts as commands
 
