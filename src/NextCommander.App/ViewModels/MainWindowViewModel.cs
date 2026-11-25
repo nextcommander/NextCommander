@@ -1745,8 +1745,6 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
 
     // ---------------------------------------------------------------- lists: history, frequent, tabs, hotlist, commands
 
-    private static readonly string[] s_historyActions = ["Open in other panel", "Open in new tab", "Remove from list"];
-
     /// <summary>Alt+Down: the folder history window (sections, pins, drives, open in the other panel / a new tab).</summary>
     private async Task ShowHistoryAsync()
     {
@@ -1780,32 +1778,41 @@ public sealed partial class MainWindowViewModel : ObservableObject, IDisposable
         return drive?.Name ?? "/";
     }
 
+    /// <summary>Alt+Shift+Down: the most frequently used folders (the user's template, 25 November 2026).</summary>
     private async Task ShowFrequentAsync()
     {
-        var items = _frequent.Top(Math.Max(1, _settings.FrequentMaxShown), DateTime.Now)
-            .Select(f => new QuickListItem(VfsPath.TryParse(f.Path, out var p) ? p!.ToDisplayString() : f.Path,
-                f.Score.ToString("0.0", System.Globalization.CultureInfo.CurrentCulture), f.Path))
-            .ToList();
-        var result = await _dialogs.ShowQuickListAsync("Most frequently used folders", items, s_historyActions);
-        if (result?.Item.Value is not string raw || !VfsPath.TryParse(raw, out var path))
+        var folders = _frequent.Top(Math.Max(1, _settings.FrequentMaxShown), DateTime.Now)
+            .Select(f => new Views.Dialogs.FrequentFolder(f.Path, f.Score)).ToList();
+        var panel = ActivePanel;
+        Func<string, Task> To(Func<VfsPath, Task> go) => async text =>
         {
-            return;
-        }
-        switch (result.Action)
-        {
-            case 0:
-                await OtherPanel.NavigateAsync(path!);
-                break;
-            case 1:
-                await ActiveSide.OpenTabAsync(path);
-                break;
-            case 2:
+            // a folder of the list, or what was typed when nothing matched (a path as the path line takes it)
+            if (VfsPath.TryParse(text, out var path) && path is not null)
+            {
+                await go(path);
+            }
+            else
+            {
+                await _dialogs.ShowMessageAsync("Most frequently used folders", $"Not a folder: {text}");
+            }
+        };
+        var request = new Views.Dialogs.FrequentFoldersRequest(folders,
+            To(path => panel.NavigateAsync(path)), To(path => OtherPanel.NavigateAsync(path)), To(path => ActiveSide.OpenTabAsync(path)),
+            raw =>
+            {
+                if (_frequent.Find(raw) is not { } record)
+                {
+                    return null;
+                }
                 _frequent.Remove(raw);
-                break;
-            default:
-                await ActivePanel.NavigateAsync(path!);
-                break;
-        }
+                SaveSettings();
+                return () =>
+                {
+                    _frequent.Restore(record);
+                    SaveSettings();
+                };
+            });
+        await _dialogs.ShowFrequentFoldersAsync(request);
     }
 
     /// <summary>

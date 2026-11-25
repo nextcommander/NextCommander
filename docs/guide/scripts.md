@@ -14,6 +14,10 @@ Give the macro a key in **Configuration > Commands and shortcuts**, or a button 
 is a list of commands separated by commas, so a command whose parameter contains a comma cannot be part of it; the
 program says how many were left out.
 
+**Tools > Macros** lists the recorded macros (with their keys; a click runs one). **Macros...** at its end opens
+the list: Enter runs the macro, **Delete** deletes it after asking, together with its keys and its buttons on the
+button bars.
+
 ## Scripts as commands
 
 Scripts are the `.js` files of the `scripts` folder in the [settings folder](settings-folder.md).

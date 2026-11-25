@@ -59,6 +59,15 @@ public sealed class FrequentDirectories
 
     public void Remove(string path) => _items.RemoveAll(i => string.Equals(i.Path, path, StringComparison.Ordinal));
 
+    /// <summary>A record removed a moment ago comes back as it was (Undo in the list of frequent folders).</summary>
+    public void Restore(FrequentDirectory item)
+    {
+        if (Find(item.Path) is null)
+        {
+            _items.Add(item);
+        }
+    }
+
     public IReadOnlyList<(string Path, double Score)> Top(int count, DateTime now) =>
         _items.Select(i => (i.Path, Score: Decayed(i, now)))
             .Where(i => i.Score >= 0.5)

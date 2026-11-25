@@ -348,6 +348,12 @@ Connections and cloud
 Automation and extending
 - [x] Macro recording (Commands > Record macro; 24 November 2026): the commands run from menus, keys, buttons and the
   command line (only the outer ones: `CommandRegistry.Executing`) saved as a uc_ command.
+- [x] Macros listed and deleted (user's request, 25 November 2026): Tools > Macros (the macros, `ButtonDefinition.IsMacro`
+  or an older one's "Macro: " tooltip), nc_Macros (run / delete), nc_DeleteMacro (the uc_ command, its keys and buttons;
+  `CommandRegistry.Unregister`).
+- [x] Most frequently used folders after the user's template (25 November 2026): `Views/Dialogs/FrequentFoldersDialog`
+  (search with the letters in order, rank, kind icon, score bar, Del with Undo through `FrequentDirectories.Restore`,
+  Enter / Shift+Enter / Ctrl+Enter, a typed path when nothing matches).
 - [x] Scripting (24 November 2026): JavaScript commands (`scripts/*.js`, nc_RunScript, Commands > Scripts; the `nc`
   object of `Services/ScriptRunner`) and columns (`scripts/columns/*.js`, `Core/Scripting/ScriptColumnProvider`);
   docs/guide/scripts.md.

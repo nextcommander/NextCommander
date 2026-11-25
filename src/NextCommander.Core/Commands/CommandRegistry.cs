@@ -35,6 +35,9 @@ public sealed class CommandRegistry
             return Task.CompletedTask;
         });
 
+    /// <summary>Takes a command away (a deleted macro or user command); false when there was none.</summary>
+    public bool Unregister(string name) => _commands.Remove(LegacyNames.Command(name));
+
     public bool Contains(string name) => _commands.ContainsKey(LegacyNames.Command(name));
 
     public bool TryGet(string name, out CommandDefinition? command) => _commands.TryGetValue(LegacyNames.Command(name), out command);

@@ -438,6 +438,14 @@ internal sealed class FakeDialogs : IDialogService
         return Task.CompletedTask;
     }
 
+    public NextCommander.App.Views.Dialogs.FrequentFoldersRequest? LastFrequentFolders { get; private set; }
+
+    public Task ShowFrequentFoldersAsync(NextCommander.App.Views.Dialogs.FrequentFoldersRequest request)
+    {
+        LastFrequentFolders = request;
+        return Task.CompletedTask;
+    }
+
     public Task ShowSystemInfoAsync(NextCommander.App.Views.Dialogs.SystemInfo info, Func<Task> openSettingsFolder)
     {
         LastSystemInfo = info;
