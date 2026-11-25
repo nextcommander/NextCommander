@@ -106,18 +106,17 @@ public sealed class CompareWindowTests : IDisposable
         Click(Find<ToggleButton>(window, "Side by side"));
         Assert.False(window.IsInline);
 
-        // edit both files: the right one made equal to the left one, compared again
-        Click(Find<ToggleButton>(window, "Edit both files"));
-        await SettleAsync();
-        Assert.True(window.IsEditing);
+        // both sides are edited in place; every difference copied to the right makes them match
         var editors = window.GetLogicalDescendants().OfType<TextEditor>().Where(e => !e.IsReadOnly).ToList();
         Assert.Equal(2, editors.Count);
-        editors[1].Text = editors[0].Text;
-        Click(Find<Button>(window, "Compare again (F5)"));
-        await WaitUntilAsync(() => !window.IsEditing && window.Comparing is { IsCompleted: true });
+        await window.CopyAllAsync(toRight: true);
         Assert.Equal(0, window.BlockCount);
+        Assert.True(window.RightModified);
+        Click(Find<Button>(window, "Compare again (F5)"));
+        await WaitUntilAsync(() => window.Comparing is { IsCompleted: true });
         Assert.Equal("0 / 0", window.CounterText);
         Assert.Equal("Compared · files match", window.LastToast);
+        window.AskSaveOnClose = _ => Task.FromResult(Views.Editor.SaveChoice.Discard);
     }
 
     private static void Shot(Window window, string name)

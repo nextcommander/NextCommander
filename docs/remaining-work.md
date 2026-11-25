@@ -211,7 +211,11 @@ The plan in phases: [docs/plans/compare-merge.md](plans/compare-merge.md).
   (`DiffLine.MovedTo`), word level in-line differences (`InlineLevel.Word`), `TextDiff.Blocks` / `Hunks`, `DiffMerge`
   (copy differences to the other side), `ThreeWayDiff` (diff3 chunks, merge with conflict markers), `UnifiedDiff`
   (patch written, read, applied with moved hunks found, rejected hunks reported). Tests: `TextDiffTests`.
-- [ ] Phase 2: editing, copying differences and saving in the compare window.
+- [x] Phase 2: the compare window edits both sides in place (`CompareWindow.Merge.cs`: filler lines kept by
+  `FillerGuard`, compared again 400 ms after typing with the caret kept, stale results dropped), copies differences
+  (Alt+→ / Alt+←, the bar, the margin arrows, all at once), undo / redo of both sides, saves with each file's encoding,
+  BOM and line ends (`CompareWindow.Sides.cs`; the format menu of each side), asks on closing, reloads a file changed
+  elsewhere, swaps the sides, chooses another file, Find / Go to line. Tests: `CompareMergeTests`.
 - [ ] Phase 3: compare settings (options kept, filters, colors, font, an external compare program).
 - [ ] Phase 4: the folder compare window (folder results, file difference, back); Synchronize directories is merged
   into it (the user's choice, 25 November 2026).
