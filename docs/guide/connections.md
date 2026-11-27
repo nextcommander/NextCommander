@@ -25,7 +25,7 @@ Supported types:
 | Android over ADB | Phones with USB debugging on (also when MTP is not available) |
 | PC link | Another computer running NextCommander, over a USB or Ethernet cable or the network: see [PC link](#pc-link) |
 | rclone remotes | Every remote you set up with `rclone config` (70+ services); the rclone plugin shipped with the program |
-| Remote desktop (RDP) | The desktop of a Windows computer (or a Linux one with xrdp), in a tab of NextCommander or the system's RDP client: see [Remote sessions](#remote-sessions-rdp-vnc-ssh-telnet-rsh) |
+| Remote desktop (RDP) | The desktop of a Windows computer (or a Linux one with xrdp), in a tab of NextCommander or the system's RDP client: see [Remote sessions](#remote-sessions-rdp-vnc-ssh-telnet-rsh-serial-port) |
 | VNC | The screen of another computer (any system with a VNC server), in a VNC viewer |
 | SSH | A shell on a server in the internal terminal |
 | Telnet | A text session in the internal terminal (routers, switches, old systems) |

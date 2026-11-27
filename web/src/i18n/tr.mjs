@@ -12,11 +12,12 @@ export default {
     connections: { title: "Sunucular, bulutlar ve cihazlar — NextCommander", description: "FTP, SFTP, SMB, WebDAV, S3, Azure, Google Drive, OneDrive, Dropbox, Box, Docker, Kubernetes, telefonlar, RDP, SSH ve dahası, yerel dosyalarınızla aynı panellerde." },
     plugins: { title: "Eklentiler — NextCommander", description: "Git, Docker, Kubernetes, SQLite, rclone, GitHub ve GitLab, sanal diskler, paketler ve görüntüleyiciler eklenti olarak gelir. Kendi eklentinizi C# ile yazın." },
     download: { title: "İndir — NextCommander", description: "NextCommander'ı Windows, Linux veya macOS için indirin; x64 ve Arm. Kendi içinde eksiksiz paketler, taşınabilir zip; başka hiçbir şey kurmanız gerekmez." },
+    guide: { title: "Rehber — NextCommander", description: "NextCommander rehberi: başlarken, klavye kısayolları, araçlar, arşivler, bağlantılar, yapılandırma, temalar, betikler ve eklentiler." },
     faq: { title: "Sorular ve yanıtlar — NextCommander", description: "NextCommander'ın kurulumu, ayarları, bağlantıları, güvenliği, dilleri ve eklentileri hakkında yanıtlar." },
   },
 
   nav: {
-    "": "Ana sayfa", features: "Özellikler", connections: "Bağlantılar", plugins: "Eklentiler", download: "İndir", faq: "SSS",
+    "": "Ana sayfa", features: "Özellikler", connections: "Bağlantılar", plugins: "Eklentiler", guide: "Rehber", download: "İndir", faq: "SSS",
     skip: "İçeriğe geç", menu: "Menü", theme: "Açık veya koyu", language: "Dil", github: "GitHub",
   },
 
@@ -125,7 +126,7 @@ export default {
         ],
       },
       {
-        id: "viewer", icon: "eye", title: "Görüntüleyici ve düzenleyici", shot: "lister.png", guide: "tools",
+        id: "viewer", icon: "eye", title: "Görüntüleyici ve düzenleyici", shot: "lister.png", guide: "tools#lister-f3",
         lead: "Lister (F3) ve Hızlı Görünüm başka bir program olmadan neredeyse her dosyayı gösterir.",
         points: [
           "Sözdizimi renkli metin, ikili ve hex, kamera RAW dahil resimler, ses ve video (VLC kuruluysa).",
@@ -136,7 +137,7 @@ export default {
         ],
       },
       {
-        id: "search", icon: "search", title: "Arama ve araçlar", shot: "find-files.png", guide: "tools",
+        id: "search", icon: "search", title: "Arama ve araçlar", shot: "find-files.png", guide: "tools#find-files-altf7",
         lead: "Aradığınızı bulun, birçok dosyayı birden değiştirin.",
         points: [
           "Dosyaları ada, içeriğe, boyuta, tarihe ve özniteliklere göre bulun — Office ve OpenDocument dosyalarının içinde de.",
@@ -147,7 +148,7 @@ export default {
         ],
       },
       {
-        id: "compare", icon: "diff", title: "Karşılaştırma ve birleştirme", shot: "compare.png", guide: "tools",
+        id: "compare", icon: "diff", title: "Karşılaştırma ve birleştirme", shot: "compare.png", guide: "tools#compare-by-content",
         lead: "Farklar yan yana, yerinde düzenlenir — ayrı bir fark aracı gibi, ama içinde.",
         points: [
           "İki dosya yan yana, farklar kelime düzeyine kadar; blokları karşıya kopyalayın, geri alın, kaydedin.",
@@ -333,6 +334,34 @@ export default {
         ],
       },
     ],
+  },
+
+  guide: {
+    eyebrow: "Rehber",
+    title: "NextCommander rehberi",
+    lead: "İlk açılıştan eklenti yazmaya kadar NextCommander'ı kullanmakla ilgili her şey.",
+    onThisPage: "Bu sayfada",
+    allGuides: "Tüm rehberler",
+    previous: "Önceki",
+    next: "Sonraki",
+    untranslated: "Bu rehber henüz çevrilmedi; İngilizce gösteriliyor.",
+    filter: "Rehberlerde ara",
+    noMatch: "Eşleşen rehber yok.",
+    groups: [["Başlangıç", ["getting-started", "keyboard-shortcuts"]], ["Çalışma", ["tools", "archives", "connections"]], ["Kendinize göre", ["configuration", "themes", "icon-packs", "languages"]], ["Daha ileri", ["scripts", "plugins", "settings-folder"]]],
+    items: {
+      "getting-started": ["Başlarken", "Pencere, gezinme, seçme, temel işlemler, sağ tık, sürükle-bırak, yönetici yetkileri."],
+      "keyboard-shortcuts": ["Klavye kısayolları", "Panellerin, komut satırının ve araçların varsayılan kısayolları ve nasıl değiştirileceği."],
+      tools: ["Araçlar", "Lister, düzenleyici, dosya bulma, çoklu yeniden adlandırma, eşitleme, karşılaştırma ve birleştirme, yinelenenler, klasör boyutları, sağlama toplamları, terminal."],
+      archives: ["Arşivler", "Arşivleri açma, paketleme, çıkarma ve sınama; disk kalıpları, sanal diskler ve paketler."],
+      connections: ["Bağlantılar", "FTP, SFTP, SMB, WebDAV, S3, Azure, bulut sürücüler, telefonlar, PC bağlantısı, RDP, VNC, SSH; vekil sunucular ve kayıtlı parolalar."],
+      configuration: ["Yapılandırma", "Yapılandırma penceresinde sayfa sayfa bir tur."],
+      themes: ["Renk temaları", "Tema seçmek ve tema düzenleyicisiyle kendi temanızı yapmak."],
+      "icon-packs": ["Simge paketleri", "Simge paketi seçmek ve kendi paketinizi yapmak."],
+      languages: ["Diller", "Dili seçmek ve NextCommander'ı çevirmek."],
+      scripts: ["Makrolar ve betikler", "Makro kaydetme; JavaScript komutları, sütunları ve dosya sistemleri."],
+      plugins: ["Eklentiler", "Hazır gelen eklentiler, eklenti kurma ve yönetme, kendi eklentinizi yazma."],
+      "settings-folder": ["Ayarlar klasörü", "Ayarlarınızın yeri, yedekler ve geri yükleme, taşınabilir kip."],
+    },
   },
 
   footer: {

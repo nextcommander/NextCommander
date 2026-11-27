@@ -1,6 +1,7 @@
 // Builds the site into dist/: one folder per language, one index.html per page, the assets, the screenshots,
-// a language-choosing root page, sitemap.xml, robots.txt and 404.html. No dependencies: `node build.mjs`.
-// `node build.mjs --check` builds and then checks every internal link and picture.
+// the guides (docs/guide, translations in content/guides), a language-choosing root page, sitemap.xml, robots.txt
+// and 404.html. `npm ci` once (marked, for the guides), then `node build.mjs`.
+// `node build.mjs --check` builds and then checks every internal link, anchor and picture.
 
 import { cp, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
@@ -8,7 +9,8 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { languages, pages, siteUrl, defaultLanguage } from "./src/config.mjs";
-import { renderPage, renderRoot, renderNotFound, setShotSizes } from "./src/pages.mjs";
+import { renderPage, renderGuidePage, renderRoot, renderNotFound, setShotSizes } from "./src/pages.mjs";
+import { guideNames, setRepositoryRoot } from "./src/guides.mjs";
 import en from "./src/i18n/en.mjs";
 import tr from "./src/i18n/tr.mjs";
 
@@ -16,6 +18,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, "..");
 const out = join(here, "dist");
 const texts = { en, tr };
+const guidePaths = guideNames.map((name) => `guide/${name}`);
+setRepositoryRoot(repo);
 
 async function main() {
   checkTexts(en, tr);
@@ -57,6 +61,11 @@ async function main() {
       await mkdir(folder, { recursive: true });
       await writeFile(join(folder, "index.html"), html);
     }
+    for (const name of guideNames) {
+      const folder = join(out, lang, "guide", name);
+      await mkdir(folder, { recursive: true });
+      await writeFile(join(folder, "index.html"), renderGuidePage({ lang, t: texts[lang], assets, name }));
+    }
   }
   await writeFile(join(out, "index.html"), renderRoot({ texts, assets }));
   await writeFile(join(out, "404.html"), renderNotFound({ texts, assets }));
@@ -69,13 +78,13 @@ async function main() {
   }, null, 2));
 
   const files = await count(out);
-  console.log(`Built ${languages.length * pages.length} pages (${languages.join(", ")}), ${files} files in ${relative(process.cwd(), out) || "."} for ${siteUrl}`);
+  console.log(`Built ${languages.length * (pages.length + guideNames.length)} pages (${languages.join(", ")}), ${files} files in ${relative(process.cwd(), out) || "."} for ${siteUrl}`);
   if (process.argv.includes("--check")) await checkLinks();
 }
 
 function sitemap() {
   const today = new Date().toISOString().slice(0, 10);
-  const entries = pages.map((page) => languages.map((lang) => {
+  const entries = [...pages, ...guidePaths].map((page) => languages.map((lang) => {
     const alternates = languages.map((other) =>
       `    <xhtml:link rel="alternate" hreflang="${other}" href="${siteUrl}/${other}/${page ? page + "/" : ""}"/>`).join("\n");
     return `  <url>\n    <loc>${siteUrl}/${lang}/${page ? page + "/" : ""}</loc>\n    <lastmod>${today}</lastmod>\n${alternates}\n` +
@@ -112,10 +121,11 @@ async function checkLinks() {
       if (entry.isDirectory()) { await walk(path); continue; }
       if (!entry.name.endsWith(".html")) continue;
       const html = await readFile(path, "utf8");
-      for (const [, url] of html.matchAll(/(?:href|src|srcset)="(\/[^"#?]*)/g)) {
+      for (const [, url, hash] of html.matchAll(/(?:href|src|srcset)="(\/[^"#?]*)(?:#([^"]*))?/g)) {
         let target = join(out, decodeURI(url));
         if (url.endsWith("/")) target = join(target, "index.html");
-        if (!existsSync(target) || (await stat(target)).isDirectory()) problems.push(`${relative(out, path)}: ${url}`);
+        if (!existsSync(target) || (await stat(target)).isDirectory()) { problems.push(`${relative(out, path)}: ${url}`); continue; }
+        if (hash && !(await readFile(target, "utf8")).includes(`id="${hash}"`)) problems.push(`${relative(out, path)}: ${url}#${hash}`);
       }
       for (const [, id] of html.matchAll(/href="#([^"]+)"/g)) {
         if (!html.includes(`id="${id}"`)) problems.push(`${relative(out, path)}: #${id}`);

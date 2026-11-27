@@ -13,4 +13,5 @@ dist/
 .venv/
 tests/servers/host_key
 tests/servers/node_modules/
+web/node_modules/
 __pycache__/
