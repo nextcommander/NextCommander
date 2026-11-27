@@ -104,8 +104,25 @@
     });
   });
 
-  // the features page: the part in view is marked in the list on the left
-  const tocLinks = Array.from(document.querySelectorAll(".toc a"));
+  // the guide list: typing filters the cards
+  const filter = document.getElementById("guide-filter");
+  if (filter) {
+    const cards = Array.from(document.querySelectorAll(".guide-card"));
+    filter.addEventListener("input", () => {
+      const words = filter.value.toLocaleLowerCase().split(/\s+/).filter(Boolean);
+      let shown = 0;
+      cards.forEach((card) => {
+        const match = words.every((w) => card.dataset.search.includes(w));
+        card.hidden = !match;
+        if (match) shown++;
+      });
+      document.querySelectorAll(".guide-group").forEach((group) => { group.hidden = !group.querySelector(".guide-card:not([hidden])"); });
+      document.getElementById("guide-none").hidden = shown > 0;
+    });
+  }
+
+  // the features page and the guides: the part in view is marked in the list beside it
+  const tocLinks = Array.from(document.querySelectorAll(".toc a, .guide-toc a"));
   if (tocLinks.length && "IntersectionObserver" in window) {
     const byId = new Map(tocLinks.map((a) => [a.getAttribute("href").slice(1), a]));
     const spy = new IntersectionObserver((entries) => {

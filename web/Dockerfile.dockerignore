@@ -1,6 +1,7 @@
 # Build context = the repository root; only what the site needs is sent (BuildKit reads this file for web/Dockerfile).
 *
 !docs/screenshots/
+!docs/guide/
 !build/icons/
 !web/
 web/dist/
