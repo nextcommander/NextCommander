@@ -31,7 +31,7 @@
       body: "Every option in one window, with settings backups you can restore part by part." },
   ];
 
-  const list = document.getElementById("features");
+  const list = document.getElementById("features-list");
   const img = document.getElementById("preview-img");
   const title = document.getElementById("preview-title");
   const body = document.getElementById("preview-body");
@@ -75,4 +75,43 @@
   });
 
   select(0);
+
+  // light / dark: the button switches and remembers it
+  const root = document.documentElement;
+  document.getElementById("theme").addEventListener("click", () => {
+    const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+    try { localStorage.setItem("nc-theme", root.dataset.theme); } catch (e) {}
+  });
+
+  // the looks: one screenshot per choice
+  const lookImg = document.getElementById("look-img");
+  document.querySelectorAll(".segmented button").forEach((button) => {
+    new Image().src = "screenshots/" + button.dataset.shot;
+    button.addEventListener("click", () => {
+      document.querySelectorAll(".segmented button").forEach((b) => b.setAttribute("aria-selected", String(b === button)));
+      lookImg.src = "screenshots/" + button.dataset.shot;
+      lookImg.alt = button.textContent;
+    });
+  });
+
+  // the download of the visitor's system stands out
+  const agent = navigator.userAgent;
+  const os = /Windows/i.test(agent) ? "windows" : /Mac/i.test(agent) ? "mac" : /Linux|X11/i.test(agent) ? "linux" : null;
+  const yours = os && document.querySelector(`.platform[data-os="${os}"]`);
+  if (yours) {
+    yours.classList.add("yours");
+    document.getElementById("hero-download").textContent = "Download for " + yours.querySelector("h3").textContent;
+  }
+
+  // the parts appear while scrolling
+  const seen = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("in");
+        seen.unobserve(entry.target);
+      }
+    });
+  }, { rootMargin: "0px 0px -8% 0px" });
+  document.querySelectorAll(".reveal").forEach((element) => seen.observe(element));
 })();
