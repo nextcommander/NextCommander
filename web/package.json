@@ -1,0 +1,13 @@
+{
+  "name": "nextcommander-web",
+  "private": true,
+  "description": "The NextCommander product site in English and Turkish: a static site built without dependencies.",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "node build.mjs",
+    "serve": "node serve.mjs",
+    "start": "node build.mjs && node serve.mjs",
+    "check": "node build.mjs --check"
+  }
+}
