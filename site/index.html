@@ -3,47 +3,71 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NextCommander</title>
+<title>NextCommander — the dual-pane file manager for Windows, Linux and macOS</title>
 <meta name="description" content="A dual-pane file manager for Windows, Linux and macOS, driven from the keyboard: two panels, archives, remote and cloud connections, compare and merge, plugins.">
 <meta property="og:title" content="NextCommander">
 <meta property="og:description" content="A dual-pane file manager for Windows, Linux and macOS, driven from the keyboard.">
-<meta property="og:image" content="screenshots/main-light.png">
+<meta property="og:image" content="screenshots/main-dark.png">
+<meta name="theme-color" content="#0b1020">
 <link rel="icon" type="image/png" href="icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<script>
+  // the theme chosen before (else the system's), set before the page is drawn
+  document.documentElement.classList.add("js");
+  try { const t = localStorage.getItem("nc-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
 </head>
 <body>
 
-<header class="top wrap">
-  <a class="brand" href="#">
-    <img src="icon.png" alt="" width="32" height="32">
-    <span>NextCommander</span>
-  </a>
-  <nav aria-label="Sections">
-    <a href="#tour">Tour</a>
-    <a href="#connections">Connections</a>
-    <a href="#looks">Looks</a>
-    <a href="#download">Download</a>
-  </nav>
+<div class="glow" aria-hidden="true"></div>
+
+<header class="top">
+  <div class="wrap top-row">
+    <a class="brand" href="#">
+      <img src="icon.png" alt="" width="30" height="30">
+      <span>NextCommander</span>
+    </a>
+    <nav aria-label="Sections">
+      <a href="#features">Features</a>
+      <a href="#tour">Tour</a>
+      <a href="#connections">Connections</a>
+      <a href="#looks">Looks</a>
+      <a href="#download">Download</a>
+    </nav>
+    <div class="top-actions">
+      <button class="icon-button" id="theme" type="button" aria-label="Switch between light and dark">
+        <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>
+        <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+      </button>
+      <a class="button small" href="https://github.com/nextcommander/NextCommander">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+        <span>GitHub</span>
+      </a>
+    </div>
+  </div>
 </header>
 
 <main>
   <section class="hero wrap">
-    <h1>Two panels.<br>Every file within a few keys.</h1>
-    <p class="lead">NextCommander is a dual-pane file manager for Windows, Linux and macOS. Copy between the panels
-      with one key, open archives and servers like folders, and keep your hands on the keyboard the whole time.</p>
-    <div class="actions">
-      <a class="button primary" href="https://github.com/nextcommander/NextCommander/releases">Download</a>
-      <a class="button" href="https://github.com/nextcommander/NextCommander/blob/main/docs/guide/getting-started.md">Read the getting started guide</a>
+    <p class="pill reveal">Windows · Linux · macOS · x64 and Arm</p>
+    <h1 class="reveal">Two panels.<br><span class="gradient">Every file within a few keys.</span></h1>
+    <p class="lead reveal">NextCommander is a dual-pane file manager you drive from the keyboard. Copy between the panels with one
+      key, open archives, servers and clouds like folders, compare and merge, and keep your hands where they work.</p>
+    <div class="actions reveal">
+      <a class="button primary" href="#download" id="hero-download">Download</a>
+      <a class="button" href="https://github.com/nextcommander/NextCommander/blob/main/docs/guide/getting-started.md">Getting started guide</a>
     </div>
 
-    <figure class="shot">
-      <img src="screenshots/main-light.png" width="1920" height="1080"
+    <figure class="window reveal">
+      <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i><span>NextCommander</span></div>
+      <img src="screenshots/main-dark.png" width="1920" height="1080" class="dark-only"
            alt="NextCommander with two file panels side by side, tabs, a drive bar and the function key bar at the bottom">
+      <img src="screenshots/main-light.png" width="1920" height="1080" class="light-only" alt="">
     </figure>
-    <ol class="fkeys" aria-label="The function key bar">
+    <ol class="fkeys reveal" aria-label="The function key bar">
       <li><kbd>F3</kbd>View</li>
       <li><kbd>F4</kbd>Edit</li>
       <li><kbd>F5</kbd>Copy</li>
@@ -53,14 +77,91 @@
     </ol>
   </section>
 
+  <section class="stats wrap" aria-label="In numbers">
+    <div class="reveal"><b>25+</b><span>connection types</span></div>
+    <div class="reveal"><b>9</b><span>plugins shipped with it</span></div>
+    <div class="reveal"><b>6</b><span>languages built in</span></div>
+    <div class="reveal"><b>4</b><span>panels at once</span></div>
+  </section>
+
+  <section id="features" class="wrap" aria-labelledby="features-title">
+    <div class="section-head reveal">
+      <p class="eyebrow">Features</p>
+      <h2 id="features-title">Everything a file manager should do, from the keyboard</h2>
+      <p>Built for people who move a lot of files: on their disk, in archives, on servers and in the cloud.</p>
+    </div>
+    <div class="bento">
+      <article class="card wide reveal">
+        <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="8" height="16" rx="2"/><rect x="13" y="4" width="8" height="16" rx="2"/></svg></div>
+        <h3>Two panels, tabs, up to four</h3>
+        <p>Copy, move and compare between the panels with one key. Folder tabs, workspaces, a side split in two, history,
+          a Hotlist and the folders you use most.</p>
+        <img src="screenshots/quick-view-right.png" loading="lazy" width="1920" height="1080" alt="Quick View next to the file list">
+      </article>
+      <article class="card reveal">
+        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/><circle cx="18" cy="16" r="3"/><path d="M20.2 18.2L22 20"/></svg></div>
+        <h3>Command palette</h3>
+        <p>Any command, folder, Hotlist entry or saved connection, found by typing a few letters. <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd></p>
+      </article>
+      <article class="card reveal">
+        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M12 3v18"/></svg></div>
+        <h3>Compare and merge</h3>
+        <p>Files side by side, edited in place; copy differences across, merge three files, make and apply patches,
+          hex, pictures and documents too.</p>
+      </article>
+      <article class="card reveal">
+        <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M10 3v4h4V3M10 11h4M10 15h4"/></svg></div>
+        <h3>Archives and packages</h3>
+        <p>zip, 7z, rar, tar, iso, virtual disks, .deb, .rpm, .msi and container images open like folders.</p>
+      </article>
+      <article class="card reveal">
+        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></div>
+        <h3>Background jobs and undo</h3>
+        <p>Copies run in a queue with pause, speed limit and verification. <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes copy, move,
+          rename and delete to the Recycle Bin, after telling you what it will do.</p>
+      </article>
+      <article class="card wide reveal">
+        <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg></div>
+        <h3>Find, rename, synchronize, measure</h3>
+        <p>Find files by name and content, also inside Office files; rename hundreds of files with a preview; make two
+          folders equal; see where the space went in a treemap; find duplicates.</p>
+        <img src="screenshots/disk-usage.png" loading="lazy" width="1920" height="1080" alt="Folder sizes with a treemap">
+      </article>
+      <article class="card reveal">
+        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M8 9l-4 3 4 3M16 9l4 3-4 3M13 6l-2 12"/></svg></div>
+        <h3>Macros and scripts</h3>
+        <p>Record the commands you run as a command of your own; write commands, columns and file systems in JavaScript.</p>
+      </article>
+      <article class="card reveal">
+        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <h3>Viewer and editor</h3>
+        <p>Text with syntax colors, hex, pictures with camera RAW, audio and video, Markdown, PDF and Office documents
+          without Office; an editor that keeps the file's encoding.</p>
+      </article>
+      <article class="card reveal">
+        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M9 3v4M15 3v4M7 7h10v4a5 5 0 0 1-10 0zM12 16v5"/></svg></div>
+        <h3>Plugins</h3>
+        <p>Git, Docker, Kubernetes, SQLite, rclone, GitHub and GitLab, virtual disks, packages and more viewers ship with
+          it; write your own in C#.</p>
+      </article>
+      <article class="card reveal">
+        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <h3>Safe by default</h3>
+        <p>Settings backups you can restore, a master password for saved secrets, pairing codes for PC link, and a retry
+          with administrator rights when an operation needs it.</p>
+      </article>
+    </div>
+  </section>
+
   <section id="tour" class="tour wrap" aria-labelledby="tour-title">
-    <div class="section-head">
+    <div class="section-head reveal">
+      <p class="eyebrow">Tour</p>
       <h2 id="tour-title">Look around the way you would in the app</h2>
       <p>Move the cursor with <kbd>↑</kbd> <kbd>↓</kbd> or click a line; the right side shows it, like Quick View does.</p>
     </div>
 
-    <div class="panes">
-      <div class="pane list" role="listbox" id="features" tabindex="0" aria-label="Features" aria-activedescendant="f-panels">
+    <div class="panes reveal">
+      <div class="pane list" role="listbox" id="features-list" tabindex="0" aria-label="Features" aria-activedescendant="f-panels">
         <div class="list-head" aria-hidden="true"><span>Name</span><span>Key</span></div>
       </div>
       <article class="pane preview" aria-live="polite">
@@ -73,67 +174,90 @@
     </div>
   </section>
 
-  <section id="connections" class="connections wrap" aria-labelledby="conn-title">
-    <div class="section-head">
+  <section id="connections" class="wrap" aria-labelledby="conn-title">
+    <div class="section-head reveal">
+      <p class="eyebrow">Connections</p>
       <h2 id="conn-title">Servers, clouds and devices in the same panels</h2>
-      <p>A remote folder is a folder: copy to it with <kbd>F5</kbd>, view with <kbd>F3</kbd>, compare it with a local one.
-        Saved connections live in a connection manager with the options of each type.</p>
+      <p>A remote folder is a folder: copy to it with <kbd>F5</kbd>, view with <kbd>F3</kbd>, compare it with a local one.</p>
     </div>
-    <dl class="kinds">
-      <div><dt>File servers</dt><dd>FTP, FTPS, SFTP, SCP, WebDAV, SMB, web server folder listings</dd></div>
-      <div><dt>Object storage</dt><dd>Amazon S3 and compatible stores, Azure Blob Storage, Azure Files</dd></div>
-      <div><dt>Cloud drives</dt><dd>Google Drive, OneDrive, Dropbox, Box, rclone remotes</dd></div>
-      <div><dt>Containers and code</dt><dd>Docker containers and volumes, Kubernetes pods, Git history, GitHub and GitLab repositories</dd></div>
-      <div><dt>Devices</dt><dd>Android phones over ADB, phones and cameras over MTP, another PC over a cable with PC link</dd></div>
-      <div><dt>Sessions</dt><dd>Remote desktop in a tab, VNC, SSH, Telnet, rsh and serial consoles in the built-in terminal</dd></div>
-    </dl>
-    <p class="note">Proxies (HTTP, SOCKS, SSH tunnel, PAC) for the whole program or one connection; saved passwords
-      behind an optional master password.</p>
+    <div class="kinds">
+      <div class="kind reveal"><h3>File servers</h3><p>FTP, FTPS, SFTP, SCP, WebDAV, SMB, web server folder listings</p></div>
+      <div class="kind reveal"><h3>Object storage</h3><p>Amazon S3 and compatible stores, Azure Blob Storage, Azure Files</p></div>
+      <div class="kind reveal"><h3>Cloud drives</h3><p>Google Drive, OneDrive, Dropbox, Box, rclone remotes</p></div>
+      <div class="kind reveal"><h3>Containers and code</h3><p>Docker containers and volumes, Kubernetes pods, Git history, GitHub and GitLab repositories</p></div>
+      <div class="kind reveal"><h3>Devices</h3><p>Android phones over ADB, phones and cameras over MTP, another PC over a cable with PC link</p></div>
+      <div class="kind reveal"><h3>Sessions</h3><p>Remote desktop in a tab, VNC, SSH, Telnet, rsh and serial consoles in the built-in terminal</p></div>
+    </div>
+    <figure class="window small-window reveal">
+      <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i><span>Connection manager</span></div>
+      <img src="screenshots/connections.png" loading="lazy" width="1920" height="1080" alt="The connection manager with saved connections in folders">
+    </figure>
+    <p class="note reveal">Proxies (HTTP, SOCKS, SSH tunnel, PAC) for the whole program or one connection; saved passwords
+      behind an optional master password; a log per connection.</p>
   </section>
 
-  <section id="looks" class="looks wrap" aria-labelledby="looks-title">
-    <div class="section-head">
+  <section id="looks" class="wrap" aria-labelledby="looks-title">
+    <div class="section-head reveal">
+      <p class="eyebrow">Looks</p>
       <h2 id="looks-title">Fits the system it runs on</h2>
-      <p>Follows the system's light or dark mode, or takes a macOS or Ubuntu look. Three icon packs, six languages
-        built in, and every shortcut and button can be changed.</p>
+      <p>Follows the system's light or dark mode, or takes a macOS or Ubuntu look. Three icon packs, six languages built
+        in, your own themes, and every shortcut and button can be changed.</p>
     </div>
-    <div class="looks-grid">
-      <figure><img src="screenshots/main-dark.png" loading="lazy" width="1920" height="1080" alt="The dark theme"><figcaption>Dark</figcaption></figure>
-      <figure><img src="screenshots/main-ubuntu.png" loading="lazy" width="1920" height="1080" alt="The Ubuntu look with the Files menu open"><figcaption>Ubuntu</figcaption></figure>
-      <figure><img src="screenshots/main-macos-dark.png" loading="lazy" width="1920" height="1080" alt="The macOS dark look with the Files menu open"><figcaption>macOS dark</figcaption></figure>
+    <div class="looks reveal">
+      <div class="segmented" role="tablist" aria-label="Looks">
+        <button role="tab" aria-selected="true" data-shot="main-light.png">Light</button>
+        <button role="tab" aria-selected="false" data-shot="main-dark.png">Dark</button>
+        <button role="tab" aria-selected="false" data-shot="main-ubuntu.png">Ubuntu</button>
+        <button role="tab" aria-selected="false" data-shot="main-macos-dark.png">macOS dark</button>
+      </div>
+      <figure class="window">
+        <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i><span>NextCommander</span></div>
+        <img id="look-img" src="screenshots/main-light.png" loading="lazy" width="1920" height="1080" alt="The chosen look">
+      </figure>
     </div>
   </section>
 
   <section id="download" class="download wrap" aria-labelledby="dl-title">
-    <div class="section-head">
-      <h2 id="dl-title">Download</h2>
-      <p>Every package is self-contained: nothing else needs to be installed. The packages are on the
-        <a href="https://github.com/nextcommander/NextCommander/releases">Releases page</a>.</p>
+    <div class="section-head reveal">
+      <p class="eyebrow">Download</p>
+      <h2 id="dl-title">Self-contained, nothing else to install</h2>
+      <p>Every package carries what it needs. The packages are on the
+        <a href="https://github.com/nextcommander/NextCommander/releases/latest">latest release</a>.</p>
     </div>
     <div class="platforms">
-      <div>
+      <article class="platform reveal" data-os="windows">
         <h3>Windows</h3>
         <p>A setup program that installs for your user without administrator rights, a zip, and a portable zip that
-          keeps its settings next to it, for a USB stick.</p>
-      </div>
-      <div>
+          keeps its settings next to it.</p>
+        <p class="arch">x64 · Arm64</p>
+        <a class="button" href="https://github.com/nextcommander/NextCommander/releases/latest">Get it for Windows</a>
+      </article>
+      <article class="platform reveal" data-os="linux">
         <h3>Linux</h3>
         <p>A <code>.deb</code> for Debian, Ubuntu and Mint, an <code>.rpm</code> for Fedora, RHEL and openSUSE, and a
           <code>.tar.gz</code>.</p>
         <pre><code>sudo apt install ./NextCommander-&lt;version&gt;-linux-x64.deb</code></pre>
-      </div>
-      <div>
+        <p class="arch">x64 · Arm64</p>
+        <a class="button" href="https://github.com/nextcommander/NextCommander/releases/latest">Get it for Linux</a>
+      </article>
+      <article class="platform reveal" data-os="mac">
         <h3>macOS</h3>
-        <p><code>NextCommander.app</code> in a zip or a disk image. Drag it to Applications. An unsigned copy may first
-          need <em>Privacy &amp; Security &gt; Open Anyway</em>.</p>
-      </div>
+        <p><code>NextCommander.app</code> in a zip or a disk image; drag it to Applications. An unsigned copy may first
+          need <em>Privacy &amp; Security › Open Anyway</em>.</p>
+        <p class="arch">Apple silicon · Intel</p>
+        <a class="button" href="https://github.com/nextcommander/NextCommander/releases/latest">Get it for macOS</a>
+      </article>
     </div>
-    <p class="note">Optional helpers turn on extra features when they are installed: 7-Zip writes 7z archives, VLC
+    <p class="note reveal">Optional helpers turn on extra features when they are installed: 7-Zip writes 7z archives, VLC
       plays audio and video in the viewer, Everything, plocate or Spotlight speed up searches.</p>
   </section>
 </main>
 
 <footer class="wrap">
+  <div class="foot-brand">
+    <img src="icon.png" alt="" width="24" height="24">
+    <span>NextCommander runs on Windows, Linux and macOS, x64 and Arm.</span>
+  </div>
   <nav aria-label="Guides">
     <a href="https://github.com/nextcommander/NextCommander/blob/main/docs/guide/getting-started.md">Getting started</a>
     <a href="https://github.com/nextcommander/NextCommander/blob/main/docs/guide/keyboard-shortcuts.md">Keyboard shortcuts</a>
@@ -142,7 +266,6 @@
     <a href="https://github.com/nextcommander/NextCommander/blob/main/docs/guide/plugins.md">Plugins</a>
     <a href="https://github.com/nextcommander/NextCommander">Source</a>
   </nav>
-  <p>NextCommander runs on Windows, Linux and macOS, x64 and Arm.</p>
 </footer>
 
 <script src="tour.js"></script>
