@@ -12,11 +12,12 @@ export default {
     connections: { title: "Servers, clouds and devices — NextCommander", description: "FTP, SFTP, SMB, WebDAV, S3, Azure, Google Drive, OneDrive, Dropbox, Box, Docker, Kubernetes, phones, RDP, SSH and more in the same panels as your local files." },
     plugins: { title: "Plugins — NextCommander", description: "Git, Docker, Kubernetes, SQLite, rclone, GitHub and GitLab, virtual disks, packages and viewers ship as plugins. Write your own in C#." },
     download: { title: "Download — NextCommander", description: "Download NextCommander for Windows, Linux or macOS, x64 and Arm. Self-contained packages, a portable zip, nothing else to install." },
+    guide: { title: "Guide — NextCommander", description: "The NextCommander guide: getting started, keyboard shortcuts, tools, archives, connections, configuration, themes, scripts and plugins." },
     faq: { title: "Questions and answers — NextCommander", description: "Answers about installing, settings, connections, security, languages and plugins of NextCommander." },
   },
 
   nav: {
-    "": "Home", features: "Features", connections: "Connections", plugins: "Plugins", download: "Download", faq: "FAQ",
+    "": "Home", features: "Features", connections: "Connections", plugins: "Plugins", guide: "Guide", download: "Download", faq: "FAQ",
     skip: "Skip to the content", menu: "Menu", theme: "Light or dark", language: "Language", github: "GitHub",
   },
 
@@ -125,7 +126,7 @@ export default {
         ],
       },
       {
-        id: "viewer", icon: "eye", title: "Viewer and editor", shot: "lister.png", guide: "tools",
+        id: "viewer", icon: "eye", title: "Viewer and editor", shot: "lister.png", guide: "tools#lister-f3",
         lead: "Lister (F3) and Quick View show almost any file without another program.",
         points: [
           "Text with syntax colors, binary and hex, pictures including camera RAW, audio and video (with VLC installed).",
@@ -136,7 +137,7 @@ export default {
         ],
       },
       {
-        id: "search", icon: "search", title: "Search and tools", shot: "find-files.png", guide: "tools",
+        id: "search", icon: "search", title: "Search and tools", shot: "find-files.png", guide: "tools#find-files-altf7",
         lead: "Find what you need and change many files at once.",
         points: [
           "Find files by name, content, size, date and attributes — also inside Office and OpenDocument files.",
@@ -147,7 +148,7 @@ export default {
         ],
       },
       {
-        id: "compare", icon: "diff", title: "Compare and merge", shot: "compare.png", guide: "tools",
+        id: "compare", icon: "diff", title: "Compare and merge", shot: "compare.png", guide: "tools#compare-by-content",
         lead: "Differences side by side, edited in place — like a dedicated diff tool, built in.",
         points: [
           "Two files side by side with differences down to the word; copy blocks across, undo, save.",
@@ -333,6 +334,34 @@ export default {
         ],
       },
     ],
+  },
+
+  guide: {
+    eyebrow: "Guide",
+    title: "The NextCommander guide",
+    lead: "Everything about using NextCommander, from the first start to writing plugins.",
+    onThisPage: "On this page",
+    allGuides: "All guides",
+    previous: "Previous",
+    next: "Next",
+    untranslated: "This guide has not been translated yet; it is shown in English.",
+    filter: "Search the guides",
+    noMatch: "No guide matches.",
+    groups: [["Start", ["getting-started", "keyboard-shortcuts"]], ["Work", ["tools", "archives", "connections"]], ["Make it yours", ["configuration", "themes", "icon-packs", "languages"]], ["Go further", ["scripts", "plugins", "settings-folder"]]],
+    items: {
+      "getting-started": ["Getting started", "The window, moving around, selecting, the basic operations, right click, drag and drop, administrator rights."],
+      "keyboard-shortcuts": ["Keyboard shortcuts", "The default shortcuts of the panels, the command line and the tools, and how to change them."],
+      tools: ["Tools", "Lister, editor, find files, multi-rename, synchronize, compare and merge, duplicates, folder sizes, checksums, terminal."],
+      archives: ["Archives", "Opening, packing, unpacking and testing archives; disc images, virtual disks and packages."],
+      connections: ["Connections", "FTP, SFTP, SMB, WebDAV, S3, Azure, cloud drives, phones, PC link, RDP, VNC, SSH; proxies and saved passwords."],
+      configuration: ["Configuration", "A tour of the Configuration window, page by page."],
+      themes: ["Color themes", "Choosing a theme and making your own with the theme editor."],
+      "icon-packs": ["Icon packs", "Choosing an icon pack and making your own."],
+      languages: ["Languages", "Choosing the language and translating NextCommander."],
+      scripts: ["Macros and scripts", "Recording macros; JavaScript commands, columns and file systems."],
+      plugins: ["Plugins", "The shipped plugins, installing and managing plugins, and writing your own."],
+      "settings-folder": ["Settings folder", "Where your settings live, backups and restoring them, portable mode."],
+    },
   },
 
   footer: {

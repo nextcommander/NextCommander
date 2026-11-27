@@ -1,7 +1,8 @@
 // The page templates. Plain template strings: each function takes the texts of one language and returns HTML.
 
-import { languages, pages, siteUrl, repoUrl, releasesUrl, guideUrl, defaultLanguage } from "./config.mjs";
+import { languages, pages, siteUrl, repoUrl, releasesUrl, defaultLanguage } from "./config.mjs";
 import { icon } from "./icons.mjs";
+import { guideNames, renderGuide } from "./guides.mjs";
 
 // screenshot sizes (set by build.mjs) so pictures keep their place while they load
 let shotSizes = {};
@@ -10,6 +11,13 @@ export function setShotSizes(sizes) { shotSizes = sizes; }
 const esc = (text) => String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const fill = (pattern, ...values) => values.reduce((text, value, i) => text.replace(`{${i}}`, value), pattern);
 const href = (lang, page) => `/${lang}/${page ? page + "/" : ""}`;
+
+// a guide of the site, with an optional anchor: "tools#file-index"
+let currentLang = defaultLanguage;
+function guideUrl(target) {
+  const [name, anchor] = target.split("#");
+  return `/${currentLang}/guide/${name}/${anchor ? "#" + anchor : ""}`;
+}
 
 function shot(name, alt, { cls = "", eager = false, id = "" } = {}) {
   const size = shotSizes[name];
@@ -31,10 +39,9 @@ function sectionHead(eyebrow, title, lead, { center = false, h = "h2" } = {}) {
 
 // ---------------------------------------------------------------- layout
 
-function layout({ lang, page, t, assets, body, jsonLd = "" }) {
-  const meta = t.meta[page];
-  const url = siteUrl + href(lang, page);
-  const alternates = languages.map((other) => `<link rel="alternate" hreflang="${other}" href="${siteUrl + href(other, page)}">`).join("\n  ");
+function layout({ lang, page, t, assets, body, jsonLd = "", meta = t.meta[page], path = page }) {
+  const url = siteUrl + href(lang, path);
+  const alternates = languages.map((other) => `<link rel="alternate" hreflang="${other}" href="${siteUrl + href(other, path)}">`).join("\n  ");
   return `<!doctype html>
 <html lang="${lang}">
 <head>
@@ -44,7 +51,7 @@ function layout({ lang, page, t, assets, body, jsonLd = "" }) {
   <meta name="description" content="${esc(meta.description)}">
   <link rel="canonical" href="${url}">
   ${alternates}
-  <link rel="alternate" hreflang="x-default" href="${siteUrl + href(defaultLanguage, page)}">
+  <link rel="alternate" hreflang="x-default" href="${siteUrl + href(defaultLanguage, path)}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NextCommander">
   <meta property="og:title" content="${esc(meta.title)}">
@@ -70,10 +77,10 @@ function layout({ lang, page, t, assets, body, jsonLd = "" }) {
   </script>
   <script src="${assets["app.js"]}" defer></script>${jsonLd}
 </head>
-<body data-page="${page || "home"}">
+<body data-page="${(page || "home").replace("/", "-")}">
   <a class="skip" href="#main">${esc(t.nav.skip)}</a>
   <div class="glow" aria-hidden="true"></div>
-  ${header({ lang, page, t })}
+  ${header({ lang, page, t, path })}
   <main id="main">
 ${body}
   </main>
@@ -83,11 +90,11 @@ ${body}
 `;
 }
 
-function header({ lang, page, t }) {
+function header({ lang, page, t, path }) {
   const links = pages.map((p) =>
     `<a href="${href(lang, p)}"${p === page ? ' aria-current="page"' : ""}>${esc(t.nav[p])}</a>`).join("");
   const switcher = languages.map((other) =>
-    `<a href="${href(other, page)}" hreflang="${other}" lang="${other}" data-lang="${other}"${other === lang ? ' aria-current="true"' : ""}>${other.toUpperCase()}</a>`).join("");
+    `<a href="${href(other, path)}" hreflang="${other}" lang="${other}" data-lang="${other}"${other === lang ? ' aria-current="true"' : ""}>${other.toUpperCase()}</a>`).join("");
   return `<header class="top">
     <div class="wrap top-inner">
       <a class="brand" href="${href(lang, "")}"><img src="/icon-32.png" width="28" height="28" alt="">NextCommander</a>
@@ -105,7 +112,8 @@ function header({ lang, page, t }) {
 
 function footer({ lang, t }) {
   const product = pages.filter(Boolean).map((p) => `<li><a href="${href(lang, p)}">${esc(t.nav[p])}</a></li>`).join("");
-  const guides = t.footer.guideLinks.map(([name, label]) => `<li><a href="${guideUrl(name)}">${esc(label)}</a></li>`).join("");
+  const guides = t.footer.guideLinks.map(([name, label]) => `<li><a href="${guideUrl(name)}">${esc(label)}</a></li>`).join("") +
+    `<li><a href="${href(lang, "guide")}">${esc(t.guide.allGuides)}</a></li>`;
   return `<footer class="foot">
     <div class="wrap foot-grid">
       <div>
@@ -126,9 +134,10 @@ function footer({ lang, t }) {
 
 // ---------------------------------------------------------------- pages
 
-const renderers = { "": home, features, connections, plugins, download, faq };
+const renderers = { "": home, features, connections, plugins, guide: guideIndex, download, faq };
 
 export function renderPage({ lang, page, t, assets }) {
+  currentLang = lang;
   const jsonLd = page === "" ? `\n  <script type="application/ld+json">${JSON.stringify({
     "@context": "https://schema.org", "@type": "SoftwareApplication", name: "NextCommander",
     applicationCategory: "UtilitiesApplication", operatingSystem: "Windows, Linux, macOS",
@@ -352,6 +361,62 @@ function faq({ t }) {
     <div class="wrap faq">
       ${groups}
     </div>`;
+}
+
+// ---------------------------------------------------------------- guides
+
+function guideIndex({ lang, t }) {
+  const g = t.guide;
+  const groups = g.groups.map(([title, names]) => `<section class="guide-group reveal">
+        <h2>${esc(title)}</h2>
+        <div class="grid three">${names.map((name) => {
+          const [itemTitle, description] = g.items[name];
+          return `<a class="card guide-card" href="${guideUrl(name)}" data-search="${esc((itemTitle + " " + description).toLowerCase())}">
+            <h3>${esc(itemTitle)} ${icon("arrow")}</h3><p>${esc(description)}</p></a>`;
+        }).join("")}</div>
+      </section>`).join("\n      ");
+  return `
+    ${pageHero(g)}
+    <div class="wrap">
+      <label class="search reveal">${icon("search")}<input type="search" id="guide-filter" placeholder="${esc(g.filter)}" aria-label="${esc(g.filter)}"></label>
+      <p class="muted no-match" id="guide-none" hidden>${esc(g.noMatch)}</p>
+      ${groups}
+    </div>`;
+}
+
+// One guide: the guide list on the left, the guide in the middle, its sections on the right.
+export function renderGuidePage({ lang, t, assets, name }) {
+  currentLang = lang;
+  const g = t.guide;
+  const guide = renderGuide(lang, name);
+  const position = guideNames.indexOf(name);
+  const previous = guideNames[position - 1];
+  const next = guideNames[position + 1];
+  const nav = g.groups.map(([title, names]) => `<p>${esc(title)}</p><ul>${names.map((other) =>
+    `<li><a href="${guideUrl(other)}"${other === name ? ' aria-current="page"' : ""}>${esc(g.items[other][0])}</a></li>`).join("")}</ul>`).join("");
+  const toc = guide.toc.map((h) => `<li class="d${h.depth}"><a href="#${h.id}">${esc(h.text)}</a></li>`).join("");
+  const pager = `<nav class="pager" aria-label="${esc(g.allGuides)}">
+        ${previous ? `<a class="card" href="${guideUrl(previous)}" rel="prev"><small>${esc(g.previous)}</small><strong>${esc(g.items[previous][0])}</strong></a>` : "<span></span>"}
+        ${next ? `<a class="card next" href="${guideUrl(next)}" rel="next"><small>${esc(g.next)}</small><strong>${esc(g.items[next][0])}</strong></a>` : "<span></span>"}
+      </nav>`;
+  const body = `
+    <div class="wrap guide-layout">
+      <nav class="guide-nav" aria-label="${esc(g.allGuides)}">
+        <a class="back" href="${href(lang, "guide")}">${esc(g.allGuides)}</a>
+        ${nav}
+      </nav>
+      <article class="prose">
+        <p class="eyebrow">${esc(g.eyebrow)}</p>
+        <h1>${esc(guide.title)}</h1>
+        ${guide.translated ? "" : `<p class="note">${esc(g.untranslated)}</p>`}
+        ${toc ? `<details class="mobile-toc"><summary>${esc(g.onThisPage)}${icon("plus")}</summary><ul>${toc}</ul></details>` : ""}
+        ${guide.html}
+        ${pager}
+      </article>
+      <aside class="guide-toc">${toc ? `<p>${esc(g.onThisPage)}</p><ul>${toc}</ul>` : ""}</aside>
+    </div>`;
+  const meta = { title: `${guide.title} — NextCommander`, description: g.items[name][1] };
+  return layout({ lang, page: "guide", t, assets, body, meta, path: `guide/${name}` });
 }
 
 // ---------------------------------------------------------------- root and 404
